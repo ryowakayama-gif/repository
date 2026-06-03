@@ -12,7 +12,11 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
-OUT_DIR = "/home/user/repository/output"
+# 出力先: 環境変数 OUT_DIR で上書き可。未指定ならスクリプトと同階層の output/
+OUT_DIR = os.environ.get(
+    "OUT_DIR",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "output"),
+)
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # ============================================================

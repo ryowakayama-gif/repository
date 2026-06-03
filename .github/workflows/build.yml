@@ -1,0 +1,55 @@
+name: Build 福祉計画コラム部品 管理表
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "build_excel.py"
+      - "build_component_images.py"
+      - ".github/workflows/build.yml"
+  pull_request:
+    paths:
+      - "build_excel.py"
+      - "build_component_images.py"
+      - ".github/workflows/build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Japanese fonts (IPA Gothic)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends fonts-ipafont-gothic
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install openpyxl pillow
+
+      - name: Generate Excel workbooks
+        run: python build_excel.py
+
+      - name: Generate component images and embed into workbooks
+        run: python build_component_images.py
+
+      - name: Upload generated workbooks and images
+        uses: actions/upload-artifact@v4
+        with:
+          name: welfare-plan-column-parts
+          path: output/
+          if-no-files-found: warn
+          retention-days: 30

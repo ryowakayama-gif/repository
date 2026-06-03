@@ -12,12 +12,17 @@ from openpyxl.drawing.image import Image as XLImage
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
-OUT_DIR  = "/home/user/repository/output"
+# 出力先: 環境変数 OUT_DIR で上書き可。未指定ならスクリプトと同階層の output/
+OUT_DIR  = os.environ.get(
+    "OUT_DIR",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "output"),
+)
 IMG_DIR  = os.path.join(OUT_DIR, "images_basic")
 os.makedirs(IMG_DIR, exist_ok=True)
 
-FONT_REG = "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf"
-FONT_BOLD = "/usr/share/fonts/opentype/ipafont-gothic/ipagp.ttf"
+# フォントも環境変数で上書き可（CI ではディストリ依存のパスになるため）
+FONT_REG = os.environ.get("FONT_REG", "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf")
+FONT_BOLD = os.environ.get("FONT_BOLD", "/usr/share/fonts/opentype/ipafont-gothic/ipagp.ttf")
 
 # 画像サイズ
 W, H = 520, 320
