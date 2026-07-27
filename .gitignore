@@ -2,3 +2,4 @@ ashoro_proposal/tools/unpacked/
 ashoro_proposal/tools/build/
 *.pdf
 __pycache__/
+ashoro_proposal/tools/memo_build/
