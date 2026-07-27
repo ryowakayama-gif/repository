@@ -3,3 +3,5 @@ ashoro_proposal/tools/build/
 *.pdf
 __pycache__/
 ashoro_proposal/tools/memo_build/
+ashoro_proposal/tools/*.jpg
+ashoro_proposal/tools/sheet_*.png

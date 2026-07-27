@@ -154,7 +154,55 @@ def set_update_fields(settings_path):
     settings_path.write_bytes(data)
 
 
-def build(plan, out_docx):
+EMU_PER_TWIP = 635
+CONTENT_TWIPS = 9314           # 本文幅（A4・左右余白1296twips）
+
+
+def figure_para(rel_id, px_w, px_h, doc_id, name, alt):
+    """本文幅いっぱいに配置する画像段落（インライン）。"""
+    cx = CONTENT_TWIPS * EMU_PER_TWIP
+    cy = int(cx * px_h / px_w)
+    A = "http://schemas.openxmlformats.org/drawingml/2006/main"
+    P = "http://schemas.openxmlformats.org/drawingml/2006/picture"
+    return (
+        f'<w:p><w:pPr><w:spacing w:after="140" w:before="20"/>'
+        f'<w:jc w:val="center"/><w:keepLines/></w:pPr><w:r><w:drawing>'
+        f'<wp:inline distT="0" distB="0" distL="0" distR="0">'
+        f'<wp:extent cx="{cx}" cy="{cy}"/>'
+        f'<wp:effectExtent l="0" t="0" r="0" b="0"/>'
+        f'<wp:docPr id="{doc_id}" name="{esc(name)}" descr="{esc(alt)}"/>'
+        f'<wp:cNvGraphicFramePr><a:graphicFrameLocks xmlns:a="{A}" '
+        f'noChangeAspect="1"/></wp:cNvGraphicFramePr>'
+        f'<a:graphic xmlns:a="{A}"><a:graphicData uri="{P}">'
+        f'<pic:pic xmlns:pic="{P}"><pic:nvPicPr>'
+        f'<pic:cNvPr id="{doc_id}" name="{esc(name)}"/><pic:cNvPicPr/></pic:nvPicPr>'
+        f'<pic:blipFill><a:blip r:embed="{rel_id}"/>'
+        f'<a:stretch><a:fillRect/></a:stretch></pic:blipFill>'
+        f'<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm>'
+        f'<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>'
+        f'</pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>'
+    ).encode()
+
+
+def _install_media(build_dir, media):
+    """media = [(rel_id, Path)] を word/media に配置し、関係定義を追加する。"""
+    if not media:
+        return
+    mdir = build_dir / "word" / "media"
+    mdir.mkdir(exist_ok=True)
+    rels_path = build_dir / "word" / "_rels" / "document.xml.rels"
+    rels = rels_path.read_text(encoding="utf-8")
+    add = []
+    for rel_id, src in media:
+        shutil.copy(src, mdir / src.name)
+        add.append(
+            f'<Relationship Id="{rel_id}" Type="http://schemas.openxmlformats.org/'
+            f'officeDocument/2006/relationships/image" Target="media/{src.name}"/>')
+    rels = rels.replace("</Relationships>", "".join(add) + "</Relationships>")
+    rels_path.write_text(rels, encoding="utf-8")
+
+
+def build(plan, out_docx, media=()):
     head, blocks, tail = HEAD, BLOCKS, TAIL
 
     new = []
@@ -176,6 +224,7 @@ def build(plan, out_docx):
     shutil.copytree(UNPACKED, build_dir)
     (build_dir / "word" / "document.xml").write_bytes(out_xml)
     set_update_fields(build_dir / "word" / "settings.xml")
+    _install_media(build_dir, media)
 
     out = Path(out_docx)
     if out.exists():
@@ -198,7 +247,9 @@ def page_map(pdf_path):
 
 if __name__ == "__main__":
     import plan as planmod
-    out = build(planmod.build_plan(), sys.argv[1] if len(sys.argv) > 1 else "restructured.docx")
+    out = build(planmod.build_plan(),
+                sys.argv[1] if len(sys.argv) > 1 else "restructured.docx",
+                media=getattr(planmod, "MEDIA", ()))
     print("wrote", out)
 
 
