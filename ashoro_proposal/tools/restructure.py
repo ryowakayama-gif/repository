@@ -39,10 +39,16 @@ def esc(s):
     return html.escape(s, quote=False)
 
 
-def chapter_heading(text, bookmark_id, bookmark_name):
-    """Chapter heading paragraph (blue, bottom border, 14pt bold) with a bookmark."""
+def chapter_heading(text, bookmark_id, bookmark_name, page_break=True):
+    """Chapter heading paragraph (blue, bottom border, 14pt bold) with a bookmark.
+
+    The page break is carried by the heading itself (w:pageBreakBefore) rather than a
+    separate empty paragraph -- an empty break paragraph lands on its own page whenever
+    the preceding chapter happens to fill the last page exactly.
+    """
+    brk = '<w:pageBreakBefore/>' if page_break else ''
     return (
-        f'<w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:color="1F4E78" w:sz="6" '
+        f'<w:p><w:pPr>{brk}<w:pBdr><w:bottom w:val="single" w:color="1F4E78" w:sz="6" '
         f'w:space="4"/></w:pBdr><w:spacing w:after="160" w:before="320"/></w:pPr>'
         f'<w:bookmarkStart w:id="{bookmark_id}" w:name="{bookmark_name}"/>'
         f'<w:r><w:rPr>{FONT}<w:b/><w:bCs/><w:color w:val="1F4E78"/><w:sz w:val="28"/>'
@@ -194,3 +200,72 @@ if __name__ == "__main__":
     import plan as planmod
     out = build(planmod.build_plan(), sys.argv[1] if len(sys.argv) > 1 else "restructured.docx")
     print("wrote", out)
+
+
+_TR = re.compile(rb"<w:tr(?:\s[^>]*)?>.*?</w:tr>", re.S)
+_TC = re.compile(rb"<w:tc(?:\s[^>]*)?>.*?</w:tc>", re.S)
+_P = re.compile(rb"<w:p(?:\s[^>]*)?>.*?</w:p>", re.S)
+_R = re.compile(rb"<w:r(?:\s[^>]*)?>.*?</w:r>", re.S)
+_T = re.compile(rb"(<w:t(?:\s[^>]*)?>).*?(</w:t>)", re.S)
+
+
+def _set_cell(cell, text):
+    """Collapse a table cell to a single paragraph/run carrying `text`."""
+    paras = _P.findall(cell)
+    if not paras:
+        return cell
+    first = paras[0]
+    runs = _R.findall(first)
+    if not runs:
+        return cell
+    run = _T.sub(lambda m: m.group(1) + esc(text).encode() + m.group(2), runs[0], count=1)
+    newp = first
+    for r in runs[1:]:
+        newp = newp.replace(r, b"", 1)
+    newp = newp.replace(runs[0], run, 1)
+    out = cell.replace(first, newp, 1)
+    for p in paras[1:]:
+        out = out.replace(p, b"", 1)
+    return out
+
+
+def retable(block, cells, widths=None):
+    """Clone an existing table, replacing every cell's text (row-major order).
+
+    `cells` must match the source table's shape exactly; `widths` optionally
+    replaces the column widths (same number of columns).
+    """
+    rows = _TR.findall(block)
+    if len(rows) != len(cells):
+        raise ValueError(f"row count {len(rows)} != {len(cells)}")
+    out = block
+    for row, texts in zip(rows, cells):
+        tcs = _TC.findall(row)
+        if len(tcs) != len(texts):
+            raise ValueError(f"cell count {len(tcs)} != {len(texts)}")
+        newrow = row
+        for tc, text in zip(tcs, texts):
+            newrow = newrow.replace(tc, _set_cell(tc, text), 1)
+        out = out.replace(row, newrow, 1)
+    if widths:
+        grid = re.findall(rb'<w:gridCol w:w="\d+"/>', out)
+        for g, w in zip(grid, widths):
+            out = out.replace(g, f'<w:gridCol w:w="{w}"/>'.encode(), 1)
+        per_row = _TR.findall(out)
+        for row in per_row:
+            newrow = row
+            for tc, w in zip(_TC.findall(row), widths):
+                newrow = newrow.replace(
+                    tc, re.sub(rb'(<w:tcW w:type="dxa" w:w=")\d+(")',
+                               rb'\g<1>' + str(w).encode() + rb'\2', tc, count=1), 1)
+            out = out.replace(row, newrow, 1)
+    return out
+
+
+def note_para(text):
+    """※-style small note paragraph (cloned from the existing table notes)."""
+    return (
+        f'<w:p><w:pPr><w:spacing w:after="120" w:before="40"/></w:pPr>'
+        f'<w:r><w:rPr>{FONT}<w:i/><w:iCs/><w:color w:val="595959"/><w:sz w:val="18"/>'
+        f'<w:szCs w:val="18"/></w:rPr><w:t xml:space="preserve">{esc(text)}</w:t></w:r></w:p>'
+    ).encode()
