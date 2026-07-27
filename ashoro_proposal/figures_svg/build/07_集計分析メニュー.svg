@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 660" class="bzu-fig" role="img" aria-labelledby="fig-07-t fig-07-d" preserveAspectRatio="xMidYMid meet">
+<title id="fig-07-t">集計・分析メニュー</title>
+<desc id="fig-07-d">単純集計にとどまらず施策の優先順位づけまで踏み込みます。ウェイト補正は無回答バイアスを完全には解消しません</desc>
+<style>
+/* ==== 可変トークン ====
+   外側の CSS で :root や任意の親要素に
+   --c-brand などを定義すれば、この図の配色を一括変更できます。
+   例) :root{ --c-brand:#004C6D; --fs-scale:1.08; }
+   ==================== */
+.bzu-fig{
+  display:block; width:100%;
+  max-width:var(--fig-max-width, 1240px);
+  height:auto; margin:var(--fig-margin, 0 auto);
+  font-family:var(--fig-font, 'BIZ UDPGothic','BIZ UDPゴシック','BIZ UDGothic','BIZ UDゴシック','Yu Gothic UI','Yu Gothic','Meiryo',sans-serif);
+  font-weight:var(--fig-font-weight, 400);
+}
+.bzu-fig .f-ink{fill:var(--c-ink,#1A2B3C)}
+.bzu-fig .f-muted{fill:var(--c-ink-muted,#5E7182)}
+.bzu-fig .f-brand{fill:var(--c-brand,#1E5F74)}
+.bzu-fig .f-brand2{fill:var(--c-brand-light,#3E8296)}
+.bzu-fig .f-accent{fill:var(--c-accent,#E07B39)}
+.bzu-fig .f-surfalt{fill:var(--c-surface-alt,#F4F7F8)}
+.bzu-fig .f-surfmute{fill:var(--c-surface-mute,#F2F4F5)}
+.bzu-fig .f-brandpale{fill:var(--c-brand-pale,#E2EDF0)}
+.bzu-fig .f-accentpale{fill:var(--c-accent-pale,#FBEDE1)}
+.bzu-fig .f-surface{fill:var(--c-surface,#FFFFFF)}
+.bzu-fig .s-muted{stroke:var(--c-ink-muted,#5E7182)}
+.bzu-fig .s-brand{stroke:var(--c-brand,#1E5F74)}
+.bzu-fig .s-border{stroke:var(--c-border,#C7D5DC)}
+/* 文字サイズ：--fs-scale で全体を一括拡縮（既定 1） */
+.bzu-fig .fs-10_5{font-size:calc(10.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-11{font-size:calc(11px * var(--fs-scale, 1))}
+.bzu-fig .fs-11_5{font-size:calc(17px * var(--fs-scale, 1))}
+.bzu-fig .fs-12{font-size:calc(12px * var(--fs-scale, 1))}
+.bzu-fig .fs-12_5{font-size:calc(18.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-13_5{font-size:calc(19.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-14{font-size:calc(20px * var(--fs-scale, 1))}
+.bzu-fig .fs-16{font-size:calc(22px * var(--fs-scale, 1))}
+.bzu-fig .fs-23{font-size:calc(30px * var(--fs-scale, 1))}
+</style>
+
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="f-brand2" d="M0,0 L10,5 L0,10 z"/></marker>
+<marker id="ara" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="f-accent" d="M0,0 L10,5 L0,10 z"/></marker>
+</defs>
+<rect class="f-surface" width="1240" height="660"/>
+<rect class="f-surface" x="0" y="0" width="1240" height="0" rx="8"/>
+<rect class="f-accent" x="34" y="30" width="5" height="24" rx="2.5"/>
+<text class="f-ink fs-23" x="50" y="50" font-weight="700" text-anchor="start" letter-spacing="0.5">集計・分析メニュー</text>
+<text class="f-muted fs-13_5" x="50" y="74" font-weight="400" text-anchor="start" letter-spacing="0">単純集計にとどまらず施策の優先順位づけまで踏み込みます。ウェイト補正は無回答バイアスを完全には解消しません</text>
+<rect class="f-surface s-brand" x="35.0" y="122" width="369.5" height="158" rx="10" stroke-width="1.6"/>
+<rect class="f-brand" x="35.0" y="122" width="369.5" height="5" rx="2.5"/>
+<text class="f-ink fs-16" x="55.0" y="163" font-weight="700" text-anchor="start" letter-spacing="0">① 単純集計（GT表）</text>
+<rect class="f-accent" x="56.0" y="184.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12" x="68.0" y="190" font-weight="400" text-anchor="start" letter-spacing="0">全設問の回答数・構成比を一覧化</text>
+<rect class="f-accent" x="56.0" y="206.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12" x="68.0" y="212" font-weight="400" text-anchor="start" letter-spacing="0">前回調査値を併記して増減を表示</text>
+<rect class="f-accent" x="56.0" y="228.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12" x="68.0" y="234" font-weight="400" text-anchor="start" letter-spacing="0">無回答・N数を必ず明示</text>
+<rect class="f-brand" x="56.0" y="250.5" width="5" height="5" rx="1"/>
+<text class="f-brand fs-12" x="68.0" y="256" font-weight="700" text-anchor="start" letter-spacing="0">層化区分はウェイトバック集計（補正前後を併記）</text>
+<rect class="f-surface s-border" x="425.5" y="122" width="369.5" height="158" rx="10" stroke-width="1.2"/>
+<rect class="f-brand" x="425.5" y="122" width="369.5" height="5" rx="2.5"/>
+<text class="f-ink fs-16" x="445.5" y="168" font-weight="700" text-anchor="start" letter-spacing="0">② クロス集計</text>
+<rect class="f-accent" x="446.5" y="194.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="458.5" y="200" font-weight="400" text-anchor="start" letter-spacing="0">年齢層・地区・世帯類型別</text>
+<rect class="f-accent" x="446.5" y="219.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="458.5" y="225" font-weight="400" text-anchor="start" letter-spacing="0">障害種別・等級・年齢別（n<30は参考値）</text>
+<rect class="f-accent" x="446.5" y="244.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="458.5" y="250" font-weight="400" text-anchor="start" letter-spacing="0">有意差検定を行い、有意な差のみ記述</text>
+<rect class="f-surface s-border" x="35.0" y="298" width="369.5" height="158" rx="10" stroke-width="1.2"/>
+<rect class="f-accent" x="35.0" y="298" width="369.5" height="5" rx="2.5"/>
+<text class="f-ink fs-16" x="55.0" y="344" font-weight="700" text-anchor="start" letter-spacing="0">③ 経年比較</text>
+<rect class="f-accent" x="56.0" y="370.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="68.0" y="376" font-weight="400" text-anchor="start" letter-spacing="0">前回・前々回調査との時系列比較</text>
+<rect class="f-accent" x="56.0" y="395.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="68.0" y="401" font-weight="400" text-anchor="start" letter-spacing="0">設問・選択肢の変更点を注記</text>
+<rect class="f-accent" x="56.0" y="420.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="68.0" y="426" font-weight="400" text-anchor="start" letter-spacing="0">増減要因の考察を付す</text>
+<rect class="f-surface s-border" x="425.5" y="298" width="369.5" height="158" rx="10" stroke-width="1.2"/>
+<rect class="f-accent" x="425.5" y="298" width="369.5" height="5" rx="2.5"/>
+<text class="f-ink fs-16" x="445.5" y="344" font-weight="700" text-anchor="start" letter-spacing="0">④ 自由記述の分析</text>
+<rect class="f-accent" x="446.5" y="370.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="458.5" y="376" font-weight="400" text-anchor="start" letter-spacing="0">内容によるカテゴリ分類・件数化</text>
+<rect class="f-accent" x="446.5" y="395.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="458.5" y="401" font-weight="400" text-anchor="start" letter-spacing="0">頻出語・共起ネットワーク分析</text>
+<rect class="f-accent" x="446.5" y="420.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="458.5" y="426" font-weight="400" text-anchor="start" letter-spacing="0">代表的な意見を計画に引用</text>
+<rect class="f-surface s-border" x="840" y="122" width="365" height="332" rx="10" stroke-width="1.2"/>
+<rect class="f-accent" x="840" y="122" width="365" height="5" rx="2.5"/>
+<text class="f-ink fs-16" x="860" y="162" font-weight="700" text-anchor="start" letter-spacing="0">⑤ ポートフォリオ分析</text>
+<text class="f-muted fs-11_5" x="860" y="184" font-weight="400" text-anchor="start" letter-spacing="0">満足度×重要度で施策の優先順位を可視化</text>
+<rect class="f-accentpale" x="902" y="204" width="134.0" height="100.0" rx="0"/>
+<rect class="f-brandpale" x="1036.0" y="204" width="134.0" height="100.0" rx="0"/>
+<rect class="f-surfmute" x="902" y="304.0" width="134.0" height="100.0" rx="0"/>
+<rect class="f-surfmute" x="1036.0" y="304.0" width="134.0" height="100.0" rx="0"/>
+<line class="s-border" x1="902" y1="304.0" x2="1170" y2="304.0" stroke-width="1"/>
+<line class="s-border" x1="1036.0" y1="204" x2="1036.0" y2="404" stroke-width="1"/>
+<line class="s-muted" x1="902" y1="204" x2="902" y2="404" stroke-width="1.4"/>
+<line class="s-muted" x1="902" y1="404" x2="1170" y2="404" stroke-width="1.4"/>
+<text class="f-accent fs-14" x="969.0" y="248" font-weight="700" text-anchor="middle" letter-spacing="0">重点改善</text>
+<text class="f-muted fs-10_5" x="969.0" y="268" font-weight="400" text-anchor="middle" letter-spacing="0">最優先で対応</text>
+<text class="f-brand fs-14" x="1103.0" y="248" font-weight="700" text-anchor="middle" letter-spacing="0">重点維持</text>
+<text class="f-muted fs-10_5" x="1103.0" y="268" font-weight="400" text-anchor="middle" letter-spacing="0">水準を維持</text>
+<text class="f-muted fs-12_5" x="969.0" y="370" font-weight="700" text-anchor="middle" letter-spacing="0">要注視</text>
+<text class="f-muted fs-12_5" x="1103.0" y="370" font-weight="700" text-anchor="middle" letter-spacing="0">現状維持</text>
+<circle class="f-brand" cx="948" cy="238" r="5" opacity="0.75"/>
+<circle class="f-brand" cx="994" cy="274" r="5" opacity="0.75"/>
+<circle class="f-brand" cx="1098" cy="246" r="5" opacity="0.75"/>
+<circle class="f-brand" cx="1128" cy="292" r="5" opacity="0.75"/>
+<circle class="f-brand" cx="976" cy="360" r="5" opacity="0.75"/>
+<circle class="f-brand" cx="1112" cy="372" r="5" opacity="0.75"/>
+<text class="f-muted fs-11" x="888" y="304.0" font-weight="700" text-anchor="middle" letter-spacing="0">重</text>
+<text class="f-muted fs-11" x="888" y="318.0" font-weight="700" text-anchor="middle" letter-spacing="0">要</text>
+<text class="f-muted fs-11" x="888" y="332.0" font-weight="700" text-anchor="middle" letter-spacing="0">度</text>
+<text class="f-muted fs-11_5" x="1036.0" y="426" font-weight="700" text-anchor="middle" letter-spacing="0">満足度 →</text>
+<rect class="f-surfalt s-border" x="35" y="486" width="1170" height="142" rx="10" stroke-width="1.2"/>
+<text class="f-ink fs-16" x="59" y="518" font-weight="700" text-anchor="start" letter-spacing="0">成果物イメージ</text>
+<rect class="f-accent" x="61" y="538" width="5" height="5" rx="1"/>
+<text class="f-brand fs-12_5" x="75" y="546" font-weight="700" text-anchor="start" letter-spacing="0">調査結果報告書：</text>
+<text class="f-ink fs-12_5" x="176.5" y="546" font-weight="400" text-anchor="start" letter-spacing="0">本編（分析・考察）／資料編（GT表・単純集計表・クロス表・自由記述一覧）</text>
+<rect class="f-accent" x="61" y="560" width="5" height="5" rx="1"/>
+<text class="f-brand fs-12_5" x="75" y="568" font-weight="700" text-anchor="start" letter-spacing="0">概要版（住民公表用）：</text>
+<text class="f-ink fs-12_5" x="214.0" y="568" font-weight="400" text-anchor="start" letter-spacing="0">A4・4〜8ページ。グラフ中心で、審議会・パブコメ・広報に活用</text>
+<rect class="f-accent" x="61" y="582" width="5" height="5" rx="1"/>
+<text class="f-brand fs-12_5" x="75" y="590" font-weight="700" text-anchor="start" letter-spacing="0">集計データ一式：</text>
+<text class="f-ink fs-12_5" x="176.5" y="590" font-weight="400" text-anchor="start" letter-spacing="0">個票データ（匿名化・Excel/CSV）、クロス集計表、グラフ元データ</text>
+<rect class="f-accent" x="61" y="604" width="5" height="5" rx="1"/>
+<text class="f-brand fs-12_5" x="75" y="612" font-weight="700" text-anchor="start" letter-spacing="0">計画への反映整理表：</text>
+<text class="f-ink fs-12_5" x="201.5" y="612" font-weight="400" text-anchor="start" letter-spacing="0">設問ごとに「課題 → 施策 → 成果指標」を対照した一覧。n が小さいセルは信頼区間を併記</text>
+</svg>

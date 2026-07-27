@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 862" class="bzu-fig" role="img" aria-labelledby="fig-01-t fig-01-d" preserveAspectRatio="xMidYMid meet">
+<title id="fig-01-t">アンケート調査の全体フロー</title>
+<desc id="fig-01-d">調査設計から報告書作成までの6ステップと、町・受託者の役割分担</desc>
+<style>
+/* ==== 可変トークン ====
+   外側の CSS で :root や任意の親要素に
+   --c-brand などを定義すれば、この図の配色を一括変更できます。
+   例) :root{ --c-brand:#004C6D; --fs-scale:1.08; }
+   ==================== */
+.bzu-fig{
+  display:block; width:100%;
+  max-width:var(--fig-max-width, 1240px);
+  height:auto; margin:var(--fig-margin, 0 auto);
+  font-family:var(--fig-font, 'BIZ UDPGothic','BIZ UDPゴシック','BIZ UDGothic','BIZ UDゴシック','Yu Gothic UI','Yu Gothic','Meiryo',sans-serif);
+  font-weight:var(--fig-font-weight, 400);
+}
+.bzu-fig .f-ink{fill:var(--c-ink,#1A2B3C)}
+.bzu-fig .f-muted{fill:var(--c-ink-muted,#5E7182)}
+.bzu-fig .f-brand{fill:var(--c-brand,#1E5F74)}
+.bzu-fig .f-brand2{fill:var(--c-brand-light,#3E8296)}
+.bzu-fig .f-accent{fill:var(--c-accent,#E07B39)}
+.bzu-fig .f-surfalt{fill:var(--c-surface-alt,#F4F7F8)}
+.bzu-fig .f-brandpale{fill:var(--c-brand-pale,#E2EDF0)}
+.bzu-fig .f-surface{fill:var(--c-surface,#FFFFFF)}
+.bzu-fig .f-onbrand{fill:var(--c-on-brand,#FFFFFF)}
+.bzu-fig .f-onaccent{fill:var(--c-on-accent,#FFFFFF)}
+.bzu-fig .s-border{stroke:var(--c-border,#C7D5DC)}
+/* 文字サイズ：--fs-scale で全体を一括拡縮（既定 1） */
+.bzu-fig .fs-12_5{font-size:calc(18.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-13{font-size:calc(19px * var(--fs-scale, 1))}
+.bzu-fig .fs-13_5{font-size:calc(19.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-14{font-size:calc(20px * var(--fs-scale, 1))}
+.bzu-fig .fs-16{font-size:calc(22px * var(--fs-scale, 1))}
+.bzu-fig .fs-23{font-size:calc(30px * var(--fs-scale, 1))}
+</style>
+
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="f-brand2" d="M0,0 L10,5 L0,10 z"/></marker>
+<marker id="ara" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="f-accent" d="M0,0 L10,5 L0,10 z"/></marker>
+</defs>
+
+<rect class="f-surface" width="1240" height="862"/>
+<rect class="f-accent" x="34" y="30" width="5" height="24" rx="2.5"/>
+<text class="f-ink fs-23" x="50" y="50" font-weight="700" text-anchor="start">アンケート調査の全体フロー</text>
+<text class="f-muted fs-13_5" x="50" y="74" font-weight="400" text-anchor="start">調査設計から報告書作成までの6ステップと、町・受託者の役割分担</text>
+<rect class="f-brand" x="700" y="41" width="14" height="14" rx="2" stroke-width="1.4"/>
+<text class="f-muted fs-13" x="724" y="54" text-anchor="start">受託者が実施</text>
+<rect class="f-surface s-border" x="880" y="41" width="14" height="14" rx="2" stroke-width="1.4"/>
+<text class="f-muted fs-13" x="904" y="54" text-anchor="start">町が実施</text>
+<path class="f-accent" d="M1067,40 L1075,48 L1067,56 L1059,48 Z"/>
+<text class="f-muted fs-13" x="1084" y="54" text-anchor="start">双方が実施</text>
+<path class="f-brand" d="M35.0,116 L391.0,116 L409.0,146.0 L391.0,176 L35.0,176 L53.0,146.0 Z"/>
+<text class="f-onbrand fs-16" x="222.0" y="153.0" font-weight="700" text-anchor="middle">① 調査設計</text>
+<rect class="f-surface s-border" x="35.0" y="188" width="374.0" height="210" rx="9" stroke-width="1.2"/>
+<rect class="f-brand" x="53.0" y="210" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="73.0" y="222" text-anchor="start">前回調査の検証</text>
+<rect class="f-brand" x="53.0" y="254" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="73.0" y="266" text-anchor="start">施策体系との対応</text>
+<rect class="f-brand" x="53.0" y="298" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="73.0" y="310" text-anchor="start">標本設計（対象・数）</text>
+<rect class="f-brand" x="53.0" y="342" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="73.0" y="354" text-anchor="start">国・道の調査との整合</text>
+<path class="f-brand" d="M433.0,116 L789.0,116 L807.0,146.0 L789.0,176 L433.0,176 L451.0,146.0 Z"/>
+<text class="f-onbrand fs-16" x="620.0" y="153.0" font-weight="700" text-anchor="middle">② 調査票作成</text>
+<rect class="f-surface s-border" x="433.0" y="188" width="374.0" height="210" rx="9" stroke-width="1.2"/>
+<rect class="f-brand" x="451.0" y="210" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="471.0" y="222" text-anchor="start">設問案の作成・精査</text>
+<rect class="f-brand" x="451.0" y="254" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="471.0" y="266" text-anchor="start">UD・合理的配慮への対応</text>
+<path class="f-accent" d="M457.0,297 L464.0,304 L457.0,311 L450.0,304 Z"/>
+<text class="f-ink fs-13" x="471.0" y="310" text-anchor="start">庁内協議による修正</text>
+<path class="f-accent" d="M457.0,341 L464.0,348 L457.0,355 L450.0,348 Z"/>
+<text class="f-ink fs-13" x="471.0" y="354" text-anchor="start">委員会への報告</text>
+<path class="f-brand2" d="M831.0,116 L1187.0,116 L1205.0,146.0 L1187.0,176 L831.0,176 L849.0,146.0 Z"/>
+<text class="f-onbrand fs-16" x="1018.0" y="153.0" font-weight="700" text-anchor="middle">③ 印刷・発送</text>
+<rect class="f-surface s-border" x="831.0" y="188" width="374.0" height="210" rx="9" stroke-width="1.2"/>
+<rect class="f-surface s-border" x="849.0" y="210" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="869.0" y="222" text-anchor="start">対象者名簿の提供</text>
+<rect class="f-brand" x="849.0" y="254" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="869.0" y="266" text-anchor="start">調査票・封筒の印刷</text>
+<rect class="f-brand" x="849.0" y="298" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="869.0" y="310" text-anchor="start">宛名作成・封入封緘</text>
+<rect class="f-brand" x="849.0" y="342" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="869.0" y="354" text-anchor="start">発送・郵送料の負担</text>
+<path class="f-brand2" d="M35.0,420 L391.0,420 L409.0,450.0 L391.0,480 L35.0,480 L53.0,450.0 Z"/>
+<text class="f-onbrand fs-16" x="222.0" y="457.0" font-weight="700" text-anchor="middle">④ 回収・督促</text>
+<rect class="f-surface s-border" x="35.0" y="492" width="374.0" height="210" rx="9" stroke-width="1.2"/>
+<rect class="f-brand" x="53.0" y="514" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="73.0" y="526" text-anchor="start">回収（返送先は受託者）</text>
+<rect class="f-brand" x="53.0" y="558" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="73.0" y="570" text-anchor="start">回収状況を町へ日次報告</text>
+<rect class="f-brand" x="53.0" y="602" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="73.0" y="614" text-anchor="start">督促はがきの作成・発送</text>
+<rect class="f-brand" x="53.0" y="646" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="73.0" y="658" text-anchor="start">問合せ窓口の設置</text>
+<path class="f-accent" d="M433.0,420 L789.0,420 L807.0,450.0 L789.0,480 L433.0,480 L451.0,450.0 Z"/>
+<text class="f-onbrand fs-16" x="620.0" y="457.0" font-weight="700" text-anchor="middle">⑤ 入力・点検</text>
+<rect class="f-surface s-border" x="433.0" y="492" width="374.0" height="210" rx="9" stroke-width="1.2"/>
+<rect class="f-brand" x="451.0" y="514" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="471.0" y="526" text-anchor="start">入力・ダブル点検</text>
+<rect class="f-brand" x="451.0" y="558" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="471.0" y="570" text-anchor="start">論理・整合チェック</text>
+<rect class="f-brand" x="451.0" y="602" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="471.0" y="614" text-anchor="start">自由記述のテキスト化</text>
+<rect class="f-brand" x="451.0" y="646" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="471.0" y="658" text-anchor="start">個票データの匿名化</text>
+<path class="f-accent" d="M831.0,420 L1187.0,420 L1205.0,450.0 L1187.0,480 L831.0,480 L849.0,450.0 Z"/>
+<text class="f-onbrand fs-16" x="1018.0" y="457.0" font-weight="700" text-anchor="middle">⑥ 集計・分析</text>
+<rect class="f-surface s-border" x="831.0" y="492" width="374.0" height="210" rx="9" stroke-width="1.2"/>
+<rect class="f-brand" x="849.0" y="514" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="869.0" y="526" text-anchor="start">単純集計・クロス集計</text>
+<rect class="f-brand" x="849.0" y="558" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="869.0" y="570" text-anchor="start">前回調査との経年比較</text>
+<rect class="f-brand" x="849.0" y="602" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="869.0" y="614" text-anchor="start">課題の抽出・考察</text>
+<rect class="f-brand" x="849.0" y="646" width="12" height="12" rx="2" stroke-width="1.4"/>
+<text class="f-ink fs-13" x="869.0" y="658" text-anchor="start">調査結果報告書の作成</text>
+<rect class="f-brandpale" x="35" y="716" width="1170" height="44" rx="8"/>
+<text class="f-brand fs-14" x="620.0" y="744" font-weight="700" text-anchor="middle">足寄町の履行期間に対応した工程　約5か月（8月契約→12月28日納品）</text>
+<rect class="f-surfalt s-border" x="35" y="772" width="1170" height="66" rx="8" stroke-width="1.2"/>
+<text class="f-brand fs-13" x="55" y="798" font-weight="700" text-anchor="start">【個人情報の取扱い】</text>
+<text class="f-ink fs-12_5" x="55" y="822" text-anchor="start">宛名データ・回収票は施錠保管庫で管理し、作業は受託者事業所内に限定。完了後は町の指示に従い返却・消去し、消去証明書を提出します。</text>
+</svg>

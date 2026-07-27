@@ -1,0 +1,152 @@
+@charset "UTF-8";
+/* ===========================================================================
+   bzu-figures.css ― 企画提案書 図版テーマ
+   ビズアップ公共コンサルティング株式会社
+   ---------------------------------------------------------------------------
+   使い方
+     1) 図版 SVG を HTML に <img> ではなく「インライン」で貼る（変数継承のため）
+     2) このファイルを読み込む
+     3) 変えたいトークンを :root か任意の親要素に上書きするだけ
+
+        <div class="theme-a11y">   ... 図版SVG ...   </div>
+
+   トークン一覧（既定値は各 SVG 内に fallback として保持）
+     --c-ink            本文色              #1A2B3C
+     --c-ink-muted      補助文字            #5E7182
+     --c-brand          ブランド濃          #1E5F74
+     --c-brand-light    ブランド明          #3E8296
+     --c-brand-pale     ブランド極淡（面）  #E2EDF0
+     --c-accent         アクセント          #E07B39
+     --c-accent-pale    アクセント極淡      #FBEDE1
+     --c-border         罫線                #C7D5DC
+     --c-surface        面（カード・背景）  #FFFFFF
+     --c-surface-alt    面（淡）            #F4F7F8
+     --c-surface-mute   面（中間）          #F2F4F5
+     --c-on-brand       濃色面の上の文字    #FFFFFF
+     --c-on-accent      橙面の上の文字      #FFFFFF
+     --fs-scale         文字倍率            1
+     --fig-font         書体スタック
+     --fig-max-width    図版の最大幅        1240px
+   =========================================================================== */
+
+/* --- 1. 既定（現行デザイン） ------------------------------------------------
+   何も指定しなければ SVG 内の fallback が効くため、通常この定義は不要。
+   明示したい場合のみ使用。                                                  */
+:root,
+.theme-bizup {
+  --c-ink: #1A2B3C;
+  --c-ink-muted: #5E7182;
+  --c-brand: #1E5F74;
+  --c-brand-light: #3E8296;
+  --c-brand-pale: #E2EDF0;
+  --c-accent: #E07B39;
+  --c-accent-pale: #FBEDE1;
+  --c-border: #C7D5DC;
+  --c-surface: #FFFFFF;
+  --c-surface-alt: #F4F7F8;
+  --c-surface-mute: #F2F4F5;
+  --c-on-brand: #FFFFFF;
+  --c-on-accent: #FFFFFF;
+}
+
+/* --- 2. 高コントラスト（UD・合理的配慮版） ----------------------------------
+   既定パレットは「白文字 × 橙（#E07B39）」が 2.97:1 で WCAG AA 未満。
+   本テーマは橙を暗色化し、白文字とのコントラストを 4.5:1 以上に引き上げる。
+   委員会配布資料・弱視の方への提示・プロジェクタ投影時に使用。            */
+.theme-a11y {
+  --c-ink: #101E2B;
+  --c-ink-muted: #44586A;
+  --c-brand: #14495A;
+  --c-brand-light: #2A6577;
+  --c-brand-pale: #DCE9EE;
+  --c-accent: #A85526;
+  --c-accent-pale: #F7E4D6;
+  --c-border: #7C95A3;
+  --c-surface: #FFFFFF;
+  --c-surface-alt: #EEF3F5;
+  --c-surface-mute: #EBEEF0;
+  --c-on-brand: #FFFFFF;
+  --c-on-accent: #FFFFFF;
+  --fs-scale: 1.04;
+}
+
+/* --- 3. モノクロ（白黒コピー・FAX・モノクロ印刷） ---------------------------
+   カラーを濃度差に置換。橙／ティールの区別を明度で保持する。               */
+.theme-mono {
+  --c-ink: #000000;
+  --c-ink-muted: #4A4A4A;
+  --c-brand: #1C1C1C;
+  --c-brand-light: #5C5C5C;
+  --c-brand-pale: #E4E4E4;
+  --c-accent: #3D3D3D;
+  --c-accent-pale: #EFEFEF;
+  --c-border: #8A8A8A;
+  --c-surface: #FFFFFF;
+  --c-surface-alt: #F3F3F3;
+  --c-surface-mute: #EDEDED;
+  --c-on-brand: #FFFFFF;
+  --c-on-accent: #FFFFFF;
+}
+
+/* --- 4. ダーク（画面共有・オンライン委員会） --------------------------------- */
+.theme-dark {
+  --c-ink: #E7EEF3;
+  --c-ink-muted: #A3B4C0;
+  --c-brand: #2E7E96;
+  --c-brand-light: #3D7D8E;
+  --c-brand-pale: #1D3742;
+  --c-accent: #E8974F;
+  --c-accent-pale: #3A2A1B;
+  --c-border: #5F7684;
+  --c-surface: #121A20;
+  --c-surface-alt: #1A242C;
+  --c-surface-mute: #1E2830;
+  --c-on-brand: #FFFFFF;
+  --c-on-accent: #1A1206;
+}
+
+/* --- 5. 分野別アクセント（3計画を並行提案する際の識別色） -------------------- */
+.theme-shogai    { --c-brand:#1E5F74; --c-brand-light:#3E8296; --c-accent:#E07B39; } /* 障がい */
+.theme-koureisha { --c-brand:#4A5F2E; --c-brand-light:#637C41; --c-brand-pale:#E6EDDD;
+                   --c-accent:#9F6922; --c-accent-pale:#F6EDDD; }                     /* 高齢者 */
+.theme-kodomo    { --c-brand:#7A4A72; --c-brand-light:#94668D; --c-brand-pale:#F0E6EE;
+                   --c-accent:#B4586F; --c-accent-pale:#FBE7EB; }                     /* こども */
+.theme-chiiki    { --c-brand:#1E5F74; --c-brand-light:#3E8296; --c-brand-pale:#E2EDF0;
+                   --c-accent:#2C7355; --c-accent-pale:#DFEFE8; }                     /* 地域福祉 */
+
+/* --- 6. 自治体カラー差し替え例（足寄町） -------------------------------------
+   提出先ごとにブランド色だけ差し替える運用例。                              */
+.theme-ashoro {
+  --c-brand: #1F5E42;
+  --c-brand-light: #3D8165;
+  --c-brand-pale: #E0EDE7;
+  --c-accent: #B05F29;
+  --c-accent-pale: #F7E9DC;
+}
+
+/* --- 7. 文字サイズ（拡大版・UD配慮） ----------------------------------------- */
+.text-lg { --fs-scale: 1.12; }
+.text-xl { --fs-scale: 1.25; }   /* 拡大文字版・スクリーン投影用 */
+
+/* --- 8. 図版の並び（提案書 Web 版・添付資料 HTML 用） ------------------------- */
+.fig-grid { display:grid; gap:1.5rem; }
+.fig-wrap { border:1px solid var(--c-border,#C7D5DC); border-radius:10px;
+            padding:.75rem; background:var(--c-surface,#fff); }
+.fig-wrap > figcaption { font-size:.85rem; color:var(--c-ink-muted,#5E7182);
+                         margin:.5rem .25rem 0; }
+
+/* --- 9. 印刷（自動でモノクロ側に寄せたい場合は下の指定を有効化） ------------- */
+@media print {
+  .bzu-fig { break-inside: avoid; page-break-inside: avoid; }
+  /* 白黒プリンタ主体の庁内配布なら以下を有効化
+  :root {
+    --c-brand:#1C1C1C; --c-brand-light:#5C5C5C; --c-accent:#3D3D3D;
+    --c-brand-pale:#E4E4E4; --c-accent-pale:#EFEFEF; --c-border:#8A8A8A;
+  } */
+}
+
+/* --- 10. OS のダークモードに追従させたい場合（既定は無効） -------------------
+@media (prefers-color-scheme: dark) {
+  :root { --c-surface:#121A20; --c-ink:#E7EEF3; ... }
+}
+--------------------------------------------------------------------------- */

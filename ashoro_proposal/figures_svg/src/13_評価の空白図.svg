@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 680" class="bzu-fig" role="img" aria-labelledby="fig-13-t fig-13-d" preserveAspectRatio="xMidYMid meet">
+<title id="fig-13-t">現行・地域福祉計画の「評価の空白」構造</title>
+<desc id="fig-13-d">第2期計画・第5章第4節(3)「点検・評価の体制」より。全分野が他計画の審議会に委任され、計画自体の評価主体が存在しません</desc>
+<style>
+/* ==== 可変トークン ====
+   外側の CSS で :root や任意の親要素に
+   --c-brand などを定義すれば、この図の配色を一括変更できます。
+   例) :root{ --c-brand:#004C6D; --fs-scale:1.08; }
+   ==================== */
+.bzu-fig{
+  display:block; width:100%;
+  max-width:var(--fig-max-width, 1240px);
+  height:auto; margin:var(--fig-margin, 0 auto);
+  font-family:var(--fig-font, 'Yu Gothic UI','Yu Gothic','Meiryo','Noto Sans CJK JP','Hiragino Kaku Gothic ProN',sans-serif);
+  font-weight:var(--fig-font-weight, 400);
+}
+.bzu-fig .f-ink{fill:var(--c-ink,#1A2B3C)}
+.bzu-fig .f-muted{fill:var(--c-ink-muted,#5E7182)}
+.bzu-fig .f-brand{fill:var(--c-brand,#1E5F74)}
+.bzu-fig .f-brand2{fill:var(--c-brand-light,#3E8296)}
+.bzu-fig .f-accent{fill:var(--c-accent,#E07B39)}
+.bzu-fig .f-surfalt{fill:var(--c-surface-alt,#F4F7F8)}
+.bzu-fig .f-brandpale{fill:var(--c-brand-pale,#E2EDF0)}
+.bzu-fig .f-accentpale{fill:var(--c-accent-pale,#FBEDE1)}
+.bzu-fig .f-surface{fill:var(--c-surface,#FFFFFF)}
+.bzu-fig .f-onbrand{fill:var(--c-on-brand,#FFFFFF)}
+.bzu-fig .s-brand2{stroke:var(--c-brand-light,#3E8296)}
+.bzu-fig .s-accent{stroke:var(--c-accent,#E07B39)}
+/* 文字サイズ：--fs-scale で全体を一括拡縮（既定 1） */
+.bzu-fig .fs-10_5{font-size:calc(10.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-12{font-size:calc(12px * var(--fs-scale, 1))}
+.bzu-fig .fs-12_5{font-size:calc(12.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-13_5{font-size:calc(13.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-15{font-size:calc(15px * var(--fs-scale, 1))}
+.bzu-fig .fs-16{font-size:calc(16px * var(--fs-scale, 1))}
+.bzu-fig .fs-17{font-size:calc(17px * var(--fs-scale, 1))}
+.bzu-fig .fs-23{font-size:calc(23px * var(--fs-scale, 1))}
+</style>
+
+<defs>
+<marker id="arB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="f-brand2" d="M0,0 L10,5 L0,10 z"/></marker>
+<marker id="arC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="f-accent" d="M0,0 L10,5 L0,10 z"/></marker>
+</defs>
+<rect class="f-surface" width="1240" height="680"/>
+<rect class="f-accent" x="34" y="30" width="5" height="24" rx="2.5"/>
+<text class="f-ink fs-23" x="50" y="50" font-weight="700">現行・地域福祉計画の「評価の空白」構造</text>
+<text class="f-muted fs-13_5" x="50" y="74" font-weight="400">第2期計画・第5章第4節(3)「点検・評価の体制」より。全分野が他計画の審議会に委任され、計画自体の評価主体が存在しません</text>
+
+<!-- center node -->
+<rect class="f-brand" x="480" y="118" width="280" height="80" rx="12"/>
+<text class="f-onbrand fs-17" x="620" y="152" font-weight="700" text-anchor="middle">地域福祉計画</text>
+<text class="f-brandpale fs-12" x="620" y="176" text-anchor="middle">（福祉分野の上位計画）</text>
+
+<!-- 6 satellite boxes in an arc below -->
+<g>
+<!-- box positions -->
+<rect class="f-surfalt s-brand2" x="35" y="290" width="180" height="66" rx="8" stroke-width="1.2"/>
+<text class="f-ink fs-12_5" x="125" y="315" font-weight="700" text-anchor="middle">子ども・子育て会議</text>
+<text class="f-muted fs-10_5" x="125" y="335" text-anchor="middle">（子ども・子育て分野）</text>
+
+<rect class="f-surfalt s-brand2" x="235" y="290" width="180" height="66" rx="8" stroke-width="1.2"/>
+<text class="f-ink fs-12_5" x="325" y="310" font-weight="700" text-anchor="middle">高齢者保健福祉</text>
+<text class="f-ink fs-12_5" x="325" y="326" font-weight="700" text-anchor="middle">推進委員会</text>
+<text class="f-muted fs-10_5" x="325" y="345" text-anchor="middle">（高齢者・介護保険分野）</text>
+
+<rect class="f-surfalt s-brand2" x="435" y="290" width="180" height="66" rx="8" stroke-width="1.2"/>
+<text class="f-ink fs-12_5" x="525" y="315" font-weight="700" text-anchor="middle">障害者自立支援協議会</text>
+<text class="f-muted fs-10_5" x="525" y="335" text-anchor="middle">（障がい福祉分野）</text>
+
+<rect class="f-surfalt s-brand2" x="635" y="290" width="180" height="66" rx="8" stroke-width="1.2"/>
+<text class="f-ink fs-12_5" x="725" y="315" font-weight="700" text-anchor="middle">健康づくり推進委員会</text>
+<text class="f-muted fs-10_5" x="725" y="335" text-anchor="middle">（保健・医療分野）</text>
+
+<rect class="f-surfalt s-brand2" x="835" y="290" width="170" height="66" rx="8" stroke-width="1.2"/>
+<text class="f-ink fs-12_5" x="920" y="315" font-weight="700" text-anchor="middle">防災会議</text>
+<text class="f-muted fs-10_5" x="920" y="335" text-anchor="middle">（防災分野）</text>
+
+<rect class="f-surfalt s-brand2" x="1025" y="290" width="180" height="66" rx="8" stroke-width="1.2"/>
+<text class="f-ink fs-12_5" x="1115" y="310" font-weight="700" text-anchor="middle">総合開発審議会</text>
+<text class="f-ink fs-12_5" x="1115" y="326" font-weight="700" text-anchor="middle">（町の基本構想等）</text>
+<text class="f-muted fs-10_5" x="1115" y="345" text-anchor="middle">（まちづくり全般）</text>
+</g>
+
+<!-- arrows from center down to each -->
+<path class="s-brand2" d="M560,198 C 400,230 200,255 125,290" fill="none" stroke-width="1.5" marker-end="url(#arB)"/>
+<path class="s-brand2" d="M590,198 C 480,230 380,255 325,290" fill="none" stroke-width="1.5" marker-end="url(#arB)"/>
+<path class="s-brand2" d="M610,198 L 545,290" fill="none" stroke-width="1.5" marker-end="url(#arB)"/>
+<path class="s-brand2" d="M640,198 L 705,290" fill="none" stroke-width="1.5" marker-end="url(#arB)"/>
+<path class="s-brand2" d="M665,198 C 780,230 880,255 920,290" fill="none" stroke-width="1.5" marker-end="url(#arB)"/>
+<path class="s-brand2" d="M700,198 C 900,230 1050,255 1115,290" fill="none" stroke-width="1.5" marker-end="url(#arB)"/>
+
+<text class="f-brand2 fs-12" x="620" y="240" font-weight="700" text-anchor="middle" font-style="italic">各分野の評価を6つの審議会等へ「委任」</text>
+
+<!-- the gap: no one evaluates the plan itself -->
+<path class="s-accent" d="M480,158 C 300,120 150,140 60,220" fill="none" stroke-width="2.2" stroke-dasharray="6,4" marker-end="url(#arC)"/>
+<rect class="f-accentpale s-accent" x="35" y="410" width="1170" height="90" rx="12" stroke-width="2"/>
+<text class="f-accent fs-16" x="620" y="440" font-weight="700" text-anchor="middle">地域福祉計画そのものを横断的に評価する主体　＝　空白</text>
+<text class="f-ink fs-12_5" x="620" y="466" text-anchor="middle">策定委員会は「計画策定完了時まで」が任期（設置規則第4条）で、策定後は解散。上位計画でありながら、自らの進捗を継続的に見る仕組みがありません。</text>
+<text class="f-ink fs-12_5" x="620" y="488" text-anchor="middle">加えて第2期計画には数値目標・評価指標も設定されておらず、仮に評価主体があっても検証材料がない状態でした。</text>
+
+<!-- proposal box -->
+<rect class="f-brandpale" x="35" y="520" width="1170" height="130" rx="10"/>
+<text class="f-brand fs-15" x="57" y="548" font-weight="700">第3期計画への提案</text>
+<text class="f-ink fs-12_5" x="57" y="576">① 地域福祉計画策定委員会に、計画期間中も存続する「進行管理部会」を設置し、年1回以上の点検を行う</text>
+<text class="f-ink fs-12_5" x="57" y="600">② 各分野の審議会からの報告を、進行管理部会が横断的に集約・整理する仕組みを構築する</text>
+<text class="f-ink fs-12_5" x="57" y="624">③ 施策ごとに基準値・目標値を設定し（図版03参照）、点検の材料そのものを整備する</text>
+</svg>

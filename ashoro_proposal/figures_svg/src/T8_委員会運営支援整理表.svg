@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 480" class="bzu-fig" role="img" aria-labelledby="fig-t8-t fig-t8-d" preserveAspectRatio="xMidYMid meet">
+<title id="fig-t8-t">委員会運営支援 想定回数・範囲の整理</title>
+<desc id="fig-t8-d">仕様書5(1)⑤は「運営支援」の範囲・回数・出席義務を明記していないため、提案書側で前提を明示します</desc>
+<style>
+/* ==== 可変トークン ====
+   外側の CSS で :root や任意の親要素に
+   --c-brand などを定義すれば、この図の配色を一括変更できます。
+   例) :root{ --c-brand:#004C6D; --fs-scale:1.08; }
+   ==================== */
+.bzu-fig{
+  display:block; width:100%;
+  max-width:var(--fig-max-width, 1240px);
+  height:auto; margin:var(--fig-margin, 0 auto);
+  font-family:var(--fig-font, 'Yu Gothic UI','Yu Gothic','Meiryo','Noto Sans CJK JP','Hiragino Kaku Gothic ProN',sans-serif);
+  font-weight:var(--fig-font-weight, 400);
+}
+.bzu-fig .f-ink{fill:var(--c-ink,#1A2B3C)}
+.bzu-fig .f-muted{fill:var(--c-ink-muted,#5E7182)}
+.bzu-fig .f-brand{fill:var(--c-brand,#1E5F74)}
+.bzu-fig .f-accent{fill:var(--c-accent,#E07B39)}
+.bzu-fig .f-surfalt{fill:var(--c-surface-alt,#F4F7F8)}
+.bzu-fig .f-accentpale{fill:var(--c-accent-pale,#FBEDE1)}
+.bzu-fig .f-surface{fill:var(--c-surface,#FFFFFF)}
+.bzu-fig .f-onbrand{fill:var(--c-on-brand,#FFFFFF)}
+.bzu-fig .s-accent{stroke:var(--c-accent,#E07B39)}
+.bzu-fig .s-border{stroke:var(--c-border,#C7D5DC)}
+/* 文字サイズ：--fs-scale で全体を一括拡縮（既定 1） */
+.bzu-fig .fs-11{font-size:calc(11px * var(--fs-scale, 1))}
+.bzu-fig .fs-12{font-size:calc(12px * var(--fs-scale, 1))}
+.bzu-fig .fs-12_5{font-size:calc(12.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-13{font-size:calc(13px * var(--fs-scale, 1))}
+.bzu-fig .fs-13_5{font-size:calc(13.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-23{font-size:calc(23px * var(--fs-scale, 1))}
+</style>
+
+<rect class="f-surface" width="1240" height="480"/>
+<rect class="f-accent" x="34" y="30" width="5" height="24" rx="2.5"/>
+<text class="f-ink fs-23" x="50" y="50" font-weight="700">委員会運営支援 想定回数・範囲の整理</text>
+<text class="f-muted fs-13_5" x="50" y="74" font-weight="400">仕様書5(1)⑤は「運営支援」の範囲・回数・出席義務を明記していないため、提案書側で前提を明示します</text>
+
+<rect class="f-brand" x="35" y="112" width="1170" height="34" rx="6"/>
+<text class="f-onbrand fs-12_5" x="130" y="134" font-weight="700" text-anchor="middle">対象組織</text>
+<text class="f-onbrand fs-12_5" x="330" y="134" font-weight="700" text-anchor="middle">想定開催回数・時期</text>
+<text class="f-onbrand fs-12_5" x="640" y="134" font-weight="700" text-anchor="middle">受託者の関与範囲（提案）</text>
+<text class="f-onbrand fs-12_5" x="1000" y="134" font-weight="700" text-anchor="middle">未確定・要協議事項</text>
+
+<g class="f-ink fs-12">
+
+<rect class="f-surfalt" x="35" y="146" width="1170" height="66"/>
+<text x="130" y="172" text-anchor="middle" font-weight="700">地域福祉計画</text>
+<text x="130" y="190" text-anchor="middle" font-weight="700">策定委員会</text>
+<text x="330" y="180" text-anchor="middle">1回（11月頃）</text>
+<text x="330" y="198" text-anchor="middle">必要に応じ書面審議を併用</text>
+<text x="640" y="180" text-anchor="middle">会議資料の作成、調査結果速報の説明、</text>
+<text x="640" y="198" text-anchor="middle">当日出席・進行補助</text>
+<text x="1000" y="189" text-anchor="middle">出席の要否・追加開催の可否</text>
+
+<rect class="f-surface" x="35" y="212" width="1170" height="66"/>
+<text x="130" y="238" text-anchor="middle" font-weight="700">障害者自立支援</text>
+<text x="130" y="256" text-anchor="middle" font-weight="700">協議会</text>
+<text x="330" y="246" text-anchor="middle">1回（11月頃）</text>
+<text x="330" y="264" text-anchor="middle">既存の定例会に合わせて調整</text>
+<text x="640" y="246" text-anchor="middle">会議資料の作成、調査結果速報の説明、</text>
+<text x="640" y="264" text-anchor="middle">当日出席・進行補助</text>
+<text x="1000" y="255" text-anchor="middle">既存定例会との日程調整</text>
+
+<rect class="f-surfalt" x="35" y="278" width="1170" height="66"/>
+<text x="130" y="304" text-anchor="middle" font-weight="700">庁内連絡会議</text>
+<text x="130" y="322" text-anchor="middle" font-weight="700">（任意）</text>
+<text x="330" y="311" text-anchor="middle">1〜2回</text>
+<text x="640" y="304" text-anchor="middle">進捗共有資料の作成、質疑対応</text>
+<text x="640" y="322" text-anchor="middle">（前回・地域福祉計画では計5回開催実績）</text>
+<text x="1000" y="311" text-anchor="middle">開催有無・頻度</text>
+</g>
+
+<rect class="s-border" x="35" y="112" width="1170" height="232" fill="none" stroke-width="1.2"/>
+<line class="s-border" x1="225" y1="112" x2="225" y2="344" stroke-width="0.8"/>
+<line class="s-border" x1="435" y1="112" x2="435" y2="344" stroke-width="0.8"/>
+<line class="s-border" x1="845" y1="112" x2="845" y2="344" stroke-width="0.8"/>
+
+<rect class="f-accentpale s-accent" x="35" y="364" width="1170" height="100" rx="10" stroke-width="1.2"/>
+<text class="f-accent fs-13" x="57" y="390" font-weight="700">見積・提案書への反映方法</text>
+<text class="f-ink fs-12" x="57" y="414">見積内訳には「委員会運営支援　地域福祉1回・障がい1回を想定」と明記し、増減が生じた場合は協議事項とする旨を付記します。</text>
+<text class="f-ink fs-12" x="57" y="436">回数を明示せず見積もると増回時に根拠を失い、多く見込みすぎると見積金額（審査項目⑧10点）で不利になるため、この書き方が実務的です。</text>
+<text class="f-muted fs-11" x="57" y="454">※前回の地域福祉計画は策定委員会2回＋書面1回、障がい計画は自立支援協議会2回の実績。</text>
+</svg>

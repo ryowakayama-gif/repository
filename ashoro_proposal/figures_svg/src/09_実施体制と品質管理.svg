@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 630" class="bzu-fig" role="img" aria-labelledby="fig-09-t fig-09-d" preserveAspectRatio="xMidYMid meet">
+<title id="fig-09-t">実施体制と品質管理</title>
+<desc id="fig-09-d">調査の各工程に三段階の照査を設け、成果品の精度と個人情報の安全を確保します</desc>
+<style>
+/* ==== 可変トークン ====
+   外側の CSS で :root や任意の親要素に
+   --c-brand などを定義すれば、この図の配色を一括変更できます。
+   例) :root{ --c-brand:#004C6D; --fs-scale:1.08; }
+   ==================== */
+.bzu-fig{
+  display:block; width:100%;
+  max-width:var(--fig-max-width, 1240px);
+  height:auto; margin:var(--fig-margin, 0 auto);
+  font-family:var(--fig-font, 'Yu Gothic UI','Yu Gothic','Meiryo','Noto Sans CJK JP','Hiragino Kaku Gothic ProN',sans-serif);
+  font-weight:var(--fig-font-weight, 400);
+}
+.bzu-fig .f-ink{fill:var(--c-ink,#1A2B3C)}
+.bzu-fig .f-muted{fill:var(--c-ink-muted,#5E7182)}
+.bzu-fig .f-brand{fill:var(--c-brand,#1E5F74)}
+.bzu-fig .f-brand2{fill:var(--c-brand-light,#3E8296)}
+.bzu-fig .f-accent{fill:var(--c-accent,#E07B39)}
+.bzu-fig .f-surfalt{fill:var(--c-surface-alt,#F4F7F8)}
+.bzu-fig .f-brandpale{fill:var(--c-brand-pale,#E2EDF0)}
+.bzu-fig .f-surface{fill:var(--c-surface,#FFFFFF)}
+.bzu-fig .f-onbrand{fill:var(--c-on-brand,#FFFFFF)}
+.bzu-fig .f-onaccent{fill:var(--c-on-accent,#FFFFFF)}
+.bzu-fig .s-brand2{stroke:var(--c-brand-light,#3E8296)}
+.bzu-fig .s-border{stroke:var(--c-border,#C7D5DC)}
+/* 文字サイズ：--fs-scale で全体を一括拡縮（既定 1） */
+.bzu-fig .fs-10_5{font-size:calc(10.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-11{font-size:calc(11px * var(--fs-scale, 1))}
+.bzu-fig .fs-11_5{font-size:calc(11.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-12_5{font-size:calc(12.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-13_5{font-size:calc(13.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-14{font-size:calc(14px * var(--fs-scale, 1))}
+.bzu-fig .fs-14_5{font-size:calc(14.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-15{font-size:calc(15px * var(--fs-scale, 1))}
+.bzu-fig .fs-16{font-size:calc(16px * var(--fs-scale, 1))}
+.bzu-fig .fs-23{font-size:calc(23px * var(--fs-scale, 1))}
+</style>
+
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="f-brand2" d="M0,0 L10,5 L0,10 z"/></marker>
+<marker id="ara" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="f-accent" d="M0,0 L10,5 L0,10 z"/></marker>
+</defs>
+<rect class="f-surface" width="1240" height="630"/>
+<rect class="f-surface" x="0" y="0" width="1240" height="0" rx="8"/>
+<rect class="f-accent" x="34" y="30" width="5" height="24" rx="2.5"/>
+<text class="f-ink fs-23" x="50" y="50" font-weight="700" text-anchor="start" letter-spacing="0.5">実施体制と品質管理</text>
+<text class="f-muted fs-13_5" x="50" y="74" font-weight="400" text-anchor="start" letter-spacing="0">調査の各工程に三段階の照査を設け、成果品の精度と個人情報の安全を確保します</text>
+<rect class="f-surface s-border" x="35" y="115" width="560" height="380" rx="10" stroke-width="1.2"/>
+<rect class="f-brand" x="35" y="115" width="560" height="40" rx="10"/>
+<rect class="f-brand" x="35" y="145" width="560" height="10" rx="8"/>
+<text class="f-onbrand fs-16" x="58" y="142" font-weight="700" text-anchor="start" letter-spacing="0">実施体制</text>
+<rect class="f-brand" x="200" y="175" width="230" height="52" rx="8"/>
+<text class="f-onbrand fs-14_5" x="315" y="197" font-weight="700" text-anchor="middle" letter-spacing="0">業務総括責任者</text>
+<text class="f-onbrand fs-11" x="315" y="216" font-weight="400" text-anchor="middle" letter-spacing="0">全体統括・自治体との協議</text>
+<line class="s-brand2" x1="315" y1="227" x2="315" y2="252" stroke-width="1.6"/>
+<rect class="f-brand2" x="200" y="252" width="230" height="52" rx="8"/>
+<text class="f-onbrand fs-13_5" x="315" y="274" font-weight="700" text-anchor="middle" letter-spacing="0">業務責任者（管理技術者）</text>
+<text class="f-onbrand fs-11" x="315" y="293" font-weight="400" text-anchor="middle" letter-spacing="0">工程管理・成果品の照査</text>
+<line class="s-brand2" x1="315" y1="304" x2="315" y2="326" stroke-width="1.6"/>
+<line class="s-brand2" x1="120" y1="326" x2="480" y2="326" stroke-width="1.6"/>
+<line class="s-brand2" x1="120" y1="326" x2="120" y2="346" stroke-width="1.6"/>
+<rect class="f-surfalt s-border" x="60" y="346" width="120" height="126" rx="8" stroke-width="1.2"/>
+<rect class="f-brandpale" x="60" y="346" width="120" height="30" rx="8"/>
+<rect class="f-brandpale" x="60" y="366" width="120" height="10" rx="8"/>
+<text class="f-brand fs-13_5" x="120" y="366" font-weight="700" text-anchor="middle" letter-spacing="0">調査班</text>
+<text class="f-ink fs-11_5" x="120" y="396" font-weight="400" text-anchor="middle" letter-spacing="0">調査票設計・印刷</text>
+<text class="f-ink fs-11_5" x="120" y="420" font-weight="400" text-anchor="middle" letter-spacing="0">町の発送・回収に協力</text>
+<text class="f-ink fs-11_5" x="120" y="444" font-weight="400" text-anchor="middle" letter-spacing="0">入力・点検</text>
+<line class="s-brand2" x1="300" y1="326" x2="300" y2="346" stroke-width="1.6"/>
+<rect class="f-surfalt s-border" x="240" y="346" width="120" height="126" rx="8" stroke-width="1.2"/>
+<rect class="f-brandpale" x="240" y="346" width="120" height="30" rx="8"/>
+<rect class="f-brandpale" x="240" y="366" width="120" height="10" rx="8"/>
+<text class="f-brand fs-13_5" x="300" y="366" font-weight="700" text-anchor="middle" letter-spacing="0">分析班</text>
+<text class="f-ink fs-11_5" x="300" y="396" font-weight="400" text-anchor="middle" letter-spacing="0">集計・統計分析</text>
+<text class="f-ink fs-11_5" x="300" y="420" font-weight="400" text-anchor="middle" letter-spacing="0">自由記述分析</text>
+<text class="f-ink fs-11_5" x="300" y="444" font-weight="400" text-anchor="middle" letter-spacing="0">報告書作成</text>
+<line class="s-brand2" x1="480" y1="326" x2="480" y2="346" stroke-width="1.6"/>
+<rect class="f-surfalt s-border" x="420" y="346" width="120" height="126" rx="8" stroke-width="1.2"/>
+<rect class="f-brandpale" x="420" y="346" width="120" height="30" rx="8"/>
+<rect class="f-brandpale" x="420" y="366" width="120" height="10" rx="8"/>
+<text class="f-brand fs-13_5" x="480" y="366" font-weight="700" text-anchor="middle" letter-spacing="0">計画班</text>
+<text class="f-ink fs-11_5" x="480" y="396" font-weight="400" text-anchor="middle" letter-spacing="0">現状分析</text>
+<text class="f-ink fs-11_5" x="480" y="420" font-weight="400" text-anchor="middle" letter-spacing="0">計画素案作成</text>
+<text class="f-ink fs-11_5" x="480" y="444" font-weight="400" text-anchor="middle" letter-spacing="0">審議会資料</text>
+<text class="f-muted fs-10_5" x="315" y="476" font-weight="400" text-anchor="middle" letter-spacing="0">※ 自治体担当課とは月1回の定例協議＋随時の電子会議で進捗共有</text>
+<text class="f-accent fs-10_5" x="315" y="489" font-weight="700" text-anchor="middle" letter-spacing="0">※ 対象者抽出・発送・回収（郵送費含む）は委託者（町）が実施</text>
+<rect class="f-surface s-border" x="645" y="115" width="560" height="380" rx="10" stroke-width="1.2"/>
+<rect class="f-accent" x="645" y="115" width="560" height="40" rx="10"/>
+<rect class="f-accent" x="645" y="145" width="560" height="10" rx="8"/>
+<text class="f-onaccent fs-16" x="668" y="142" font-weight="700" text-anchor="start" letter-spacing="0">三段階チェック</text>
+<rect class="f-surfalt" x="668" y="175" width="514" height="62" rx="8"/>
+<circle class="f-accent" cx="700" cy="206" r="17"/>
+<text class="f-onbrand fs-15" x="700" y="211.4" font-weight="700" text-anchor="middle" letter-spacing="0">1</text>
+<text class="f-ink fs-14" x="730" y="201" font-weight="700" text-anchor="start" letter-spacing="0">担当者による自己点検</text>
+<text class="f-muted fs-11_5" x="730" y="222" font-weight="400" text-anchor="start" letter-spacing="0">入力値・集計値の再計算、設問と集計表の対応確認</text>
+<path class="f-accent" d="M925,239 L933,249 L917,249 Z" transform="rotate(180 925 69)"/>
+<rect class="f-surfalt" x="668" y="253" width="514" height="62" rx="8"/>
+<circle class="f-accent" cx="700" cy="284" r="17"/>
+<text class="f-onbrand fs-15" x="700" y="289.4" font-weight="700" text-anchor="middle" letter-spacing="0">2</text>
+<text class="f-ink fs-14" x="730" y="279" font-weight="700" text-anchor="start" letter-spacing="0">照査担当者による相互点検</text>
+<text class="f-muted fs-11_5" x="730" y="300" font-weight="400" text-anchor="start" letter-spacing="0">担当外の職員が原票と集計結果を突合（10%抜取＋全表確認）</text>
+<path class="f-accent" d="M925,317 L933,327 L917,327 Z" transform="rotate(180 925 69)"/>
+<rect class="f-surfalt" x="668" y="331" width="514" height="62" rx="8"/>
+<circle class="f-accent" cx="700" cy="362" r="17"/>
+<text class="f-onbrand fs-15" x="700" y="367.4" font-weight="700" text-anchor="middle" letter-spacing="0">3</text>
+<text class="f-ink fs-14" x="730" y="357" font-weight="700" text-anchor="start" letter-spacing="0">業務責任者による最終照査</text>
+<text class="f-muted fs-11_5" x="730" y="378" font-weight="400" text-anchor="start" letter-spacing="0">統計的整合性・前回調査との比較・記述内容の妥当性を確認</text>
+<path class="f-accent" d="M925,395 L933,405 L917,405 Z" transform="rotate(180 925 69)"/>
+<rect class="f-surfalt" x="668" y="409" width="514" height="62" rx="8"/>
+<circle class="f-brand" cx="700" cy="440" r="17"/>
+<text class="f-onbrand fs-15" x="700" y="445.4" font-weight="700" text-anchor="middle" letter-spacing="0">4</text>
+<text class="f-ink fs-14" x="730" y="435" font-weight="700" text-anchor="start" letter-spacing="0">自治体担当課による確認</text>
+<text class="f-muted fs-11_5" x="730" y="456" font-weight="400" text-anchor="start" letter-spacing="0">確認事項一覧を添えて提出し、指摘事項は修正履歴を残して対応</text>
+<rect class="f-brandpale" x="35" y="515" width="1170" height="96" rx="10"/>
+<text class="f-brand fs-16" x="59" y="545" font-weight="700" text-anchor="start" letter-spacing="0">個人情報保護の措置</text>
+<rect class="f-accent" x="59" y="564" width="5" height="5" rx="1"/>
+<text class="f-brand fs-12_5" x="73" y="572" font-weight="700" text-anchor="start" letter-spacing="0">取扱者の限定：</text>
+<text class="f-ink fs-12_5" x="162.0" y="572" font-weight="400" text-anchor="start" letter-spacing="0">誓約書を提出した従事者のみが取扱い、名簿を自治体へ提出</text>
+<rect class="f-accent" x="639" y="564" width="5" height="5" rx="1"/>
+<text class="f-brand fs-12_5" x="653" y="572" font-weight="700" text-anchor="start" letter-spacing="0">物理的安全管理：</text>
+<text class="f-ink fs-12_5" x="754.5" y="572" font-weight="400" text-anchor="start" letter-spacing="0">宛名データ・回収票は施錠保管庫で管理、作業は事業所内に限定</text>
+<rect class="f-accent" x="59" y="588" width="5" height="5" rx="1"/>
+<text class="f-brand fs-12_5" x="73" y="596" font-weight="700" text-anchor="start" letter-spacing="0">技術的安全管理：</text>
+<text class="f-ink fs-12_5" x="174.5" y="596" font-weight="400" text-anchor="start" letter-spacing="0">外部記録媒体の持出禁止、アクセス権限の限定、通信の暗号化</text>
+<rect class="f-accent" x="639" y="588" width="5" height="5" rx="1"/>
+<text class="f-brand fs-12_5" x="653" y="596" font-weight="700" text-anchor="start" letter-spacing="0">業務完了後の措置：</text>
+<text class="f-ink fs-12_5" x="767.0" y="596" font-weight="400" text-anchor="start" letter-spacing="0">指示に従い返却または消去し、消去証明書を提出</text>
+</svg>

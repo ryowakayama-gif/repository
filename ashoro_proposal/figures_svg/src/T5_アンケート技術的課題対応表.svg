@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 720" class="bzu-fig" role="img" aria-labelledby="fig-t5-t fig-t5-d" preserveAspectRatio="xMidYMid meet">
+<title id="fig-t5-t">前回アンケートの技術的課題と今回の対応</title>
+<desc id="fig-t5-d">町民アンケート（令和元年度）・障がい福祉サービス利用アンケート（令和5年度）の精査結果</desc>
+<style>
+/* ==== 可変トークン ====
+   外側の CSS で :root や任意の親要素に
+   --c-brand などを定義すれば、この図の配色を一括変更できます。
+   例) :root{ --c-brand:#004C6D; --fs-scale:1.08; }
+   ==================== */
+.bzu-fig{
+  display:block; width:100%;
+  max-width:var(--fig-max-width, 1240px);
+  height:auto; margin:var(--fig-margin, 0 auto);
+  font-family:var(--fig-font, 'Yu Gothic UI','Yu Gothic','Meiryo','Noto Sans CJK JP','Hiragino Kaku Gothic ProN',sans-serif);
+  font-weight:var(--fig-font-weight, 400);
+}
+.bzu-fig .f-ink{fill:var(--c-ink,#1A2B3C)}
+.bzu-fig .f-muted{fill:var(--c-ink-muted,#5E7182)}
+.bzu-fig .f-brand{fill:var(--c-brand,#1E5F74)}
+.bzu-fig .f-accent{fill:var(--c-accent,#E07B39)}
+.bzu-fig .f-surfalt{fill:var(--c-surface-alt,#F4F7F8)}
+.bzu-fig .f-brandpale{fill:var(--c-brand-pale,#E2EDF0)}
+.bzu-fig .f-accentpale{fill:var(--c-accent-pale,#FBEDE1)}
+.bzu-fig .f-surface{fill:var(--c-surface,#FFFFFF)}
+.bzu-fig .f-onbrand{fill:var(--c-on-brand,#FFFFFF)}
+.bzu-fig .s-accent{stroke:var(--c-accent,#E07B39)}
+.bzu-fig .s-border{stroke:var(--c-border,#C7D5DC)}
+/* 文字サイズ：--fs-scale で全体を一括拡縮（既定 1） */
+.bzu-fig .fs-11_5{font-size:calc(11.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-12{font-size:calc(12px * var(--fs-scale, 1))}
+.bzu-fig .fs-12_5{font-size:calc(12.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-13{font-size:calc(13px * var(--fs-scale, 1))}
+.bzu-fig .fs-13_5{font-size:calc(13.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-23{font-size:calc(23px * var(--fs-scale, 1))}
+</style>
+
+<rect class="f-surface" width="1240" height="720"/>
+<rect class="f-accent" x="34" y="30" width="5" height="24" rx="2.5"/>
+<text class="f-ink fs-23" x="50" y="50" font-weight="700">前回アンケートの技術的課題と今回の対応</text>
+<text class="f-muted fs-13_5" x="50" y="74" font-weight="400">町民アンケート（令和元年度）・障がい福祉サービス利用アンケート（令和5年度）の精査結果</text>
+
+<rect class="f-brand" x="35" y="112" width="1170" height="34" rx="6"/>
+<text class="f-onbrand fs-12_5" x="90" y="134" font-weight="700" text-anchor="middle">調査</text>
+<text class="f-onbrand fs-12_5" x="270" y="134" font-weight="700" text-anchor="middle">技術的課題</text>
+<text class="f-onbrand fs-12_5" x="600" y="134" font-weight="700" text-anchor="middle">具体的な数値</text>
+<text class="f-onbrand fs-12_5" x="960" y="134" font-weight="700" text-anchor="middle">今回の対応</text>
+
+<g class="f-ink fs-11_5">
+
+<rect class="f-surfalt" x="35" y="146" width="1170" height="48"/>
+<text class="f-brand" x="90" y="174" text-anchor="middle" font-weight="700">町民</text>
+<text x="270" y="174" text-anchor="middle">回収率がやや低い</text>
+<text x="600" y="174" text-anchor="middle">38.3%（2,000票配布／766票回収）</text>
+<text x="960" y="174" text-anchor="middle">督促はがき・Web併用で45%以上を目標（図版04）</text>
+
+<rect class="f-surface" x="35" y="194" width="1170" height="48"/>
+<text class="f-brand" x="90" y="222" text-anchor="middle" font-weight="700">町民</text>
+<text x="270" y="222" text-anchor="middle">高齢層への回収偏り</text>
+<text x="600" y="222" text-anchor="middle">70歳以上44.1%（人口構成比は約35%）</text>
+<text x="960" y="222" text-anchor="middle">年齢層別ウェイトバックで補正（図版02・表T9）</text>
+
+<rect class="f-surfalt" x="35" y="242" width="1170" height="48"/>
+<text class="f-brand" x="90" y="270" text-anchor="middle" font-weight="700">町民</text>
+<text x="270" y="270" text-anchor="middle">地区別クロス集計のｎ過少</text>
+<text x="600" y="270" text-anchor="middle">大誉地・芽登・螺湾　各37/37/35件</text>
+<text x="960" y="270" text-anchor="middle">層化抽出で最低配布数を確保（図版02）</text>
+
+<rect class="f-surface" x="35" y="290" width="1170" height="48"/>
+<text class="f-brand" x="90" y="318" text-anchor="middle" font-weight="700">町民</text>
+<text x="270" y="318" text-anchor="middle">「わからない」回答の区分誤用</text>
+<text x="600" y="318" text-anchor="middle">地区不明23人を地区区分として集計・表示</text>
+<text x="960" y="318" text-anchor="middle">地区区分・選択肢設計を見直し</text>
+
+<rect class="f-accentpale" x="35" y="338" width="1170" height="48"/>
+<text class="f-accent" x="90" y="366" text-anchor="middle" font-weight="700">障がい</text>
+<text x="270" y="366" text-anchor="middle" font-weight="700">手帳種別間の回収率格差</text>
+<text x="600" y="366" text-anchor="middle" font-weight="700">療育手帳26.8%〜自立支援医療69.6%</text>
+<text x="960" y="366" text-anchor="middle" font-weight="700">手帳種別ウェイトで補正、わかりやすい版を重点配布（図版02・06）</text>
+
+<rect class="f-surface" x="35" y="386" width="1170" height="48"/>
+<text class="f-accent" x="90" y="414" text-anchor="middle" font-weight="700">障がい</text>
+<text x="270" y="414" text-anchor="middle">障害児本人の声がほぼ未反映</text>
+<text x="600" y="414" text-anchor="middle">18歳未満の回答わずか5件（2.3%）</text>
+<text x="960" y="414" text-anchor="middle">関係団体調査の枠組みで保護者ヒアリングを補完</text>
+
+<rect class="f-surfalt" x="35" y="434" width="1170" height="48"/>
+<text class="f-accent" x="90" y="462" text-anchor="middle" font-weight="700">障がい</text>
+<text x="270" y="462" text-anchor="middle">避難体制設問の無回答過多</text>
+<text x="600" y="462" text-anchor="middle">無回答118件（54.9%）</text>
+<text x="960" y="462" text-anchor="middle">「わからない」選択肢を追加し、分岐設計を見直し</text>
+
+<rect class="f-surface" x="35" y="482" width="1170" height="48"/>
+<text class="f-accent" x="90" y="510" text-anchor="middle" font-weight="700">障がい</text>
+<text x="270" y="510" text-anchor="middle">回収率の分母表記が不明瞭</text>
+<text x="600" y="510" text-anchor="middle">実人数454人 と 手帳延べ数490 が混在</text>
+<text x="960" y="510" text-anchor="middle">実人数・延べ数を区分して集計・報告</text>
+</g>
+
+<rect class="s-border" x="35" y="112" width="1170" height="418" fill="none" stroke-width="1.2"/>
+<line class="s-border" x1="145" y1="112" x2="145" y2="530" stroke-width="0.8"/>
+<line class="s-border" x1="395" y1="112" x2="395" y2="530" stroke-width="0.8"/>
+<line class="s-border" x1="805" y1="112" x2="805" y2="530" stroke-width="0.8"/>
+
+<rect class="f-brandpale" x="35" y="550" width="1170" height="60" rx="10"/>
+<text class="f-brand fs-13" x="57" y="574" font-weight="700">国の関連方針</text>
+<text class="f-ink fs-12" x="57" y="596">厚労省「介護予防・日常生活圏域ニーズ調査 実施の手引き」（層化抽出時の母集団推定・400件目安）、呉市の男女共同参画調査（層化・ウェイトバック・標本誤差早見表）を参照。</text>
+
+<rect class="f-accentpale s-accent" x="35" y="622" width="1170" height="70" rx="8" stroke-width="1.2"/>
+<text class="f-accent fs-12" x="55" y="646" font-weight="700">記載トーンの注意</text>
+<text class="f-ink fs-12" x="55" y="666">提案書では「前回の失敗」ではなく「精度を一段引き上げる工夫」として記載します。町民調査全体の標本誤差は±3.3%と良好で、</text>
+<text class="f-ink fs-12" x="55" y="684">課題は標本サイズではなく無回答バイアスと地区別ｎである旨を明記し、既存調査の努力を否定しない書きぶりとします。</text>
+</svg>

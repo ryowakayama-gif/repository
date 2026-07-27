@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 760" class="bzu-fig" role="img" aria-labelledby="fig-t3-t fig-t3-d" preserveAspectRatio="xMidYMid meet">
+<title id="fig-t3-t">第8期基本指針 新旧対応表</title>
+<desc id="fig-t3-d">第7期（現行）→第8期（令和9〜11年度・告示第4号）での成果目標・活動指標の変更点</desc>
+<style>
+/* ==== 可変トークン ====
+   外側の CSS で :root や任意の親要素に
+   --c-brand などを定義すれば、この図の配色を一括変更できます。
+   例) :root{ --c-brand:#004C6D; --fs-scale:1.08; }
+   ==================== */
+.bzu-fig{
+  display:block; width:100%;
+  max-width:var(--fig-max-width, 1240px);
+  height:auto; margin:var(--fig-margin, 0 auto);
+  font-family:var(--fig-font, 'BIZ UDPGothic','BIZ UDPゴシック','BIZ UDGothic','BIZ UDゴシック','Yu Gothic UI','Yu Gothic','Meiryo',sans-serif);
+  font-weight:var(--fig-font-weight, 400);
+}
+.bzu-fig .f-ink{fill:var(--c-ink,#1A2B3C)}
+.bzu-fig .f-muted{fill:var(--c-ink-muted,#5E7182)}
+.bzu-fig .f-brand{fill:var(--c-brand,#1E5F74)}
+.bzu-fig .f-accent{fill:var(--c-accent,#E07B39)}
+.bzu-fig .f-surfalt{fill:var(--c-surface-alt,#F4F7F8)}
+.bzu-fig .f-brandpale{fill:var(--c-brand-pale,#E2EDF0)}
+.bzu-fig .f-accentpale{fill:var(--c-accent-pale,#FBEDE1)}
+.bzu-fig .f-surface{fill:var(--c-surface,#FFFFFF)}
+.bzu-fig .f-onbrand{fill:var(--c-on-brand,#FFFFFF)}
+.bzu-fig .s-accent{stroke:var(--c-accent,#E07B39)}
+.bzu-fig .s-border{stroke:var(--c-border,#C7D5DC)}
+/* 文字サイズ：--fs-scale で全体を一括拡縮（既定 1） */
+.bzu-fig .fs-11{font-size:calc(11px * var(--fs-scale, 1))}
+.bzu-fig .fs-11_5{font-size:calc(17px * var(--fs-scale, 1))}
+.bzu-fig .fs-12{font-size:calc(12px * var(--fs-scale, 1))}
+.bzu-fig .fs-12_5{font-size:calc(18.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-13{font-size:calc(19px * var(--fs-scale, 1))}
+.bzu-fig .fs-13_5{font-size:calc(19.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-23{font-size:calc(30px * var(--fs-scale, 1))}
+</style>
+
+<rect class="f-surface" width="1240" height="760"/>
+<rect class="f-accent" x="34" y="30" width="5" height="24" rx="2.5"/>
+<text class="f-ink fs-23" x="50" y="50" font-weight="700">第8期基本指針 新旧対応表</text>
+<text class="f-muted fs-13_5" x="50" y="74" font-weight="400">第7期（現行）→第8期（令和9〜11年度・告示第4号）での成果目標・活動指標の変更点</text>
+
+<rect class="f-brand" x="35" y="112" width="1170" height="34" rx="6"/>
+<text class="f-onbrand fs-12_5" x="150" y="134" font-weight="700" text-anchor="middle">項目</text>
+<text class="f-onbrand fs-12_5" x="400" y="134" font-weight="700" text-anchor="middle">第7期（現行）</text>
+<text class="f-onbrand fs-12_5" x="650" y="134" font-weight="700" text-anchor="middle">第8期（新設・変更）</text>
+<text class="f-onbrand fs-12_5" x="1000" y="134" font-weight="700" text-anchor="middle">足寄町への影響</text>
+
+<g class="f-ink fs-11_5">
+
+<rect class="f-surfalt" x="35" y="146" width="1170" height="50"/>
+<text x="150" y="176" text-anchor="middle" font-weight="700">地域移行の基準年度</text>
+<text x="400" y="176" text-anchor="middle">令和4年度末の施設入所者数</text>
+<text class="f-accent" x="650" y="176" text-anchor="middle" font-weight="700">令和7年度末に変更</text>
+<text x="1000" y="176" text-anchor="middle">R7年度末実績値の把握が必要</text>
+
+<rect class="f-surface" x="35" y="196" width="1170" height="50"/>
+<text x="150" y="226" text-anchor="middle" font-weight="700">一般就労移行倍率</text>
+<text x="400" y="226" text-anchor="middle">令和3年度実績の1.28倍以上</text>
+<text class="f-accent" x="650" y="226" text-anchor="middle" font-weight="700">令和6年度実績の1.31倍以上</text>
+<text x="1000" y="226" text-anchor="middle">R6年度実績の確認・目標再設定</text>
+
+<rect class="f-surfalt" x="35" y="246" width="1170" height="50"/>
+<text x="150" y="276" text-anchor="middle" font-weight="700">就労定着支援倍率</text>
+<text x="400" y="276" text-anchor="middle">実績の1.41倍以上</text>
+<text class="f-accent" x="650" y="276" text-anchor="middle" font-weight="700">実績の1.47倍以上</text>
+<text x="1000" y="276" text-anchor="middle">同上</text>
+
+<rect class="f-surface" x="35" y="296" width="1170" height="50"/>
+<text x="150" y="320" text-anchor="middle" font-weight="700">児童発達支援</text>
+<text x="150" y="336" text-anchor="middle" font-weight="700">センター</text>
+<text x="400" y="326" text-anchor="middle">「設置」を基本（足寄町は数値目標「―」）</text>
+<text class="f-accent" x="650" y="326" text-anchor="middle" font-weight="700">「4つの中核機能の確保」に変更</text>
+<text x="1000" y="326" text-anchor="middle">あゆみ園の位置づけを前向きに整理</text>
+
+<rect class="f-accentpale" x="35" y="346" width="1170" height="50"/>
+<text x="150" y="376" text-anchor="middle" font-weight="700">セルフプラン</text>
+<text x="400" y="376" text-anchor="middle">規定なし</text>
+<text class="f-accent" x="650" y="376" text-anchor="middle" font-weight="700">【新規】R11年度末までにゼロ化</text>
+<text x="1000" y="376" text-anchor="middle" font-weight="700">相談支援事業所2か所での実態把握が必須</text>
+
+<rect class="f-surface" x="35" y="396" width="1170" height="50"/>
+<text x="150" y="420" text-anchor="middle" font-weight="700">就労選択支援</text>
+<text x="400" y="420" text-anchor="middle">規定なし（R7.10開始の新事業）</text>
+<text class="f-accent" x="650" y="416" text-anchor="middle" font-weight="700">圏域に1事業所以上設置、</text>
+<text class="f-accent" x="650" y="432" text-anchor="middle" font-weight="700">R11年度利用者82,000人以上</text>
+<text x="1000" y="420" text-anchor="middle">R9.4〜A型等利用時のアセスメント原則化</text>
+
+<rect class="f-surfalt" x="35" y="446" width="1170" height="50"/>
+<text x="150" y="470" text-anchor="middle" font-weight="700">人材確保・生産性</text>
+<text x="150" y="486" text-anchor="middle" font-weight="700">向上</text>
+<text x="400" y="476" text-anchor="middle">規定なし</text>
+<text class="f-accent" x="650" y="476" text-anchor="middle" font-weight="700">【新規】都道府県にワンストップ窓口</text>
+<text x="1000" y="476" text-anchor="middle">事業者調査に人材確保状況を追加</text>
+
+<rect class="f-surface" x="35" y="496" width="1170" height="50"/>
+<text x="150" y="520" text-anchor="middle" font-weight="700">精神障害の</text>
+<text x="150" y="536" text-anchor="middle" font-weight="700">地域包括ケア</text>
+<text x="400" y="526" text-anchor="middle">退院後の平均生活日数のみ</text>
+<text class="f-accent" x="650" y="521" text-anchor="middle" font-weight="700">再入院率・心のサポーター【新規】</text>
+<text class="f-accent" x="650" y="537" text-anchor="middle" font-weight="700">K6は把握が望ましい項目</text>
+<text x="1000" y="526" text-anchor="middle">K6は「望ましい」項目。搭載の要否を協議</text>
+
+<rect class="f-surfalt" x="35" y="546" width="1170" height="50"/>
+<text x="150" y="576" text-anchor="middle" font-weight="700">情報公表制度</text>
+<text x="400" y="576" text-anchor="middle">規定なし</text>
+<text class="f-accent" x="650" y="576" text-anchor="middle" font-weight="700">【新規】公表率・更新率100%</text>
+<text x="1000" y="576" text-anchor="middle">町内事業所への周知が必要</text>
+</g>
+
+<rect class="s-border" x="35" y="112" width="1170" height="484" fill="none" stroke-width="1.2"/>
+<line class="s-border" x1="265" y1="112" x2="265" y2="596" stroke-width="0.8"/>
+<line class="s-border" x1="535" y1="112" x2="535" y2="596" stroke-width="0.8"/>
+<line class="s-border" x1="765" y1="112" x2="765" y2="596" stroke-width="0.8"/>
+
+<rect class="f-brandpale" x="35" y="616" width="1170" height="70" rx="10"/>
+<text class="f-brand fs-13" x="57" y="640" font-weight="700">出典</text>
+<text class="f-ink fs-12" x="57" y="662">「障害福祉サービス等及び障害児通所支援等の円滑な実施を確保するための基本的な指針」（令和8年こども家庭庁・厚生労働省告示第4号）</text>
+<text class="f-muted fs-11" x="57" y="680">凡例：【新規】＝第8期で新設。「望ましい」とあるものは推奨事項。「足寄町への影響」欄は当社からのご提案です。契約後、告示本体・新旧対照表と再度突合します。</text>
+
+<rect class="f-accentpale s-accent" x="35" y="696" width="1170" height="48" rx="8" stroke-width="1.2"/>
+<text class="f-accent fs-12" x="55" y="724" font-weight="700">図版14（第8期基本指針マップ）と合わせてご覧ください。本表は項目ごとの新旧数値の詳細版です。</text>
+</svg>

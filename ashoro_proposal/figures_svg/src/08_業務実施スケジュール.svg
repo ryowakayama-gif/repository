@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 800" class="bzu-fig" role="img" aria-labelledby="fig-08-t fig-08-d" preserveAspectRatio="xMidYMid meet">
+<title id="fig-08-t">業務実施スケジュール（想定）</title>
+<desc id="fig-08-d">履行期間（契約締結日〜令和8年12月28日）に対応した5か月工程。地域福祉計画・障がい者福祉計画等を並行して実施します</desc>
+<style>
+/* ==== 可変トークン ====
+   外側の CSS で :root や任意の親要素に
+   --c-brand などを定義すれば、この図の配色を一括変更できます。
+   例) :root{ --c-brand:#004C6D; --fs-scale:1.08; }
+   ==================== */
+.bzu-fig{
+  display:block; width:100%;
+  max-width:var(--fig-max-width, 1240px);
+  height:auto; margin:var(--fig-margin, 0 auto);
+  font-family:var(--fig-font, 'Yu Gothic UI','Yu Gothic','Meiryo','Noto Sans CJK JP','Hiragino Kaku Gothic ProN',sans-serif);
+  font-weight:var(--fig-font-weight, 400);
+}
+.bzu-fig .f-ink{fill:var(--c-ink,#1A2B3C)}
+.bzu-fig .f-muted{fill:var(--c-ink-muted,#5E7182)}
+.bzu-fig .f-brand{fill:var(--c-brand,#1E5F74)}
+.bzu-fig .f-brand2{fill:var(--c-brand-light,#3E8296)}
+.bzu-fig .f-accent{fill:var(--c-accent,#E07B39)}
+.bzu-fig .f-surfalt{fill:var(--c-surface-alt,#F4F7F8)}
+.bzu-fig .f-brandpale{fill:var(--c-brand-pale,#E2EDF0)}
+.bzu-fig .f-accentpale{fill:var(--c-accent-pale,#FBEDE1)}
+.bzu-fig .f-surface{fill:var(--c-surface,#FFFFFF)}
+.bzu-fig .f-onbrand{fill:var(--c-on-brand,#FFFFFF)}
+.bzu-fig .s-accent{stroke:var(--c-accent,#E07B39)}
+.bzu-fig .s-border{stroke:var(--c-border,#C7D5DC)}
+.bzu-fig .s-surface{stroke:var(--c-surface,#FFFFFF)}
+/* 文字サイズ：--fs-scale で全体を一括拡縮（既定 1） */
+.bzu-fig .fs-10{font-size:calc(10px * var(--fs-scale, 1))}
+.bzu-fig .fs-12{font-size:calc(12px * var(--fs-scale, 1))}
+.bzu-fig .fs-12_5{font-size:calc(12.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-13{font-size:calc(13px * var(--fs-scale, 1))}
+.bzu-fig .fs-13_5{font-size:calc(13.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-23{font-size:calc(23px * var(--fs-scale, 1))}
+</style>
+
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="f-brand2" d="M0,0 L10,5 L0,10 z"/></marker>
+</defs>
+<rect class="f-surface" width="1240" height="800"/>
+<rect class="f-accent" x="34" y="30" width="5" height="24" rx="2.5"/>
+<text class="f-ink fs-23" x="50" y="50" font-weight="700" text-anchor="start" letter-spacing="0.5">業務実施スケジュール（想定）</text>
+<text class="f-muted fs-13_5" x="50" y="74" font-weight="400" text-anchor="start" letter-spacing="0">履行期間（契約締結日〜令和8年12月28日）に対応した5か月工程。地域福祉計画・障がい者福祉計画等を並行して実施します</text>
+
+<rect class="f-brand" x="35" y="120" width="1165" height="34" rx="6"/>
+<text class="f-onbrand fs-13_5" x="55" y="143" font-weight="700" text-anchor="start" letter-spacing="0">業務項目</text>
+<text class="f-onbrand fs-13" x="426" y="143" font-weight="700" text-anchor="middle" letter-spacing="0">8月</text>
+<line class="s-surface" x1="512" y1="120" x2="512" y2="649" stroke-width="0.6" opacity="0.5"/>
+<text class="f-onbrand fs-13" x="598" y="143" font-weight="700" text-anchor="middle" letter-spacing="0">9月</text>
+<line class="s-surface" x1="684" y1="120" x2="684" y2="649" stroke-width="0.6" opacity="0.5"/>
+<text class="f-onbrand fs-13" x="770" y="143" font-weight="700" text-anchor="middle" letter-spacing="0">10月</text>
+<line class="s-surface" x1="856" y1="120" x2="856" y2="649" stroke-width="0.6" opacity="0.5"/>
+<text class="f-onbrand fs-13" x="942" y="143" font-weight="700" text-anchor="middle" letter-spacing="0">11月</text>
+<line class="s-surface" x1="1028" y1="120" x2="1028" y2="649" stroke-width="0.6" opacity="0.5"/>
+<text class="f-onbrand fs-13" x="1114" y="143" font-weight="700" text-anchor="middle" letter-spacing="0">12月</text>
+
+<!-- vertical gridlines within body -->
+<line class="s-border" x1="340" y1="154" x2="340" y2="649" stroke-width="0.6"/>
+<line class="s-border" x1="512" y1="154" x2="512" y2="649" stroke-width="0.6"/>
+<line class="s-border" x1="684" y1="154" x2="684" y2="649" stroke-width="0.6"/>
+<line class="s-border" x1="856" y1="154" x2="856" y2="649" stroke-width="0.6"/>
+<line class="s-border" x1="1028" y1="154" x2="1028" y2="649" stroke-width="0.6"/>
+<line class="s-border" x1="1200" y1="154" x2="1200" y2="649" stroke-width="0.6"/>
+
+<!-- Row backgrounds (alternating) -->
+<rect class="f-surfalt" x="35" y="162" width="1165" height="36" rx="0"/>
+<rect class="f-surface" x="35" y="203" width="1165" height="36" rx="0"/>
+<rect class="f-surfalt" x="35" y="244" width="1165" height="36" rx="0"/>
+<rect class="f-surface" x="35" y="285" width="1165" height="36" rx="0"/>
+<rect class="f-surfalt" x="35" y="326" width="1165" height="36" rx="0"/>
+<rect class="f-surface" x="35" y="367" width="1165" height="36" rx="0"/>
+<rect class="f-surfalt" x="35" y="408" width="1165" height="36" rx="0"/>
+<rect class="f-surface" x="35" y="449" width="1165" height="36" rx="0"/>
+<rect class="f-surfalt" x="35" y="490" width="1165" height="36" rx="0"/>
+<rect class="f-surface" x="35" y="531" width="1165" height="36" rx="0"/>
+<rect class="f-surfalt" x="35" y="572" width="1165" height="36" rx="0"/>
+<rect class="f-brandpale" x="35" y="613" width="1165" height="36" rx="0"/>
+
+<!-- Row labels -->
+<text class="f-ink fs-12_5" x="55" y="185" font-weight="400" text-anchor="start" letter-spacing="0">① 契約締結・キックオフ協議</text>
+<text class="f-ink fs-12_5" x="55" y="226" font-weight="400" text-anchor="start" letter-spacing="0">② 基礎的な地域データ・統計資料の分析</text>
+<text class="f-ink fs-12_5" x="55" y="267" font-weight="400" text-anchor="start" letter-spacing="0">③ 庁内関係課への調査（子ども・高齢者・教育委員会等）</text>
+<text class="f-ink fs-12_5" x="55" y="308" font-weight="400" text-anchor="start" letter-spacing="0">④ 関係団体等への調査（社協・事業者・自治会等）</text>
+<text class="f-ink fs-12_5" x="55" y="349" font-weight="400" text-anchor="start" letter-spacing="0">⑤ 町民・障がい者調査票の確定・印刷</text>
+<text class="f-ink fs-12_5" x="55" y="390" font-weight="400" text-anchor="start" letter-spacing="0">⑥ 対象者抽出・宛名作成・封入封緘・発送</text>
+<text class="f-ink fs-12_5" x="55" y="431" font-weight="400" text-anchor="start" letter-spacing="0">⑦ 回収・督促</text>
+<text class="f-ink fs-12_5" x="55" y="472" font-weight="400" text-anchor="start" letter-spacing="0">⑧ データ入力・点検（匿名化）</text>
+<text class="f-ink fs-12_5" x="55" y="513" font-weight="400" text-anchor="start" letter-spacing="0">⑨ 集計・分析（ウェイトバック集計を含む）</text>
+<text class="f-ink fs-12_5" x="55" y="554" font-weight="400" text-anchor="start" letter-spacing="0">⑩ 調査結果報告書・とりまとめ資料の作成</text>
+<text class="f-ink fs-12_5" x="55" y="595" font-weight="400" text-anchor="start" letter-spacing="0">⑪ 成果品の納品（履行期限 令和8年12月28日）</text>
+<text class="f-brand fs-12_5" x="55" y="636" font-weight="700" text-anchor="start" letter-spacing="0">⑫ 策定委員会・自立支援協議会の運営支援（各1回想定）</text>
+
+<!-- Bars -->
+<rect class="f-brand2" x="345" y="171" width="65" height="18" rx="9"/>
+<rect class="f-brand" x="345" y="212" width="150" height="18" rx="9"/>
+<rect class="f-brand" x="425" y="253" width="150" height="18" rx="9"/>
+<rect class="f-brand" x="425" y="294" width="150" height="18" rx="9"/>
+<rect class="f-brand" x="515" y="335" width="105" height="18" rx="9"/>
+<rect class="f-accent" x="600" y="376" width="110" height="18" rx="9"/>
+<rect class="f-accent" x="675" y="417" width="150" height="18" rx="9"/>
+<rect class="f-brand" x="775" y="458" width="120" height="18" rx="9"/>
+<rect class="f-brand" x="845" y="499" width="140" height="18" rx="9"/>
+<rect class="f-brand" x="900" y="540" width="120" height="18" rx="9"/>
+<rect class="f-brand s-accent" x="1030" y="581" width="150" height="18" rx="9" stroke-width="1.5"/>
+<path class="f-accent" d="M942,613 L952,622 L942,631 L932,622 Z"/>
+<path class="f-accent" d="M990,613 L1000,622 L990,631 L980,622 Z"/>
+
+<!-- deadline marker -->
+<line class="s-accent" x1="1180" y1="581" x2="1180" y2="602" stroke-width="1.5"/>
+<text class="f-accent fs-10" x="1180" y="614" font-weight="700" text-anchor="middle" letter-spacing="0">12/28</text>
+
+<!-- legend -->
+<rect class="f-surface s-border" x="35" y="656" width="1165" height="30" rx="6" stroke-width="1.2"/>
+<rect class="f-brand" x="55" y="666" width="22" height="11" rx="5.5"/>
+<text class="f-ink fs-12" x="85" y="675" font-weight="400" text-anchor="start" letter-spacing="0">受託者が主体で実施</text>
+<rect class="f-accent" x="280" y="666" width="22" height="11" rx="5.5"/>
+<text class="f-ink fs-12" x="310" y="675" font-weight="400" text-anchor="start" letter-spacing="0">委託者（町）が主体で実施</text>
+<rect class="f-brand2" x="530" y="666" width="22" height="11" rx="5.5"/>
+<text class="f-ink fs-12" x="560" y="675" font-weight="400" text-anchor="start" letter-spacing="0">双方協働</text>
+<path class="f-accent" d="M690,665 L700,674 L690,683 L680,674 Z"/>
+<text class="f-ink fs-12" x="712" y="678" font-weight="400" text-anchor="start" letter-spacing="0">審議会・協議会の開催</text>
+
+<!-- note box: critical scope caveat -->
+<rect class="f-accentpale s-accent" x="35" y="698" width="1165" height="86" rx="8" stroke-width="1.2"/>
+<text class="f-accent fs-12_5" x="55" y="721" font-weight="700" text-anchor="start" letter-spacing="0">【成果品の範囲について】</text>
+<text class="f-ink fs-12" x="55" y="742" font-weight="400" text-anchor="start" letter-spacing="0">本業務の成果品は、アンケート調査報告書及び関係団体等・庁内関係課の</text>
+<text class="f-ink fs-12" x="55" y="761" font-weight="400" text-anchor="start" letter-spacing="0">調査とりまとめ資料です。計画素案の作成・パブリックコメント・計画確定は、</text>
+<text class="f-ink fs-12" x="55" y="780" font-weight="400" text-anchor="start" letter-spacing="0">履行期限（令和8年12月28日）後、委託者（町）が引き継いで進める想定です。</text>
+</svg>

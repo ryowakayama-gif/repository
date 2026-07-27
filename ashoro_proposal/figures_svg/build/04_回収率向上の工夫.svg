@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 660" class="bzu-fig" role="img" aria-labelledby="fig-04-t fig-04-d" preserveAspectRatio="xMidYMid meet">
+<title id="fig-04-t">回収率を高めるための工夫</title>
+<desc id="fig-04-d">「届く・読める・答えやすい・思い出す」の4段階で回収率を積み上げます（45%は目標値であり保証値ではなく、督促等の効果は試算です）</desc>
+<style>
+/* ==== 可変トークン ====
+   外側の CSS で :root や任意の親要素に
+   --c-brand などを定義すれば、この図の配色を一括変更できます。
+   例) :root{ --c-brand:#004C6D; --fs-scale:1.08; }
+   ==================== */
+.bzu-fig{
+  display:block; width:100%;
+  max-width:var(--fig-max-width, 1240px);
+  height:auto; margin:var(--fig-margin, 0 auto);
+  font-family:var(--fig-font, 'BIZ UDPGothic','BIZ UDPゴシック','BIZ UDGothic','BIZ UDゴシック','Yu Gothic UI','Yu Gothic','Meiryo',sans-serif);
+  font-weight:var(--fig-font-weight, 400);
+}
+.bzu-fig .f-ink{fill:var(--c-ink,#1A2B3C)}
+.bzu-fig .f-muted{fill:var(--c-ink-muted,#5E7182)}
+.bzu-fig .f-brand{fill:var(--c-brand,#1E5F74)}
+.bzu-fig .f-brand2{fill:var(--c-brand-light,#3E8296)}
+.bzu-fig .f-accent{fill:var(--c-accent,#E07B39)}
+.bzu-fig .f-surfalt{fill:var(--c-surface-alt,#F4F7F8)}
+.bzu-fig .f-brandpale{fill:var(--c-brand-pale,#E2EDF0)}
+.bzu-fig .f-surface{fill:var(--c-surface,#FFFFFF)}
+.bzu-fig .f-onbrand{fill:var(--c-on-brand,#FFFFFF)}
+.bzu-fig .s-border{stroke:var(--c-border,#C7D5DC)}
+/* 文字サイズ：--fs-scale で全体を一括拡縮（既定 1） */
+.bzu-fig .fs-11_5{font-size:calc(17px * var(--fs-scale, 1))}
+.bzu-fig .fs-12_5{font-size:calc(18.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-13_5{font-size:calc(19.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-14{font-size:calc(20px * var(--fs-scale, 1))}
+.bzu-fig .fs-16{font-size:calc(22px * var(--fs-scale, 1))}
+.bzu-fig .fs-23{font-size:calc(30px * var(--fs-scale, 1))}
+</style>
+
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="f-brand2" d="M0,0 L10,5 L0,10 z"/></marker>
+<marker id="ara" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="f-accent" d="M0,0 L10,5 L0,10 z"/></marker>
+</defs>
+<rect class="f-surface" width="1240" height="660"/>
+<rect class="f-surface" x="0" y="0" width="1240" height="0" rx="8"/>
+<rect class="f-accent" x="34" y="30" width="5" height="24" rx="2.5"/>
+<text class="f-ink fs-23" x="50" y="50" font-weight="700" text-anchor="start" letter-spacing="0.5">回収率を高めるための工夫</text>
+<text class="f-muted fs-13_5" x="50" y="74" font-weight="400" text-anchor="start" letter-spacing="0">「届く・読める・答えやすい・思い出す」の4段階で回収率を積み上げます（45%は目標値であり保証値ではなく、督促等の効果は試算です）</text>
+<rect class="f-surface s-border" x="35.0" y="122" width="376.0" height="178" rx="10" stroke-width="1.2"/>
+<rect class="f-brand" x="35.0" y="122" width="376.0" height="5" rx="2.5"/>
+<circle class="f-brand" cx="68.0" cy="162" r="15"/>
+<text class="f-onbrand fs-14" x="68.0" y="167.04" font-weight="700" text-anchor="middle" letter-spacing="0">1</text>
+<text class="f-ink fs-16" x="91.0" y="168" font-weight="700" text-anchor="start" letter-spacing="0">読みやすい調査票</text>
+<rect class="f-accent" x="56.0" y="194.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="68.0" y="200" font-weight="400" text-anchor="start" letter-spacing="0">本文12pt以上・行間ゆとり</text>
+<rect class="f-accent" x="56.0" y="219.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="68.0" y="225" font-weight="400" text-anchor="start" letter-spacing="0">重要語にルビを付与</text>
+<rect class="f-accent" x="56.0" y="244.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="68.0" y="250" font-weight="400" text-anchor="start" letter-spacing="0">1問1論点・見開き完結</text>
+<rect class="f-accent" x="56.0" y="269.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="68.0" y="275" font-weight="400" text-anchor="start" letter-spacing="0">所要時間の目安を明示</text>
+<rect class="f-surface s-border" x="432.0" y="122" width="376.0" height="178" rx="10" stroke-width="1.2"/>
+<rect class="f-brand" x="432.0" y="122" width="376.0" height="5" rx="2.5"/>
+<circle class="f-brand" cx="465.0" cy="162" r="15"/>
+<text class="f-onbrand fs-14" x="465.0" y="167.04" font-weight="700" text-anchor="middle" letter-spacing="0">2</text>
+<text class="f-ink fs-16" x="488.0" y="168" font-weight="700" text-anchor="start" letter-spacing="0">Web回答の併用</text>
+<rect class="f-accent" x="453.0" y="194.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="465.0" y="200" font-weight="400" text-anchor="start" letter-spacing="0">QRコード＋個別IDを同封</text>
+<rect class="f-accent" x="453.0" y="219.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="465.0" y="225" font-weight="400" text-anchor="start" letter-spacing="0">スマホで完結する画面設計</text>
+<rect class="f-accent" x="453.0" y="244.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="465.0" y="250" font-weight="400" text-anchor="start" letter-spacing="0">入力工数と誤記入を削減</text>
+<rect class="f-accent" x="453.0" y="269.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="465.0" y="275" font-weight="400" text-anchor="start" letter-spacing="0">回収状況をリアルタイム把握</text>
+<rect class="f-surface s-border" x="829.0" y="122" width="376.0" height="178" rx="10" stroke-width="1.2"/>
+<rect class="f-brand" x="829.0" y="122" width="376.0" height="5" rx="2.5"/>
+<circle class="f-brand" cx="862.0" cy="162" r="15"/>
+<text class="f-onbrand fs-14" x="862.0" y="167.04" font-weight="700" text-anchor="middle" letter-spacing="0">3</text>
+<text class="f-ink fs-16" x="885.0" y="168" font-weight="700" text-anchor="start" letter-spacing="0">依頼文の工夫</text>
+<rect class="f-accent" x="850.0" y="194.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="862.0" y="200" font-weight="400" text-anchor="start" letter-spacing="0">首長名での依頼文を同封</text>
+<rect class="f-accent" x="850.0" y="219.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="862.0" y="225" font-weight="400" text-anchor="start" letter-spacing="0">利用目的・匿名性を明記</text>
+<rect class="f-accent" x="850.0" y="244.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="862.0" y="250" font-weight="400" text-anchor="start" letter-spacing="0">回答所要時間を提示</text>
+<rect class="f-accent" x="850.0" y="269.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="862.0" y="275" font-weight="400" text-anchor="start" letter-spacing="0">問合せ先を大きく表示</text>
+<rect class="f-surface s-border" x="35.0" y="318" width="376.0" height="178" rx="10" stroke-width="1.2"/>
+<rect class="f-accent" x="35.0" y="318" width="376.0" height="5" rx="2.5"/>
+<circle class="f-accent" cx="68.0" cy="358" r="15"/>
+<text class="f-onbrand fs-14" x="68.0" y="363.04" font-weight="700" text-anchor="middle" letter-spacing="0">4</text>
+<text class="f-ink fs-16" x="91.0" y="364" font-weight="700" text-anchor="start" letter-spacing="0">督促はがきの送付</text>
+<rect class="f-accent" x="56.0" y="390.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="68.0" y="396" font-weight="400" text-anchor="start" letter-spacing="0">受託者が文面案を作成</text>
+<rect class="f-accent" x="56.0" y="415.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="68.0" y="421" font-weight="400" text-anchor="start" letter-spacing="0">町が締切1週間前に発送</text>
+<rect class="f-accent" x="56.0" y="440.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="68.0" y="446" font-weight="400" text-anchor="start" letter-spacing="0">回収率の上乗せを期待（試算）</text>
+<rect class="f-accent" x="56.0" y="465.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="68.0" y="471" font-weight="400" text-anchor="start" letter-spacing="0">Web回答用QRを再掲</text>
+<rect class="f-surface s-border" x="432.0" y="318" width="376.0" height="178" rx="10" stroke-width="1.2"/>
+<rect class="f-accent" x="432.0" y="318" width="376.0" height="5" rx="2.5"/>
+<circle class="f-accent" cx="465.0" cy="358" r="15"/>
+<text class="f-onbrand fs-14" x="465.0" y="363.04" font-weight="700" text-anchor="middle" letter-spacing="0">5</text>
+<text class="f-ink fs-16" x="488.0" y="364" font-weight="700" text-anchor="start" letter-spacing="0">周知・広報の連動</text>
+<rect class="f-accent" x="453.0" y="390.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="465.0" y="396" font-weight="400" text-anchor="start" letter-spacing="0">広報紙・HP・SNSで告知</text>
+<rect class="f-accent" x="453.0" y="415.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="465.0" y="421" font-weight="400" text-anchor="start" letter-spacing="0">窓口・公共施設にポスター</text>
+<rect class="f-accent" x="453.0" y="440.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="465.0" y="446" font-weight="400" text-anchor="start" letter-spacing="0">民生委員・事業所へ協力依頼</text>
+<rect class="f-accent" x="453.0" y="465.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="465.0" y="471" font-weight="400" text-anchor="start" letter-spacing="0">自治会回覧での周知</text>
+<rect class="f-surface s-border" x="829.0" y="318" width="376.0" height="178" rx="10" stroke-width="1.2"/>
+<rect class="f-accent" x="829.0" y="318" width="376.0" height="5" rx="2.5"/>
+<circle class="f-accent" cx="862.0" cy="358" r="15"/>
+<text class="f-onbrand fs-14" x="862.0" y="363.04" font-weight="700" text-anchor="middle" letter-spacing="0">6</text>
+<text class="f-ink fs-16" x="885.0" y="364" font-weight="700" text-anchor="start" letter-spacing="0">返信環境の整備</text>
+<rect class="f-accent" x="850.0" y="390.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="862.0" y="396" font-weight="400" text-anchor="start" letter-spacing="0">料金受取人払封筒を同封</text>
+<rect class="f-accent" x="850.0" y="415.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="862.0" y="421" font-weight="400" text-anchor="start" letter-spacing="0">回答期間は3週間以上確保</text>
+<rect class="f-accent" x="850.0" y="440.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="862.0" y="446" font-weight="400" text-anchor="start" letter-spacing="0">事業所は電子提出も可</text>
+<rect class="f-accent" x="850.0" y="465.5" width="5" height="5" rx="1"/>
+<text class="f-ink fs-12_5" x="862.0" y="471" font-weight="400" text-anchor="start" letter-spacing="0">問合せ専用ダイヤルを設置</text>
+<rect class="f-surfalt s-border" x="35" y="520" width="1170" height="108" rx="10" stroke-width="1.2"/>
+<text class="f-ink fs-16" x="59" y="552" font-weight="700" text-anchor="start" letter-spacing="0">回収率の目標値</text>
+<text class="f-muted fs-12_5" x="59" y="576" font-weight="400" text-anchor="start" letter-spacing="0">前回実績</text>
+<text class="f-muted fs-12_5" x="59" y="606" font-weight="400" text-anchor="start" letter-spacing="0">今回の目標</text>
+<rect class="f-brandpale" x="190" y="562" width="298.7" height="20" rx="10"/>
+<text class="f-brand fs-14" x="548" y="578" font-weight="700" text-anchor="middle" letter-spacing="0">38.3%</text>
+<rect class="f-accent" x="190" y="592" width="351.0" height="20" rx="10"/>
+<text class="f-accent fs-14" x="604" y="608" font-weight="700" text-anchor="middle" letter-spacing="0">45%以上</text>
+<text class="f-muted fs-11_5" x="985" y="578" font-weight="400" text-anchor="start" letter-spacing="0">※ 前回値は令和元年度</text>
+<text class="f-muted fs-11_5" x="985" y="598" font-weight="400" text-anchor="start" letter-spacing="0">町民アンケート実績</text>
+<text class="f-muted fs-11_5" x="985" y="618" font-weight="400" text-anchor="start" letter-spacing="0">（2,000票／766票）</text>
+</svg>

@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 720" class="bzu-fig" role="img" aria-labelledby="fig-02-t fig-02-d" preserveAspectRatio="xMidYMid meet">
+<title id="fig-02-t">調査対象者の設定と標本設計</title>
+<desc id="fig-02-d">足寄町の対象規模（令和5年12月末時点）に基づく配布数の設計</desc>
+<style>
+/* ==== 可変トークン ====
+   外側の CSS で :root や任意の親要素に
+   --c-brand などを定義すれば、この図の配色を一括変更できます。
+   例) :root{ --c-brand:#004C6D; --fs-scale:1.08; }
+   ==================== */
+.bzu-fig{
+  display:block; width:100%;
+  max-width:var(--fig-max-width, 1240px);
+  height:auto; margin:var(--fig-margin, 0 auto);
+  font-family:var(--fig-font, 'Yu Gothic UI','Yu Gothic','Meiryo','Noto Sans CJK JP','Hiragino Kaku Gothic ProN',sans-serif);
+  font-weight:var(--fig-font-weight, 400);
+}
+.bzu-fig .f-ink{fill:var(--c-ink,#1A2B3C)}
+.bzu-fig .f-muted{fill:var(--c-ink-muted,#5E7182)}
+.bzu-fig .f-brand{fill:var(--c-brand,#1E5F74)}
+.bzu-fig .f-accent{fill:var(--c-accent,#E07B39)}
+.bzu-fig .f-surfalt{fill:var(--c-surface-alt,#F4F7F8)}
+.bzu-fig .f-brandpale{fill:var(--c-brand-pale,#E2EDF0)}
+.bzu-fig .f-accentpale{fill:var(--c-accent-pale,#FBEDE1)}
+.bzu-fig .f-surface{fill:var(--c-surface,#FFFFFF)}
+.bzu-fig .f-onbrand{fill:var(--c-on-brand,#FFFFFF)}
+.bzu-fig .f-onaccent{fill:var(--c-on-accent,#FFFFFF)}
+.bzu-fig .s-brand{stroke:var(--c-brand,#1E5F74)}
+.bzu-fig .s-accent{stroke:var(--c-accent,#E07B39)}
+.bzu-fig .s-border{stroke:var(--c-border,#C7D5DC)}
+/* 文字サイズ：--fs-scale で全体を一括拡縮（既定 1） */
+.bzu-fig .fs-12{font-size:calc(12px * var(--fs-scale, 1))}
+.bzu-fig .fs-13{font-size:calc(13px * var(--fs-scale, 1))}
+.bzu-fig .fs-13_5{font-size:calc(13.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-14_5{font-size:calc(14.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-16{font-size:calc(16px * var(--fs-scale, 1))}
+.bzu-fig .fs-17{font-size:calc(17px * var(--fs-scale, 1))}
+.bzu-fig .fs-23{font-size:calc(23px * var(--fs-scale, 1))}
+</style>
+
+<rect class="f-surface" width="1240" height="720"/>
+<rect class="f-accent" x="34" y="30" width="5" height="24" rx="2.5"/>
+<text class="f-ink fs-23" x="50" y="50" font-weight="700" text-anchor="start" letter-spacing="0.5">調査対象者の設定と標本設計</text>
+<text class="f-muted fs-13_5" x="50" y="74" font-weight="400" text-anchor="start" letter-spacing="0">足寄町の対象規模（令和5年12月末時点）に基づく配布数の設計</text>
+
+<rect class="f-surface s-border" x="35" y="112" width="575" height="440" rx="10" stroke-width="1.2"/>
+<path class="f-brand" d="M35,122 a10,10 0 0 1 10,-10 L600,112 a10,10 0 0 1 10,10 L610,152 L35,152 Z"/>
+<text class="f-onaccent fs-17" x="57" y="138" font-weight="700" text-anchor="start" letter-spacing="0">地域福祉計画</text>
+
+<rect class="f-surfalt" x="49" y="166" width="547" height="80" rx="7"/>
+<text class="f-ink fs-14_5" x="65" y="192" font-weight="700" text-anchor="start" letter-spacing="0">一般住民（18歳以上町民）</text>
+<text class="f-muted fs-12" x="65" y="213" font-weight="400" text-anchor="start" letter-spacing="0">住民基本台帳から層化無作為抽出</text>
+<text class="f-muted fs-12" x="65" y="232" font-weight="400" text-anchor="start" letter-spacing="0">4小学校区で層化。小規模3地区は最低配布数を確保</text>
+<rect class="f-surface s-brand" x="472" y="196" width="108" height="30" rx="15" stroke-width="1.2"/>
+<text class="f-brand fs-13" x="526" y="216" font-weight="700" text-anchor="middle" letter-spacing="0">2,000票</text>
+
+<rect class="f-surfalt" x="49" y="256" width="547" height="80" rx="7"/>
+<text class="f-ink fs-14_5" x="65" y="282" font-weight="700" text-anchor="start" letter-spacing="0">関係団体等</text>
+<text class="f-muted fs-12" x="65" y="303" font-weight="400" text-anchor="start" letter-spacing="0">社会福祉協議会・介護保険/障がい福祉サービス事業者</text>
+<text class="f-muted fs-12" x="65" y="322" font-weight="400" text-anchor="start" letter-spacing="0">老人クラブ連合会・ボランティア団体・自治会等</text>
+<rect class="f-surface s-brand" x="472" y="286" width="108" height="30" rx="15" stroke-width="1.2"/>
+<text class="f-brand fs-13" x="526" y="306" font-weight="700" text-anchor="middle" letter-spacing="0">全数</text>
+
+<rect class="f-surfalt" x="49" y="346" width="547" height="80" rx="7"/>
+<text class="f-ink fs-14_5" x="65" y="372" font-weight="700" text-anchor="start" letter-spacing="0">庁内関係課・教育委員会等</text>
+<text class="f-muted fs-12" x="65" y="393" font-weight="400" text-anchor="start" letter-spacing="0">子ども・子育て支援担当、高齢者福祉担当等の</text>
+<text class="f-muted fs-12" x="65" y="412" font-weight="400" text-anchor="start" letter-spacing="0">福祉関連施策の現状ヒアリング</text>
+<rect class="f-surface s-brand" x="472" y="376" width="108" height="30" rx="15" stroke-width="1.2"/>
+<text class="f-brand fs-13" x="526" y="396" font-weight="700" text-anchor="middle" letter-spacing="0">全数</text>
+
+<rect class="f-brandpale" x="49" y="436" width="547" height="100" rx="7"/>
+<text class="f-brand fs-13" x="65" y="460" font-weight="700" text-anchor="start" letter-spacing="0">前回調査（令和元年度）実績</text>
+<text class="f-ink fs-12" x="65" y="482" font-weight="400" text-anchor="start" letter-spacing="0">配布2,000票／回収766票（回収率38.3%）。70歳以上が回答者の</text>
+<text class="f-ink fs-12" x="65" y="501" font-weight="400" text-anchor="start" letter-spacing="0">44.1%を占め、実際の人口構成比（約35%）より高齢層に偏っていました。</text>
+<text class="f-ink fs-12" x="65" y="520" font-weight="400" text-anchor="start" letter-spacing="0">本業務では回収率45%以上を目標とし、年齢構成の偏りを補正します。</text>
+
+<rect class="f-surface s-border" x="630" y="112" width="575" height="440" rx="10" stroke-width="1.2"/>
+<path class="f-accent" d="M630,122 a10,10 0 0 1 10,-10 L1195,112 a10,10 0 0 1 10,10 L1205,152 L630,152 Z"/>
+<text class="f-onaccent fs-17" x="652" y="138" font-weight="700" text-anchor="start" letter-spacing="0">障がい者福祉計画等</text>
+
+<rect class="f-surfalt" x="644" y="166" width="547" height="64" rx="7"/>
+<text class="f-ink fs-14_5" x="660" y="193" font-weight="700" text-anchor="start" letter-spacing="0">身体障害者手帳所持者（350人）</text>
+<text class="f-muted fs-12" x="660" y="214" font-weight="400" text-anchor="start" letter-spacing="0">前回回収率42.3%。65歳以上が84%を占める</text>
+<rect class="f-surface s-accent" x="1079" y="183" width="96" height="30" rx="15" stroke-width="1.2"/>
+<text class="f-accent fs-13" x="1127" y="203" font-weight="700" text-anchor="middle" letter-spacing="0">全数</text>
+
+<rect class="f-accentpale" x="644" y="240" width="547" height="64" rx="7"/>
+<text class="f-ink fs-14_5" x="660" y="267" font-weight="700" text-anchor="start" letter-spacing="0">療育手帳所持者（66人）</text>
+<text class="f-accent fs-12" x="660" y="288" font-weight="700" text-anchor="start" letter-spacing="0">前回回収率26.8%と低位。わかりやすい版を重点配布</text>
+<rect class="f-surface s-accent" x="1079" y="257" width="96" height="30" rx="15" stroke-width="1.2"/>
+<text class="f-accent fs-13" x="1127" y="277" font-weight="700" text-anchor="middle" letter-spacing="0">全数</text>
+
+<rect class="f-surfalt" x="644" y="314" width="547" height="64" rx="7"/>
+<text class="f-ink fs-14_5" x="660" y="341" font-weight="700" text-anchor="start" letter-spacing="0">精神障害者保健福祉手帳所持者（43人）</text>
+<text class="f-muted fs-12" x="660" y="362" font-weight="400" text-anchor="start" letter-spacing="0">前回回収率52.6%</text>
+<rect class="f-surface s-accent" x="1079" y="331" width="96" height="30" rx="15" stroke-width="1.2"/>
+<text class="f-accent fs-13" x="1127" y="351" font-weight="700" text-anchor="middle" letter-spacing="0">全数</text>
+
+<rect class="f-surfalt" x="644" y="388" width="547" height="64" rx="7"/>
+<text class="f-ink fs-14_5" x="660" y="415" font-weight="700" text-anchor="start" letter-spacing="0">関係団体等（相談支援・障がい福祉サービス事業所）</text>
+<text class="f-muted fs-12" x="660" y="436" font-weight="400" text-anchor="start" letter-spacing="0">町内の指定事業所・相談支援事業所</text>
+<rect class="f-surface s-accent" x="1079" y="405" width="96" height="30" rx="15" stroke-width="1.2"/>
+<text class="f-accent fs-13" x="1127" y="425" font-weight="700" text-anchor="middle" letter-spacing="0">全数</text>
+
+<rect class="f-brandpale" x="644" y="462" width="547" height="74" rx="7"/>
+<text class="f-brand fs-13" x="660" y="484" font-weight="700" text-anchor="start" letter-spacing="0">合計 459人に対し500票（仕様書の配布数）</text>
+<text class="f-ink fs-12" x="660" y="505" font-weight="400" text-anchor="start" letter-spacing="0">3手帳合計459人（R5.12末）に対し500票を配布する、実質的な悉皆調査です。</text>
+<text class="f-ink fs-12" x="660" y="524" font-weight="400" text-anchor="start" letter-spacing="0">標本抽出は不要なため、回収率の底上げに注力します。</text>
+
+<rect class="f-brandpale" x="35" y="562" width="1170" height="140" rx="10"/>
+<text class="f-brand fs-16" x="57" y="590" font-weight="700" text-anchor="start" letter-spacing="0">標本設計の考え方</text>
+<text class="f-ink fs-13" x="57" y="616" font-weight="400" text-anchor="start" letter-spacing="0">① 町民調査は4小学校区で層化し、小規模3地区（大誉地・芽登・螺湾）にも最低配布数を確保したうえで、地区ごとの抽出率の逆数によるウェイトバック集計を行います</text>
+<text class="f-ink fs-13" x="57" y="638" font-weight="400" text-anchor="start" letter-spacing="0">② 障がい者調査は手帳種別間の回収率格差（前回：療育手帳26.8%〜自立支援医療69.6%）を是正するため、種別ごとの無回答調整ウェイトを設定します</text>
+<text class="f-ink fs-13" x="57" y="660" font-weight="400" text-anchor="start" letter-spacing="0">③ 経年比較が必要な設問は、前回調査（令和元年度・令和5年度）と同一の選択肢を維持します</text>
+<text class="f-ink fs-13" x="57" y="682" font-weight="400" text-anchor="start" letter-spacing="0">④ 対象者の抽出・宛名ラベル作成・封入封緘・発送・回収は委託者（町）が実施し、受託者は調査票の設計・印刷・集計・分析を担当します</text>
+</svg>
