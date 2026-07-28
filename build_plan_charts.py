@@ -17,6 +17,7 @@ from openpyxl.drawing.line import LineProperties
 
 FONT = "Carlito"
 GRAY = ["000000", "404040", "737373", "A6A6A6", "D9D9D9", "F2F2F2", "FFFFFF"]
+GRAY9 = ["000000", "262626", "404040", "595959", "737373", "8C8C8C", "A6A6A6", "D9D9D9", "FFFFFF"]
 DASH = ["solid", "dash", "sysDot", "dashDot", "lgDash"]
 MARK = ["circle", "square", "triangle", "diamond", "x"]
 IN_Y = "FFF2CC"
@@ -92,7 +93,7 @@ def mono_bar(ws, title, y_title, cats_ref, data_ref, anchor, stacked=False,
     ch.gapWidth = gap
     ch.width, ch.height = width, height
     for i, s in enumerate(ch.series):
-        gp = GraphicalProperties(solidFill=GRAY[i % 5])
+        gp = GraphicalProperties(solidFill=GRAY9[i % len(GRAY9)] if len(ch.series) > 5 else GRAY[i % 5])
         gp.line = LineProperties(solidFill="000000", w=6350)
         s.graphicalProperties = gp
     _axis_mono(ch)
@@ -194,6 +195,12 @@ end = table(ws, r, ["No.", "シート", "図表", "出典・基準時点", "更�
     (7, "07_給付費推移", "サービス区分別給付費／地域支援事業費／中長期推計", "第9期計画 第2章第2節（見える化 R6.1.18参照）／素案第9稿 表39", "R6～R8実績の受領後に更新"),
     (8, "08_ニーズ調査データ", "介護予防・日常生活圏域ニーズ調査 14指標の集計値", "第9期計画 第2章第3節／令和4年11月調査（回収4,626票・63.9％）", "第10期ニーズ調査の集計受領後に全面差替え"),
     (9, "09_ニーズ調査グラフ", "同上の年齢階級別・町別グラフ", "同上", "同上"),
+    (10, "10_在宅介護実態調査", "世帯類型・介護頻度・介護内容・離職・必要な支援・施設検討（令和2年度との比較）",
+     "第9期計画 第2章第4節1／令和5年5月25日～6月30日・認定調査員の聞き取り", "第10期調査の集計受領後に差替え"),
+    (11, "11_居所変更実態調査", "居所変更・死亡の割合／要介護度別人数／変更理由",
+     "第9期計画 第2章第4節2／令和5年5月25日送付・21施設回答", "第10期調査の集計受領後に差替え"),
+    (12, "12_在宅生活改善調査", "利用者の属性／本人の状態・意向／家族等介護者の意向・負担",
+     "第9期計画 第2章第4節3／令和5年5月25日送付・12事業所91人", "第10期調査の集計受領後に差替え"),
 ])
 r = end + 2
 ws.cell(row=r, column=1, value="3　作図上の凡例（白黒）").font = Font(name=FONT, size=11, bold=True)
@@ -220,6 +227,11 @@ end = table(ws, r, ["No.", "事項", "内容", "対応", ""], [
         "素案第9稿の保険給付費R5決算（2,940.4百万円）は定義が異なる", "別系列として併記。計画掲載時はいずれかに統一", "第10期計画で整理"),
     (5, "ニーズ調査の基準", "掲載値は令和4年11月実施の第9期調査。第10期調査は実施済だが集計未受領",
         "第10期調査の集計受領後に全面差替え。設問・判定ロジックの一致を確認", "広域連合・3町へ照会"),
+    (6, "在宅介護実態調査の回答数", "第9期計画に回収結果の表が掲載されているが本文から数値を復元できなかった。"
+        "令和5年度の掲載値はすべて1/37の倍数で整合するため回答37人と判断（対象は65歳以上の要介護認定者79人）",
+        "10シートに推定値として記載。回収票数・回収率は原資料で確認する", "広域連合へ照会"),
+    (7, "居所変更実態調査の施設数", "回答施設の内訳（住宅型有料4・軽費1・サ高住0・GH5・特定施設2・老健3・特養2・地密特養3）の合計は20だが、"
+        "第9期計画は「合計21」と記載", "11シートに原典どおり記載し差異を注記。内訳の欠落か合計の誤りかを確認", "広域連合へ照会"),
 ])
 
 # ============================================================ 01 人口推移
@@ -682,6 +694,310 @@ for k, (no, name, unit, blocks) in enumerate(NEEDS):
     _axis_mono(ch2)
     wsg.add_chart(ch2, f"J{anchor_r}")
     anchor_r += 17
+
+# ============================================================ 共通：横棒クラスター
+def mono_hbar_cluster(ws_, title, cats_ref, data_ref, anchor, width=20, height=None,
+                      n_cat=None, x_title="割合（％）"):
+    ch = BarChart()
+    ch.type = "bar"
+    ch.grouping = "clustered"
+    ch.title = title
+    ch.y_axis.title = x_title
+    ch.add_data(data_ref, titles_from_data=True)
+    ch.set_categories(cats_ref)
+    ch.gapWidth = 60
+    ch.width = width
+    ch.height = height if height else max(7, (n_cat or 6) * 0.85 + 3)
+    for i, sr in enumerate(ch.series):
+        gp = GraphicalProperties(solidFill=["404040", "D9D9D9", "A6A6A6", "FFFFFF"][i % 4])
+        gp.line = LineProperties(solidFill="000000", w=6350)
+        sr.graphicalProperties = gp
+    _axis_mono(ch)
+    ws_.add_chart(ch, anchor)
+    return ch
+
+
+def block(ws_, row, heading, head, rows, numfmt="0.0", chart_title=None,
+          series_cols=None, anchor=None, width=20, x_title="割合（％）", input_cells=None):
+    """見出し＋表を書き、横棒クラスターグラフを配置して次の開始行を返す。"""
+    ws_.cell(row=row, column=1, value=heading).font = Font(name=FONT, size=10, bold=True)
+    hrow = row + 1
+    end = table(ws_, hrow, head, rows, numfmt=numfmt)
+    if input_cells:
+        for rr, cc in input_cells:
+            ws_.cell(row=rr, column=cc).fill = PatternFill("solid", fgColor=IN_Y)
+    if chart_title:
+        cats = Reference(ws_, min_col=1, min_row=hrow + 1, max_row=end)
+        data = Reference(ws_, min_col=series_cols[0], max_col=series_cols[1],
+                         min_row=hrow, max_row=end)
+        mono_hbar_cluster(ws_, chart_title, cats, data, anchor or f"H{row}",
+                          width=width, n_cat=end - hrow, x_title=x_title)
+    return end
+
+
+# ============================================================ 10 在宅介護実態調査
+ws = sheet("10_在宅介護実態調査", "図9　在宅介護実態調査 結果概要",
+           "資料：第9期計画 第2章第4節1／令和5年5月25日～6月30日・認定調査員の聞き取り・回答37人（推定）／"
+           "令和2年度調査との比較・単位：％",
+           [44, 12, 12, 12, 12, 12, 12])
+r = 4
+r = block(ws, r, "① 世帯類型", ["区分", "令和5年度", "令和2年度"],
+          [["単身世帯", 24.3, 26.3], ["夫婦のみ世帯", 18.9, 26.3],
+           ["その他", 54.1, 47.4], ["無回答", 2.7, 0.0]],
+          chart_title="① 世帯類型", series_cols=(2, 3), anchor="E4") + 2
+note(ws, r, "注）令和2年度の無回答0.0％は、単身26.3＋夫婦のみ26.3＋その他47.4＝100.0％となることから復元した値。"
+            "「夫婦のみ世帯」が7.4ポイント減少、「その他」が6.7ポイント増加している（第9期計画 第2章第4節1）。")
+r += 2
+
+r = block(ws, r, "② 家族等による介護の頻度", ["区分", "令和5年度", "令和2年度"],
+          [["ない", 18.9, 11.8], ["家族・親族の介護はあるが、週に1日よりも少ない", 10.8, 10.5],
+           ["週に1～2日ある", 13.5, 9.2], ["週に3～4日ある", 0.0, 0.0],
+           ["ほぼ毎日ある", 56.8, 63.2], ["無回答", 0.0, 5.3]],
+          chart_title="② 家族等による介護の頻度", series_cols=(2, 3), anchor="E23") + 2
+note(ws, r, "注）令和2年度の無回答5.3％は、他5区分の合計94.7％との差から復元した値。"
+            "「ほぼ毎日ある」は56.8％で令和2年度から6.4ポイント減少している。")
+r += 2
+
+CARE = ["日中の排泄", "夜間の排泄", "食事の介助（食べる時）", "入浴・洗身", "身だしなみ（洗顔・歯磨き等）",
+        "衣服の着脱", "屋内の移乗・移動", "外出の付き添い、送迎等", "服薬", "認知症状への対応",
+        "医療面での対応（経管栄養、ストーマ等）", "食事の準備（調理等）",
+        "その他の家事（掃除、洗濯、買い物等）", "金銭管理や生活面に必要な諸手続き", "その他", "わからない", "無回答"]
+C_R5 = [21.6, 16.2, 10.8, 21.6, 24.3, 27.0, 16.2, 67.6, 35.1, 18.9, 2.7, 62.2, 73.0, 59.5, 5.4, 0.0, 13.5]
+C_R2 = [25.0, 18.8, 12.5, 25.0, 28.1, 31.3, 18.8, 78.1, 40.6, 21.9, 3.1, 71.9, 84.4, 68.8, 6.3, 0.0, None]
+start = r + 1
+r = block(ws, r, "③ 主な介護者が行っている介護（複数回答）", ["区分", "令和5年度", "令和2年度"],
+          [[a, b, c] for a, b, c in zip(CARE, C_R5, C_R2)],
+          chart_title="③ 主な介護者が行っている介護（複数回答）", series_cols=(2, 3),
+          anchor="E45", input_cells=[(start + 17, 3)]) + 2
+note(ws, r, "注）複数回答のため合計は100％にならない。令和2年度の「無回答」（淡黄色欄）は原典から数値を復元できなかったため未記載。"
+            "「その他の家事（掃除、洗濯、買い物等）」は73.0％で最も高いが、令和2年度から11.4ポイント減少している。")
+r += 2
+
+r = block(ws, r, "④ 介護のための離職の有無", ["区分", "令和5年度", "令和2年度"],
+          [["主な介護者が仕事を辞めた（転職除く）", 2.7, 1.5],
+           ["主な介護者以外の家族・親族が仕事を辞めた（転職除く）", 0.0, 1.5],
+           ["主な介護者が転職した", 2.7, 1.5], ["主な介護者以外の家族・親族が転職した", 0.0, 0.0],
+           ["介護のために仕事を辞めた家族・親族はいない", 75.7, 83.6],
+           ["わからない", 0.0, 0.0], ["無回答", 18.9, 11.9]],
+          chart_title="④ 介護のための離職の有無", series_cols=(2, 3), anchor="E80") + 2
+note(ws, r, "注）「介護のために仕事を辞めた家族・親族はいない」は75.7％で最も高いが、令和2年度から7.9ポイント減少している。"
+            "介護離職（主な介護者・それ以外の家族親族が仕事を辞めた）は合計2.7％にとどまる。")
+r += 2
+
+SUP = ["配食", "調理", "掃除・洗濯", "買い物（宅配は含まない）", "ゴミ出し", "外出同行（通院、買い物など）",
+       "移送サービス（介護・福祉等）", "見守り、声かけ", "サロンなどの定期的な通いの場", "その他", "特になし", "無回答"]
+S_R5 = [13.5, 13.5, 21.6, 16.2, 16.2, 37.8, 18.9, 16.2, 5.4, 16.2, 27.0, 10.8]
+S_R2 = [17.1, 14.5, 15.8, 13.2, 13.2, 21.1, 18.4, 18.4, 18.4, 2.7, 43.4, 10.0]
+r = block(ws, r, "⑤ 在宅生活の継続のために充実が必要な支援・サービス（複数回答）",
+          ["区分", "令和5年度", "令和2年度"], [[a, b, c] for a, b, c in zip(SUP, S_R5, S_R2)],
+          chart_title="⑤ 在宅生活の継続のために充実が必要な支援・サービス", series_cols=(2, 3),
+          anchor="E100") + 2
+note(ws, r, "注）「外出同行（通院、買い物など）」が37.8％で最も高く、令和2年度から16.7ポイント上昇している。"
+            "一方「特になし」は43.4％から27.0％へ減少しており、支援ニーズの顕在化がうかがえる。")
+r += 2
+
+r = block(ws, r, "⑥ 施設等検討の状況", ["区分", "令和5年度", "令和2年度"],
+          [["入所・入居は検討していない", 73.0, 82.9], ["入所・入居を検討している", 13.5, 11.8],
+           ["すでに入所・入居申し込みをしている", 13.5, 5.3], ["無回答", 0.0, 0.0]],
+          chart_title="⑥ 施設等検討の状況", series_cols=(2, 3), anchor="E128")
+note(ws, r + 2, "注）「入所・入居は検討していない」は73.0％で最も高いが令和2年度から9.9ポイント減少し、"
+                "「すでに入所・入居申し込みをしている」が8.2ポイント上昇している。")
+
+# ============================================================ 11 居所変更実態調査
+ws = sheet("11_居所変更実態調査", "図10　居所変更実態調査 結果概要",
+           "資料：第9期計画 第2章第4節2／令和5年5月25日に施設・居住系サービスの管理者へ書面送付・21施設回答／"
+           "過去1年間に居所を変更又は死亡した利用者",
+           [30, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11])
+KYOSHO = [
+    ("住宅型有料老人ホーム", 34, 3), ("軽費老人ホーム", 9, 3), ("グループホーム", 15, 5),
+    ("特定施設", 13, 20), ("介護老人保健施設", 91, 6), ("特別養護老人ホーム", 41, 13),
+    ("地域密着型特別養護老人ホーム", 25, 6),
+]
+r = 4
+ws.cell(row=r, column=1, value="① 過去1年間の退居・退所者に占める居所変更・死亡").font = Font(name=FONT, size=10, bold=True)
+hrow = r + 1
+rows = [[n, a, b, None, None, None] for n, a, b in KYOSHO] + [["合計", None, None, None, None, None]]
+end = table(ws, hrow, ["区分", "居所変更（件）", "死亡（件）", "合計（件）", "居所変更（％）", "死亡（％）"],
+            rows, numfmt="#,##0")
+TOT = end
+for rr in range(hrow + 1, end + 1):
+    ws.cell(row=rr, column=4).value = f"=B{rr}+C{rr}"
+    ws.cell(row=rr, column=5).value = f'=IF($D{rr}=0,"-",B{rr}/$D{rr}*100)'
+    ws.cell(row=rr, column=6).value = f'=IF($D{rr}=0,"-",C{rr}/$D{rr}*100)'
+    ws.cell(row=rr, column=4).number_format = "#,##0"
+    for cc in (5, 6):
+        ws.cell(row=rr, column=cc).number_format = "0.0"
+for cc in (2, 3):
+    col = get_column_letter(cc)
+    ws.cell(row=TOT, column=cc).value = f"=SUM({col}{hrow+1}:{col}{TOT-1})"
+    ws.cell(row=TOT, column=cc).number_format = "#,##0"
+    ws.cell(row=TOT, column=cc).font = Font(name=FONT, size=9, bold=True)
+cats = Reference(ws, min_col=1, min_row=hrow + 1, max_row=TOT)
+data = Reference(ws, min_col=5, max_col=6, min_row=hrow, max_row=TOT)
+mono_hbar_cluster(ws, "① 退居・退所者に占める居所変更・死亡の割合（施設別）", cats, data, "H4",
+                  width=20, n_cat=8)
+r = end + 2
+note(ws, r, "注）各施設の合計では80.3％が「居所変更」、19.7％が「死亡」。介護老人保健施設は「居所変更」が93.8％と高く、"
+            "特定施設は「死亡」が60.6％と高い（第9期計画 第2章第4節2）。"
+            "なお回答施設の内訳（住宅型有料4・軽費1・サ高住0・GH5・特定施設2・老健3・特養2・地密特養3）の合計は20だが、"
+            "第9期計画は「合計21」と記載しており差異がある（00_凡例・出典 4-7）。")
+r += 2
+
+ws.cell(row=r, column=1, value="② 居所変更した人の要支援・要介護度（施設別・単位：人）").font = Font(name=FONT, size=10, bold=True)
+hrow2 = r + 1
+DO = [
+    ("住宅型有料老人ホーム", 0, 2, 4, 3, 1, 6, 6, 12, 0),
+    ("軽費老人ホーム", 2, 1, 0, 3, 1, 2, 0, 0, 0),
+    ("グループホーム", 0, 0, 0, 1, 2, 2, 2, 8, 0),
+    ("特定施設", 0, 2, 3, 2, 2, 3, 1, 0, 0),
+    ("介護老人保健施設", 0, 0, 0, 12, 13, 26, 22, 18, 0),
+    ("特別養護老人ホーム", 0, 0, 0, 1, 1, 13, 9, 17, 0),
+    ("地域密着型特別養護老人ホーム", 0, 0, 0, 1, 2, 8, 7, 7, 0),
+]
+HEAD_DO = ["区分", "自立", "要支援1", "要支援2", "要介護1", "要介護2", "要介護3", "要介護4", "要介護5", "申請中", "合計"]
+rows2 = [list(x) + [None] for x in DO] + [["合計"] + [None] * 10]
+end2 = table(ws, hrow2, HEAD_DO, rows2, numfmt="#,##0")
+for rr in range(hrow2 + 1, end2 + 1):
+    ws.cell(row=rr, column=11).value = f"=SUM(B{rr}:J{rr})"
+    ws.cell(row=rr, column=11).number_format = "#,##0"
+for cc in range(2, 11):
+    col = get_column_letter(cc)
+    ws.cell(row=end2, column=cc).value = f"=SUM({col}{hrow2+1}:{col}{end2-1})"
+    ws.cell(row=end2, column=cc).number_format = "#,##0"
+    ws.cell(row=end2, column=cc).font = Font(name=FONT, size=9, bold=True)
+ws.cell(row=end2, column=11).font = Font(name=FONT, size=9, bold=True)
+cats = Reference(ws, min_col=1, min_row=hrow2 + 1, max_row=end2 - 1)
+data = Reference(ws, min_col=2, max_col=10, min_row=hrow2, max_row=end2 - 1)
+mono_bar(ws, "② 居所変更した人の要支援・要介護度（施設別）", "人数（人）", cats, data,
+         f"H{r}", stacked=True, width=20, height=11)
+r = end2 + 2
+note(ws, r, "注）軽費老人ホームの「－」表記は0として集計している。合計では「要介護5」が62人と最も多く、"
+            "次いで「要介護3」60人、「要介護4」47人となっている（第9期計画 第2章第4節2）。")
+r += 2
+
+ws.cell(row=r, column=1, value="③ 居所変更した理由（21施設・単位：件）").font = Font(name=FONT, size=10, bold=True)
+hrow3 = r + 1
+RIYU = [
+    ("必要な支援の発生・増大", 2), ("必要な身体介護の発生・増大", 5), ("認知症の症状の悪化", 7),
+    ("医療的ケア・医療処置の必要性の高まり", 19), ("上記以外の状態像が悪化", 8), ("状態等の改善", 5),
+    ("必要な居宅サービスを望まなかったため", 1), ("費用負担が重くなった", 4), ("その他", 10),
+]
+end3 = table(ws, hrow3, ["区分", "件数"], [list(x) for x in RIYU], numfmt="#,##0")
+cats = Reference(ws, min_col=1, min_row=hrow3 + 1, max_row=end3)
+data = Reference(ws, min_col=2, min_row=hrow3, max_row=end3)
+ch = mono_hbar_cluster(ws, "③ 居所変更した理由（21施設）", cats, data, f"H{r}",
+                       width=20, n_cat=9, x_title="件数（件）")
+ch.legend = None
+note(ws, end3 + 2, "注）上位3つは「医療的ケア・医療処置の必要性の高まり」19件、「その他」10件、「上記以外の状態像が悪化」8件。"
+                   "一方で「状態等の改善」も5件あり、より良い方向への転換もみられる（第9期計画 第2章第4節2）。")
+
+# ============================================================ 12 在宅生活改善調査
+ws = sheet("12_在宅生活改善調査", "図11　在宅生活改善調査 結果概要",
+           "資料：第9期計画 第2章第4節3／令和5年5月25日に居宅介護支援事業所のケアマネジャーへ書面送付・"
+           "12事業所91人／自宅等から居所を変更した利用者・単位：％",
+           [44, 12, 14, 14, 14, 12, 12])
+r = 4
+ws.cell(row=r, column=1, value="（参考）回答者の要介護度別内訳（単位：人）").font = Font(name=FONT, size=10, bold=True)
+hrow = r + 1
+end = table(ws, hrow, ["要介護度", "該当者数"],
+            [["要支援1", 0], ["要支援2", 7], ["要介護1", 31], ["要介護2", 18],
+             ["要介護3", 12], ["要介護4", 15], ["要介護5", 8], ["合計", None]], numfmt="#,##0")
+ws.cell(row=end, column=2).value = f"=SUM(B{hrow+1}:B{end-1})"
+ws.cell(row=end, column=2).number_format = "#,##0"
+ws.cell(row=end, column=2).font = Font(name=FONT, size=9, bold=True)
+r = end + 2
+
+ATTR = ["独居", "夫婦のみ世帯", "単身の子供との同居", "その他世帯", "自宅等（持ち家）", "自宅等（借家）",
+        "サ高住・住宅型有料・軽費", "要介護2以下", "要介護3以上"]
+A_R5 = [46.7, 13.3, 0.0, 26.7, 62.2, 6.7, 17.8, 53.3, 33.4]
+A_R2 = [27.1, 25.9, 11.1, 22.4, 77.7, 4.9, 4.9, 48.1, 39.4]
+r = block(ws, r, "① 在宅での生活の維持が難しくなっている利用者の属性",
+          ["区分", "令和5年度", "令和2年度"], [[a, b, c] for a, b, c in zip(ATTR, A_R5, A_R2)],
+          chart_title="① 生活の維持が難しくなっている利用者の属性", series_cols=(2, 3), anchor="H4") + 2
+note(ws, r, "注）「独居」が19.6ポイント増加、「自宅等（持ち家）」が15.5ポイント減少、"
+            "「サ高住・住宅型有料老人ホーム・軽費老人ホーム」が12.9ポイント増加している（第9期計画 第2章第4節3）。"
+            "世帯類型・居所・要介護度の各区分は無回答等を含むため合計は100％にならない。")
+r += 2
+
+JOTAI = ["必要な生活支援の発生・増大", "必要な身体介護の増大", "認知症の症状の悪化",
+         "医療的ケア・医療処置の必要性の高まり", "その他、本人の状態等の悪化", "本人の状態等の改善",
+         "その他", "無回答"]
+J = [(48.9, 55.6, 38.9, 46.9), (51.1, 40.7, 66.7, 61.7), (66.7, 74.1, 55.6, 63.0),
+     (8.9, 7.4, 11.1, 24.7), (22.2, 25.9, 16.7, 17.3), (4.4, 3.7, 5.6, 0.0),
+     (4.4, 0.0, 11.1, 0.0), (0.0, 0.0, 0.0, 0.0)]
+HD4 = ["区分", "合計（令和5年度）", "要支援1～要介護2", "要介護3～要介護5", "合計（令和2年度）"]
+r = block(ws, r, "② 生活の維持が難しくなっている理由（本人の状態に属する理由）", HD4,
+          [[a] + list(b) for a, b in zip(JOTAI, J)],
+          chart_title="② 本人の状態に属する理由（要介護度別）", series_cols=(2, 4), anchor="H26")
+cats = Reference(ws, min_col=1, min_row=r - len(JOTAI) + 1, max_row=r)
+d2 = Reference(ws, min_col=2, min_row=r - len(JOTAI), max_row=r)
+d5 = Reference(ws, min_col=5, min_row=r - len(JOTAI), max_row=r)
+ch = BarChart(); ch.type = "bar"; ch.grouping = "clustered"
+ch.title = "② 本人の状態に属する理由（令和2年度との比較）"
+ch.y_axis.title = "割合（％）"
+ch.add_data(d2, titles_from_data=True); ch.add_data(d5, titles_from_data=True)
+ch.set_categories(cats); ch.gapWidth = 60; ch.width, ch.height = 20, 10
+for i, sr in enumerate(ch.series):
+    gp = GraphicalProperties(solidFill=["404040", "D9D9D9"][i]); gp.line = LineProperties(solidFill="000000", w=6350)
+    sr.graphicalProperties = gp
+_axis_mono(ch); ws.add_chart(ch, "H46")
+r += 2
+note(ws, r, "注）合計では「認知症の症状の悪化」が66.7％と最も高い一方、要介護3～要介護5では「必要な身体介護の増大」が66.7％と最も高い。"
+            "令和2年度と比べ「必要な身体介護の増大」は10.6ポイント減少している（第9期計画 第2章第4節3）。")
+r += 2
+
+IKO = ["本人が、一部の居宅サービスの利用を望まないから", "生活の不安が大きいから", "居住環境が不便だから",
+       "本人が介護者の負担軽減を望むから", "負担費用が重いから", "その他、本人の意向等があるから",
+       "その他", "無回答"]
+I2 = [(15.6, 18.5, 11.1, 32.1), (33.3, 33.3, 33.3, 29.6), (8.9, 7.4, 11.1, 9.9),
+      (2.2, 0.0, 5.6, 4.9), (8.9, 11.1, 5.6, 6.2), (11.1, 3.7, 22.2, 23.5),
+      (35.6, 40.7, 27.8, 25.9), (0.0, 0.0, 0.0, 3.7)]
+r = block(ws, r, "③ 生活の維持が難しくなっている理由（本人の意向に属する理由）", HD4,
+          [[a] + list(b) for a, b in zip(IKO, I2)],
+          chart_title="③ 本人の意向に属する理由（要介護度別）", series_cols=(2, 4), anchor="H66")
+cats = Reference(ws, min_col=1, min_row=r - len(IKO) + 1, max_row=r)
+d2 = Reference(ws, min_col=2, min_row=r - len(IKO), max_row=r)
+d5 = Reference(ws, min_col=5, min_row=r - len(IKO), max_row=r)
+ch = BarChart(); ch.type = "bar"; ch.grouping = "clustered"
+ch.title = "③ 本人の意向に属する理由（令和2年度との比較）"
+ch.y_axis.title = "割合（％）"
+ch.add_data(d2, titles_from_data=True); ch.add_data(d5, titles_from_data=True)
+ch.set_categories(cats); ch.gapWidth = 60; ch.width, ch.height = 20, 10
+for i, sr in enumerate(ch.series):
+    gp = GraphicalProperties(solidFill=["404040", "D9D9D9"][i]); gp.line = LineProperties(solidFill="000000", w=6350)
+    sr.graphicalProperties = gp
+_axis_mono(ch); ws.add_chart(ch, "H86")
+r += 2
+note(ws, r, "注）合計では「その他」が35.6％と最も高い一方、要介護3～要介護5では「生活の不安が大きいから」が最も高い。"
+            "令和2年度と比べ「本人が、一部の居宅サービスの利用を望まないから」が16.5ポイント減少、「その他」が9.7ポイント増加している。")
+r += 2
+
+KAZOKU = ["介護者の介護に係る不安・負担量の増大", "介護者が、一部の居宅サービスの利用を望まないから",
+          "家族等の介護等技術では対応が困難", "費用負担が重いから", "家族等の就労継続が困難になり始めたから",
+          "本人と家族等の関係性に課題があるから", "その他、家族等介護者の意向等があるから", "その他", "無回答"]
+K2 = [(51.1, 44.4, 61.1, 66.7), (6.7, 3.7, 11.1, 17.3), (26.7, 11.1, 50.0, 34.6),
+      (11.1, 7.4, 16.7, 12.3), (8.9, 3.7, 16.7, 17.3), (20.0, 22.2, 16.7, 19.8),
+      (20.0, 18.5, 22.2, 23.5), (13.3, 18.5, 5.6, 3.7), (2.2, 0.0, 5.6, 3.7)]
+r = block(ws, r, "④ 生活の維持が難しくなっている理由（家族等介護者の意向・負担等に属する理由）", HD4,
+          [[a] + list(b) for a, b in zip(KAZOKU, K2)],
+          chart_title="④ 家族等介護者の意向・負担等（要介護度別）", series_cols=(2, 4), anchor="H106")
+cats = Reference(ws, min_col=1, min_row=r - len(KAZOKU) + 1, max_row=r)
+d2 = Reference(ws, min_col=2, min_row=r - len(KAZOKU), max_row=r)
+d5 = Reference(ws, min_col=5, min_row=r - len(KAZOKU), max_row=r)
+ch = BarChart(); ch.type = "bar"; ch.grouping = "clustered"
+ch.title = "④ 家族等介護者の意向・負担等（令和2年度との比較）"
+ch.y_axis.title = "割合（％）"
+ch.add_data(d2, titles_from_data=True); ch.add_data(d5, titles_from_data=True)
+ch.set_categories(cats); ch.gapWidth = 60; ch.width, ch.height = 20, 10
+for i, sr in enumerate(ch.series):
+    gp = GraphicalProperties(solidFill=["404040", "D9D9D9"][i]); gp.line = LineProperties(solidFill="000000", w=6350)
+    sr.graphicalProperties = gp
+_axis_mono(ch); ws.add_chart(ch, "H126")
+note(ws, r + 2, "注）いずれの介護度でも「介護者の介護に係る不安・負担量の増大」が最も高い。"
+                "要支援1～要介護2では「本人と家族等の関係性に課題があるから」、要介護3～要介護5では「家族等の介護等技術では対応が困難」が次いで高い。"
+                "令和2年度と比べ「介護者の介護に係る不安・負担量の増大」は15.6ポイント減少している（第9期計画 第2章第4節3）。"
+                "②～④はいずれも複数回答のため合計は100％にならない。")
+
 
 del wb["Sheet"]
 wb.save("/home/user/repository/output/第10期計画_図表集_白黒.xlsx")
