@@ -62,8 +62,19 @@ def _txpr(size=800, rot=None):
                     p=[Paragraph(pPr=ParagraphProperties(defRPr=cp), endParaRPr=cp, r=[])])
 
 
-def _dlabels(ch, pos="ctr", size=800, numfmt=None):
-    """データラベルを付す。位置はグラフ種別で有効な値のみを渡すこと。"""
+def _label_style(i):
+    """系列の塗りに応じたラベル文字色と背景色を返す。
+
+    黒ベタ・中間グレーは白抜き文字。パターン塗り（格子・斜線・ドット・横縞）は
+    柄の上に白文字を置くと白地の部分で消えるため、白の下地を敷いて黒文字とする。
+    """
+    kind, fg, _bg = PATTERNS[i % len(PATTERNS)]
+    if kind == "solid":
+        return ("FFFFFF", None) if fg in ("000000", "808080") else ("000000", None)
+    return "000000", "FFFFFF"
+
+
+def _dlbl(pos, size=800, numfmt=None, color="000000", bgfill=None):
     dl = DataLabelList()
     dl.showVal = True
     dl.showSerName = False
@@ -74,9 +85,30 @@ def _dlabels(ch, pos="ctr", size=800, numfmt=None):
     dl.dLblPos = pos
     if numfmt:
         dl.numFmt = numfmt
-        dl.showVal = True
-    dl.txPr = _txpr(size)
-    ch.dLbls = dl
+    cp = CharacterProperties(sz=size, solidFill=color)
+    dl.txPr = RichText(bodyPr=RichTextProperties(),
+                       p=[Paragraph(pPr=ParagraphProperties(defRPr=cp), endParaRPr=cp, r=[])])
+    if bgfill:
+        gp = GraphicalProperties(solidFill=bgfill)
+        gp.line = LineProperties(noFill=True)
+        dl.spPr = gp
+    return dl
+
+
+def _dlabels(ch, pos="ctr", size=800, numfmt=None, per_series=True, line=False):
+    """データラベルを付す。per_series=True で系列ごとに文字色・背景・位置を最適化する。"""
+    if line:
+        # 折れ線は系列ごとに上下へ振り分け、白の下地を敷いて重なりを避ける
+        for i, sr in enumerate(ch.series):
+            sr.dLbls = _dlbl("t" if i % 2 == 0 else "b", size, numfmt, "000000", "FFFFFF")
+        return
+    if not per_series:
+        ch.dLbls = _dlbl(pos, size, numfmt)
+        return
+    for i, sr in enumerate(ch.series):
+        col, bg = _label_style(i) if pos == "ctr" else ("000000", None)
+        sr.dLbls = _dlbl(pos, size, numfmt, col, bg)
+
 
 thin = Side(style="thin", color="BFBFBF")
 BORDER = Border(left=thin, right=thin, top=thin, bottom=thin)
@@ -204,7 +236,7 @@ def mono_line(ws, title, y_title, cats_ref, data_ref, anchor,
         s.smooth = False
     _axis_mono(ch, cat_rot=cat_rot)
     if labels:
-        _dlabels(ch, "t", 750, numfmt)
+        _dlabels(ch, "t", 750, numfmt, line=True)
     ws.add_chart(ch, anchor)
     return ch
 
@@ -291,8 +323,9 @@ end = table(ws, r, ["No.", "要素", "表現", "備考", ""], [
      "第9期計画と同じ体裁。1色印刷でも隣接系列を判別できるよう、濃淡と柄の両方で区別している"),
     (2, "折れ線", "すべて黒線。実線／破線／点線／一点鎖線で系列を区別",
      "マーカーは■（1系列目）▲（2系列目）●（3系列目）◆（4系列目）×（5系列目）。塗りは黒と白を交互にして重なりを回避"),
-    (3, "データラベル", "主要グラフに数値を表示。積上げは中央、単独棒は外側、折れ線は上側に配置",
-     "フォントは7.5〜8ポイント。第9期計画の体裁を踏襲"),
+    (3, "データラベル", "主要グラフに数値を表示。積上げは中央、単独棒は外側、折れ線は系列ごとに上下へ振り分け",
+     "文字色は塗りに応じて切替え。黒ベタ・中間グレーの系列は白抜き文字、パターン塗り（格子・斜線・ドット・横縞）は"
+     "柄の上で白文字が消えるため白の下地を敷いた黒文字、淡グレー・白の系列は黒文字。フォントは7.5〜8ポイント"),
     (4, "目盛線", "非表示。軸線のみ黒で表示", "1色印刷時の視認性を優先"),
     (5, "凡例", "グラフ下部に配置し、プロット領域と重ならないよう設定", "タイトル・軸タイトルも重なり回避を設定済み"),
     (6, "カテゴリ名が多い場合", "軸ラベルを45度回転して表示", "出現率の管内比較（24区分）等"),
@@ -302,9 +335,10 @@ r = end + 2
 ws.cell(row=r, column=1, value="4　作図にあたり確認が必要な事項").font = Font(name=FONT, size=11, bold=True)
 r += 1
 end = table(ws, r, ["No.", "事項", "内容", "対応", ""], [
-    (1, "人口の年齢区分", "第9期計画のグラフは0～39歳／40～64歳／65～74歳／75歳以上の4区分だが、"
-        "計画本体のPDFから0～39歳・40～64歳の確定値を復元できなかった", "本図表集は0～64歳（総人口－65歳以上）／65～74歳／75歳以上の3区分で作図。"
-        "4区分にする場合は住民基本台帳の元データが必要", "広域連合へ照会"),
+    (1, "人口の年齢区分", "【解決】第9期計画 第2章第1節1の掲載表から0～39歳・40～64歳および町別人口を復元した。"
+        "全12年で4区分の合計＝総人口、65～74歳＋75歳以上＝65歳以上、3町の合計＝総人口がすべて一致",
+        "01シートを第9期計画と同じ年齢4区分で作図。町別総人口と町別0～39歳・40～64歳（平成24年・令和5年）も掲載",
+        "対応済み。中間年の町別年齢別は原データ受領後に補う"),
     (2, "リスク点数の単位", "第9期計画 第2章第3節⑨は「当広域連合全体で15.8％」と記載しているが、"
         "実際は要支援・要介護リスク評価尺度による平均点（72,099点÷4,560人＝15.8点）", "本図表集では「点」として作図。第10期では単位表記を修正", "第10期計画で修正"),
     (3, "認定者数と出現率の基準月", "第9期計画は各年9月分、素案第9稿の直近値（認定者1,984人・21.8％）はR8年3月末",
@@ -338,37 +372,91 @@ end = table(ws, r, ["No.", "事項", "内容", "対応", ""], [
 ])
 
 # ============================================================ 01 人口推移
-ws = sheet("01_人口推移", "図1　人口の推移（大雪地区広域連合）",
-           "資料：住民基本台帳 各年10月1日現在（第9期計画 第2章第1節1）／令和6～8年は淡黄色欄に入力すると連動",
+ws = sheet("01_人口推移", "図1　人口の推移（大雪地区広域連合・構成3町）",
+           "資料：住民基本台帳 各年10月1日現在（第9期計画 第2章第1節1）／単位：人／令和6～8年は淡黄色欄に入力すると連動",
            [16] + [10] * 15)
+POP = {
+    "0～39歳": [10590, 10483, 10450, 10458, 10324, 10309, 10144, 9924, 9572, 9525, 9421, 9248],
+    "40～64歳": [9903, 9832, 9740, 9706, 9629, 9589, 9540, 9479, 9433, 9450, 9443, 9448],
+    "65～74歳": [3744, 3862, 4032, 4119, 4183, 4166, 4210, 4215, 4269, 4233, 4165, 3986],
+    "75歳以上": [4398, 4491, 4578, 4667, 4768, 4865, 4933, 5006, 5014, 5039, 5109, 5205],
+}
 POP_TOTAL = [28635, 28668, 28800, 28950, 28904, 28929, 28827, 28624, 28288, 28247, 28138, 27887]
-POP_65_74 = [3744, 3862, 4032, 4119, 4183, 4166, 4210, 4215, 4269, 4233, 4165, 3986]
-POP_75 = [4398, 4491, 4578, 4667, 4768, 4865, 4933, 5006, 5014, 5039, 5109, 5205]
 POP_65 = [8142, 8353, 8610, 8786, 8951, 9031, 9143, 9221, 9283, 9272, 9274, 9191]
+TOWN_POP = {
+    "東川町": [7952, 7944, 7946, 8115, 8130, 8312, 8406, 8373, 8295, 8428, 8542, 8558],
+    "美瑛町": [10832, 10726, 10654, 10492, 10375, 10233, 10092, 9960, 9821, 9678, 9617, 9475],
+    "東神楽町": [9851, 9998, 10200, 10343, 10399, 10384, 10329, 10291, 10172, 10141, 9979, 9854],
+}
+TOWN_0_39 = {"東川町": [2978, None, None, None, None, None, None, None, None, None, None, 3110],
+             "美瑛町": [3514, None, None, None, None, None, None, None, None, None, None, 2674],
+             "東神楽町": [4098, None, None, None, None, None, None, None, None, None, None, 3464]}
+TOWN_40_64 = {"東川町": [2689, None, None, None, None, None, None, None, None, None, None, 2765],
+              "美瑛町": [3681, None, None, None, None, None, None, None, None, None, None, 3126],
+              "東神楽町": [3533, None, None, None, None, None, None, None, None, None, None, 3557]}
 
 HD = ["区分"] + YEARS + ["令和6年", "令和7年", "令和8年"]
-rows = [
-    ["0～64歳"] + [None] * 15,
-    ["65～74歳"] + POP_65_74 + [None] * 3,
-    ["75歳以上"] + POP_75 + [None] * 3,
-    ["65歳以上（再掲）"] + POP_65 + [None] * 3,
-    ["総人口"] + POP_TOTAL + [None] * 3,
-]
-end = table(ws, 4, HD, rows, numfmt="#,##0")
+r = 4
+ws.cell(row=r, column=1, value="（1）年齢4区分別人口（大雪地区広域連合）").font = Font(name=FONT, size=10, bold=True)
+hrow = r + 1
+rows = [[k] + v + [None] * 3 for k, v in POP.items()] \
+    + [["65歳以上（再掲）"] + POP_65 + [None] * 3, ["総人口"] + [None] * 15]
+end = table(ws, hrow, HD, rows, numfmt="#,##0")
+TOT_ROW = end
 for c in range(2, 17):
     col = get_column_letter(c)
-    ws.cell(row=5, column=c).value = f"={col}9-{col}6-{col}7"
-    ws.cell(row=5, column=c).number_format = "#,##0"
-for r_ in (6, 7, 8, 9):
+    ws.cell(row=TOT_ROW - 1, column=c).value = f"={col}{hrow+3}+{col}{hrow+4}"
+    ws.cell(row=TOT_ROW, column=c).value = f"=SUM({col}{hrow+1}:{col}{hrow+4})"
+    for rr in (TOT_ROW - 1, TOT_ROW):
+        ws.cell(row=rr, column=c).number_format = "#,##0"
+    ws.cell(row=TOT_ROW, column=c).font = Font(name=FONT, size=9, bold=True)
+for rr in range(hrow + 1, hrow + 5):
     for c in range(14, 17):
-        ws.cell(row=r_, column=c).fill = PatternFill("solid", fgColor=IN_Y)
-note(ws, end + 1, "注1）0～64歳は「総人口－65歳以上」で算出。第9期計画のグラフは0～39歳／40～64歳に分けているが、"
-                  "計画本体から確定値を復元できなかったため3区分としている（00_凡例・出典 4-1）。"
-                  "注2）65歳以上は65～74歳と75歳以上の合計。令和6～8年（淡黄色欄）は住民基本台帳の実績受領後に入力する。")
-cats = Reference(ws, min_col=2, max_col=16, min_row=4)
-data = Reference(ws, min_col=1, max_col=16, min_row=5, max_row=7)
-mono_bar(ws, "人口の推移（大雪地区広域連合）", "人口（人）", cats, data, "A14", stacked=True,
-         width=28, height=13, from_rows=True, labels=True, numfmt="#,##0")
+        ws.cell(row=rr, column=c).fill = PatternFill("solid", fgColor=IN_Y)
+cats = Reference(ws, min_col=2, max_col=16, min_row=hrow)
+data = Reference(ws, min_col=1, max_col=16, min_row=hrow + 1, max_row=hrow + 4)
+mono_bar(ws, "人口の推移（年齢4区分・大雪地区広域連合）", "人口（人）", cats, data, "R4",
+         stacked=True, width=28, height=13, from_rows=True, labels=True, numfmt="#,##0")
+r = end + 2
+
+ws.cell(row=r, column=1, value="（2）町別総人口").font = Font(name=FONT, size=10, bold=True)
+hrow2 = r + 1
+end2 = table(ws, hrow2, HD, [[k] + v + [None] * 3 for k, v in TOWN_POP.items()]
+             + [["広域連合 計"] + [None] * 15], numfmt="#,##0")
+for c in range(2, 17):
+    col = get_column_letter(c)
+    ws.cell(row=end2, column=c).value = f"=SUM({col}{hrow2+1}:{col}{end2-1})"
+    ws.cell(row=end2, column=c).number_format = "#,##0"
+    ws.cell(row=end2, column=c).font = Font(name=FONT, size=9, bold=True)
+for rr in range(hrow2 + 1, end2):
+    for c in range(14, 17):
+        ws.cell(row=rr, column=c).fill = PatternFill("solid", fgColor=IN_Y)
+cats2 = Reference(ws, min_col=2, max_col=16, min_row=hrow2)
+data2 = Reference(ws, min_col=1, max_col=16, min_row=hrow2 + 1, max_row=end2 - 1)
+mono_line(ws, "町別総人口の推移", "人口（人）", cats2, data2, "R31", width=28, height=12,
+          from_rows=True, labels=True, numfmt="#,##0")
+r = end2 + 2
+
+ws.cell(row=r, column=1, value="（3）町別 0～39歳・40～64歳人口（平成24年・令和5年）").font = Font(name=FONT, size=10, bold=True)
+hrow3 = r + 1
+end3 = table(ws, hrow3, ["区分", "平成24年 0～39歳", "令和5年 0～39歳", "平成24年 40～64歳", "令和5年 40～64歳"],
+             [[t, TOWN_0_39[t][0], TOWN_0_39[t][11], TOWN_40_64[t][0], TOWN_40_64[t][11]]
+              for t in ["東川町", "美瑛町", "東神楽町"]] + [["広域連合 計", None, None, None, None]],
+             numfmt="#,##0")
+for c in range(2, 6):
+    col = get_column_letter(c)
+    ws.cell(row=end3, column=c).value = f"=SUM({col}{hrow3+1}:{col}{end3-1})"
+    ws.cell(row=end3, column=c).number_format = "#,##0"
+    ws.cell(row=end3, column=c).font = Font(name=FONT, size=9, bold=True)
+note(ws, end3 + 2,
+     "注1）年齢4区分と町別人口は第9期計画 第2章第1節1の掲載表から復元した。全12年について"
+     "「0～39歳＋40～64歳＋65～74歳＋75歳以上＝総人口」「65～74歳＋75歳以上＝65歳以上」"
+     "「東川町＋美瑛町＋東神楽町＝総人口」がすべて一致することを確認している。"
+     "注2）町別の高齢化率も逆算で一致する（令和5年：東川町2,683÷8,558＝31.4％、美瑛町3,675÷9,475＝38.8％、"
+     "東神楽町2,833÷9,854＝28.7％）。"
+     "注3）（3）は計画に平成24年と令和5年のみ掲載されているため2時点としている。中間年は原データの受領後に補う。"
+     "注4）令和6～8年（淡黄色欄）は住民基本台帳の実績受領後に入力する。")
+
 
 # ============================================================ 02 高齢化率
 ws = sheet("02_高齢化率推移", "図2　高齢化率の推移（広域連合・構成3町）",
@@ -561,7 +649,7 @@ ch.gapWidth = 40
 ch.width, ch.height = 26, 11
 ch.series[0].graphicalProperties = _fill(4)
 _axis_mono(ch, cat_rot=-2700000, tick_size=750)
-_dlabels(ch, "outEnd", 750, "0.0")
+_dlabels(ch, "outEnd", 750, "0.0", per_series=False)
 ch.legend = None
 ws.add_chart(ch, "R51")
 
@@ -770,7 +858,7 @@ for k, (no, nm, u, n, _a, _t, _p) in enumerate(NEEDS):
     ch.width, ch.height = 13, 8
     ch.series[0].graphicalProperties = _fill(3)
     _axis_mono(ch)
-    _dlabels(ch, "outEnd", 750, "0.0")
+    _dlabels(ch, "outEnd", 750, "0.0", per_series=False)
     ch.legend = None
     wsg.add_chart(ch, f"A{anchor_r}")
 
@@ -786,7 +874,7 @@ for k, (no, nm, u, n, _a, _t, _p) in enumerate(NEEDS):
     ch2.width, ch2.height = 13, 8
     ch2.series[0].graphicalProperties = _fill(5)
     _axis_mono(ch2)
-    _dlabels(ch2, "outEnd", 750, "0.0")
+    _dlabels(ch2, "outEnd", 750, "0.0", per_series=False)
     ch2.legend = None
     wsg.add_chart(ch2, f"J{anchor_r}")
     anchor_r += 17
