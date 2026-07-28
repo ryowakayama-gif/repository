@@ -27,7 +27,7 @@
 .bzu-fig .s-border{stroke:var(--c-border,#C7D5DC)}
 /* 文字サイズ：--fs-scale で全体を一括拡縮（既定 1） */
 .bzu-fig .fs-11_5{font-size:calc(17px * var(--fs-scale, 1))}
-.bzu-fig .fs-12{font-size:calc(12px * var(--fs-scale, 1))}
+.bzu-fig .fs-12{font-size:calc(18px * var(--fs-scale, 1))}
 .bzu-fig .fs-12_5{font-size:calc(18.5px * var(--fs-scale, 1))}
 .bzu-fig .fs-13{font-size:calc(19px * var(--fs-scale, 1))}
 .bzu-fig .fs-13_5{font-size:calc(19.5px * var(--fs-scale, 1))}
@@ -51,13 +51,13 @@
 <text class="f-brand" x="90" y="174" text-anchor="middle" font-weight="700">町民</text>
 <text x="270" y="174" text-anchor="middle">回収率がやや低い</text>
 <text x="600" y="174" text-anchor="middle">38.3%（2,000票配布／766票回収）</text>
-<text x="960" y="174" text-anchor="middle">督促はがき・Web併用で45%以上を目標（保証値ではありません）</text>
+<text x="960" y="174" text-anchor="middle">督促はがき・Web併用で45%以上を目標（保証値ではない）</text>
 
 <rect class="f-surface" x="35" y="194" width="1170" height="48"/>
 <text class="f-brand" x="90" y="222" text-anchor="middle" font-weight="700">町民</text>
 <text x="270" y="222" text-anchor="middle">高齢層への回収偏り</text>
 <text x="600" y="222" text-anchor="middle">70歳以上44.1%（人口構成比は約35%）</text>
-<text x="960" y="222" text-anchor="middle">年齢層別ウェイトで補正（無回答バイアスを完全には解消しません）</text>
+<text x="960" y="222" text-anchor="middle">年齢層別ウェイトで補正（無回答バイアスは残ります）</text>
 
 <rect class="f-surfalt" x="35" y="242" width="1170" height="48"/>
 <text class="f-brand" x="90" y="270" text-anchor="middle" font-weight="700">町民</text>
@@ -75,7 +75,7 @@
 <text class="f-accent" x="90" y="366" text-anchor="middle" font-weight="700">障がい</text>
 <text x="270" y="366" text-anchor="middle" font-weight="700">手帳種別間の回収率格差</text>
 <text x="600" y="366" text-anchor="middle" font-weight="700">療育手帳26.8%〜自立支援医療69.6%</text>
-<text x="960" y="366" text-anchor="middle" font-weight="700">手帳種別ウェイトで補正、わかりやすい版を重点配布（図版02・06）</text>
+<text x="960" y="366" text-anchor="middle" font-weight="700">手帳種別ウェイトで補正、わかりやすい版を配布（図版02・06）</text>
 
 <rect class="f-surface" x="35" y="386" width="1170" height="48"/>
 <text class="f-accent" x="90" y="414" text-anchor="middle" font-weight="700">障がい</text>
@@ -103,7 +103,7 @@
 
 <rect class="f-brandpale" x="35" y="550" width="1170" height="60" rx="10"/>
 <text class="f-brand fs-13" x="57" y="574" font-weight="700">国の関連方針</text>
-<text class="f-ink fs-12" x="57" y="596">厚労省「介護予防・日常生活圏域ニーズ調査 実施の手引き」（層化抽出時の母集団推定・400件目安）、呉市の男女共同参画調査（層化・ウェイトバック・標本誤差早見表）を参照。</text>
+<text class="f-ink fs-12" x="57" y="596">厚労省「介護予防・日常生活圏域ニーズ調査 実施の手引き」（母集団推定・400件目安）、呉市の男女共同参画調査（層化・ウェイトバック）を参照。</text>
 
 <rect class="f-accentpale s-accent" x="35" y="622" width="1170" height="70" rx="8" stroke-width="1.2"/>
 <text class="f-accent fs-12" x="55" y="646" font-weight="700">記載トーンの注意</text>

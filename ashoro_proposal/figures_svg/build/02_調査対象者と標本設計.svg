@@ -28,12 +28,12 @@
 .bzu-fig .s-accent{stroke:var(--c-accent,#E07B39)}
 .bzu-fig .s-border{stroke:var(--c-border,#C7D5DC)}
 /* 文字サイズ：--fs-scale で全体を一括拡縮（既定 1） */
-.bzu-fig .fs-12{font-size:calc(12px * var(--fs-scale, 1))}
+.bzu-fig .fs-12{font-size:calc(18px * var(--fs-scale, 1))}
 .bzu-fig .fs-13{font-size:calc(19px * var(--fs-scale, 1))}
 .bzu-fig .fs-13_5{font-size:calc(19.5px * var(--fs-scale, 1))}
-.bzu-fig .fs-14_5{font-size:calc(14.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-14_5{font-size:calc(20.5px * var(--fs-scale, 1))}
 .bzu-fig .fs-16{font-size:calc(22px * var(--fs-scale, 1))}
-.bzu-fig .fs-17{font-size:calc(17px * var(--fs-scale, 1))}
+.bzu-fig .fs-17{font-size:calc(23px * var(--fs-scale, 1))}
 .bzu-fig .fs-23{font-size:calc(30px * var(--fs-scale, 1))}
 </style>
 
@@ -55,7 +55,7 @@
 
 <rect class="f-surfalt" x="49" y="256" width="547" height="80" rx="7"/>
 <text class="f-ink fs-14_5" x="65" y="282" font-weight="700" text-anchor="start" letter-spacing="0">関係団体等</text>
-<text class="f-muted fs-12" x="65" y="303" font-weight="400" text-anchor="start" letter-spacing="0">社会福祉協議会・介護保険/障がい福祉サービス事業者</text>
+<text class="f-muted fs-12" x="65" y="303" font-weight="400" text-anchor="start" letter-spacing="0">社会福祉協議会・介護／障がい福祉サービス事業者</text>
 <text class="f-muted fs-12" x="65" y="322" font-weight="400" text-anchor="start" letter-spacing="0">老人クラブ連合会・ボランティア団体・自治会等</text>
 <rect class="f-surface s-brand" x="472" y="286" width="108" height="30" rx="15" stroke-width="1.2"/>
 <text class="f-brand fs-13" x="526" y="306" font-weight="700" text-anchor="middle" letter-spacing="0">全数</text>
@@ -67,11 +67,12 @@
 <rect class="f-surface s-brand" x="472" y="376" width="108" height="30" rx="15" stroke-width="1.2"/>
 <text class="f-brand fs-13" x="526" y="396" font-weight="700" text-anchor="middle" letter-spacing="0">全数</text>
 
-<rect class="f-brandpale" x="49" y="436" width="547" height="100" rx="7"/>
-<text class="f-brand fs-13" x="65" y="460" font-weight="700" text-anchor="start" letter-spacing="0">前回調査（令和元年度）実績</text>
-<text class="f-ink fs-12" x="65" y="482" font-weight="400" text-anchor="start" letter-spacing="0">配布2,000票／回収766票（回収率38.3%）。70歳以上が回答者の</text>
-<text class="f-ink fs-12" x="65" y="501" font-weight="400" text-anchor="start" letter-spacing="0">44.1%を占め、実際の人口構成比（約35%）より高齢層に偏っていました。</text>
-<text class="f-ink fs-12" x="65" y="520" font-weight="400" text-anchor="start" letter-spacing="0">本業務では回収率45%以上を目標とし（保証値ではありません）、年齢構成の偏りを補正します。</text>
+<rect class="f-brandpale" x="49" y="428" width="547" height="116" rx="7"/>
+<text class="f-brand fs-13" x="65" y="450" font-weight="700" text-anchor="start" letter-spacing="0">前回調査（令和元年度）実績</text>
+<text class="f-ink fs-12" x="65" y="472" font-weight="400" text-anchor="start" letter-spacing="0">配布2,000票／回収766票（回収率38.3%）。</text>
+<text class="f-ink fs-12" x="65" y="494" font-weight="400" text-anchor="start" letter-spacing="0">70歳以上が回答者の44.1%を占め、人口構成比</text>
+<text class="f-ink fs-12" x="65" y="516" font-weight="400" text-anchor="start" letter-spacing="0">（約35%）より高齢層に偏っていました。今回は</text>
+<text class="f-ink fs-12" x="65" y="538" font-weight="400" text-anchor="start" letter-spacing="0">45%以上を目標（保証値ではありません）とし補正します。</text>
 
 <rect class="f-surface s-border" x="630" y="112" width="575" height="440" rx="10" stroke-width="1.2"/>
 <path class="f-accent" d="M630,122 a10,10 0 0 1 10,-10 L1195,112 a10,10 0 0 1 10,10 L1205,152 L630,152 Z"/>
@@ -85,7 +86,7 @@
 
 <rect class="f-accentpale" x="644" y="240" width="547" height="64" rx="7"/>
 <text class="f-ink fs-14_5" x="660" y="267" font-weight="700" text-anchor="start" letter-spacing="0">療育手帳所持者（66人）</text>
-<text class="f-accent fs-12" x="660" y="288" font-weight="700" text-anchor="start" letter-spacing="0">前回回収率26.8%と低位。わかりやすい版を重点配布</text>
+<text class="f-accent fs-12" x="660" y="288" font-weight="700" text-anchor="start" letter-spacing="0">前回回収率26.8%と低位。わかりやすい版を配布</text>
 <rect class="f-surface s-accent" x="1079" y="257" width="96" height="30" rx="15" stroke-width="1.2"/>
 <text class="f-accent fs-13" x="1127" y="277" font-weight="700" text-anchor="middle" letter-spacing="0">全数</text>
 
@@ -96,15 +97,16 @@
 <text class="f-accent fs-13" x="1127" y="351" font-weight="700" text-anchor="middle" letter-spacing="0">全数</text>
 
 <rect class="f-surfalt" x="644" y="388" width="547" height="64" rx="7"/>
-<text class="f-ink fs-14_5" x="660" y="415" font-weight="700" text-anchor="start" letter-spacing="0">関係団体等（相談支援・障がい福祉サービス事業所）</text>
+<text class="f-ink fs-14_5" x="660" y="415" font-weight="700" text-anchor="start" letter-spacing="0">関係団体等（相談支援・サービス事業所）</text>
 <text class="f-muted fs-12" x="660" y="436" font-weight="400" text-anchor="start" letter-spacing="0">町内の指定事業所・相談支援事業所</text>
 <rect class="f-surface s-accent" x="1079" y="405" width="96" height="30" rx="15" stroke-width="1.2"/>
 <text class="f-accent fs-13" x="1127" y="425" font-weight="700" text-anchor="middle" letter-spacing="0">全数</text>
 
-<rect class="f-brandpale" x="644" y="462" width="547" height="74" rx="7"/>
-<text class="f-brand fs-13" x="660" y="484" font-weight="700" text-anchor="start" letter-spacing="0">3手帳の延べ人数459人／配布500票（仕様書）</text>
-<text class="f-ink fs-12" x="660" y="505" font-weight="400" text-anchor="start" letter-spacing="0">459人は手帳種別の単純合計（延べ人数）です。重複所持者を除いた実人数と、</text>
-<text class="f-ink fs-12" x="660" y="524" font-weight="400" text-anchor="start" letter-spacing="0">対象範囲（自立支援医療の扱い）を最新名簿で確認し、悉皆・抽出の別は契約後に確定します。</text>
+<rect class="f-brandpale" x="644" y="448" width="547" height="96" rx="7"/>
+<text class="f-brand fs-13" x="660" y="470" font-weight="700" text-anchor="start" letter-spacing="0">3手帳の延べ人数459人／配布500票（仕様書）</text>
+<text class="f-ink fs-12" x="660" y="492" font-weight="400" text-anchor="start" letter-spacing="0">459人＝身体350＋療育66＋精神43（R5.12末・延べ）。</text>
+<text class="f-ink fs-12" x="660" y="514" font-weight="400" text-anchor="start" letter-spacing="0">前回調査の対象は自立支援医療を含む延べ490人、</text>
+<text class="f-ink fs-12" x="660" y="536" font-weight="400" text-anchor="start" letter-spacing="0">実人数454人（前回計画p.65）。範囲は契約後に確定。</text>
 
 <rect class="f-brandpale" x="35" y="562" width="1170" height="140" rx="10"/>
 <text class="f-brand fs-16" x="57" y="590" font-weight="700" text-anchor="start" letter-spacing="0">標本設計の考え方</text>

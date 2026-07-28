@@ -30,12 +30,12 @@
 .bzu-fig .s-border{stroke:var(--c-border,#C7D5DC)}
 /* 文字サイズ：--fs-scale で全体を一括拡縮（既定 1） */
 .bzu-fig .fs-11_5{font-size:calc(17px * var(--fs-scale, 1))}
-.bzu-fig .fs-12{font-size:calc(12px * var(--fs-scale, 1))}
+.bzu-fig .fs-12{font-size:calc(18px * var(--fs-scale, 1))}
 .bzu-fig .fs-13{font-size:calc(19px * var(--fs-scale, 1))}
 .bzu-fig .fs-13_5{font-size:calc(19.5px * var(--fs-scale, 1))}
 .bzu-fig .fs-14{font-size:calc(20px * var(--fs-scale, 1))}
-.bzu-fig .fs-14_5{font-size:calc(14.5px * var(--fs-scale, 1))}
-.bzu-fig .fs-15{font-size:calc(15px * var(--fs-scale, 1))}
+.bzu-fig .fs-14_5{font-size:calc(20.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-15{font-size:calc(21px * var(--fs-scale, 1))}
 .bzu-fig .fs-16{font-size:calc(22px * var(--fs-scale, 1))}
 .bzu-fig .fs-23{font-size:calc(30px * var(--fs-scale, 1))}
 </style>
@@ -51,7 +51,7 @@
 <text class="f-muted fs-13_5" x="50" y="74" font-weight="400" text-anchor="start" letter-spacing="0">回答者の負担軽減と集計工数の削減をめざします（仕様書は郵送法。Web併用は費用と個人情報の取扱いを協議のうえの追加提案）</text>
 <rect class="f-brand" x="45" y="150" width="230" height="90" rx="10"/>
 <text class="f-onbrand fs-15" x="160" y="186" font-weight="700" text-anchor="middle" letter-spacing="0">① 対象者名簿の提供（町）</text>
-<text class="f-onbrand fs-12" x="160" y="210" font-weight="400" text-anchor="middle" letter-spacing="0">住民基本台帳・手帳台帳から</text>
+<text class="f-onbrand fs-12" x="160" y="210" font-weight="400" text-anchor="middle" letter-spacing="0">住民基本台帳・手帳台帳</text>
 <text class="f-onbrand fs-12" x="160" y="228" font-weight="400" text-anchor="middle" letter-spacing="0">町が対象者名簿を提供</text>
 <path class="f-brand2" d="M285,187.0 L315,195 L285,203.0 Z"/>
 <rect class="f-brand" x="325" y="150" width="250" height="90" rx="10"/>
@@ -76,7 +76,7 @@
 <path class="s-accent" d="M975,431 L1015,431 L1015,392" fill="none" stroke-width="1.8"/>
 <rect class="f-brandpale" x="1010" y="358" width="190" height="76" rx="10"/>
 <text class="f-brand fs-14_5" x="1105" y="386" font-weight="700" text-anchor="middle" letter-spacing="0">③ データ統合</text>
-<text class="f-ink fs-12" x="1105" y="408" font-weight="400" text-anchor="middle" letter-spacing="0">匿名の回答IDで名寄せ・</text>
+<text class="f-ink fs-12" x="1105" y="408" font-weight="400" text-anchor="middle" letter-spacing="0">匿名IDで名寄せ</text>
 <text class="f-ink fs-12" x="1105" y="426" font-weight="400" text-anchor="middle" letter-spacing="0">重複回答を排除</text>
 <rect class="f-surfalt s-border" x="45" y="500" width="1150" height="108" rx="10" stroke-width="1.2"/>
 <text class="f-ink fs-16" x="69" y="530" font-weight="700" text-anchor="start" letter-spacing="0">Web併用による効果</text>

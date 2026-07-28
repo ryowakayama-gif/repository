@@ -29,12 +29,12 @@
 .bzu-fig .s-accent{stroke:var(--c-accent,#E07B39)}
 /* 文字サイズ：--fs-scale で全体を一括拡縮（既定 1） */
 .bzu-fig .fs-11_5{font-size:calc(17px * var(--fs-scale, 1))}
-.bzu-fig .fs-12{font-size:calc(12px * var(--fs-scale, 1))}
+.bzu-fig .fs-12{font-size:calc(18px * var(--fs-scale, 1))}
 .bzu-fig .fs-12_5{font-size:calc(18.5px * var(--fs-scale, 1))}
 .bzu-fig .fs-13{font-size:calc(19px * var(--fs-scale, 1))}
 .bzu-fig .fs-13_5{font-size:calc(19.5px * var(--fs-scale, 1))}
 .bzu-fig .fs-14{font-size:calc(20px * var(--fs-scale, 1))}
-.bzu-fig .fs-15{font-size:calc(15px * var(--fs-scale, 1))}
+.bzu-fig .fs-15{font-size:calc(21px * var(--fs-scale, 1))}
 .bzu-fig .fs-16{font-size:calc(22px * var(--fs-scale, 1))}
 .bzu-fig .fs-23{font-size:calc(30px * var(--fs-scale, 1))}
 </style>
@@ -99,20 +99,20 @@
 <text class="f-onbrand fs-16" x="1040" y="148" font-weight="700" text-anchor="middle" letter-spacing="0">Ⅲ. 成果指標（KPI）の設定例</text>
 <rect class="f-surfalt" x="893" y="182" width="294" height="62" rx="7"/>
 <text class="f-ink fs-13" x="909" y="208" font-weight="700" text-anchor="start" letter-spacing="0">地域活動・ボランティア参加率</text>
-<text class="f-accent fs-12" x="909" y="229" font-weight="700" text-anchor="start" letter-spacing="0">前回 38.4% → 目標案 45%</text>
+<text class="f-accent fs-12" x="909" y="229" font-weight="700" text-anchor="start" letter-spacing="0">町民 38.4% → 目標案 45%</text>
 <rect class="f-surfalt" x="893" y="256" width="294" height="62" rx="7"/>
 <text class="f-ink fs-13" x="909" y="282" font-weight="700" text-anchor="start" letter-spacing="0">社会福祉協議会の認知度</text>
-<text class="f-accent fs-12" x="909" y="303" font-weight="700" text-anchor="start" letter-spacing="0">前回 47.8% → 目標案 60%</text>
+<text class="f-accent fs-12" x="909" y="303" font-weight="700" text-anchor="start" letter-spacing="0">町民 47.8% → 目標案 60%</text>
 <rect class="f-surfalt" x="893" y="330" width="294" height="62" rx="7"/>
 <text class="f-ink fs-13" x="909" y="356" font-weight="700" text-anchor="start" letter-spacing="0">不快な思いをした経験の割合</text>
-<text class="f-accent fs-12" x="909" y="377" font-weight="700" text-anchor="start" letter-spacing="0">前回 22.2% → 目標案 15%以下</text>
+<text class="f-accent fs-12" x="909" y="377" font-weight="700" text-anchor="start" letter-spacing="0">障がい者 22.2% → 15%以下</text>
 <rect class="f-surfalt" x="893" y="404" width="294" height="62" rx="7"/>
 <text class="f-ink fs-13" x="909" y="430" font-weight="700" text-anchor="start" letter-spacing="0">成年後見制度の認知度</text>
-<text class="f-accent fs-12" x="909" y="451" font-weight="700" text-anchor="start" letter-spacing="0">前回 21.4% → 目標案 30%</text>
+<text class="f-accent fs-12" x="909" y="451" font-weight="700" text-anchor="start" letter-spacing="0">町民 21.4% → 目標案 30%</text>
 <rect class="f-surfalt" x="893" y="478" width="294" height="62" rx="7"/>
 <text class="f-ink fs-13" x="909" y="504" font-weight="700" text-anchor="start" letter-spacing="0">暮らしやすいと思う割合</text>
-<text class="f-accent fs-12" x="909" y="525" font-weight="700" text-anchor="start" letter-spacing="0">前回 63.8% → 維持・向上</text>
+<text class="f-accent fs-12" x="909" y="525" font-weight="700" text-anchor="start" letter-spacing="0">町民 63.8% → 維持・向上</text>
 <rect class="f-brandpale" x="35" y="588" width="1170" height="78" rx="10"/>
 <text class="f-brand fs-15" x="57" y="616" font-weight="700" text-anchor="start" letter-spacing="0">継続設問と新規設問のバランス</text>
-<text class="f-ink fs-12_5" x="57" y="642" font-weight="400" text-anchor="start" letter-spacing="0">経年比較が必要な設問は前回調査を踏襲（概ね7割）。残る3割で新たな政策課題を把握します。Ⅲの目標値は委員会協議に付す設定例です。</text>
+<text class="f-ink fs-12_5" x="57" y="642" font-weight="400" text-anchor="start" letter-spacing="0">経年比較が必要な設問は前回調査を踏襲（概ね7割）。Ⅲの前回値は町民＝令和元年度調査n=766、障がい者＝令和5年度調査n=167。</text>
 </svg>

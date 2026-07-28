@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 640" class="bzu-fig" role="img" aria-labelledby="fig-11-t fig-11-d" preserveAspectRatio="xMidYMid meet">
+<title id="fig-11-t">3計画の整合的な改定設計</title>
+<desc id="fig-11-d">地域福祉計画（5年）の中間見直しを令和11年度に置くことで、障がい・介護保険・こどもの各計画と改定時期が揃います</desc>
+<style>
+.bzu-fig{
+  display:block; width:100%;
+  max-width:var(--fig-max-width, 1240px);
+  height:auto; margin:var(--fig-margin, 0 auto);
+  font-family:var(--fig-font, 'BIZ UDPGothic','BIZ UDPゴシック','BIZ UDGothic','BIZ UDゴシック','Yu Gothic UI','Yu Gothic','Meiryo',sans-serif);
+  font-weight:var(--fig-font-weight, 400);
+}
+.bzu-fig .f-ink{fill:var(--c-ink,#1A2B3C)}
+.bzu-fig .f-muted{fill:var(--c-ink-muted,#5E7182)}
+.bzu-fig .f-brand{fill:var(--c-brand,#1E5F74)}
+.bzu-fig .f-brand2{fill:var(--c-brand-light,#3E8296)}
+.bzu-fig .f-accent{fill:var(--c-accent,#E07B39)}
+.bzu-fig .f-border{fill:var(--c-border,#C7D5DC)}
+.bzu-fig .f-surfalt{fill:var(--c-surface-alt,#F4F7F8)}
+.bzu-fig .f-surfmute{fill:var(--c-surface-mute,#F2F4F5)}
+.bzu-fig .f-brandpale{fill:var(--c-brand-pale,#E2EDF0)}
+.bzu-fig .f-accentpale{fill:var(--c-accent-pale,#FBEDE1)}
+.bzu-fig .f-surface{fill:var(--c-surface,#FFFFFF)}
+.bzu-fig .f-onbrand{fill:var(--c-on-brand,#FFFFFF)}
+.bzu-fig .f-onaccent{fill:var(--c-on-accent,#FFFFFF)}
+.bzu-fig .s-ink{stroke:var(--c-ink,#1A2B3C)}
+.bzu-fig .s-muted{stroke:var(--c-ink-muted,#5E7182)}
+.bzu-fig .s-brand{stroke:var(--c-brand,#1E5F74)}
+.bzu-fig .s-brand2{stroke:var(--c-brand-light,#3E8296)}
+.bzu-fig .s-accent{stroke:var(--c-accent,#E07B39)}
+.bzu-fig .s-border{stroke:var(--c-border,#C7D5DC)}
+.bzu-fig .s-surfalt{stroke:var(--c-surface-alt,#F4F7F8)}
+.bzu-fig .s-surfmute{stroke:var(--c-surface-mute,#F2F4F5)}
+.bzu-fig .s-brandpale{stroke:var(--c-brand-pale,#E2EDF0)}
+.bzu-fig .s-accentpale{stroke:var(--c-accent-pale,#FBEDE1)}
+.bzu-fig .s-surface{stroke:var(--c-surface,#FFFFFF)}
+/* 文字サイズ：--fs-scale で全体を一括拡縮（既定 1） */
+.bzu-fig .fs-10{font-size:calc(15px * var(--fs-scale, 1))}
+.bzu-fig .fs-10_5{font-size:calc(15.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-11{font-size:calc(16.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-11_5{font-size:calc(17px * var(--fs-scale, 1))}
+.bzu-fig .fs-12{font-size:calc(18px * var(--fs-scale, 1))}
+.bzu-fig .fs-12_5{font-size:calc(18.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-13{font-size:calc(19px * var(--fs-scale, 1))}
+.bzu-fig .fs-13_5{font-size:calc(19.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-14{font-size:calc(20px * var(--fs-scale, 1))}
+.bzu-fig .fs-15{font-size:calc(21px * var(--fs-scale, 1))}
+.bzu-fig .fs-16{font-size:calc(22px * var(--fs-scale, 1))}
+.bzu-fig .fs-17{font-size:calc(23px * var(--fs-scale, 1))}
+.bzu-fig .fs-23{font-size:calc(30px * var(--fs-scale, 1))}
+</style>
+<rect class="f-surface" width="1240" height="640"/>
+<rect class="f-accent" x="34" y="30" width="5" height="24" rx="2.5"/>
+<text class="f-ink fs-23" x="50" y="50" font-weight="700" text-anchor="start" letter-spacing="0.5">3計画の整合的な改定設計</text>
+<text class="f-muted fs-13_5" x="50" y="74" font-weight="400" text-anchor="start" letter-spacing="0">地域福祉計画（5年）の中間見直しを令和11年度に置くことで、障がい・介護保険・こどもの各計画と改定時期が揃います</text>
+<rect class="f-accentpale" x="524.0" y="104" width="112.0" height="350" rx="6"/>
+<line class="s-accent" x1="972.0" y1="104" x2="972.0" y2="454" stroke-width="1.6" stroke-dasharray="5 4"/>
+<rect class="f-brand" x="35" y="112" width="1161" height="34" rx="6"/>
+<text class="f-onbrand fs-12_5" x="50" y="134" font-weight="700" text-anchor="start" letter-spacing="0">計画</text>
+<text class="f-onbrand fs-12_5" x="356.0" y="134" font-weight="700" text-anchor="middle" letter-spacing="0">令和6</text>
+<text class="f-onbrand fs-12_5" x="468.0" y="134" font-weight="700" text-anchor="middle" letter-spacing="0">令和7</text>
+<text class="f-onbrand fs-12_5" x="580.0" y="134" font-weight="700" text-anchor="middle" letter-spacing="0">令和8</text>
+<text class="f-onbrand fs-12_5" x="692.0" y="134" font-weight="700" text-anchor="middle" letter-spacing="0">令和9</text>
+<text class="f-onbrand fs-12_5" x="804.0" y="134" font-weight="700" text-anchor="middle" letter-spacing="0">令和10</text>
+<text class="f-onbrand fs-12_5" x="916.0" y="134" font-weight="700" text-anchor="middle" letter-spacing="0">令和11</text>
+<text class="f-onbrand fs-12_5" x="1028.0" y="134" font-weight="700" text-anchor="middle" letter-spacing="0">令和12</text>
+<text class="f-onbrand fs-12_5" x="1140.0" y="134" font-weight="700" text-anchor="middle" letter-spacing="0">令和13</text>
+<text class="f-accent fs-11_5" x="580.0" y="98" font-weight="700" text-anchor="middle" letter-spacing="0">本業務（令和8年度）</text>
+<text class="f-accent fs-12" x="972.0" y="470" font-weight="700" text-anchor="middle" letter-spacing="0">令和11年度末：4計画の期間が揃う</text>
+<rect class="f-surfalt" x="35" y="154" width="1161" height="62" rx="6"/>
+<text class="f-ink fs-12_5" x="50" y="180" font-weight="700" text-anchor="start" letter-spacing="0">地域福祉計画</text>
+<text class="f-muted fs-10_5" x="50" y="199" font-weight="400" text-anchor="start" letter-spacing="0">社会福祉法第107条</text>
+<rect class="f-surfalt" x="35" y="226" width="1161" height="62" rx="6"/>
+<text class="f-ink fs-12_5" x="50" y="246" font-weight="700" text-anchor="start" letter-spacing="0">障がい福祉計画・</text>
+<text class="f-ink fs-12_5" x="50" y="265" font-weight="700" text-anchor="start" letter-spacing="0">障がい児福祉計画</text>
+<text class="f-muted fs-10_5" x="50" y="282" font-weight="400" text-anchor="start" letter-spacing="0">基本指針（告示第4号）</text>
+<rect class="f-surfalt" x="35" y="298" width="1161" height="62" rx="6"/>
+<text class="f-ink fs-12_5" x="50" y="318" font-weight="700" text-anchor="start" letter-spacing="0">高齢者保健福祉計画・</text>
+<text class="f-ink fs-12_5" x="50" y="337" font-weight="700" text-anchor="start" letter-spacing="0">介護保険事業計画</text>
+<text class="f-muted fs-10_5" x="50" y="354" font-weight="400" text-anchor="start" letter-spacing="0">介護保険法第117条</text>
+<rect class="f-surfalt" x="35" y="370" width="1161" height="62" rx="6"/>
+<text class="f-ink fs-12_5" x="50" y="396" font-weight="700" text-anchor="start" letter-spacing="0">こども計画</text>
+<text class="f-muted fs-10_5" x="50" y="415" font-weight="400" text-anchor="start" letter-spacing="0">改定済</text>
+<rect class="f-surfmute s-border" x="303.0" y="168" width="106.0" height="34" rx="6" stroke-width="1.2"/>
+<text class="f-muted fs-11_5" x="356.0" y="184" font-weight="700" text-anchor="middle" letter-spacing="0">第2期</text>
+<text class="f-muted fs-10" x="356.0" y="198" font-weight="400" text-anchor="middle" letter-spacing="0">R2〜R6</text>
+<rect class="f-surfmute s-border" x="415.0" y="168" width="218.0" height="34" rx="6" stroke-width="1.2"/>
+<text class="f-muted fs-11_5" x="524.0" y="184" font-weight="700" text-anchor="middle" letter-spacing="0">運用状況は要確認</text>
+<text class="f-muted fs-10" x="524.0" y="198" font-weight="400" text-anchor="middle" letter-spacing="0">R7〜R8</text>
+<rect class="f-brand" x="639.0" y="168" width="554.0" height="34" rx="6"/>
+<text class="f-onbrand fs-11_5" x="916.0" y="184" font-weight="700" text-anchor="middle" letter-spacing="0">第3期地域福祉計画（5年計画）</text>
+<text class="f-onbrand fs-10" x="916.0" y="198" font-weight="400" text-anchor="middle" letter-spacing="0">令和9〜13年度　※中間見直し：令和11年度</text>
+<path class="f-accent" d="M965.0,168 l7,-12 l7,12 z"/>
+<rect class="f-surfmute s-border" x="303.0" y="240" width="330.0" height="34" rx="6" stroke-width="1.2"/>
+<text class="f-muted fs-11_5" x="468.0" y="256" font-weight="700" text-anchor="middle" letter-spacing="0">第7期・第3期（現行）</text>
+<text class="f-muted fs-10" x="468.0" y="270" font-weight="400" text-anchor="middle" letter-spacing="0">R6〜R8</text>
+<rect class="f-accent" x="639.0" y="240" width="330.0" height="34" rx="6"/>
+<text class="f-onaccent fs-11_5" x="804.0" y="256" font-weight="700" text-anchor="middle" letter-spacing="0">第8期障がい・第4期障がい児福祉計画</text>
+<text class="f-onaccent fs-10" x="804.0" y="270" font-weight="400" text-anchor="middle" letter-spacing="0">令和9〜11年度（告示第4号・確定）</text>
+<rect class="f-brandpale" x="975.0" y="240" width="218.0" height="34" rx="6"/>
+<text class="f-ink fs-11_5" x="1084.0" y="256" font-weight="700" text-anchor="middle" letter-spacing="0">第9期・第5期</text>
+<text class="f-ink fs-10" x="1084.0" y="270" font-weight="400" text-anchor="middle" letter-spacing="0">令和12〜14年度</text>
+<rect class="f-surfmute s-border" x="303.0" y="312" width="330.0" height="34" rx="6" stroke-width="1.2"/>
+<text class="f-muted fs-11_5" x="468.0" y="328" font-weight="700" text-anchor="middle" letter-spacing="0">第9期（現行）</text>
+<text class="f-muted fs-10" x="468.0" y="342" font-weight="400" text-anchor="middle" letter-spacing="0">R6〜R8</text>
+<rect class="f-brand2" x="639.0" y="312" width="330.0" height="34" rx="6"/>
+<text class="f-onbrand fs-11_5" x="804.0" y="328" font-weight="700" text-anchor="middle" letter-spacing="0">第10期介護保険事業計画</text>
+<text class="f-onbrand fs-10" x="804.0" y="342" font-weight="400" text-anchor="middle" letter-spacing="0">令和9〜11年度（3年一期）</text>
+<rect class="f-brandpale" x="975.0" y="312" width="218.0" height="34" rx="6"/>
+<text class="f-ink fs-11_5" x="1084.0" y="328" font-weight="700" text-anchor="middle" letter-spacing="0">第11期</text>
+<text class="f-ink fs-10" x="1084.0" y="342" font-weight="400" text-anchor="middle" letter-spacing="0">令和12〜14年度</text>
+<rect class="f-surfalt s-border" x="415.0" y="384" width="554.0" height="34" rx="6" stroke-width="1.2"/>
+<text class="f-ink fs-11_5" x="692.0" y="400" font-weight="700" text-anchor="middle" letter-spacing="0">第3期こども計画（改定済）</text>
+<text class="f-ink fs-10" x="692.0" y="414" font-weight="400" text-anchor="middle" letter-spacing="0">令和7〜11年度</text>
+<rect class="f-brandpale" x="975.0" y="384" width="218.0" height="34" rx="6"/>
+<text class="f-ink fs-11_5" x="1084.0" y="400" font-weight="700" text-anchor="middle" letter-spacing="0">次期こども計画</text>
+<text class="f-ink fs-10" x="1084.0" y="414" font-weight="400" text-anchor="middle" letter-spacing="0">令和12年度〜</text>
+<rect class="f-brandpale" x="35" y="496" width="1161" height="118" rx="10"/>
+<text class="f-brand fs-15" x="57" y="522" font-weight="700" text-anchor="start" letter-spacing="0">この設計の根拠と効果</text>
+<text class="f-ink fs-12" x="57" y="546" font-weight="400" text-anchor="start" letter-spacing="0">・地域福祉計画は「概ね5年・3年で見直し」が適当（平成14年 社会保障審議会福祉部会）。中間見直しを令和11年度に置きます。</text>
+<text class="f-ink fs-12" x="57" y="567" font-weight="400" text-anchor="start" letter-spacing="0">・障がい福祉計画等は令和9〜11年度（告示第4号）、介護保険事業計画は3年一期（法第117条）。いずれも令和11年度末に終了します。</text>
+<text class="f-ink fs-12" x="57" y="588" font-weight="400" text-anchor="start" letter-spacing="0">・こども計画も令和7〜11年度で改定済みのため、令和11年度末に4計画の期間が揃い、次々期改定を一体的に検討できます。</text>
+<text class="f-muted fs-11" x="57" y="630" font-weight="400" text-anchor="start" letter-spacing="0">※ 第2期地域福祉計画（令和2〜6年度）は計画期間が満了。令和7〜8年度の運用状況は契約後に町へご確認のうえ整理します。</text>
+
+</svg>

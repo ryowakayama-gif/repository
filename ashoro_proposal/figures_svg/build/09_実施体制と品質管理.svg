@@ -27,14 +27,14 @@
 .bzu-fig .s-brand2{stroke:var(--c-brand-light,#3E8296)}
 .bzu-fig .s-border{stroke:var(--c-border,#C7D5DC)}
 /* 文字サイズ：--fs-scale で全体を一括拡縮（既定 1） */
-.bzu-fig .fs-10_5{font-size:calc(10.5px * var(--fs-scale, 1))}
-.bzu-fig .fs-11{font-size:calc(11px * var(--fs-scale, 1))}
+.bzu-fig .fs-10_5{font-size:calc(15.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-11{font-size:calc(16.5px * var(--fs-scale, 1))}
 .bzu-fig .fs-11_5{font-size:calc(17px * var(--fs-scale, 1))}
 .bzu-fig .fs-12_5{font-size:calc(18.5px * var(--fs-scale, 1))}
 .bzu-fig .fs-13_5{font-size:calc(19.5px * var(--fs-scale, 1))}
 .bzu-fig .fs-14{font-size:calc(20px * var(--fs-scale, 1))}
-.bzu-fig .fs-14_5{font-size:calc(14.5px * var(--fs-scale, 1))}
-.bzu-fig .fs-15{font-size:calc(15px * var(--fs-scale, 1))}
+.bzu-fig .fs-14_5{font-size:calc(20.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-15{font-size:calc(21px * var(--fs-scale, 1))}
 .bzu-fig .fs-16{font-size:calc(22px * var(--fs-scale, 1))}
 .bzu-fig .fs-23{font-size:calc(30px * var(--fs-scale, 1))}
 </style>
@@ -60,33 +60,34 @@
 <text class="f-onbrand fs-13_5" x="315" y="274" font-weight="700" text-anchor="middle" letter-spacing="0">業務責任者（管理技術者）</text>
 <text class="f-onbrand fs-11" x="315" y="293" font-weight="400" text-anchor="middle" letter-spacing="0">工程管理・成果品の照査</text>
 <line class="s-brand2" x1="315" y1="304" x2="315" y2="326" stroke-width="1.6"/>
-<line class="s-brand2" x1="120" y1="326" x2="480" y2="326" stroke-width="1.6"/>
-<line class="s-brand2" x1="120" y1="326" x2="120" y2="346" stroke-width="1.6"/>
-<rect class="f-surfalt s-border" x="60" y="346" width="120" height="126" rx="8" stroke-width="1.2"/>
-<rect class="f-brandpale" x="60" y="346" width="120" height="30" rx="8"/>
-<rect class="f-brandpale" x="60" y="366" width="120" height="10" rx="8"/>
-<text class="f-brand fs-13_5" x="120" y="366" font-weight="700" text-anchor="middle" letter-spacing="0">調査班</text>
-<text class="f-ink fs-11_5" x="120" y="396" font-weight="400" text-anchor="middle" letter-spacing="0">調査票設計・印刷</text>
-<text class="f-ink fs-11_5" x="120" y="420" font-weight="400" text-anchor="middle" letter-spacing="0">宛名作成・封入封緘・発送・回収</text>
-<text class="f-ink fs-11_5" x="120" y="444" font-weight="400" text-anchor="middle" letter-spacing="0">入力・点検</text>
-<line class="s-brand2" x1="300" y1="326" x2="300" y2="346" stroke-width="1.6"/>
-<rect class="f-surfalt s-border" x="240" y="346" width="120" height="126" rx="8" stroke-width="1.2"/>
-<rect class="f-brandpale" x="240" y="346" width="120" height="30" rx="8"/>
-<rect class="f-brandpale" x="240" y="366" width="120" height="10" rx="8"/>
-<text class="f-brand fs-13_5" x="300" y="366" font-weight="700" text-anchor="middle" letter-spacing="0">分析班</text>
-<text class="f-ink fs-11_5" x="300" y="396" font-weight="400" text-anchor="middle" letter-spacing="0">集計・統計分析</text>
-<text class="f-ink fs-11_5" x="300" y="420" font-weight="400" text-anchor="middle" letter-spacing="0">自由記述分析</text>
-<text class="f-ink fs-11_5" x="300" y="444" font-weight="400" text-anchor="middle" letter-spacing="0">報告書作成</text>
-<line class="s-brand2" x1="480" y1="326" x2="480" y2="346" stroke-width="1.6"/>
-<rect class="f-surfalt s-border" x="420" y="346" width="120" height="126" rx="8" stroke-width="1.2"/>
-<rect class="f-brandpale" x="420" y="346" width="120" height="30" rx="8"/>
-<rect class="f-brandpale" x="420" y="366" width="120" height="10" rx="8"/>
-<text class="f-brand fs-13_5" x="480" y="366" font-weight="700" text-anchor="middle" letter-spacing="0">計画班</text>
-<text class="f-ink fs-11_5" x="480" y="396" font-weight="400" text-anchor="middle" letter-spacing="0">現状分析</text>
-<text class="f-ink fs-11_5" x="480" y="420" font-weight="400" text-anchor="middle" letter-spacing="0">課題・施策対応資料</text>
-<text class="f-ink fs-11_5" x="480" y="444" font-weight="400" text-anchor="middle" letter-spacing="0">委員会資料の作成</text>
-<text class="f-muted fs-10_5" x="315" y="476" font-weight="400" text-anchor="middle" letter-spacing="0">※ 自治体担当課とは月1回の定例協議＋随時の電子会議で進捗共有</text>
-<text class="f-accent fs-10_5" x="315" y="489" font-weight="700" text-anchor="middle" letter-spacing="0">※ 宛名作成・封入封緘・発送・回収・郵送料は受託者が実施（対象者名簿は町から提供）</text>
+<line class="s-brand2" x1="137" y1="326" x2="509" y2="326" stroke-width="1.6"/>
+<line class="s-brand2" x1="137" y1="326" x2="137" y2="346" stroke-width="1.6"/>
+<rect class="f-surfalt s-border" x="53" y="346" width="168" height="110" rx="8" stroke-width="1.2"/>
+<rect class="f-brandpale" x="53" y="346" width="168" height="30" rx="8"/>
+<rect class="f-brandpale" x="53" y="366" width="168" height="10" rx="8"/>
+<text class="f-brand fs-13_5" x="137" y="366" font-weight="700" text-anchor="middle" letter-spacing="0">調査班</text>
+<text class="f-ink fs-11_5" x="137" y="392" font-weight="400" text-anchor="middle" letter-spacing="0">調査票設計・印刷</text>
+<text class="f-ink fs-11_5" x="137" y="410" font-weight="400" text-anchor="middle" letter-spacing="0">宛名作成・封入封緘</text>
+<text class="f-ink fs-11_5" x="137" y="428" font-weight="400" text-anchor="middle" letter-spacing="0">発送・回収</text>
+<text class="f-ink fs-11_5" x="137" y="446" font-weight="400" text-anchor="middle" letter-spacing="0">入力・点検</text>
+<line class="s-brand2" x1="323" y1="326" x2="323" y2="346" stroke-width="1.6"/>
+<rect class="f-surfalt s-border" x="239" y="346" width="168" height="110" rx="8" stroke-width="1.2"/>
+<rect class="f-brandpale" x="239" y="346" width="168" height="30" rx="8"/>
+<rect class="f-brandpale" x="239" y="366" width="168" height="10" rx="8"/>
+<text class="f-brand fs-13_5" x="323" y="366" font-weight="700" text-anchor="middle" letter-spacing="0">分析班</text>
+<text class="f-ink fs-11_5" x="323" y="396" font-weight="400" text-anchor="middle" letter-spacing="0">集計・統計分析</text>
+<text class="f-ink fs-11_5" x="323" y="420" font-weight="400" text-anchor="middle" letter-spacing="0">自由記述分析</text>
+<text class="f-ink fs-11_5" x="323" y="444" font-weight="400" text-anchor="middle" letter-spacing="0">報告書作成</text>
+<line class="s-brand2" x1="509" y1="326" x2="509" y2="346" stroke-width="1.6"/>
+<rect class="f-surfalt s-border" x="425" y="346" width="168" height="110" rx="8" stroke-width="1.2"/>
+<rect class="f-brandpale" x="425" y="346" width="168" height="30" rx="8"/>
+<rect class="f-brandpale" x="425" y="366" width="168" height="10" rx="8"/>
+<text class="f-brand fs-13_5" x="509" y="366" font-weight="700" text-anchor="middle" letter-spacing="0">計画班</text>
+<text class="f-ink fs-11_5" x="509" y="396" font-weight="400" text-anchor="middle" letter-spacing="0">現状分析</text>
+<text class="f-ink fs-11_5" x="509" y="420" font-weight="400" text-anchor="middle" letter-spacing="0">課題・施策対応資料</text>
+<text class="f-ink fs-11_5" x="509" y="444" font-weight="400" text-anchor="middle" letter-spacing="0">委員会資料の作成</text>
+<text class="f-muted fs-10_5" x="315" y="474" font-weight="400" text-anchor="middle" letter-spacing="0">※ 担当課とは月1回の定例協議と随時の電子会議で進捗共有</text>
+<text class="f-accent fs-10_5" x="315" y="490" font-weight="700" text-anchor="middle" letter-spacing="0">※ 名簿は町から提供。宛名作成・封入封緘・発送・回収・郵送料は受託者</text>
 <rect class="f-surface s-border" x="645" y="115" width="560" height="380" rx="10" stroke-width="1.2"/>
 <rect class="f-accent" x="645" y="115" width="560" height="40" rx="10"/>
 <rect class="f-accent" x="645" y="145" width="560" height="10" rx="8"/>
@@ -107,7 +108,7 @@
 <circle class="f-accent" cx="700" cy="362" r="17"/>
 <text class="f-onbrand fs-15" x="700" y="367.4" font-weight="700" text-anchor="middle" letter-spacing="0">3</text>
 <text class="f-ink fs-14" x="730" y="357" font-weight="700" text-anchor="start" letter-spacing="0">業務責任者による最終照査</text>
-<text class="f-muted fs-11_5" x="730" y="378" font-weight="400" text-anchor="start" letter-spacing="0">統計的整合性・経年比較を確認。記述・考察は別担当者が照査</text>
+<text class="f-muted fs-11_5" x="730" y="378" font-weight="400" text-anchor="start" letter-spacing="0">統計的整合性・経年比較を確認。記述は別担当者が照査</text>
 <path class="f-accent" d="M925,395 L933,405 L917,405 Z" transform="rotate(180 925 69)"/>
 <rect class="f-surfalt" x="668" y="409" width="514" height="62" rx="8"/>
 <circle class="f-brand" cx="700" cy="440" r="17"/>

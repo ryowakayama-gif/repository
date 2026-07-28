@@ -28,10 +28,10 @@
 .bzu-fig .s-brand{stroke:var(--c-brand,#1E5F74)}
 .bzu-fig .s-border{stroke:var(--c-border,#C7D5DC)}
 /* 文字サイズ：--fs-scale で全体を一括拡縮（既定 1） */
-.bzu-fig .fs-10_5{font-size:calc(10.5px * var(--fs-scale, 1))}
-.bzu-fig .fs-11{font-size:calc(11px * var(--fs-scale, 1))}
+.bzu-fig .fs-10_5{font-size:calc(15.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-11{font-size:calc(16.5px * var(--fs-scale, 1))}
 .bzu-fig .fs-11_5{font-size:calc(17px * var(--fs-scale, 1))}
-.bzu-fig .fs-12{font-size:calc(12px * var(--fs-scale, 1))}
+.bzu-fig .fs-12{font-size:calc(18px * var(--fs-scale, 1))}
 .bzu-fig .fs-12_5{font-size:calc(18.5px * var(--fs-scale, 1))}
 .bzu-fig .fs-13_5{font-size:calc(19.5px * var(--fs-scale, 1))}
 .bzu-fig .fs-14{font-size:calc(20px * var(--fs-scale, 1))}
@@ -58,7 +58,7 @@
 <rect class="f-accent" x="56.0" y="228.5" width="5" height="5" rx="1"/>
 <text class="f-ink fs-12" x="68.0" y="234" font-weight="400" text-anchor="start" letter-spacing="0">無回答・N数を必ず明示</text>
 <rect class="f-brand" x="56.0" y="250.5" width="5" height="5" rx="1"/>
-<text class="f-brand fs-12" x="68.0" y="256" font-weight="700" text-anchor="start" letter-spacing="0">層化区分はウェイトバック集計（補正前後を併記）</text>
+<text class="f-brand fs-12" x="68.0" y="256" font-weight="700" text-anchor="start" letter-spacing="0">層化区分はウェイトバック集計（前後併記）</text>
 <rect class="f-surface s-border" x="425.5" y="122" width="369.5" height="158" rx="10" stroke-width="1.2"/>
 <rect class="f-brand" x="425.5" y="122" width="369.5" height="5" rx="2.5"/>
 <text class="f-ink fs-16" x="445.5" y="168" font-weight="700" text-anchor="start" letter-spacing="0">② クロス集計</text>

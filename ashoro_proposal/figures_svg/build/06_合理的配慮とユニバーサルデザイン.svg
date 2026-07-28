@@ -24,8 +24,8 @@
 .bzu-fig .f-onbrand{fill:var(--c-on-brand,#FFFFFF)}
 .bzu-fig .s-border{stroke:var(--c-border,#C7D5DC)}
 /* 文字サイズ：--fs-scale で全体を一括拡縮（既定 1） */
-.bzu-fig .fs-10_5{font-size:calc(10.5px * var(--fs-scale, 1))}
-.bzu-fig .fs-12{font-size:calc(12px * var(--fs-scale, 1))}
+.bzu-fig .fs-10_5{font-size:calc(15.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-12{font-size:calc(18px * var(--fs-scale, 1))}
 .bzu-fig .fs-12_5{font-size:calc(18.5px * var(--fs-scale, 1))}
 .bzu-fig .fs-13_5{font-size:calc(19.5px * var(--fs-scale, 1))}
 .bzu-fig .fs-14{font-size:calc(20px * var(--fs-scale, 1))}

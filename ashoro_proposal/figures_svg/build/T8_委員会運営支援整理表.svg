@@ -25,8 +25,8 @@
 .bzu-fig .s-accent{stroke:var(--c-accent,#E07B39)}
 .bzu-fig .s-border{stroke:var(--c-border,#C7D5DC)}
 /* 文字サイズ：--fs-scale で全体を一括拡縮（既定 1） */
-.bzu-fig .fs-11{font-size:calc(11px * var(--fs-scale, 1))}
-.bzu-fig .fs-12{font-size:calc(12px * var(--fs-scale, 1))}
+.bzu-fig .fs-11{font-size:calc(16.5px * var(--fs-scale, 1))}
+.bzu-fig .fs-12{font-size:calc(18px * var(--fs-scale, 1))}
 .bzu-fig .fs-12_5{font-size:calc(18.5px * var(--fs-scale, 1))}
 .bzu-fig .fs-13{font-size:calc(19px * var(--fs-scale, 1))}
 .bzu-fig .fs-13_5{font-size:calc(19.5px * var(--fs-scale, 1))}
@@ -49,8 +49,8 @@
 <rect class="f-surfalt" x="35" y="146" width="1170" height="66"/>
 <text x="130" y="172" text-anchor="middle" font-weight="700">地域福祉計画</text>
 <text x="130" y="190" text-anchor="middle" font-weight="700">策定委員会</text>
-<text x="330" y="180" text-anchor="middle">1〜2回（11月頃）</text>
-<text x="330" y="198" text-anchor="middle">見積り上の前提。書面審議も併用</text>
+<text x="330" y="180" text-anchor="middle">2回＋書面審議1回（11月頃）</text>
+<text x="330" y="198" text-anchor="middle">前回実績と同数。書面審議を併用</text>
 <text x="640" y="180" text-anchor="middle">会議資料の作成、調査結果速報の説明、</text>
 <text x="640" y="198" text-anchor="middle">当日出席・進行補助</text>
 <text x="1000" y="189" text-anchor="middle">出席の要否・追加開催の可否</text>
@@ -58,8 +58,8 @@
 <rect class="f-surface" x="35" y="212" width="1170" height="66"/>
 <text x="130" y="238" text-anchor="middle" font-weight="700">障害者自立支援</text>
 <text x="130" y="256" text-anchor="middle" font-weight="700">協議会</text>
-<text x="330" y="246" text-anchor="middle">1〜2回（11月頃）</text>
-<text x="330" y="264" text-anchor="middle">見積り上の前提。既存定例会と調整</text>
+<text x="330" y="246" text-anchor="middle">2回（11月頃）</text>
+<text x="330" y="264" text-anchor="middle">前回実績と同数。定例会と調整</text>
 <text x="640" y="246" text-anchor="middle">会議資料の作成、調査結果速報の説明、</text>
 <text x="640" y="264" text-anchor="middle">当日出席・進行補助</text>
 <text x="1000" y="255" text-anchor="middle">既存定例会との日程調整</text>
@@ -80,7 +80,7 @@
 
 <rect class="f-accentpale s-accent" x="35" y="364" width="1170" height="100" rx="10" stroke-width="1.2"/>
 <text class="f-accent fs-13" x="57" y="390" font-weight="700">見積・提案書への反映方法</text>
-<text class="f-ink fs-12" x="57" y="414">基本回数は地域福祉1〜2回・障がい1〜2回とし、見積内訳にその旨を明記します。</text>
+<text class="f-ink fs-12" x="57" y="414">基本回数は前回実績と同数（地域福祉2回＋書面1回・障がい2回）とし、見積内訳に明記します。</text>
 <text class="f-ink fs-12" x="57" y="436">追加開催は契約後の協議事項とし、履行期限内で町が必要と判断する回数のご支援には対応します。</text>
 <text class="f-muted fs-11" x="57" y="454">※前回の地域福祉計画は策定委員会2回＋書面1回、障がい計画は自立支援協議会2回の実績。</text>
 </svg>

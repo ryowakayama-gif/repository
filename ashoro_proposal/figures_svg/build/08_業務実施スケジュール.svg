@@ -28,8 +28,8 @@
 .bzu-fig .s-border{stroke:var(--c-border,#C7D5DC)}
 .bzu-fig .s-surface{stroke:var(--c-surface,#FFFFFF)}
 /* 文字サイズ：--fs-scale で全体を一括拡縮（既定 1） */
-.bzu-fig .fs-10{font-size:calc(10px * var(--fs-scale, 1))}
-.bzu-fig .fs-12{font-size:calc(12px * var(--fs-scale, 1))}
+.bzu-fig .fs-10{font-size:calc(15px * var(--fs-scale, 1))}
+.bzu-fig .fs-12{font-size:calc(18px * var(--fs-scale, 1))}
 .bzu-fig .fs-12_5{font-size:calc(18.5px * var(--fs-scale, 1))}
 .bzu-fig .fs-13{font-size:calc(19px * var(--fs-scale, 1))}
 .bzu-fig .fs-13_5{font-size:calc(19.5px * var(--fs-scale, 1))}
@@ -90,7 +90,7 @@
 <text class="f-ink fs-12_5" x="55" y="513" font-weight="400" text-anchor="start" letter-spacing="0">⑨ 集計・分析（ウェイトバック集計を含む）</text>
 <text class="f-ink fs-12_5" x="55" y="554" font-weight="400" text-anchor="start" letter-spacing="0">⑩ 調査結果報告書・とりまとめ資料の作成</text>
 <text class="f-ink fs-12_5" x="55" y="595" font-weight="400" text-anchor="start" letter-spacing="0">⑪ 成果品の納品（履行期限 令和8年12月28日）</text>
-<text class="f-brand fs-12_5" x="55" y="636" font-weight="700" text-anchor="start" letter-spacing="0">⑫ 策定委員会・自立支援協議会の運営支援（各1〜2回・見積り上の前提）</text>
+<text class="f-brand fs-12_5" x="55" y="636" font-weight="700" text-anchor="start" letter-spacing="0">⑫ 策定委員会2回＋書面1回・協議会2回の運営支援（前回実績と同数）</text>
 
 <!-- Bars -->
 <rect class="f-brand2" x="345" y="171" width="65" height="18" rx="9"/>
@@ -109,7 +109,7 @@
 
 <!-- deadline marker -->
 <line class="s-accent" x1="1180" y1="581" x2="1180" y2="602" stroke-width="1.5"/>
-<text class="f-accent fs-10" x="1180" y="614" font-weight="700" text-anchor="middle" letter-spacing="0">12/28</text>
+<text class="f-accent fs-10" x="1166" y="614" font-weight="700" text-anchor="middle" letter-spacing="0">12/28</text>
 
 <!-- legend -->
 <rect class="f-surface s-border" x="35" y="656" width="1165" height="30" rx="6" stroke-width="1.2"/>
