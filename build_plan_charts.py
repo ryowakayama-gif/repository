@@ -97,6 +97,8 @@ def mono_bar(ws, title, y_title, cats_ref, data_ref, anchor, stacked=False,
         gp.line = LineProperties(solidFill="000000", w=6350)
         s.graphicalProperties = gp
     _axis_mono(ch)
+    if len(ch.series) <= 1:
+        ch.legend = None
     ws.add_chart(ch, anchor)
     return ch
 
@@ -201,6 +203,9 @@ end = table(ws, r, ["No.", "シート", "図表", "出典・基準時点", "更�
      "第9期計画 第2章第4節2／令和5年5月25日送付・21施設回答", "第10期調査の集計受領後に差替え"),
     (12, "12_在宅生活改善調査", "利用者の属性／本人の状態・意向／家族等介護者の意向・負担",
      "第9期計画 第2章第4節3／令和5年5月25日送付・12事業所91人", "第10期調査の集計受領後に差替え"),
+    (13, "13_介護人材実態調査", "職員数・男女比・就業形態・開設後経過年数・年齢構成・在職年数・"
+     "直前の職場・資格・採用離職・勤務時間", "第9期計画 第2章第5節／令和5年5月25日送付・27施設405人",
+     "第10期事業所実態調査の集計受領後に差替え"),
 ])
 r = end + 2
 ws.cell(row=r, column=1, value="3　作図上の凡例（白黒）").font = Font(name=FONT, size=11, bold=True)
@@ -232,6 +237,15 @@ end = table(ws, r, ["No.", "事項", "内容", "対応", ""], [
         "10シートに推定値として記載。回収票数・回収率は原資料で確認する", "広域連合へ照会"),
     (7, "居所変更実態調査の施設数", "回答施設の内訳（住宅型有料4・軽費1・サ高住0・GH5・特定施設2・老健3・特養2・地密特養3）の合計は20だが、"
         "第9期計画は「合計21」と記載", "11シートに原典どおり記載し差異を注記。内訳の欠落か合計の誤りかを確認", "広域連合へ照会"),
+    (8, "介護人材実態調査の就業形態", "第9期計画 第2章第5節(1)④の本文は「施設・居住系サービスの正規職員が33.8％」とするが、"
+        "グラフ値では正規職員（男）31.9＋正規職員（女）45.1＝77.0％であり、33.8％は男性職員の割合（31.9＋1.9）と一致する",
+        "13シートはグラフ値どおり作図し、本文との差異を注記。第10期では正規職員割合と男性割合を区別して記載", "第10期計画で修正"),
+    (9, "介護人材実態調査の職員数の分母", "職員総数421人、男女内訳の合計403人、該当者数405人と3種類の数値があり、"
+        "1事業所あたり平均人数も405÷27＝15.0人で本文の16.0人と一致しない",
+        "13シートは原典の3種類をそのまま併記し、比率算定の分母を明示。第10期では集計基準を統一", "第10期計画で整理"),
+    (10, "直前の職場の一部区分", "第9期計画 第2章第5節(3)④のうち「訪問介護・入浴、夜間対応型」「小多機、看多機、定期巡回」の2区分は"
+        "原典の図から数値を復元できなかった（他6区分の合計91.1％との差8.9％＝5人分）",
+        "13シートで淡黄色の入力欄とし、原資料で確認のうえ入力する", "広域連合へ照会"),
 ])
 
 # ============================================================ 01 人口推移
@@ -411,7 +425,7 @@ for r_ in range(r + 1, r + 4):
         ws.cell(row=r_, column=c).fill = PatternFill("solid", fgColor=IN_Y)
 cats = Reference(ws, min_col=2, max_col=16, min_row=r)
 data = Reference(ws, min_col=1, max_col=16, min_row=r + 1, max_row=r + 3)
-mono_line(ws, "出現率の推移", "出現率（％）", cats, data, "A11", width=26, height=11, min_=15, max_=23)
+mono_line(ws, "出現率の推移", "出現率（％）", cats, data, "R5", width=26, height=11, min_=15, max_=23)
 
 r = end + 2
 ws.cell(row=r, column=1, value="（2）町別出現率の推移").font = Font(name=FONT, size=10, bold=True)
@@ -427,7 +441,7 @@ for r_ in range(r + 1, r + 4):
         ws.cell(row=r_, column=c).fill = PatternFill("solid", fgColor=IN_Y)
 cats = Reference(ws, min_col=2, max_col=16, min_row=r)
 data = Reference(ws, min_col=1, max_col=16, min_row=r + 1, max_row=r + 3)
-mono_line(ws, "町別出現率の推移", "出現率（％）", cats, data, f"A{end2 + 3}", width=26, height=11, min_=15, max_=26)
+mono_line(ws, "町別出現率の推移", "出現率（％）", cats, data, "R28", width=26, height=11, min_=15, max_=26)
 
 r = end2 + 26
 ws.cell(row=r, column=1, value="（3）出現率の比較（令和5年 上川総合振興局管内）").font = Font(name=FONT, size=10, bold=True)
@@ -457,7 +471,7 @@ gp.line = LineProperties(solidFill="000000", w=6350)
 ch.series[0].graphicalProperties = gp
 _axis_mono(ch)
 ch.legend = None
-ws.add_chart(ch, f"D{r}")
+ws.add_chart(ch, "R51")
 
 # ============================================================ 07 給付費
 ws = sheet("07_給付費推移", "図7　介護給付費等の推移",
@@ -548,7 +562,7 @@ for c in range(2, 7):
     ws.cell(row=end4, column=c).font = Font(name=FONT, size=9, bold=True)
 cats = Reference(ws, min_col=2, max_col=6, min_row=r4)
 data = Reference(ws, min_col=1, max_col=6, min_row=r4 + 1, max_row=end4 - 1)
-mono_bar(ws, "給付費の中長期見通し（自然体推計）", "給付費（百万円）", cats, data, f"J{r2}", stacked=True, width=20, height=11)
+mono_bar(ws, "給付費の中長期見通し（自然体推計）", "給付費（百万円）", cats, data, "J27", stacked=True, width=20, height=11)
 
 note(ws, end4 + 2,
      "注1）（1）～（3）は第9期計画 第2章第2節の掲載値（見える化システム 令和6年1月18日参照）。令和6～8年度（淡黄色欄）は実績受領後に入力する。"
@@ -713,6 +727,8 @@ def mono_hbar_cluster(ws_, title, cats_ref, data_ref, anchor, width=20, height=N
         gp.line = LineProperties(solidFill="000000", w=6350)
         sr.graphicalProperties = gp
     _axis_mono(ch)
+    if len(ch.series) <= 1:
+        ch.legend = None
     ws_.add_chart(ch, anchor)
     return ch
 
@@ -834,7 +850,7 @@ for cc in (2, 3):
     ws.cell(row=TOT, column=cc).font = Font(name=FONT, size=9, bold=True)
 cats = Reference(ws, min_col=1, min_row=hrow + 1, max_row=TOT)
 data = Reference(ws, min_col=5, max_col=6, min_row=hrow, max_row=TOT)
-mono_hbar_cluster(ws, "① 退居・退所者に占める居所変更・死亡の割合（施設別）", cats, data, "H4",
+mono_hbar_cluster(ws, "① 退居・退所者に占める居所変更・死亡の割合（施設別）", cats, data, "M4",
                   width=20, n_cat=8)
 r = end + 2
 note(ws, r, "注）各施設の合計では80.3％が「居所変更」、19.7％が「死亡」。介護老人保健施設は「居所変更」が93.8％と高く、"
@@ -869,7 +885,7 @@ ws.cell(row=end2, column=11).font = Font(name=FONT, size=9, bold=True)
 cats = Reference(ws, min_col=1, min_row=hrow2 + 1, max_row=end2 - 1)
 data = Reference(ws, min_col=2, max_col=10, min_row=hrow2, max_row=end2 - 1)
 mono_bar(ws, "② 居所変更した人の要支援・要介護度（施設別）", "人数（人）", cats, data,
-         f"H{r}", stacked=True, width=20, height=11)
+         "M25", stacked=True, width=20, height=11)
 r = end2 + 2
 note(ws, r, "注）軽費老人ホームの「－」表記は0として集計している。合計では「要介護5」が62人と最も多く、"
             "次いで「要介護3」60人、「要介護4」47人となっている（第9期計画 第2章第4節2）。")
@@ -885,7 +901,7 @@ RIYU = [
 end3 = table(ws, hrow3, ["区分", "件数"], [list(x) for x in RIYU], numfmt="#,##0")
 cats = Reference(ws, min_col=1, min_row=hrow3 + 1, max_row=end3)
 data = Reference(ws, min_col=2, min_row=hrow3, max_row=end3)
-ch = mono_hbar_cluster(ws, "③ 居所変更した理由（21施設）", cats, data, f"H{r}",
+ch = mono_hbar_cluster(ws, "③ 居所変更した理由（21施設）", cats, data, "M48",
                        width=20, n_cat=9, x_title="件数（件）")
 ch.legend = None
 note(ws, end3 + 2, "注）上位3つは「医療的ケア・医療処置の必要性の高まり」19件、「その他」10件、「上記以外の状態像が悪化」8件。"
@@ -997,6 +1013,269 @@ note(ws, r + 2, "注）いずれの介護度でも「介護者の介護に係る
                 "要支援1～要介護2では「本人と家族等の関係性に課題があるから」、要介護3～要介護5では「家族等の介護等技術では対応が困難」が次いで高い。"
                 "令和2年度と比べ「介護者の介護に係る不安・負担量の増大」は15.6ポイント減少している（第9期計画 第2章第4節3）。"
                 "②～④はいずれも複数回答のため合計は100％にならない。")
+
+
+# ============================================================ 共通：100%積上げ横棒
+def mono_pct_hbar(ws_, title, cats_ref, data_ref, anchor, n_cat=3, width=20, height=None):
+    ch = BarChart()
+    ch.type = "bar"
+    ch.grouping = "percentStacked"
+    ch.overlap = 100
+    ch.title = title
+    ch.y_axis.title = "構成比（％）"
+    ch.add_data(data_ref, titles_from_data=True)
+    ch.set_categories(cats_ref)
+    ch.gapWidth = 60
+    ch.width = width
+    ch.height = height if height else max(6, n_cat * 0.9 + 3.5)
+    for i, sr in enumerate(ch.series):
+        gp = GraphicalProperties(solidFill=GRAY9[int(i * 8 / max(1, len(ch.series) - 1))]
+                                 if len(ch.series) > 5 else GRAY[i % 5])
+        gp.line = LineProperties(solidFill="000000", w=6350)
+        sr.graphicalProperties = gp
+    _axis_mono(ch)
+    if len(ch.series) <= 1:
+        ch.legend = None
+    ws_.add_chart(ch, anchor)
+    return ch
+
+
+
+_ca_row = [4]
+
+
+def CA(height_cm, reset=None):
+    """13シート用：グラフの高さに応じてF列の配置行を自動で送る。"""
+    if reset is not None:
+        _ca_row[0] = reset
+    row = _ca_row[0]
+    _ca_row[0] = row + int(height_cm / 0.53) + 3
+    return f"J{row}"
+
+
+# ============================================================ 13 介護人材実態調査
+ws = sheet("13_介護人材実態調査", "図12　介護人材実態調査 結果概要",
+           "資料：第9期計画 第2章第5節／令和5年5月25日に施設系サービスの管理者へ書面送付・"
+           "27施設回答（該当職員405人）／対象35事業所・回収率77.1％",
+           [40, 13, 13, 13, 13, 13, 13, 13])
+r = 4
+ws.cell(row=r, column=1, value="（参考）回答事業所の内訳（単位：施設）").font = Font(name=FONT, size=10, bold=True)
+hrow = r + 1
+end = table(ws, hrow, ["サービス種別", "施設数"],
+            [["施設・居住系サービス", 18], ["通所系サービス", 3], ["不明", 6], ["合計", None]], numfmt="#,##0")
+ws.cell(row=end, column=2).value = f"=SUM(B{hrow+1}:B{end-1})"
+ws.cell(row=end, column=2).number_format = "#,##0"
+ws.cell(row=end, column=2).font = Font(name=FONT, size=9, bold=True)
+r = end + 2
+
+ws.cell(row=r, column=1, value="（1）① 事業所の職員数（単位：人）").font = Font(name=FONT, size=10, bold=True)
+hrow = r + 1
+end = table(ws, hrow, ["区分", "男性", "女性", "合計"],
+            [["正規職員", 134, 174, None], ["非正規職員", 8, 87, None], ["合計", None, None, None]],
+            numfmt="#,##0")
+for rr in range(hrow + 1, end + 1):
+    ws.cell(row=rr, column=4).value = f"=B{rr}+C{rr}"
+    ws.cell(row=rr, column=4).number_format = "#,##0"
+for cc in (2, 3):
+    col = get_column_letter(cc)
+    ws.cell(row=end, column=cc).value = f"=SUM({col}{hrow+1}:{col}{end-1})"
+    ws.cell(row=end, column=cc).number_format = "#,##0"
+    ws.cell(row=end, column=cc).font = Font(name=FONT, size=9, bold=True)
+ws.cell(row=end, column=4).font = Font(name=FONT, size=9, bold=True)
+cats = Reference(ws, min_col=1, min_row=hrow + 1, max_row=end - 1)
+data = Reference(ws, min_col=2, max_col=3, min_row=hrow, max_row=end - 1)
+mono_hbar_cluster(ws, "（1）① 事業所の職員数（就業形態別・男女別）", cats, data, CA(max(7, 2 * 0.85 + 3), reset=4),
+                  width=17, n_cat=2, x_title="人数（人）")
+r = end + 2
+note(ws, r, "注）第9期計画には職員総数（正規325・非正規96・計421人）、男女内訳の合計403人、該当者数405人の3種類が併記されている。"
+            "本表は男女内訳（403人）を掲載。原典の注記のとおり「施設に所属している介護職員が未記入の人は除いており、合計が総数と一致しない」。"
+            "1事業所あたり平均人数も405÷27＝15.0人で本文の16.0人と一致しない（00_凡例・出典 4-9）。")
+r += 2
+
+r = block(ws, r, "（1）② 男女比較（該当者405人）", ["区分", "構成比"],
+          [["男性", 35.3], ["女性", 64.4], ["無回答", 0.2]],
+          chart_title="（1）② 男女比較", series_cols=(2, 2), anchor=CA(max(7, 3 * 0.85 + 3)), x_title="構成比（％）") + 2
+r = block(ws, r, "（1）③ 就業形態比較（該当者405人）", ["区分", "構成比"],
+          [["正規社員", 76.3], ["非正規社員", 23.5], ["無回答", 0.2]],
+          chart_title="（1）③ 就業形態比較", series_cols=(2, 2), anchor=CA(max(7, 3 * 0.85 + 3)), x_title="構成比（％）") + 2
+
+ws.cell(row=r, column=1, value="（1）④ 全職員の就業形態（介護保険サービス系列別・単位：％）").font = Font(name=FONT, size=10, bold=True)
+hrow = r + 1
+end = table(ws, hrow, ["区分", "正規職員（男）", "正規職員（女）", "非正規職員（男）", "非正規職員（女）",
+                       "正規職員 計", "男性 計", "平均人数（人）"],
+            [["全体", 31.2, 43.6, 1.8, 23.4, None, None, 16.0],
+             ["施設・居住系サービス", 31.9, 45.1, 1.9, 21.1, None, None, 17.6],
+             ["通所系サービス", 20.0, 20.0, 0.0, 60.0, None, None, 6.7]], numfmt="0.0")
+for rr in range(hrow + 1, end + 1):
+    ws.cell(row=rr, column=6).value = f"=B{rr}+C{rr}"
+    ws.cell(row=rr, column=7).value = f"=B{rr}+D{rr}"
+    for cc in (6, 7):
+        ws.cell(row=rr, column=cc).number_format = "0.0"
+        ws.cell(row=rr, column=cc).font = Font(name=FONT, size=9, bold=True)
+cats = Reference(ws, min_col=1, min_row=hrow + 1, max_row=end)
+data = Reference(ws, min_col=2, max_col=5, min_row=hrow, max_row=end)
+mono_pct_hbar(ws, "（1）④ 全職員の就業形態（サービス系列別）", cats, data, CA(max(6, 3 * 0.9 + 3.5)), n_cat=3, width=20)
+r = end + 2
+note(ws, r, "注）第9期計画の本文は「施設・居住系サービスの正規職員が33.8％」とするが、グラフ値では正規職員計は77.0％であり、"
+            "33.8％は男性職員の割合（31.9＋1.9）と一致する。「通所系サービスの正規職員は40.0％」は正規職員計（20.0＋20.0）と一致する。"
+            "本表はグラフ値どおり掲載し、正規職員計・男性計を数式で併記した（00_凡例・出典 4-8）。")
+r += 2
+
+ws.cell(row=r, column=1, value="（2）事業所の開設後経過年数（介護保険サービス系列別・単位：％）").font = Font(name=FONT, size=10, bold=True)
+hrow = r + 1
+end = table(ws, hrow, ["区分", "5年未満", "5年以上10年未満", "10年以上20年未満", "20年以上30年未満",
+                       "30年以上", "平均経過年数"],
+            [["全体", 3.7, 14.8, 37.0, 29.6, 14.8, "19年3か月"],
+             ["施設・居住系サービス", 0.0, 16.7, 44.4, 27.8, 11.1, "19年8か月"],
+             ["通所系サービス", 0.0, 0.0, 0.0, 66.7, 33.3, "25年7か月"]], numfmt="0.0")
+cats = Reference(ws, min_col=1, min_row=hrow + 1, max_row=end)
+data = Reference(ws, min_col=2, max_col=6, min_row=hrow, max_row=end)
+mono_pct_hbar(ws, "（2）事業所の開設後経過年数（サービス系列別）", cats, data, CA(max(6, 3 * 0.9 + 3.5)), n_cat=3, width=20)
+r = end + 2
+note(ws, r, "注）全体では「10年以上20年未満」が37.0％で最も高く、次いで「20年以上30年未満」29.6％。"
+            "通所系サービスは「20年以上30年未満」66.7％、「30年以上」33.3％で、平均経過年数25年7か月と長い。"
+            "施設・居住系の「5年未満」0.0％は他4区分の合計100.0％から復元した値。")
+r += 2
+
+ws.cell(row=r, column=1, value="（3）① 全職員の年齢構成・在職年数（総数）").font = Font(name=FONT, size=10, bold=True)
+hrow = r + 1
+AGE = [["20歳未満", 5, None], ["20代", 71, None], ["30代", 82, None], ["40代", 107, None],
+       ["50代", 81, None], ["60代", 51, None], ["70代以上", 8, None], ["合計", None, None]]
+end = table(ws, hrow, ["年代", "人数（人）", "構成比（％）"], AGE, numfmt="#,##0")
+ws.cell(row=end, column=2).value = f"=SUM(B{hrow+1}:B{end-1})"
+ws.cell(row=end, column=2).font = Font(name=FONT, size=9, bold=True)
+for rr in range(hrow + 1, end + 1):
+    ws.cell(row=rr, column=3).value = f"=B{rr}/$B${end}*100"
+    ws.cell(row=rr, column=3).number_format = "0.0"
+cats = Reference(ws, min_col=1, min_row=hrow + 1, max_row=end - 1)
+data = Reference(ws, min_col=2, min_row=hrow, max_row=end - 1)
+ch = mono_bar(ws, "（3）① 全職員の年齢構成（総数）", "人数（人）", cats, data, CA(9),
+              width=16, height=9)
+ch.legend = None
+r2 = end + 2
+hrow2 = r2
+end2 = table(ws, hrow2, ["在職年数", "人数（人）", "構成比（％）"],
+             [["1年未満", 56, None], ["1年以上", 345, None], ["無回答", 4, None], ["合計", None, None]],
+             numfmt="#,##0")
+ws.cell(row=end2, column=2).value = f"=SUM(B{hrow2+1}:B{end2-1})"
+ws.cell(row=end2, column=2).font = Font(name=FONT, size=9, bold=True)
+for rr in range(hrow2 + 1, end2 + 1):
+    ws.cell(row=rr, column=3).value = f"=B{rr}/$B${end2}*100"
+    ws.cell(row=rr, column=3).number_format = "0.0"
+r = end2 + 2
+
+ws.cell(row=r, column=1, value="（3）② 全職員の年齢構成（介護保険サービス系列別・単位：％）").font = Font(name=FONT, size=10, bold=True)
+hrow = r + 1
+end = table(ws, hrow, ["区分", "20歳未満", "20代", "30代", "40代", "50代", "60代", "70代以上"],
+            [["全体", 1.5, 17.8, 18.6, 26.9, 20.1, 13.0, 2.1],
+             ["施設・居住系サービス", 1.6, 17.9, 18.2, 26.4, 20.1, 13.5, 2.2],
+             ["通所系サービス", 0.0, 15.0, 25.0, 35.0, 20.0, 5.0, 0.0]], numfmt="0.0")
+cats = Reference(ws, min_col=1, min_row=hrow + 1, max_row=end)
+data = Reference(ws, min_col=2, max_col=8, min_row=hrow, max_row=end)
+mono_pct_hbar(ws, "（3）② 全職員の年齢構成（サービス系列別）", cats, data, CA(max(6, 3 * 0.9 + 3.5)), n_cat=3, width=20)
+r = end + 2
+r = block(ws, r, "（3）③ 全職員の在職年数（介護保険サービス系列別・単位：％）",
+          ["区分", "1年未満", "1年以上"],
+          [["全体", 15.2, 84.8], ["施設・居住系サービス", 14.9, 85.1], ["通所系サービス", 20.0, 80.0]],
+          chart_title="（3）③ 全職員の在職年数（サービス系列別）", series_cols=(2, 3),
+          anchor=CA(max(7, 3 * 0.85 + 3)), x_title="構成比（％）") + 2
+note(ws, r, "注）全体では「40代」が26.9％で最も高く、次いで「50代」20.1％。全てのサービス系列で「20歳未満」が最も少ない。"
+            "在職年数は全てのサービス系列で「1年以上」が80％を超えている（第9期計画 第2章第5節(3)）。")
+r += 2
+
+PREV = ["現在の職場が初めての勤務先", "介護以外の職場",
+        "特養、老健、療養型・介護医療院、ショートステイ、グループホーム、特定施設",
+        "訪問介護・入浴、夜間対応型", "小多機、看多機、定期巡回", "通所介護、通所リハ、認知症デイ",
+        "住宅型有料、サ高住（特定施設以外）", "その他の介護サービス"]
+P_V = [16.1, 26.8, 37.5, None, None, 1.8, 7.1, 1.8]
+start = r + 1
+r = block(ws, r, "（3）④ 現在の施設等に勤務する直前の職場（在職1年未満の56人・単位：％）",
+          ["区分", "構成比"], [[a, b] for a, b in zip(PREV, P_V)],
+          chart_title="（3）④ 直前の職場（在職1年未満）", series_cols=(2, 2), anchor=CA(max(7, 8 * 0.85 + 3)),
+          x_title="構成比（％）", input_cells=[(start + 4, 2), (start + 5, 2)]) + 2
+note(ws, r, "注）「特養、老健、療養型・介護医療院、ショートステイ、グループホーム、特定施設」が37.5％で最も多く、"
+            "次いで「介護以外の職場」26.8％。「現在の職場が初めての勤務先」16.1％と合わせると42.9％が介護職未経験からの入職。"
+            "淡黄色の2区分は原典の図から数値を復元できなかった（他6区分の合計91.1％との差8.9％＝5人分・00_凡例・出典 4-10）。")
+r += 2
+
+ws.cell(row=r, column=1, value="（3）④ 直前が介護の職場だった方の内訳（32人・単位：％）").font = Font(name=FONT, size=10, bold=True)
+hrow = r + 1
+end = table(ws, hrow, ["区分", "同一", "別", "無回答"],
+            [["市区町村", 28.1, 62.5, 9.4], ["法人・グループ", 25.0, 65.6, 9.4]], numfmt="0.0")
+cats = Reference(ws, min_col=1, min_row=hrow + 1, max_row=end)
+data = Reference(ws, min_col=2, max_col=4, min_row=hrow, max_row=end)
+mono_pct_hbar(ws, "（3）④ 直前が介護の職場だった方の内訳", cats, data, CA(max(6, 2 * 0.9 + 3.5)), n_cat=2, width=18)
+r = end + 2
+note(ws, r, "注）直前の職場が介護の職場だった方のうち、市区町村は「別の市区町村内」62.5％が「同一の市区町村内」28.1％を上回り、"
+            "法人も「別の法人・グループ」65.6％が「同一の法人・グループ」25.0％を上回る。圏域外・法人外からの人材流入が中心。")
+r += 2
+
+r = block(ws, r, "（4）資格の取得・研修の修了の状況（単位：％）", ["区分", "構成比"],
+          [["介護福祉士（認定介護福祉士含む）", 64.0],
+           ["介護職員実務者研修修了、または(旧)介護職員基礎研修修了、または(旧)ヘルパー1級", 3.0],
+           ["介護職員初任者研修修了、または(旧)ヘルパー2級", 13.6],
+           ["上記のいずれも該当しない", 19.5]],
+          chart_title="（4）資格の取得・研修の修了の状況", series_cols=(2, 2), anchor=CA(max(7, 4 * 0.85 + 3)),
+          x_title="構成比（％）") + 2
+
+ws.cell(row=r, column=1, value="（5）① 過去1年間の採用者数・離職者数（単位：人）").font = Font(name=FONT, size=10, bold=True)
+hrow = r + 1
+end = table(ws, hrow, ["区分", "人数"], [["過去1年の介護職員の採用者数", 80], ["過去1年の介護職員の離職者数", 74]],
+            numfmt="#,##0")
+r = end + 2
+
+ws.cell(row=r, column=1, value="（5）② サービス別の採用者数・退職者数（単位：人）").font = Font(name=FONT, size=10, bold=True)
+hrow = r + 1
+end = table(ws, hrow, ["区分", "採用（正規）", "採用（非正規）", "退職（正規）", "退職（非正規）"],
+            [["施設・居住系サービス", 42, 15, 42, 15], ["通所系サービス", 4, 3, 3, 4],
+             ["無回答", 6, 2, 8, 0], ["合計", None, None, None, None]], numfmt="#,##0")
+for cc in range(2, 6):
+    col = get_column_letter(cc)
+    ws.cell(row=end, column=cc).value = f"=SUM({col}{hrow+1}:{col}{end-1})"
+    ws.cell(row=end, column=cc).number_format = "#,##0"
+    ws.cell(row=end, column=cc).font = Font(name=FONT, size=9, bold=True)
+cats = Reference(ws, min_col=1, min_row=hrow + 1, max_row=end - 1)
+data = Reference(ws, min_col=2, max_col=5, min_row=hrow, max_row=end - 1)
+mono_bar(ws, "（5）② サービス別の採用者数・退職者数", "人数（人）", cats, data, CA(9),
+         width=17, height=9, gap=80)
+r = end + 2
+
+ws.cell(row=r, column=1, value="（5）③ 年齢別の採用者数・退職者数（単位：人）").font = Font(name=FONT, size=10, bold=True)
+hrow = r + 1
+AGE5 = [["20歳未満", 3, 0, 1, 0], ["20代", 19, 4, 13, 2], ["30代", 11, 3, 10, 1],
+        ["40代", 7, 6, 10, 8], ["50代", 8, 4, 12, 4], ["60代", 4, 3, 6, 4],
+        ["70代以上", 0, 0, 0, 3], ["合計", None, None, None, None]]
+end = table(ws, hrow, ["区分", "採用（正規）", "採用（非正規）", "退職（正規）", "退職（非正規）"],
+            AGE5, numfmt="#,##0")
+for cc in range(2, 6):
+    col = get_column_letter(cc)
+    ws.cell(row=end, column=cc).value = f"=SUM({col}{hrow+1}:{col}{end-1})"
+    ws.cell(row=end, column=cc).number_format = "#,##0"
+    ws.cell(row=end, column=cc).font = Font(name=FONT, size=9, bold=True)
+ws.cell(row=end + 1, column=1, value="30代以下の正規採用者が正規採用者に占める割合（％）").font = Font(name=FONT, size=9, bold=True)
+ws.cell(row=end + 1, column=2).value = f"=SUM(B{hrow+1}:B{hrow+3})/B{end}*100"
+ws.cell(row=end + 1, column=2).number_format = "0.0"
+ws.cell(row=end + 1, column=2).font = Font(name=FONT, size=9, bold=True)
+ws.cell(row=end + 1, column=2).fill = PatternFill("solid", fgColor="E2EFDA")
+cats = Reference(ws, min_col=1, min_row=hrow + 1, max_row=end - 1)
+data = Reference(ws, min_col=2, max_col=5, min_row=hrow, max_row=end - 1)
+mono_bar(ws, "（5）③ 年齢別の採用者数・退職者数", "人数（人）", cats, data, CA(9),
+         width=17, height=9, gap=80)
+r = end + 3
+note(ws, r, "注）（5）②の退職者合計（正規53・非正規19）と（5）③の退職者合計（正規52・非正規22）は一致しない。"
+            "原典の注記のとおり、内訳が不明な人を除いているため①の80人・74人とも一致しない。"
+            "30代以下の正規採用者は33人で正規採用者52人の63.5％を占め、第9期計画 第2章第6節4の記載と一致する。")
+r += 2
+
+WORK = [["5時間未満", 1.5], ["5時間以上10時間未満", 2.7], ["10時間以上15時間未満", 3.0],
+        ["15時間以上20時間未満", 3.0], ["20時間以上25時間未満", 7.4], ["25時間以上30時間未満", 1.7],
+        ["30時間以上35時間未満", 9.1], ["35時間以上40時間未満", 11.6], ["40時間以上45時間未満", 46.9],
+        ["45時間以上50時間未満", 4.9], ["50時間以上", 0.7], ["不明", 7.4]]
+r = block(ws, r, "（6）過去1週間の勤務時間（単位：％）", ["区分", "構成比"], WORK,
+          chart_title="（6）過去1週間の勤務時間", series_cols=(2, 2), anchor=CA(max(7, 12 * 0.85 + 3)),
+          x_title="構成比（％）")
+note(ws, r + 2, "注）「40時間以上45時間未満」が46.9％で最も高く、次いで「35時間以上40時間未満」11.6％。"
+                "一方で30時間未満が19.3％を占めており、短時間勤務者の比率が高い（第9期計画 第2章第5節(6)）。")
 
 
 del wb["Sheet"]
