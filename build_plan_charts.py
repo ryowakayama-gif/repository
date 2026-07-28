@@ -14,13 +14,69 @@ from openpyxl.chart.marker import Marker
 from openpyxl.chart.data_source import StrRef
 from openpyxl.chart.series import SeriesLabel
 from openpyxl.drawing.line import LineProperties
+from openpyxl.drawing.fill import PatternFillProperties, ColorChoice
+from openpyxl.chart.label import DataLabelList
+from openpyxl.chart.text import RichText
+from openpyxl.drawing.text import (RichTextProperties, Paragraph, ParagraphProperties,
+                                   CharacterProperties)
 
 FONT = "Carlito"
-GRAY = ["000000", "404040", "737373", "A6A6A6", "D9D9D9", "F2F2F2", "FFFFFF"]
-GRAY9 = ["000000", "262626", "404040", "595959", "737373", "8C8C8C", "A6A6A6", "D9D9D9", "FFFFFF"]
-DASH = ["solid", "dash", "sysDot", "dashDot", "lgDash"]
-MARK = ["circle", "square", "triangle", "diamond", "x"]
 IN_Y = "FFF2CC"
+
+# 系列の塗り分け：ベタ塗り（濃淡）とパターン（斜線・格子・ドット）を交互に配置し、
+# 1色印刷でも隣接系列を判別できるようにする（第9期計画の体裁に準拠）。
+# (種別, 前景色, 背景色)  種別が "solid" の場合は前景色でベタ塗り
+PATTERNS = [
+    ("solid",    "000000", None),      # 1 黒ベタ
+    ("lgGrid",   "000000", "FFFFFF"),  # 2 格子
+    ("solid",    "808080", None),      # 3 中間グレー
+    ("dkUpDiag", "000000", "FFFFFF"),  # 4 太斜線
+    ("solid",    "C8C8C8", None),      # 5 淡グレー
+    ("pct25",    "000000", "FFFFFF"),  # 6 ドット
+    ("solid",    "FFFFFF", None),      # 7 白
+    ("dkHorz",   "000000", "FFFFFF"),  # 8 横縞
+    ("ltUpDiag", "000000", "FFFFFF"),  # 9 細斜線
+]
+MARK = ["square", "triangle", "circle", "diamond", "x", "star"]   # ■ ▲ ● ◆ × ★
+DASH = ["solid", "dash", "sysDot", "dashDot", "lgDash", "sysDashDot"]
+
+
+def _fill(i):
+    """系列番号に応じたパターン塗り／ベタ塗りのGraphicalPropertiesを返す。"""
+    kind, fg, bg = PATTERNS[i % len(PATTERNS)]
+    gp = GraphicalProperties()
+    if kind == "solid":
+        gp.solidFill = fg
+    else:
+        gp.pattFill = PatternFillProperties(prst=kind,
+                                            fgClr=ColorChoice(srgbClr=fg),
+                                            bgClr=ColorChoice(srgbClr=bg))
+    gp.line = LineProperties(solidFill="000000", w=6350)
+    return gp
+
+
+def _txpr(size=800, rot=None):
+    body = RichTextProperties(rot=rot, vert="horz") if rot is not None else RichTextProperties()
+    cp = CharacterProperties(sz=size, latin=None)
+    return RichText(bodyPr=body,
+                    p=[Paragraph(pPr=ParagraphProperties(defRPr=cp), endParaRPr=cp, r=[])])
+
+
+def _dlabels(ch, pos="ctr", size=800, numfmt=None):
+    """データラベルを付す。位置はグラフ種別で有効な値のみを渡すこと。"""
+    dl = DataLabelList()
+    dl.showVal = True
+    dl.showSerName = False
+    dl.showCatName = False
+    dl.showLegendKey = False
+    dl.showBubbleSize = False
+    dl.showPercent = False
+    dl.dLblPos = pos
+    if numfmt:
+        dl.numFmt = numfmt
+        dl.showVal = True
+    dl.txPr = _txpr(size)
+    ch.dLbls = dl
 
 thin = Side(style="thin", color="BFBFBF")
 BORDER = Border(left=thin, right=thin, top=thin, bottom=thin)
@@ -77,7 +133,8 @@ def note(ws, row, text):
 
 
 def mono_bar(ws, title, y_title, cats_ref, data_ref, anchor, stacked=False,
-             width=22, height=11, gap=60, overlap=None, from_rows=False):
+             width=22, height=11, gap=60, overlap=None, from_rows=False,
+             labels=False, numfmt=None, cat_rot=None):
     ch = BarChart()
     ch.type = "col"
     ch.style = None
@@ -93,10 +150,10 @@ def mono_bar(ws, title, y_title, cats_ref, data_ref, anchor, stacked=False,
     ch.gapWidth = gap
     ch.width, ch.height = width, height
     for i, s in enumerate(ch.series):
-        gp = GraphicalProperties(solidFill=GRAY9[i % len(GRAY9)] if len(ch.series) > 5 else GRAY[i % 5])
-        gp.line = LineProperties(solidFill="000000", w=6350)
-        s.graphicalProperties = gp
-    _axis_mono(ch)
+        s.graphicalProperties = _fill(i)
+    _axis_mono(ch, cat_rot=cat_rot)
+    if labels:
+        _dlabels(ch, "ctr" if stacked else "outEnd", 800, numfmt)
     if len(ch.series) <= 1:
         ch.legend = None
     ws.add_chart(ch, anchor)
@@ -114,16 +171,16 @@ def mono_hbar(ws, title, cats_ref, data_ref, anchor, width=20, height=10):
     ch.gapWidth = 60
     ch.width, ch.height = width, height
     for i, s in enumerate(ch.series):
-        gp = GraphicalProperties(solidFill=GRAY[i % 7])
-        gp.line = LineProperties(solidFill="000000", w=6350)
-        s.graphicalProperties = gp
+        s.graphicalProperties = _fill(i)
     _axis_mono(ch)
+    _dlabels(ch, "ctr", 800, "0.0")
     ws.add_chart(ch, anchor)
     return ch
 
 
 def mono_line(ws, title, y_title, cats_ref, data_ref, anchor,
-              width=22, height=11, min_=None, max_=None, from_rows=False):
+              width=22, height=11, min_=None, max_=None, from_rows=False,
+              labels=False, numfmt=None, cat_rot=None):
     ch = LineChart()
     ch.style = None
     ch.title = title
@@ -137,26 +194,41 @@ def mono_line(ws, title, y_title, cats_ref, data_ref, anchor,
         ch.y_axis.scaling.max = max_
     for i, s in enumerate(ch.series):
         gp = GraphicalProperties()
-        gp.line = LineProperties(solidFill="000000", w=22225,
+        gp.line = LineProperties(solidFill="000000", w=19050,
                                  prstDash=DASH[i % len(DASH)])
         s.graphicalProperties = gp
-        s.marker = Marker(symbol=MARK[i % len(MARK)], size=6)
-        s.marker.graphicalProperties = GraphicalProperties(solidFill=GRAY[i % 5])
-        s.marker.graphicalProperties.line = LineProperties(solidFill="000000", w=6350)
+        s.marker = Marker(symbol=MARK[i % len(MARK)], size=7)
+        mfill = "000000" if i % 2 == 0 else "FFFFFF"
+        s.marker.graphicalProperties = GraphicalProperties(solidFill=mfill)
+        s.marker.graphicalProperties.line = LineProperties(solidFill="000000", w=9525)
         s.smooth = False
-    _axis_mono(ch)
+    _axis_mono(ch, cat_rot=cat_rot)
+    if labels:
+        _dlabels(ch, "t", 750, numfmt)
     ws.add_chart(ch, anchor)
     return ch
 
 
-def _axis_mono(ch):
+def _axis_mono(ch, cat_rot=None, tick_size=800):
     for ax in (ch.x_axis, ch.y_axis):
         ax.majorGridlines = None
         ax.delete = False
         gp = GraphicalProperties()
         gp.line = LineProperties(solidFill="000000", w=6350)
         ax.graphicalProperties = gp
-    ch.legend.position = "b"
+        ax.txPr = _txpr(tick_size)
+        if ax.title is not None:
+            ax.title.overlay = False
+    if cat_rot is not None:
+        ch.x_axis.txPr = _txpr(tick_size, rot=cat_rot)
+    if ch.title is not None:
+        ch.title.overlay = False
+    if ch.legend is not None:
+        ch.legend.position = "b"
+        ch.legend.overlay = False
+        ch.legend.txPr = _txpr(850)
+    ch.plotVisOnly = True
+    ch.dispBlanksAs = "gap"
 
 
 
@@ -176,7 +248,7 @@ YEARS = ["平成24年", "平成25年", "平成26年", "平成27年", "平成28�
 
 # ============================================================ 00 凡例・出典
 ws = sheet("00_凡例・出典", "第10期介護保険事業計画 図表集（白黒レイアウト）",
-           "令和8（2026）年7月28日作成／第9期計画の図表構成に準拠し、確認済みの数値のみで作図",
+           "令和8（2026）年7月28日作成／第9期計画の図表構成・体裁（パターン塗り、マーカー形状、データラベル）に準拠し、確認済みの数値のみで作図",
            [6, 26, 34, 44, 30])
 r = 4
 ws.cell(row=r, column=1, value="1　本図表集の考え方").font = Font(name=FONT, size=11, bold=True)
@@ -212,14 +284,19 @@ end = table(ws, r, ["No.", "シート", "図表", "出典・基準時点", "更�
      "第10期事業所実態調査の集計受領後に差替え"),
 ])
 r = end + 2
-ws.cell(row=r, column=1, value="3　作図上の凡例（白黒）").font = Font(name=FONT, size=11, bold=True)
+ws.cell(row=r, column=1, value="3　作図上の凡例（1色印刷対応）").font = Font(name=FONT, size=11, bold=True)
 r += 1
 end = table(ws, r, ["No.", "要素", "表現", "備考", ""], [
-    (1, "積上げ棒・横棒", "黒→濃灰→中灰→淡灰→白の順に塗り分け、輪郭は黒", "5系列までは塗りのみで判別可能"),
-    (2, "折れ線", "すべて黒線。実線／破線／点線／一点鎖線で系列を区別", "マーカーは○△□◇で重複を回避"),
-    (3, "目盛線", "非表示。軸線のみ黒で表示", "1色印刷時の視認性を優先"),
-    (4, "凡例", "グラフ下部に配置", "第9期計画の体裁を踏襲"),
-    (5, "入力欄", "淡黄色。R6・R7実績など未受領の値", "受領後に上書きするとグラフに反映"),
+    (1, "積上げ棒・横棒", "ベタ塗り（黒・中間グレー・淡グレー・白）とパターン（格子／太斜線／ドット／横縞／細斜線）を交互に配置",
+     "第9期計画と同じ体裁。1色印刷でも隣接系列を判別できるよう、濃淡と柄の両方で区別している"),
+    (2, "折れ線", "すべて黒線。実線／破線／点線／一点鎖線で系列を区別",
+     "マーカーは■（1系列目）▲（2系列目）●（3系列目）◆（4系列目）×（5系列目）。塗りは黒と白を交互にして重なりを回避"),
+    (3, "データラベル", "主要グラフに数値を表示。積上げは中央、単独棒は外側、折れ線は上側に配置",
+     "フォントは7.5〜8ポイント。第9期計画の体裁を踏襲"),
+    (4, "目盛線", "非表示。軸線のみ黒で表示", "1色印刷時の視認性を優先"),
+    (5, "凡例", "グラフ下部に配置し、プロット領域と重ならないよう設定", "タイトル・軸タイトルも重なり回避を設定済み"),
+    (6, "カテゴリ名が多い場合", "軸ラベルを45度回転して表示", "出現率の管内比較（24区分）等"),
+    (7, "入力欄", "淡黄色。R6・R7実績など未受領の値", "受領後に上書きするとグラフに反映"),
 ])
 r = end + 2
 ws.cell(row=r, column=1, value="4　作図にあたり確認が必要な事項").font = Font(name=FONT, size=11, bold=True)
@@ -290,7 +367,8 @@ note(ws, end + 1, "注1）0～64歳は「総人口－65歳以上」で算出。�
                   "注2）65歳以上は65～74歳と75歳以上の合計。令和6～8年（淡黄色欄）は住民基本台帳の実績受領後に入力する。")
 cats = Reference(ws, min_col=2, max_col=16, min_row=4)
 data = Reference(ws, min_col=1, max_col=16, min_row=5, max_row=7)
-mono_bar(ws, "人口の推移（大雪地区広域連合）", "人口（人）", cats, data, "A14", stacked=True, width=26, height=12, from_rows=True)
+mono_bar(ws, "人口の推移（大雪地区広域連合）", "人口（人）", cats, data, "A14", stacked=True,
+         width=28, height=13, from_rows=True, labels=True, numfmt="#,##0")
 
 # ============================================================ 02 高齢化率
 ws = sheet("02_高齢化率推移", "図2　高齢化率の推移（広域連合・構成3町）",
@@ -310,7 +388,8 @@ note(ws, end + 1, "注）東川町の高齢化率は令和2年の32.8％をピ�
                   "（第9期計画 第2章第1節1）。令和6～8年（淡黄色欄）は実績受領後に入力する。")
 cats = Reference(ws, min_col=2, max_col=16, min_row=4)
 data = Reference(ws, min_col=1, max_col=16, min_row=5, max_row=8)
-mono_line(ws, "高齢化率の推移", "高齢化率（％）", cats, data, "A13", width=26, height=12, min_=20, max_=42, from_rows=True)
+mono_line(ws, "高齢化率の推移", "高齢化率（％）", cats, data, "A13", width=28, height=13,
+          min_=20, max_=42, from_rows=True, labels=True, numfmt="0.0")
 
 # ============================================================ 03 世帯
 ws = sheet("03_高齢者世帯", "図3　高齢者を含む世帯の状況",
@@ -343,7 +422,7 @@ note(ws, end2 + 1, "注）構成割合は「高齢者を含む世帯」に占め
                    "高齢者夫婦世帯の割合は東神楽町が37.1％と最も高い（第9期計画 第2章第1節2）。次回は令和7年国勢調査の公表後に更新する。")
 cats = Reference(ws, min_col=1, min_row=r + 1, max_row=r + 6)
 data = Reference(ws, min_col=2, max_col=4, min_row=r, max_row=r + 6)
-mono_hbar(ws, "高齢者を含む世帯の構成割合", cats, data, f"F{r}", width=20, height=11)
+mono_hbar(ws, "高齢者を含む世帯の構成割合", cats, data, f"F{r}", width=22, height=12)
 SETAI_HEAD = 5           # 世帯数テーブルの見出し行
 FUFU_ROW = SETAI_HEAD + 9    # 高齢者夫婦世帯 広域連合
 TANSHIN_ROW = SETAI_HEAD + 13  # 高齢者単身世帯 広域連合
@@ -362,10 +441,9 @@ ch.set_categories(cats2)
 ch.gapWidth = 80
 ch.width, ch.height = 14, 9
 for i, s in enumerate(ch.series):
-    gp = GraphicalProperties(solidFill=GRAY[i * 2])
-    gp.line = LineProperties(solidFill="000000", w=6350)
-    s.graphicalProperties = gp
+    s.graphicalProperties = _fill(i * 2)
 _axis_mono(ch)
+_dlabels(ch, "outEnd", 800, "#,##0")
 ws.add_chart(ch, f"F{r + 24}")
 
 # ============================================================ 04 認定者数
@@ -397,7 +475,8 @@ note(ws, end + 1, "注）第1号・第2号被保険者の合計。令和5年の�
                   "令和6～8年（淡黄色欄）は各年9月分の実績受領後に入力する。")
 cats = Reference(ws, min_col=2, max_col=16, min_row=4)
 data = Reference(ws, min_col=1, max_col=16, min_row=5, max_row=11)
-mono_bar(ws, "認定者数の推移（要介護度別）", "認定者数（人）", cats, data, "A16", stacked=True, width=26, height=12, from_rows=True)
+mono_bar(ws, "認定者数の推移（要介護度別）", "認定者数（人）", cats, data, "A16", stacked=True,
+         width=28, height=13, from_rows=True, labels=True, numfmt="#,##0")
 
 # ============================================================ 05 認定者割合
 ws = sheet("05_認定者割合", "図5　認定者割合の比較（令和5年9月）",
@@ -417,7 +496,7 @@ note(ws, end + 1, "注）東川町は「要支援1」の割合が9.9％と全国
                   "東神楽町は「要介護1」の割合が28.7％と全国・北海道・他町より高い（第9期計画 第2章第1節3）。")
 cats = Reference(ws, min_col=1, min_row=5, max_row=10)
 data = Reference(ws, min_col=2, max_col=8, min_row=4, max_row=10)
-mono_hbar(ws, "認定者割合の比較（令和5年9月）", cats, data, "A14", width=22, height=11)
+mono_hbar(ws, "認定者割合の比較（令和5年9月）", cats, data, "A14", width=24, height=12)
 
 # ============================================================ 06 出現率
 ws = sheet("06_出現率推移", "図6　要支援・要介護認定者の出現率",
@@ -437,7 +516,8 @@ for r_ in range(r + 1, r + 4):
         ws.cell(row=r_, column=c).fill = PatternFill("solid", fgColor=IN_Y)
 cats = Reference(ws, min_col=2, max_col=16, min_row=r)
 data = Reference(ws, min_col=1, max_col=16, min_row=r + 1, max_row=r + 3)
-mono_line(ws, "出現率の推移", "出現率（％）", cats, data, "R5", width=26, height=11, min_=15, max_=23, from_rows=True)
+mono_line(ws, "出現率の推移", "出現率（％）", cats, data, "R5", width=28, height=12,
+          min_=15, max_=23, from_rows=True, labels=True, numfmt="0.0")
 
 r = end + 2
 ws.cell(row=r, column=1, value="（2）町別出現率の推移").font = Font(name=FONT, size=10, bold=True)
@@ -453,7 +533,8 @@ for r_ in range(r + 1, r + 4):
         ws.cell(row=r_, column=c).fill = PatternFill("solid", fgColor=IN_Y)
 cats = Reference(ws, min_col=2, max_col=16, min_row=r)
 data = Reference(ws, min_col=1, max_col=16, min_row=r + 1, max_row=r + 3)
-mono_line(ws, "町別出現率の推移", "出現率（％）", cats, data, "R28", width=26, height=11, min_=15, max_=26, from_rows=True)
+mono_line(ws, "町別出現率の推移", "出現率（％）", cats, data, "R28", width=28, height=12,
+          min_=15, max_=26, from_rows=True, labels=True, numfmt="0.0")
 
 r = end2 + 26
 ws.cell(row=r, column=1, value="（3）出現率の比較（令和5年 上川総合振興局管内）").font = Font(name=FONT, size=10, bold=True)
@@ -478,10 +559,9 @@ ch.add_data(data, titles_from_data=True)
 ch.set_categories(cats)
 ch.gapWidth = 40
 ch.width, ch.height = 26, 11
-gp = GraphicalProperties(solidFill="A6A6A6")
-gp.line = LineProperties(solidFill="000000", w=6350)
-ch.series[0].graphicalProperties = gp
-_axis_mono(ch)
+ch.series[0].graphicalProperties = _fill(4)
+_axis_mono(ch, cat_rot=-2700000, tick_size=750)
+_dlabels(ch, "outEnd", 750, "0.0")
 ch.legend = None
 ws.add_chart(ch, "R51")
 
@@ -688,10 +768,9 @@ for k, (no, nm, u, n, _a, _t, _p) in enumerate(NEEDS):
     ch.set_categories(Reference(ws, min_col=5, max_col=10, min_row=hrowA))
     ch.gapWidth = 60
     ch.width, ch.height = 13, 8
-    gp = GraphicalProperties(solidFill="737373")
-    gp.line = LineProperties(solidFill="000000", w=6350)
-    ch.series[0].graphicalProperties = gp
+    ch.series[0].graphicalProperties = _fill(3)
     _axis_mono(ch)
+    _dlabels(ch, "outEnd", 750, "0.0")
     ch.legend = None
     wsg.add_chart(ch, f"A{anchor_r}")
 
@@ -705,10 +784,9 @@ for k, (no, nm, u, n, _a, _t, _p) in enumerate(NEEDS):
     ch2.set_categories(Reference(ws, min_col=4, max_col=7, min_row=hrowB))
     ch2.gapWidth = 60
     ch2.width, ch2.height = 13, 8
-    g2 = GraphicalProperties(solidFill="A6A6A6")
-    g2.line = LineProperties(solidFill="000000", w=6350)
-    ch2.series[0].graphicalProperties = g2
+    ch2.series[0].graphicalProperties = _fill(5)
     _axis_mono(ch2)
+    _dlabels(ch2, "outEnd", 750, "0.0")
     ch2.legend = None
     wsg.add_chart(ch2, f"J{anchor_r}")
     anchor_r += 17
@@ -731,10 +809,9 @@ _ch.set_categories(cats)
 _ch.gapWidth = 60
 _ch.width, _ch.height = 20, max(7, len(CMP) * 0.85 + 3)
 for _i, _sr in enumerate(_ch.series):
-    _gp = GraphicalProperties(solidFill=["D9D9D9", "404040"][_i % 2])
-    _gp.line = LineProperties(solidFill="000000", w=6350)
-    _sr.graphicalProperties = _gp
+    _sr.graphicalProperties = _fill(_i * 4)
 _axis_mono(_ch)
+_dlabels(_ch, "outEnd", 750, "0.0")
 wsg.add_chart(_ch, f"F{cr}")
 
 
@@ -752,10 +829,9 @@ def mono_hbar_cluster(ws_, title, cats_ref, data_ref, anchor, width=20, height=N
     ch.width = width
     ch.height = height if height else max(7, (n_cat or 6) * 0.85 + 3)
     for i, sr in enumerate(ch.series):
-        gp = GraphicalProperties(solidFill=["404040", "D9D9D9", "A6A6A6", "FFFFFF"][i % 4])
-        gp.line = LineProperties(solidFill="000000", w=6350)
-        sr.graphicalProperties = gp
+        sr.graphicalProperties = _fill(i * 2)
     _axis_mono(ch)
+    _dlabels(ch, "outEnd", 800, "0.0")
     if len(ch.series) <= 1:
         ch.legend = None
     ws_.add_chart(ch, anchor)
@@ -983,9 +1059,8 @@ ch.y_axis.title = "割合（％）"
 ch.add_data(d2, titles_from_data=True); ch.add_data(d5, titles_from_data=True)
 ch.set_categories(cats); ch.gapWidth = 60; ch.width, ch.height = 20, 10
 for i, sr in enumerate(ch.series):
-    gp = GraphicalProperties(solidFill=["404040", "D9D9D9"][i]); gp.line = LineProperties(solidFill="000000", w=6350)
-    sr.graphicalProperties = gp
-_axis_mono(ch); ws.add_chart(ch, "H46")
+    sr.graphicalProperties = _fill(i * 4)
+_axis_mono(ch); _dlabels(ch, "outEnd", 750, "0.0"); ws.add_chart(ch, "H46")
 r += 2
 note(ws, r, "注）合計では「認知症の症状の悪化」が66.7％と最も高い一方、要介護3～要介護5では「必要な身体介護の増大」が66.7％と最も高い。"
             "令和2年度と比べ「必要な身体介護の増大」は10.6ポイント減少している（第9期計画 第2章第4節3）。")
@@ -1009,9 +1084,8 @@ ch.y_axis.title = "割合（％）"
 ch.add_data(d2, titles_from_data=True); ch.add_data(d5, titles_from_data=True)
 ch.set_categories(cats); ch.gapWidth = 60; ch.width, ch.height = 20, 10
 for i, sr in enumerate(ch.series):
-    gp = GraphicalProperties(solidFill=["404040", "D9D9D9"][i]); gp.line = LineProperties(solidFill="000000", w=6350)
-    sr.graphicalProperties = gp
-_axis_mono(ch); ws.add_chart(ch, "H86")
+    sr.graphicalProperties = _fill(i * 4)
+_axis_mono(ch); _dlabels(ch, "outEnd", 750, "0.0"); ws.add_chart(ch, "H86")
 r += 2
 note(ws, r, "注）合計では「その他」が35.6％と最も高い一方、要介護3～要介護5では「生活の不安が大きいから」が最も高い。"
             "令和2年度と比べ「本人が、一部の居宅サービスの利用を望まないから」が16.5ポイント減少、「その他」が9.7ポイント増加している。")
@@ -1035,9 +1109,8 @@ ch.y_axis.title = "割合（％）"
 ch.add_data(d2, titles_from_data=True); ch.add_data(d5, titles_from_data=True)
 ch.set_categories(cats); ch.gapWidth = 60; ch.width, ch.height = 20, 10
 for i, sr in enumerate(ch.series):
-    gp = GraphicalProperties(solidFill=["404040", "D9D9D9"][i]); gp.line = LineProperties(solidFill="000000", w=6350)
-    sr.graphicalProperties = gp
-_axis_mono(ch); ws.add_chart(ch, "H126")
+    sr.graphicalProperties = _fill(i * 4)
+_axis_mono(ch); _dlabels(ch, "outEnd", 750, "0.0"); ws.add_chart(ch, "H130")
 note(ws, r + 2, "注）いずれの介護度でも「介護者の介護に係る不安・負担量の増大」が最も高い。"
                 "要支援1～要介護2では「本人と家族等の関係性に課題があるから」、要介護3～要介護5では「家族等の介護等技術では対応が困難」が次いで高い。"
                 "令和2年度と比べ「介護者の介護に係る不安・負担量の増大」は15.6ポイント減少している（第9期計画 第2章第4節3）。"
@@ -1058,11 +1131,9 @@ def mono_pct_hbar(ws_, title, cats_ref, data_ref, anchor, n_cat=3, width=20, hei
     ch.width = width
     ch.height = height if height else max(6, n_cat * 0.9 + 3.5)
     for i, sr in enumerate(ch.series):
-        gp = GraphicalProperties(solidFill=GRAY9[int(i * 8 / max(1, len(ch.series) - 1))]
-                                 if len(ch.series) > 5 else GRAY[i % 5])
-        gp.line = LineProperties(solidFill="000000", w=6350)
-        sr.graphicalProperties = gp
+        sr.graphicalProperties = _fill(i)
     _axis_mono(ch)
+    _dlabels(ch, "ctr", 800, "0.0")
     if len(ch.series) <= 1:
         ch.legend = None
     ws_.add_chart(ch, anchor)
@@ -1179,7 +1250,7 @@ for rr in range(hrow + 1, end + 1):
 cats = Reference(ws, min_col=1, min_row=hrow + 1, max_row=end - 1)
 data = Reference(ws, min_col=2, min_row=hrow, max_row=end - 1)
 ch = mono_bar(ws, "（3）① 全職員の年齢構成（総数）", "人数（人）", cats, data, CA(9),
-              width=16, height=9)
+              width=16, height=9, labels=True, numfmt="#,##0")
 ch.legend = None
 r2 = end + 2
 hrow2 = r2
@@ -1350,11 +1421,12 @@ for c in range(2, 10):
     ws.cell(row=hrow + 1, column=c).number_format = "#,##0"
 cats = Reference(ws, min_col=2, max_col=9, min_row=hrow)
 data = Reference(ws, min_col=1, max_col=9, min_row=hrow + 1, max_row=hrow + 1)
-mono_line(ws, "85歳以上人口の推移", "人口（人）", cats, data, "L26", width=22, height=11, from_rows=True)
+mono_line(ws, "85歳以上人口の推移", "人口（人）", cats, data, "L30", width=24, height=12,
+          from_rows=True, labels=True, numfmt="#,##0")
 cats2 = Reference(ws, min_col=2, max_col=9, min_row=hrow)
 data2 = Reference(ws, min_col=1, max_col=9, min_row=hrow + 2, max_row=hrow + 3)
-mono_bar(ws, "前期・後期別高齢者数の推移", "人口（人）", cats2, data2, "L48",
-         stacked=True, width=22, height=11, from_rows=True)
+mono_bar(ws, "前期・後期別高齢者数の推移", "人口（人）", cats2, data2, "L56",
+         stacked=True, width=24, height=12, from_rows=True, labels=True, numfmt="#,##0")
 note(ws, end + 2,
      "注1）85歳以上は「85～89歳」と「90歳以上」の合計。2035年2,673人・2040年2,810人・2050年2,534人は"
      "第10期計画素案第9稿 表8（令和17・22・32年度）の掲載値と一致する。"
@@ -1395,7 +1467,8 @@ for name, o, hk, jp in SVC:
     cats = Reference(ws, min_col=2, max_col=13, min_row=hrow)
     data = Reference(ws, min_col=1, max_col=13, min_row=hrow + 1, max_row=end)
     mono_line(ws, f"{name}　受給者1人あたり利用日数・回数の推移", name.split("（")[1].rstrip("）"),
-              cats, data, f"P{anchor_row}", width=22, height=10, from_rows=True)
+              cats, data, f"P{anchor_row}", width=24, height=11, from_rows=True,
+              labels=True, numfmt="0.0")
     anchor_row += 21
     r = end + 2
 note(ws, r,
