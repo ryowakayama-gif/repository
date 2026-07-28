@@ -77,7 +77,7 @@ def note(ws, row, text):
 
 
 def mono_bar(ws, title, y_title, cats_ref, data_ref, anchor, stacked=False,
-             width=22, height=11, gap=60, overlap=None):
+             width=22, height=11, gap=60, overlap=None, from_rows=False):
     ch = BarChart()
     ch.type = "col"
     ch.style = None
@@ -88,7 +88,7 @@ def mono_bar(ws, title, y_title, cats_ref, data_ref, anchor, stacked=False,
         ch.overlap = overlap
     ch.title = title
     ch.y_axis.title = y_title
-    ch.add_data(data_ref, titles_from_data=True)
+    ch.add_data(data_ref, titles_from_data=True, from_rows=from_rows)
     ch.set_categories(cats_ref)
     ch.gapWidth = gap
     ch.width, ch.height = width, height
@@ -123,12 +123,12 @@ def mono_hbar(ws, title, cats_ref, data_ref, anchor, width=20, height=10):
 
 
 def mono_line(ws, title, y_title, cats_ref, data_ref, anchor,
-              width=22, height=11, min_=None, max_=None):
+              width=22, height=11, min_=None, max_=None, from_rows=False):
     ch = LineChart()
     ch.style = None
     ch.title = title
     ch.y_axis.title = y_title
-    ch.add_data(data_ref, titles_from_data=True)
+    ch.add_data(data_ref, titles_from_data=True, from_rows=from_rows)
     ch.set_categories(cats_ref)
     ch.width, ch.height = width, height
     if min_ is not None:
@@ -197,6 +197,10 @@ end = table(ws, r, ["No.", "シート", "図表", "出典・基準時点", "更�
     (7, "07_給付費推移", "サービス区分別給付費／地域支援事業費／中長期推計", "第9期計画 第2章第2節（見える化 R6.1.18参照）／素案第9稿 表39", "R6～R8実績の受領後に更新"),
     (8, "08_ニーズ調査データ", "介護予防・日常生活圏域ニーズ調査 14指標の集計値", "第9期計画 第2章第3節／令和4年11月調査（回収4,626票・63.9％）", "第10期ニーズ調査の集計受領後に全面差替え"),
     (9, "09_ニーズ調査グラフ", "同上の年齢階級別・町別グラフ", "同上", "同上"),
+    (14, "14_年齢構成と85歳以上", "高齢者の年齢構成（5歳階級別）・85歳以上人口・前期後期別の推移",
+     "見える化A3・A4（国勢調査＋社人研推計、取得日 令和8年7月22日）", "見える化の再出力時に更新"),
+    (15, "15_サービス利用強度", "受給者1人あたり利用日数・回数の推移（5サービス・全国／北海道比較）",
+     "見える化D31-a〜j（H26〜R7、R7はR8年1月サービス提供分まで）", "見える化の再出力時に更新"),
     (10, "10_在宅介護実態調査", "世帯類型・介護頻度・介護内容・離職・必要な支援・施設検討（令和2年度との比較）",
      "第9期計画 第2章第4節1／令和5年5月25日～6月30日・認定調査員の聞き取り", "第10期調査の集計受領後に差替え"),
     (11, "11_居所変更実態調査", "居所変更・死亡の割合／要介護度別人数／変更理由",
@@ -230,6 +234,14 @@ end = table(ws, r, ["No.", "事項", "内容", "対応", ""], [
         "基準月が異なるため同一系列に接続していない。R6～R8は9月分を受領して追加", "広域連合へ照会"),
     (4, "総給付費の定義", "第9期計画 第2章第2節の総給付費（R5 2,794,391千円）と、"
         "素案第9稿の保険給付費R5決算（2,940.4百万円）は定義が異なる", "別系列として併記。計画掲載時はいずれかに統一", "第10期計画で整理"),
+    (11, "人口統計の基準", "第9期計画の図1・図2は住民基本台帳（各年10月1日）、14シートと素案第6章の推計は国勢調査＋社人研推計。"
+        "令和5年で総人口が382人、高齢化率が1.1ポイント異なる", "01・02シートは住民基本台帳、14シートは国勢調査・社人研で作図し接続していない。"
+        "第10期で採用基準を統一する", "広域連合と協議（修正指示書C-7）"),
+    (12, "高齢夫婦世帯数", "見える化A8（H27 1,615・R2 1,773世帯）と第9期計画（同1,697・1,950世帯）が一致しない。"
+        "一般世帯・高齢者を含む世帯・高齢独居世帯の3系列は完全に一致", "03シートは第9期計画の値を掲載。定義差の確認後に差替え",
+        "広域連合へ照会（修正指示書C-6）"),
+    (13, "町別データ", "受領した見える化データは広域連合・北海道・全国の3系列のみで町別の内訳がない",
+        "02・03・06シートの町別値は第9期計画の掲載値のまま。町別データの受領後に更新", "広域連合へ照会（修正指示書C-8）"),
     (5, "ニーズ調査の基準", "掲載値は令和4年11月実施の第9期調査。第10期調査は実施済だが集計未受領",
         "第10期調査の集計受領後に全面差替え。設問・判定ロジックの一致を確認", "広域連合・3町へ照会"),
     (6, "在宅介護実態調査の回答数", "第9期計画に回収結果の表が掲載されているが本文から数値を復元できなかった。"
@@ -278,7 +290,7 @@ note(ws, end + 1, "注1）0～64歳は「総人口－65歳以上」で算出。�
                   "注2）65歳以上は65～74歳と75歳以上の合計。令和6～8年（淡黄色欄）は住民基本台帳の実績受領後に入力する。")
 cats = Reference(ws, min_col=2, max_col=16, min_row=4)
 data = Reference(ws, min_col=1, max_col=16, min_row=5, max_row=7)
-mono_bar(ws, "人口の推移（大雪地区広域連合）", "人口（人）", cats, data, "A14", stacked=True, width=26, height=12)
+mono_bar(ws, "人口の推移（大雪地区広域連合）", "人口（人）", cats, data, "A14", stacked=True, width=26, height=12, from_rows=True)
 
 # ============================================================ 02 高齢化率
 ws = sheet("02_高齢化率推移", "図2　高齢化率の推移（広域連合・構成3町）",
@@ -298,7 +310,7 @@ note(ws, end + 1, "注）東川町の高齢化率は令和2年の32.8％をピ�
                   "（第9期計画 第2章第1節1）。令和6～8年（淡黄色欄）は実績受領後に入力する。")
 cats = Reference(ws, min_col=2, max_col=16, min_row=4)
 data = Reference(ws, min_col=1, max_col=16, min_row=5, max_row=8)
-mono_line(ws, "高齢化率の推移", "高齢化率（％）", cats, data, "A13", width=26, height=12, min_=20, max_=42)
+mono_line(ws, "高齢化率の推移", "高齢化率（％）", cats, data, "A13", width=26, height=12, min_=20, max_=42, from_rows=True)
 
 # ============================================================ 03 世帯
 ws = sheet("03_高齢者世帯", "図3　高齢者を含む世帯の状況",
@@ -385,7 +397,7 @@ note(ws, end + 1, "注）第1号・第2号被保険者の合計。令和5年の�
                   "令和6～8年（淡黄色欄）は各年9月分の実績受領後に入力する。")
 cats = Reference(ws, min_col=2, max_col=16, min_row=4)
 data = Reference(ws, min_col=1, max_col=16, min_row=5, max_row=11)
-mono_bar(ws, "認定者数の推移（要介護度別）", "認定者数（人）", cats, data, "A16", stacked=True, width=26, height=12)
+mono_bar(ws, "認定者数の推移（要介護度別）", "認定者数（人）", cats, data, "A16", stacked=True, width=26, height=12, from_rows=True)
 
 # ============================================================ 05 認定者割合
 ws = sheet("05_認定者割合", "図5　認定者割合の比較（令和5年9月）",
@@ -425,7 +437,7 @@ for r_ in range(r + 1, r + 4):
         ws.cell(row=r_, column=c).fill = PatternFill("solid", fgColor=IN_Y)
 cats = Reference(ws, min_col=2, max_col=16, min_row=r)
 data = Reference(ws, min_col=1, max_col=16, min_row=r + 1, max_row=r + 3)
-mono_line(ws, "出現率の推移", "出現率（％）", cats, data, "R5", width=26, height=11, min_=15, max_=23)
+mono_line(ws, "出現率の推移", "出現率（％）", cats, data, "R5", width=26, height=11, min_=15, max_=23, from_rows=True)
 
 r = end + 2
 ws.cell(row=r, column=1, value="（2）町別出現率の推移").font = Font(name=FONT, size=10, bold=True)
@@ -441,7 +453,7 @@ for r_ in range(r + 1, r + 4):
         ws.cell(row=r_, column=c).fill = PatternFill("solid", fgColor=IN_Y)
 cats = Reference(ws, min_col=2, max_col=16, min_row=r)
 data = Reference(ws, min_col=1, max_col=16, min_row=r + 1, max_row=r + 3)
-mono_line(ws, "町別出現率の推移", "出現率（％）", cats, data, "R28", width=26, height=11, min_=15, max_=26)
+mono_line(ws, "町別出現率の推移", "出現率（％）", cats, data, "R28", width=26, height=11, min_=15, max_=26, from_rows=True)
 
 r = end2 + 26
 ws.cell(row=r, column=1, value="（3）出現率の比較（令和5年 上川総合振興局管内）").font = Font(name=FONT, size=10, bold=True)
@@ -502,7 +514,7 @@ for r_ in range(r + 1, end):
         ws.cell(row=r_, column=c).fill = PatternFill("solid", fgColor=IN_Y)
 cats = Reference(ws, min_col=2, max_col=7, min_row=r)
 data = Reference(ws, min_col=1, max_col=7, min_row=r + 1, max_row=end - 1)
-mono_bar(ws, "サービス区分別給付費の推移", "給付費（千円）", cats, data, "J4", stacked=True, width=20, height=11)
+mono_bar(ws, "サービス区分別給付費の推移", "給付費（千円）", cats, data, "J4", stacked=True, width=20, height=11, from_rows=True)
 
 r2 = end + 2
 ws.cell(row=r2, column=1, value="（2）総給付費（在宅・居住系・施設別／実績・単位：千円）").font = Font(name=FONT, size=10, bold=True)
@@ -562,7 +574,7 @@ for c in range(2, 7):
     ws.cell(row=end4, column=c).font = Font(name=FONT, size=9, bold=True)
 cats = Reference(ws, min_col=2, max_col=6, min_row=r4)
 data = Reference(ws, min_col=1, max_col=6, min_row=r4 + 1, max_row=end4 - 1)
-mono_bar(ws, "給付費の中長期見通し（自然体推計）", "給付費（百万円）", cats, data, "J27", stacked=True, width=20, height=11)
+mono_bar(ws, "給付費の中長期見通し（自然体推計）", "給付費（百万円）", cats, data, "J27", stacked=True, width=20, height=11, from_rows=True)
 
 note(ws, end4 + 2,
      "注1）（1）～（3）は第9期計画 第2章第2節の掲載値（見える化システム 令和6年1月18日参照）。令和6～8年度（淡黄色欄）は実績受領後に入力する。"
@@ -1277,6 +1289,103 @@ r = block(ws, r, "（6）過去1週間の勤務時間（単位：％）", ["区�
 note(ws, r + 2, "注）「40時間以上45時間未満」が46.9％で最も高く、次いで「35時間以上40時間未満」11.6％。"
                 "一方で30時間未満が19.3％を占めており、短時間勤務者の比率が高い（第9期計画 第2章第5節(6)）。")
 
+
+# ============================================================ 14 年齢構成と85歳以上
+ws = sheet("14_年齢構成と85歳以上", "図13　高齢者の年齢構成と85歳以上人口の推移",
+           "資料：地域包括ケア「見える化」システム A3・A4（総務省国勢調査＋国立社会保障・人口問題研究所推計／取得日 令和8年7月22日）"
+           "／単位：人。第9期計画の図1・図2は住民基本台帳ベースで基準が異なる（00_凡例・出典 4-11）",
+           [18] + [10] * 9)
+YR14 = ["2015年", "2020年", "2025年", "2030年", "2035年", "2040年", "2045年", "2050年"]
+AGE14 = [
+    ["65～69歳", 2289, 2062, 1673, 1784, 1884, 2082, 1778, 1548],
+    ["70～74歳", 1843, 2208, 1949, 1589, 1701, 1803, 1998, 1713],
+    ["75～79歳", 1700, 1702, 2044, 1815, 1482, 1592, 1695, 1884],
+    ["80～84歳", 1496, 1488, 1490, 1843, 1638, 1346, 1455, 1560],
+    ["85～89歳", 998, 1157, 1164, 1182, 1512, 1339, 1110, 1212],
+    ["90歳以上", 629, 820, 1003, 1097, 1161, 1471, 1486, 1322],
+    ["合計", None, None, None, None, None, None, None, None],
+]
+r = 4
+ws.cell(row=r, column=1, value="（1）高齢者の年齢構成（5歳階級別）").font = Font(name=FONT, size=10, bold=True)
+hrow = r + 1
+end = table(ws, hrow, ["区分"] + YR14, AGE14, numfmt="#,##0")
+for c in range(2, 10):
+    col = get_column_letter(c)
+    ws.cell(row=end, column=c).value = f"=SUM({col}{hrow+1}:{col}{end-1})"
+    ws.cell(row=end, column=c).number_format = "#,##0"
+    ws.cell(row=end, column=c).font = Font(name=FONT, size=9, bold=True)
+cats = Reference(ws, min_col=2, max_col=9, min_row=hrow)
+data = Reference(ws, min_col=1, max_col=9, min_row=hrow + 1, max_row=end - 1)
+mono_bar(ws, "高齢者の年齢構成（5歳階級別）の推移", "人口（人）", cats, data, "L4",
+         stacked=True, width=22, height=12, from_rows=True)
+r = end + 2
+
+ws.cell(row=r, column=1, value="（2）85歳以上人口・前期後期別高齢者数").font = Font(name=FONT, size=10, bold=True)
+hrow = r + 1
+end = table(ws, hrow, ["区分"] + YR14,
+            [["85歳以上（再掲）", None, None, None, None, None, None, None, None],
+             ["前期高齢者（65～74歳）", 4132, 4270, 3622, 3373, 3585, 3885, 3776, 3261],
+             ["後期高齢者（75歳以上）", 4823, 5167, 5701, 5937, 5793, 5748, 5746, 5978]],
+            numfmt="#,##0")
+for c in range(2, 10):
+    col = get_column_letter(c)
+    ws.cell(row=hrow + 1, column=c).value = f"={col}{hrow-5}+{col}{hrow-4}"
+    ws.cell(row=hrow + 1, column=c).number_format = "#,##0"
+cats = Reference(ws, min_col=2, max_col=9, min_row=hrow)
+data = Reference(ws, min_col=1, max_col=9, min_row=hrow + 1, max_row=hrow + 1)
+mono_line(ws, "85歳以上人口の推移", "人口（人）", cats, data, "L26", width=22, height=11, from_rows=True)
+cats2 = Reference(ws, min_col=2, max_col=9, min_row=hrow)
+data2 = Reference(ws, min_col=1, max_col=9, min_row=hrow + 2, max_row=hrow + 3)
+mono_bar(ws, "前期・後期別高齢者数の推移", "人口（人）", cats2, data2, "L48",
+         stacked=True, width=22, height=11, from_rows=True)
+note(ws, end + 2,
+     "注1）85歳以上は「85～89歳」と「90歳以上」の合計。2035年2,673人・2040年2,810人・2050年2,534人は"
+     "第10期計画素案第9稿 表8（令和17・22・32年度）の掲載値と一致する。"
+     "注2）総人口が減少する一方、85歳以上人口は2040年まで増加し2015年比で1.7倍となる。"
+     "90歳以上は629人から1,471人へ2.3倍に増加する。"
+     "注3）本表は国勢調査・社人研推計ベース。第9期計画の図1・図2（住民基本台帳ベース）とは基準が異なるため接続していない。")
+
+# ============================================================ 15 サービス利用強度
+ws = sheet("15_サービス利用強度", "図14　受給者1人あたり利用日数・回数の推移",
+           "資料：地域包括ケア「見える化」システム D31-a〜j（取得日 令和8年7月22日）"
+           "／R6は令和7年2月、R7は令和8年1月のサービス提供分まで／単位：訪問系は回、通所系は日",
+           [22] + [8] * 13)
+YR15 = ["H26", "H27", "H28", "H29", "H30", "R元", "R2", "R3", "R4", "R5", "R6", "R7"]
+SVC = [
+    ("訪問介護（回）", [22.1, 22.7, 25.5, 32.2, 38.8, 39.7, 42.4, 44.7, 45.6, 47.0, 50.9, 55.4],
+     [13.4, 14.4, 15.6, 19.6, 23.4, 23.9, 25.2, 25.9, 26.4, 27.3, 28.7, 29.9],
+     [14.6, 15.4, 16.8, 20.9, 23.6, 24.0, 25.1, 25.6, 26.2, 27.2, 28.4, 29.7]),
+    ("訪問看護（回）", [6.2, 7.2, 8.5, 9.5, 7.2, 11.6, 9.1, 8.5, 7.9, 7.5, 7.8, 8.0],
+     [6.2, 6.3, 6.5, 6.7, 6.7, 6.7, 6.7, 6.6, 6.6, 6.7, 6.7, 6.7],
+     [8.0, 8.3, 8.5, 8.6, 8.7, 8.7, 8.8, 8.9, 8.9, 9.0, 9.0, 9.1]),
+    ("通所介護（日）", [5.2, 5.0, 3.9, 5.4, 8.9, 8.9, 9.7, 9.7, 9.6, 9.6, 9.4, 8.8],
+     [5.2, 5.2, 4.6, 6.0, 8.1, 8.2, 8.2, 8.3, 8.0, 8.2, 8.1, 8.1],
+     [7.4, 7.6, 7.5, 9.2, 10.6, 10.7, 10.9, 11.0, 10.7, 10.8, 10.7, 10.7]),
+    ("通所リハビリテーション（日）", [5.0, 4.7, 4.6, 4.4, 4.5, 4.6, 4.8, 4.8, 4.4, 4.8, 4.6, 5.0],
+     [5.4, 5.4, 5.4, 5.3, 5.2, 5.1, 5.0, 5.0, 4.8, 4.9, 4.8, 4.8],
+     [6.4, 6.4, 6.3, 6.2, 6.1, 5.9, 5.9, 5.9, 5.7, 5.7, 5.6, 5.6]),
+    ("地域密着型通所介護（日）", [None, None, 6.9, 6.8, 6.8, 6.8, 6.6, 6.9, 6.8, 6.9, 7.1, 7.9],
+     [None, None, 7.9, 8.0, 7.9, 8.0, 8.1, 8.1, 7.9, 7.9, 7.9, 7.8],
+     [None, None, 9.6, 9.6, 9.5, 9.5, 9.7, 9.7, 9.4, 9.4, 9.2, 9.2]),
+]
+r = 4
+anchor_row = 4
+for name, o, hk, jp in SVC:
+    ws.cell(row=r, column=1, value=name).font = Font(name=FONT, size=10, bold=True)
+    hrow = r + 1
+    end = table(ws, hrow, ["区分"] + YR15,
+                [["大雪地区広域連合"] + o, ["北海道"] + hk, ["全国"] + jp], numfmt="0.0")
+    cats = Reference(ws, min_col=2, max_col=13, min_row=hrow)
+    data = Reference(ws, min_col=1, max_col=13, min_row=hrow + 1, max_row=end)
+    mono_line(ws, f"{name}　受給者1人あたり利用日数・回数の推移", name.split("（")[1].rstrip("）"),
+              cats, data, f"P{anchor_row}", width=22, height=10, from_rows=True)
+    anchor_row += 21
+    r = end + 2
+note(ws, r,
+     "注1）R7列（令和8年1月サービス提供分まで）の値は第10期計画素案第9稿 表5の掲載値と一致する。"
+     "注2）訪問介護は平成26年度22.1回から令和7年度55.4回へ2.5倍に増加し、北海道（13.4→29.9回・2.2倍）を上回る伸びで推移している。"
+     "令和7年度は北海道の1.85倍であり、需要特性、提供体制、算定・集計範囲の要因分解が必要である。"
+     "注3）通所介護・通所リハビリテーション・地域密着型通所介護はいずれも全国を下回って推移している。")
 
 del wb["Sheet"]
 wb.save("/home/user/repository/output/第10期計画_図表集_白黒.xlsx")
