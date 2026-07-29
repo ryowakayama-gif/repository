@@ -77,8 +77,8 @@ ws.row_dimensions[4].height = 48
 
 header(ws, 6, ["No.", "シート", "用途"])
 toc = [
-    (1, "修正指示一覧", "66件の修正指示。区分・優先度・該当箇所・現行記載・修正案・根拠を記載し、対応者と状態を記入して進捗管理します。"),
-    (2, "進捗管理", "区分別・優先度別・状態別の件数を自動集計します（修正指示一覧の状態欄を更新すると連動）。"),
+    (1, "修正指示一覧", "66件の修正指示。区分・優先度・該当箇所・現行記載・修正案・根拠と、素案第10稿への反映状況を記載します。"),
+    (2, "進捗管理", "区分別・優先度別に、素案第10稿への反映状況の件数を自動集計します（修正指示一覧の状態欄と連動）。"),
     (3, "数値照合結果", "素案第9稿の主要数値と第9期計画等の原典との照合結果。一致・不一致・要確認の別と原典ページを記載します。"),
     (4, "凡例・参照資料", "区分・優先度・状態の定義、セル色の凡例、参照した原典資料の一覧。"),
 ]
@@ -94,7 +94,8 @@ ws.merge_cells("A12:C12")
 ws = sheet(
     "修正指示一覧",
     "第9稿→第10稿 修正指示一覧（全66件）",
-    "区分A：委員会前必須（18件）／区分B：原稿整備（22件）／区分C：継続確認（19件）　※対応者・状態は淡黄色欄に記入",
+    "区分A：委員会前必須（20件）／区分B：原稿整備（25件）／区分C：継続確認（21件）　"
+    "※「状態」は素案第10稿への反映状況（淡緑＝反映済／淡黄＝反映済だが照会継続／淡橙＝照会・資料待ち／灰＝図表集・工程表で対応）",
     [7, 7, 9, 20, 24, 40, 40, 46, 34, 14, 12, 12],
 )
 COLS = ["No.", "区分", "優先度", "該当箇所", "該当表・見出し", "指摘内容",
@@ -798,12 +799,51 @@ ROWS = [
      "要（3町への照会）", "", "未着手"),
 ]
 
+# 素案第10稿（build_plan_draft.py が生成）への反映状況。
+# 「反映済」＝第10稿の本文・表に記述として反映したもの。
+# 「反映済（照会継続）」＝記述は反映したが、確定値・資料の受領を待つもの。
+# 「照会・資料待ち」＝資料の受領又は委員会の決定を待つため本文に反映していないもの。
+# 「別成果物で対応」＝図表集・工程表・KPI定義書で対応するもの。
+STATUS = {
+    # --- 第10稿の本文・表に反映済み ---
+    "A-1": "反映済", "A-2": "反映済", "A-3": "反映済", "A-4": "反映済",
+    "A-5": "反映済", "A-6": "反映済", "A-10": "反映済", "A-11": "反映済",
+    "A-12": "反映済", "A-16": "反映済", "A-17": "反映済", "A-18": "反映済",
+    "A-19": "反映済", "A-20": "反映済",
+    "B-1": "反映済", "B-2": "反映済", "B-3": "反映済", "B-6": "反映済",
+    "B-7": "反映済", "B-8": "反映済", "B-10": "反映済", "B-11": "反映済",
+    "B-13": "反映済", "B-14": "反映済", "B-15": "反映済", "B-16": "反映済",
+    "B-17": "反映済", "B-18": "反映済", "B-20": "反映済", "B-21": "反映済",
+    "B-22": "反映済", "B-23": "反映済", "B-24": "反映済", "B-25": "反映済",
+    "C-3": "反映済", "C-4": "反映済", "C-7": "反映済", "C-9": "反映済",
+    "C-10": "反映済", "C-11": "反映済", "C-16": "反映済", "C-17": "反映済",
+    "C-18": "反映済", "C-19": "反映済", "C-20": "反映済", "C-21": "反映済",
+    # --- 記述は反映したが確定値・資料の受領を待つもの ---
+    "A-7": "反映済（照会継続）", "A-9": "反映済（照会継続）",
+    "A-13": "反映済（照会継続）", "A-15": "反映済（照会継続）",
+    "B-19": "反映済（照会継続）", "C-1": "反映済（照会継続）",
+    "C-2": "反映済（照会継続）", "C-5": "反映済（照会継続）",
+    "C-12": "反映済（照会継続）", "C-13": "反映済（照会継続）",
+    "C-15": "反映済（照会継続）",
+    # --- 資料の受領又は委員会の決定を待つもの ---
+    "A-8": "照会・資料待ち", "A-14": "照会・資料待ち",
+    "C-8": "照会・資料待ち", "C-14": "照会・資料待ち",
+    # --- 図表集・工程表・KPI定義書で対応するもの ---
+    "B-4": "別成果物で対応", "B-5": "別成果物で対応", "B-9": "別成果物で対応",
+    "B-12": "別成果物で対応", "C-6": "別成果物で対応",
+}
+ST_FILL = {"反映済": OK_G, "反映済（照会継続）": IN_Y,
+           "照会・資料待ち": NG_O, "別成果物で対応": GRAY}
+
 r = 5
 for row in ROWS:
-    fills = {11: IN_Y, 12: IN_Y}
+    row = list(row)
+    st = STATUS.get(row[0], "未着手")
+    row[11] = st
+    fills = {11: IN_Y, 12: ST_FILL.get(st, IN_Y)}
     if row[9].startswith("要"):
         fills[10] = NG_O
-    body(ws, r, list(row), fills)
+    body(ws, r, row, fills)
     r += 1
 
 LAST = r - 1
@@ -826,12 +866,14 @@ ws.row_dimensions[note].height = 30
 ws = sheet(
     "進捗管理",
     "修正指示の進捗管理",
-    "修正指示一覧の「状態」欄を更新すると自動集計されます（状態は 未着手／対応中／対応済／要協議 から選択）",
+    "修正指示一覧の「状態」欄（素案第10稿への反映状況）を自動集計します。"
+    "状態は 反映済／反映済（照会継続）／照会・資料待ち／別成果物で対応 の4区分です。"
+    "反映済率は「反映済」と「反映済（照会継続）」の合計です。",
     [18, 14, 14, 14, 14, 14, 14],
 )
-STATES = ["未着手", "対応中", "対応済", "要協議"]
+STATES = ["反映済", "反映済（照会継続）", "照会・資料待ち", "別成果物で対応"]
 
-header(ws, 4, ["区分"] + STATES + ["合計", "対応済率"])
+header(ws, 4, ["区分"] + STATES + ["合計", "反映済率"])
 kubun = [("A　委員会前必須", "A"), ("B　原稿整備", "B"), ("C　継続確認", "C")]
 r = 5
 for label, key in kubun:
@@ -843,7 +885,7 @@ for label, key in kubun:
         ws.cell(row=r, column=i).alignment = Alignment(horizontal="center")
     ws.cell(row=r, column=6).value = f"=SUM(B{r}:E{r})"
     ws.cell(row=r, column=6).alignment = Alignment(horizontal="center")
-    ws.cell(row=r, column=7).value = f'=IF(F{r}=0,"-",D{r}/F{r})'
+    ws.cell(row=r, column=7).value = f'=IF(F{r}=0,"-",(B{r}+C{r})/F{r})'
     ws.cell(row=r, column=7).number_format = "0.0%"
     ws.cell(row=r, column=7).alignment = Alignment(horizontal="center")
     r += 1
@@ -857,7 +899,7 @@ for i in range(2, 7):
     ws.cell(row=r, column=i).fill = PatternFill("solid", fgColor=GRAY)
 ws.cell(row=r, column=1).font = Font(name=FONT, size=9, bold=True)
 ws.cell(row=r, column=1).fill = PatternFill("solid", fgColor=GRAY)
-ws.cell(row=r, column=7).value = f'=IF(F{r}=0,"-",D{r}/F{r})'
+ws.cell(row=r, column=7).value = f'=IF(F{r}=0,"-",(B{r}+C{r})/F{r})'
 ws.cell(row=r, column=7).number_format = "0.0%"
 ws.cell(row=r, column=7).font = Font(name=FONT, size=9, bold=True)
 ws.cell(row=r, column=7).alignment = Alignment(horizontal="center")
@@ -867,7 +909,7 @@ TOTAL_ROW = r
 r += 2
 ws.cell(row=r, column=1, value="優先度別").font = Font(name=FONT, size=10, bold=True)
 r += 1
-header(ws, r, ["優先度"] + STATES + ["合計", "対応済率"])
+header(ws, r, ["優先度"] + STATES + ["合計", "反映済率"])
 pr_head = r
 for pri in ["最優先", "高", "中", "低"]:
     r += 1
@@ -879,7 +921,7 @@ for pri in ["最優先", "高", "中", "低"]:
         ws.cell(row=r, column=i).alignment = Alignment(horizontal="center")
     ws.cell(row=r, column=6).value = f"=SUM(B{r}:E{r})"
     ws.cell(row=r, column=6).alignment = Alignment(horizontal="center")
-    ws.cell(row=r, column=7).value = f'=IF(F{r}=0,"-",D{r}/F{r})'
+    ws.cell(row=r, column=7).value = f'=IF(F{r}=0,"-",(B{r}+C{r})/F{r})'
     ws.cell(row=r, column=7).number_format = "0.0%"
     ws.cell(row=r, column=7).alignment = Alignment(horizontal="center")
 
