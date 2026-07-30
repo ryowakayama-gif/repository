@@ -143,6 +143,56 @@ def build():
     hit_5y = [r for r in recs if (r.get("elapsed_years") or 0) >= 5]
     write_sheet(wb.create_sheet("②策定から5年経過"), hit_5y,
                 "直近の策定・改定から5年以上経過")
+    just5 = [r for r in recs if r.get("elapsed_years") == 5]
+    write_sheet(wb.create_sheet("②-2 ちょうど5年"), just5,
+                "令和3年度に策定・改定＝令和8年度で5年目")
+
+    # --- 自治体別サマリ ---
+    ws2 = wb.create_sheet("自治体別サマリ")
+    ws2.freeze_panes = "A3"
+    cols2 = [("振興局", 12), ("自治体", 14), ("水道系の状況", 46), ("下水道系の状況", 46),
+             ("最優先度", 18), ("該当", 26)]
+    ws2["A1"] = "自治体別サマリ（水道系／下水道系の直近状況）"
+    ws2["A1"].font = Font(bold=True, size=13, color="FFFFFF")
+    ws2["A1"].fill = HEADER_FILL
+    ws2.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(cols2))
+    for i, (name, w) in enumerate(cols2, start=1):
+        c = ws2.cell(row=2, column=i, value=name)
+        c.font = Font(bold=True, color="FFFFFF")
+        c.fill = SUB_FILL
+        c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        c.border = BORDER
+        ws2.column_dimensions[get_column_letter(i)].width = w
+
+    def is_water(j):
+        return ("水道" in j and "下水" not in j) or "上下水道" in j
+
+    munis = {}
+    for r in recs:
+        munis.setdefault((r.get("area", ""), r["muni"]), []).append(r)
+
+    def brief(r):
+        p = period(r)
+        j = r.get("hit") or r.get("expiry_judge") or "－"
+        return f"{r.get('jigyo','')}：{p}／{j}"
+
+    order = {"A": 0, "B": 1, "C": 2, "－": 3}
+    row = 3
+    for (area, muni) in sorted(munis, key=lambda k: (AREA_ORDER.index(k[0]) if k[0] in AREA_ORDER else 99, k[1])):
+        rs = munis[(area, muni)]
+        w = [brief(r) for r in rs if is_water(r.get("jigyo", ""))]
+        s = [brief(r) for r in rs if not is_water(r.get("jigyo", ""))]
+        pris = sorted({(r.get("priority") or "－")[:1] for r in rs}, key=lambda x: order.get(x, 9))
+        top = [r for r in rs if (r.get("priority") or "－").startswith(pris[0])]
+        hits = "／".join(sorted({r.get("hit", "") for r in top if r.get("hit")}))
+        vals = [area, muni, "\n".join(w) or "－", "\n".join(s) or "－",
+                top[0].get("priority", ""), hits]
+        for i, v in enumerate(vals, start=1):
+            c = ws2.cell(row=row, column=i, value=v)
+            c.border = BORDER
+            c.alignment = Alignment(vertical="top", wrap_text=True)
+        ws2.cell(row=row, column=5).fill = PRI_FILL.get(pris[0], PRI_FILL["-"])
+        row += 1
     pri_a = [r for r in recs if (r.get("priority") or "").startswith("A")]
     write_sheet(wb.create_sheet("優先度A"), pri_a, "改訂着手が必要")
     todo = [r for r in recs if r.get("confidence") == "低" or (not r.get("end_fy") and not r.get("made_fy") and not r.get("revised_fy"))]
