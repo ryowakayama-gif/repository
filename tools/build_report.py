@@ -21,7 +21,10 @@ OUT_DIR = os.path.join(BASE_DIR, "output")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 AREA_ORDER = ["石狩", "渡島", "檜山", "後志", "胆振", "日高", "空知", "上川",
-              "留萌", "宗谷", "オホーツク", "十勝", "釧路", "根室", "一部事務組合等"]
+              "留萌", "宗谷", "オホーツク", "十勝", "釧路", "根室", "一部事務組合等",
+              "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県"]
+
+TOHOKU = ["青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県"]
 
 HEADER_FILL = PatternFill("solid", fgColor="1F3864")
 SUB_FILL = PatternFill("solid", fgColor="2E75B6")
@@ -100,8 +103,11 @@ def write_sheet(ws, records, title_note=""):
             pass
 
 
-def build():
-    recs = load()
+def build(region="北海道"):
+    recs = [r for r in load()
+            if (r.get("pref", "北海道") == "北海道") == (region == "北海道")]
+    if not recs:
+        return
     wb = Workbook()
 
     # --- 表紙 ---
@@ -110,7 +116,7 @@ def build():
     ws.column_dimensions["A"].width = 26
     ws.column_dimensions["B"].width = 110
     rows = [
-        ("調査名", "北海道　市町村 水道・下水道事業「経営戦略」改訂時期調査"),
+        ("調査名", f"{region}　市町村 水道・下水道事業「経営戦略」改訂時期調査"),
         ("調査基準日", f"2026年7月30日（{BASE_FY_LABEL}）"),
         ("抽出条件①", "来年で計画期間がおわるもの＝計画終期が令和8年度末（2027年3月）または令和9年度末（2028年3月）"),
         ("　（参考）", "既に計画期間が満了しているもの（令和7年度末以前）も改訂対象として併記"),
@@ -198,12 +204,12 @@ def build():
     todo = [r for r in recs if r.get("confidence") == "低" or (not r.get("end_fy") and not r.get("made_fy") and not r.get("revised_fy"))]
     write_sheet(wb.create_sheet("要個別確認"), todo, "年度が特定できず個別確認が必要")
 
-    path = os.path.join(OUT_DIR, "北海道_上下水道経営戦略_改訂時期一覧.xlsx")
+    path = os.path.join(OUT_DIR, f"{region}_上下水道経営戦略_改訂時期一覧.xlsx")
     wb.save(path)
 
     # --- Markdown ---
     md = []
-    md.append("# 北海道　市町村 水道・下水道事業「経営戦略」改訂時期調査\n")
+    md.append(f"# {region}　市町村 水道・下水道事業「経営戦略」改訂時期調査\n")
     md.append(f"- 調査基準日：2026年7月30日（{BASE_FY_LABEL}）")
     md.append("- 抽出条件①：**来年で計画期間がおわるもの**＝計画終期が令和8年度末（2027年3月）／令和9年度末（2028年3月）")
     md.append("- 抽出条件②：**作成から5年経過する計画**＝直近の策定・改定が令和3年度以前")
@@ -224,11 +230,11 @@ def build():
     md += table(expired) + [""]
     md.append("## ② 策定・改定から5年以上経過している計画\n")
     md += table(hit_5y) + [""]
-    md.append("## 振興局別の進捗\n")
+    md.append("## エリア別の進捗\n")
     by_area = defaultdict(set)
     for r in recs:
         by_area[r.get("area", "")].add(r["muni"])
-    md.append("| 振興局 | 調査済自治体数 |")
+    md.append("| エリア | 調査済自治体数 |")
     md.append("|---|---|")
     for a in AREA_ORDER:
         if a in by_area:
@@ -237,7 +243,7 @@ def build():
     md.append("## 要個別確認（年度が特定できなかったもの）\n")
     md += table(todo) + [""]
 
-    mdpath = os.path.join(BASE_DIR, "research", "北海道_経営戦略_改訂時期サマリ.md")
+    mdpath = os.path.join(BASE_DIR, "research", f"{region}_経営戦略_改訂時期サマリ.md")
     with open(mdpath, "w", encoding="utf-8") as f:
         f.write("\n".join(md))
 
@@ -248,4 +254,5 @@ def build():
 
 
 if __name__ == "__main__":
-    build()
+    build("北海道")
+    build("東北")
