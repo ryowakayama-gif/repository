@@ -1,0 +1,19 @@
+﻿arcname,description,source_filename,sha256,size_bytes
+"00_source/01_elderly_bid_notice.pdf","高齢者計画 入札公告","小野町　公告第1-19号　入札公告（高齢者保健福祉計画・第10期介護保険事業計画策定業務）.pdf","7a9dbb28fa5b61353a7af774b96440c0c82cd63714af1ff4ebd19d1d01fb580b",157279
+"00_source/02_elderly_specification.pdf","高齢者計画 仕様書","公告第1-19号　仕様書（小野町高齢者保健福祉計画・第10期介護保険事業計画策定業務委託）.pdf","e9fa5e4a0287403e7335873f9d65e77b04f651f905fe944bb9c75bbc4a8975f0",148110
+"00_source/03_disability_bid_notice.pdf","障がい計画 入札公告","小野町　公告第1-36号 （おのまち障がい者計画・第４期障がい児福祉計画・第８期障がい福祉計画策定業務委託）_1.pdf","293a1e390a81de7c9cb0121021f0b821752e645ca7a47361c061ff3ad8daee48",151003
+"00_source/04_disability_specification.pdf","障がい計画 仕様書","公告第1-36号　仕様書（おのまち障がい者計画・第４期障がい児福祉計画・第８期障がい福祉計画策定業務委託）.pdf","b0658aa5f218ee728e3871a517fd1ccc82a2cd85473c83861ab901d3e5f4029b",224875
+"01_kickoff/01_kickoff_redteam_mece_final.docx","キックオフ資料 最終確認版（Red Team/MECE）","小野町_高齢者障がい計画_キックオフ会議資料案_縦レイアウト_Redteam_MECE確認版.docx","2ec10eb321483c2e4242597390aea131b499da3174ea2083e4bfeebe8e46263c",73121
+"01_kickoff/02_kickoff_funding_review_added.docx","キックオフ資料 財源評価追加版","小野町_高齢者障がい計画_キックオフ会議資料案_縦レイアウト_財源評価追加版.docx","d677f9b5be457fa03b50e16b5f5da978c048e23c2a1ff9c5f5e5e9d1902c637c",63297
+"01_kickoff/03_kickoff_workplan_added.docx","キックオフ資料 業務実施計画追加版","小野町_高齢者障がい計画_キックオフ会議資料案_縦レイアウト_業務実施計画追加版.docx","4fd852ffd5545af85cbd86c2dea18328fd34d6cd75132219777c00d2a9eab39c",55859
+"02_plan_drafts/01_elderly_plan_draft_expanded.docx","高齢者保健福祉計画・第10期介護保険事業計画 素案 拡充版","小野町_高齢者保健福祉計画_第10期介護保険事業計画_素案_拡充版.docx","3e7a77e226d763c71c9f3fae90ca4a9049a86f24f3842dc720e23c79f59b0ea3",43950
+"02_plan_drafts/02_disability_plan_draft_expanded.docx","障がい者計画・第4期障がい児福祉計画・第8期障がい福祉計画 素案 拡充版","小野町_障がい者計画_第4期障がい児福祉計画_第8期障がい福祉計画_素案_拡充版.docx","e3a6a4f716b3c391ccc80dce9af9e5c220130eaf5cc0b9fb86202a9a4de49f85",44870
+"02_plan_drafts/03_combined_plan_deepened_reference.docx","高齢者・障がい計画 統合素案 関連計画・地域医療深掘り拡充版","小野町_高齢者介護障がい計画_計画素案_関連計画地域医療深掘り拡充版.docx","317f2854b956d6687815137d8d3fd0936e173071085cc4972330abda7ab2bee8",72473
+"02_plan_drafts/04_combined_plan_medical_related_reference.docx","高齢者・障がい計画 統合素案 地域医療・関連計画深掘り追加版","小野町_高齢者介護障がい計画_計画素案_地域医療関連計画深掘り追加版.docx","388cbd9becde50e53d4fbdeea0a322c9a1367c2bbfa8d8cb802aa28d38cdf5f0",61651
+"03_calculation_logic/01_elderly_premium_logic_redteam_mece.docx","高齢者計画 保険料算定ロジック検討 Red Team/MECE版","小野町_高齢者計画_保険料算定ロジック検討_Redteam_MECE版.docx","eeaa143cff32b07a0fe878751c2a70fbc45a382ae13ff5a61ccbeeb62d42d036",41383
+"03_calculation_logic/02_disability_estimation_logic_redteam_mece.docx","障がい計画 見込量算定方針検討 Red Team/MECE版","小野町_障がい計画_見込量算定方針検討_Redteam_MECE版.docx","8a6fbd858fe0ce7800f45ef4c215a66c7f93e0caaf39ba5bc9d6f985e81abdde",42600
+"03_calculation_logic/03_premium_estimation_workbook.xlsx","保険料算定・障がい見込量算定 整理表 Excel","小野町_保険料算定_障がい見込量算定_整理表.xlsx","79786673d31765a4fdbb70a1063302e1c88d08d385b2cc3cf7e92246021fb054",31284
+"04_process_reference/01_kickoff_vertical_layout.docx","参考過程 キックオフ縦レイアウト版","小野町_高齢者障がい計画_キックオフ会議資料案_縦レイアウト版.docx","6dadd32b186b7dd70d7634c5054f0677050e35698455bf4236f7e0e282d25106",55178
+"04_process_reference/02_elderly_plan_draft_initial.docx","参考過程 高齢者計画素案 初版","小野町_高齢者保健福祉計画_第10期介護保険事業計画_素案.docx","577d5cb7a4453e481e19d3eb111ea2373bca5ea659023dd71b920cebe6fdb221",43664
+"04_process_reference/03_disability_plan_draft_initial.docx","参考過程 障がい計画素案 初版","小野町_障がい者計画_第4期障がい児福祉計画_第8期障がい福祉計画_素案.docx","afde870234674447e38279b74ebc42bcb4daa3fedccc2924c20eed385c5c592e",44587
+"04_process_reference/04_combined_plan_initial.docx","参考過程 統合計画素案 初稿","小野町_高齢者介護障がい計画_計画素案_初稿.docx","696594d2f1500972362c5ed9b5f584b71b734ea7abf86b9fede736b09178751d",52528
