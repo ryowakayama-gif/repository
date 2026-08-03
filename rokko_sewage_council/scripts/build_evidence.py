@@ -96,6 +96,116 @@ for r, key in ((18, "①最終"), (19, "②最終"), (20, "④最終")):
     ws.cell(r, 4).value = f"税込 {int(round(fee(RATES[key], 20) * 1.1)):,}円"
 ws.cell(17, 4).value = "税込 2,420円"
 
+# ------------------------------------------------ 汚水処理費の算定シート
+if "汚水処理費の算定" in wb.sheetnames:
+    del wb["汚水処理費の算定"]
+oc = wb.create_sheet("汚水処理費の算定")
+oc.sheet_view.showGridLines = False
+r = 1
+oc.cell(r, 1, "経費回収率の分母（汚水処理費）の算定　― 維持管理費ベース ―").font = Font(bold=True, size=12)
+r += 1
+for line in ("算定式：汚水処理費（維持管理費分）＝ 経常費用 − 減価償却費 − 支払利息 − その他営業外費用",
+             "　　　　資本費 ＝ 減価償却費 − 長期前受金戻入 ＋ 支払利息"
+             "　…　分流式下水道等に要する経費（一般会計繰入金）でカバーされるため、分母から全額控除",
+             "出典：六戸町_公共／農集_使用料改定.xlsx「財政計画（ベース）」（社人研人口推計・現行料金ベース）"):
+    oc.cell(r, 1, line).font = Font(size=9, color="475569")
+    r += 1
+r += 1
+
+CALC = [("経常費用（経常支出D）", "経常支出", "#,##0", False),
+        ("　− 減価償却費", "減価償却費", "#,##0", False),
+        ("　− 支払利息", "支払利息", "#,##0", False),
+        ("　− その他営業外費用", "営業外費用その他", "#,##0", False),
+        ("▶ 汚水処理費（維持管理費分）", None, "#,##0", True),
+        ("（参考）長期前受金戻入", "長期前受金戻入", "#,##0", False),
+        ("（参考）資本費", None, "#,##0", False),
+        ("（参考）一般会計繰入金（補助金）", "補助金", "#,##0", False),
+        ("（参考）繰入金 ÷ 資本費（倍）", None, "0.00", False),
+        ("使用料収入（現行・改定なし）", None, "#,##0", False),
+        ("経費回収率（現行・改定なし）", None, "0.0%", True)]
+
+for biz in ("公共", "農集"):
+    label = "公共下水道事業" if biz == "公共" else "農業集落排水事業"
+    fp = M[biz]["財政計画"]
+    cap = [fp["減価償却費"][i] - fp["長期前受金戻入"][i] + fp["支払利息"][i] for i in range(10)]
+    mnt = [fp["経常支出"][i] - fp["減価償却費"][i] - fp["支払利息"][i] - fp["営業外費用その他"][i]
+           for i in range(10)]
+    rev = M[biz]["使用料収入"]["現行"]
+    oc.cell(r, 1, f"■ {label}（単位：千円）").font = BOLD
+    r += 1
+    oc.cell(r, 1, "項目").fill, oc.cell(r, 1).font, oc.cell(r, 1).border = NAVY, HEAD, BOX
+    for j, y in enumerate(YEARS, start=2):
+        c = oc.cell(r, j, y)
+        c.fill, c.font, c.alignment, c.border = NAVY, HEAD, Alignment(horizontal="center"), BOX
+    r += 1
+    for i, (name, key, fmt, strong) in enumerate(CALC):
+        vals = (fp[key] if key else
+                mnt if name.startswith("▶") else
+                cap if "資本費" in name and "÷" not in name else
+                [fp["補助金"][k] / cap[k] for k in range(10)] if "÷" in name else
+                rev if "使用料収入" in name else
+                [rev[k] / mnt[k] for k in range(10)])
+        c = oc.cell(r, 1, name)
+        c.font, c.border = (BOLD if strong else BODY), BOX
+        if strong:
+            c.fill = GREY
+        elif i % 2:
+            c.fill = BAND
+        for j, v in enumerate(vals, start=2):
+            c = oc.cell(r, j, round(v, 4) if fmt == "0.0%" else v)
+            c.number_format, c.border = fmt, BOX
+            c.alignment = Alignment(horizontal="right")
+            c.font = BOLD if strong else BODY
+            if strong:
+                c.fill = GREY
+            elif i % 2:
+                c.fill = BAND
+        r += 1
+    r += 1
+
+# 令和6年度決算との接続
+R6 = {"公共": {"経常費用": 497395, "汚水処理費": 119503, "使用料収入": 56302, "回収率": 0.4711},
+      "農集": {"経常費用": 106700, "汚水処理費": 32870, "使用料収入": 11831, "回収率": 0.3599}}
+oc.cell(r, 1, "■ 令和6年度決算（第1回審議会資料）との接続（単位：千円）").font = BOLD
+r += 1
+for j, h in enumerate(["事業／項目", "R6決算", "R7見込", "差", "備考"], start=1):
+    c = oc.cell(r, j, h)
+    c.fill, c.font, c.alignment, c.border = NAVY, HEAD, Alignment(horizontal="center"), BOX
+r += 1
+for biz in ("公共", "農集"):
+    fp, a = M[biz]["財政計画"], R6[biz]
+    mnt7 = fp["経常支出"][0] - fp["減価償却費"][0] - fp["支払利息"][0] - fp["営業外費用その他"][0]
+    resid7 = fp["減価償却費"][0] + fp["支払利息"][0] + fp["営業外費用その他"][0]
+    rows = [(f"{biz}　経常費用", a["経常費用"], fp["経常支出"][0], ""),
+            (f"{biz}　汚水処理費（維持管理費分）", a["汚水処理費"], mnt7, ""),
+            (f"{biz}　差引（減価償却費＋支払利息＋その他）", a["経常費用"] - a["汚水処理費"], resid7,
+             "R6決算とR7見込がほぼ一致 → 同一基準で算定されていることの確認")]
+    for i, (name, v6, v7, memo) in enumerate(rows):
+        oc.cell(r, 1, name).font = BODY
+        for j, v in enumerate((v6, v7, v7 - v6), start=2):
+            c = oc.cell(r, j, v)
+            c.number_format, c.alignment, c.font = "#,##0;△#,##0", Alignment(horizontal="right"), BODY
+        oc.cell(r, 5, memo).font = Font(size=9, color="475569")
+        for j in range(1, 6):
+            oc.cell(r, j).border = BOX
+            if i == 2:
+                oc.cell(r, j).fill = GREY
+        r += 1
+r += 1
+for line in ("※ 令和6年度決算の汚水処理費（公共119,503千円・農集32,870千円）も、"
+             "経常費用から減価償却費・支払利息を控除した維持管理費ベースで算定されており、本シミュレーションと同一基準。",
+             "※ 公共下水道はR6→R7で維持管理費が119,503千円→168,331千円（＋40.9%）と増加する見込みのため、"
+             "経費回収率は47.11%→34.4%に低下する。この増加要因は要確認（確認事項A）。",
+             "※ 農業集落排水は営業収益に雨水処理負担金799千円が計上されているが、"
+             "対応する雨水処理費は汚水処理費から控除されていない。分流式のため要確認。"):
+    oc.cell(r, 1, line).font = Font(size=9, color="B45309")
+    r += 1
+
+oc.column_dimensions["A"].width = 34
+for j in range(2, 12):
+    oc.column_dimensions[get_column_letter(j)].width = 12
+oc.freeze_panes = "B1"
+
 # ------------------------------------------------ パターン別SIM結果シート
 if "パターン別SIM結果" in wb.sheetnames:
     del wb["パターン別SIM結果"]
