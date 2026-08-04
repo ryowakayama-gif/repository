@@ -63,8 +63,9 @@ ws = wb["成果物一覧"]
 for row in ws.iter_rows():
     if row[1].value and "第2回審議会資料" in str(row[1].value):
         row[1].value = "六戸町_第2回審議会資料.pptx"
-        row[2].value = "PPTX（31スライド）"
-        row[4].value = ("第2回審議会資料。パターン①②④それぞれの収支シミュレーション（01-2〜01-4）・"
+        row[2].value = "PPTX（37スライド）"
+        row[4].value = ("第2回審議会資料。改定しない場合の影響（01-1）・パターン①②④それぞれの"
+                        "収支シミュレーション（01-3〜01-5）・近隣自治体比較（01-8）・"
                         "段階単価一覧（02-2〜02-4）・経常収支比率見込み（03-1〜03-3）・"
                         "家庭/事業所別影響額（04-1〜04-3）を3パターン並列で収録。"
                         "指標値は各使用料改定.xlsx「パターン別比較」（社人研人口推計）から転記。")
@@ -211,113 +212,170 @@ for j in range(2, 12):
     oc.column_dimensions[get_column_letter(j)].width = 12
 oc.freeze_panes = "B1"
 
-# ------------------------------------------------ R7決算突合シート（記入用）
+# ------------------------------------------------ R7決算突合シート
+# 令和7年度決算（合計残高試算表・貸借対照表／令和8年3月31日）の実績を data/r7_actual.json から
+# 読み込み、経営戦略の推計値と突合する。
 if "R7決算突合" in wb.sheetnames:
     del wb["R7決算突合"]
 rc = wb.create_sheet("R7決算突合")
 rc.sheet_view.showGridLines = False
-INPUT = PatternFill("solid", fgColor="FFFBEB")          # 記入欄
+ACT = json.loads((HERE / "data" / "r7_actual.json").read_text(encoding="utf-8"))
+GAP = PatternFill("solid", fgColor="FEF2F2")            # 乖離が大きい行
 r = 1
-rc.cell(r, 1, "令和7年度　推計値と決算実績の突合表（記入用）").font = Font(bold=True, size=12)
+rc.cell(r, 1, "令和7年度　推計値と決算実績の突合").font = Font(bold=True, size=12)
 r += 1
-for line in ("・「R7推計値」は経営戦略（六戸町_公共／農集_使用料改定.xlsx「財政計画（ベース）」）の値。"
-             "R7は改定前のため、料金パターンによらず共通です。",
-             "・黄色のD列に令和7年度決算の実績値をご記入ください。E列（乖離額）・F列（乖離率）は自動計算されます。",
-             "・R7実績が確定すると、シミュレーションの起点をR6実績補正からR7実績に置き換えられるため、"
-             "確認事項A（維持管理費の増加要因）・M（R6実績使用料収入の不一致）の双方が直接検証できます。"):
+for line in ("・「R7推計値」は経営戦略（六戸町_公共／農集_使用料改定.xlsx「財政計画（ベース）」）の値。",
+             "・「R7決算実績」の出所：R7公共／農集 合計残高試算表（令和8年3月31日・出力R8.6.16）、"
+             "R7公共／農集 貸借対照表。経常収入＝下水道事業収益−特別利益、経常支出＝下水道事業費用−特別損失。",
+             "・乖離が10%以上の行は赤色で網掛けしています。"):
     rc.cell(r, 1, line).font = Font(size=9, color="475569")
     r += 1
 r += 1
 
-def _diff(row):
-    rc.cell(row, 5).value = f"=IF(D{row}=\"\",\"\",D{row}-C{row})"
-    rc.cell(row, 6).value = f"=IF(OR(D{row}=\"\",C{row}=0),\"\",D{row}/C{row}-1)"
-    rc.cell(row, 5).number_format = "#,##0;△#,##0"
-    rc.cell(row, 6).number_format = "+0.0%;△0.0%"
-
 for biz in ("公共", "農集"):
     label = "公共下水道事業" if biz == "公共" else "農業集落排水事業"
     fp = M[biz]["財政計画"]
+    a = {k: v / 1000 for k, v in ACT[biz]["損益"].items()}
+    ai = {k: v / 1000 for k, v in ACT[biz]["費目"].items()}
     v = lambda k: fp.get(k, [0] * 10)[0]
     oth_op = v("営業収益") - v("使用料収入") - v("雨水処理負担金")
     oth_no = v("営業外収益") - v("補助金") - v("長期前受金戻入")
     mnt = v("経常支出") - v("減価償却費") - v("支払利息") - v("営業外費用その他")
+    a_in = a["下水道事業収益"] - a["特別利益"]
+    a_out = a["下水道事業費用"] - a["特別損失"]
+    a_mnt = a_out - a["減価償却費"] - a["支払利息"] - a["その他営業外費用"]
+    a_oth = a_mnt - sum(ai.get(k, 0) for k in ("職員給与費", "動力費", "修繕費", "材料費"))
     FIN = [
-        ("【収入】", "使用料収入", v("使用料収入"), "確認事項Mの検証に直結"),
-        ("", "雨水処理負担金", v("雨水処理負担金"), ""),
-        ("", "その他営業収益", oth_op, ""),
-        ("", "営業収益 (A)", v("営業収益"), ""),
-        ("", "補助金（一般会計繰入金）", v("補助金"), "資本費のカバー状況の確認に使用"),
-        ("", "長期前受金戻入", v("長期前受金戻入"), ""),
-        ("", "その他営業外収益", oth_no, ""),
-        ("", "営業外収益", v("営業外収益"), ""),
-        ("", "経常収入 (C)", v("経常収入"), ""),
-        ("【支出】", "職員給与費", v("職員給与費"), ""),
-        ("", "経費", v("経費"), ""),
-        ("", "　うち動力費", v("動力費"), ""),
-        ("", "　うち修繕費", v("修繕費"), ""),
-        ("", "　うち材料費", v("材料費"), ""),
-        ("", "　うちその他（主に委託料）", v("経費その他"), "確認事項Aの検証に直結"),
-        ("", "減価償却費", v("減価償却費"), ""),
-        ("", "営業費用", v("営業費用"), ""),
-        ("", "支払利息", v("支払利息"), ""),
-        ("", "その他営業外費用", v("営業外費用その他"), ""),
-        ("", "営業外費用", v("営業外費用"), ""),
-        ("", "経常支出 (D)", v("経常支出"), ""),
-        ("【指標】", "経常損益 (C)-(D)", v("経常損益"), ""),
-        ("", "汚水処理費（維持管理費分）", mnt, "＝経常支出−減価償却費−支払利息−その他営業外費用"),
-        ("", "有収水量（㎥）", v("有収水量"), ""),
+        ("【収入】", "使用料収入", v("使用料収入"), a["下水道使用料"], "確認事項M・Fの検証に直結"),
+        ("", "雨水処理負担金", v("雨水処理負担金"), a["雨水処理負担金"], "農集の推計799千円は実績に計上なし"),
+        ("", "その他営業収益", oth_op, a["その他営業収益"], "督促手数料等"),
+        ("", "営業収益 (A)", v("営業収益"), a["営業収益"], ""),
+        ("", "補助金（一般会計繰入金）", v("補助金"), a["他会計補助金"], "農集は推計の約2.7倍"),
+        ("", "長期前受金戻入", v("長期前受金戻入"), a["長期前受金戻入"], ""),
+        ("", "その他営業外収益", oth_no, a["営業外収益"] - a["他会計補助金"] - a["長期前受金戻入"],
+         "実績は受取利息＋雑収益。公共は別に特別利益8,306千円あり（経常外）"),
+        ("", "営業外収益", v("営業外収益"), a["営業外収益"], ""),
+        ("", "経常収入 (C)", v("経常収入"), a_in, "＝下水道事業収益−特別利益"),
+        ("【支出】", "職員給与費", v("職員給与費"), ai.get("職員給与費", 0), "総係費の給料・手当・法定福利費等"),
+        ("", "経費", v("経費"), a_mnt - ai.get("職員給与費", 0), ""),
+        ("", "　うち動力費", v("動力費"), ai.get("動力費", 0), ""),
+        ("", "　うち修繕費", v("修繕費"), ai.get("修繕費", 0), ""),
+        ("", "　うち材料費", v("材料費"), ai.get("材料費", 0), ""),
+        ("", "　うちその他（主に委託料）", v("経費その他"), a_oth,
+         "実績の内訳は下表参照。確認事項Aの主因" if biz == "公共" else "実績の内訳は下表参照"),
+        ("", "減価償却費", v("減価償却費"), a["減価償却費"], ""),
+        ("", "営業費用", v("営業費用"), a["営業費用"], ""),
+        ("", "支払利息", v("支払利息"), a["支払利息"], ""),
+        ("", "その他営業外費用", v("営業外費用その他"), a["その他営業外費用"], ""),
+        ("", "営業外費用", v("営業外費用"), a["営業外費用"], ""),
+        ("", "経常支出 (D)", v("経常支出"), a_out, "＝下水道事業費用−特別損失"),
+        ("【指標】", "経常損益 (C)-(D)", v("経常損益"), a_in - a_out, ""),
+        ("", "汚水処理費（維持管理費分）", mnt, a_mnt, "＝経常支出−減価償却費−支払利息−その他営業外費用"),
+        ("", "資本費", v("減価償却費") - v("長期前受金戻入") + v("支払利息"),
+         a["減価償却費"] - a["長期前受金戻入"] + a["支払利息"], "＝減価償却費−長期前受金戻入＋支払利息"),
     ]
-    rc.cell(r, 1, f"■ {label}（単位：千円。有収水量のみ㎥）").font = BOLD
+    rc.cell(r, 1, f"■ {label}（単位：千円）").font = BOLD
     r += 1
-    for j, h in enumerate(["区分", "科目", "R7推計値", "R7決算実績【記入】", "乖離額", "乖離率", "備考"], start=1):
+    for j, h in enumerate(["区分", "科目", "R7推計値", "R7決算実績", "乖離額", "乖離率", "備考"], start=1):
         c = rc.cell(r, j, h)
         c.fill, c.font, c.alignment, c.border = NAVY, HEAD, Alignment(horizontal="center"), BOX
     r += 1
-    for i, (sec, name, val, memo) in enumerate(FIN):
+    for i, (sec, name, est, act, memo) in enumerate(FIN):
         strong = name in ("経常収入 (C)", "経常支出 (D)", "汚水処理費（維持管理費分）", "使用料収入")
+        big = est > 0 and abs(act / est - 1) >= 0.10
         rc.cell(r, 1, sec).font = BOLD
         rc.cell(r, 2, name).font = BOLD if strong else BODY
-        rc.cell(r, 3, val).number_format = "#,##0;△#,##0"
-        rc.cell(r, 3).font = BOLD if strong else BODY
-        rc.cell(r, 4).fill = INPUT                     # 記入欄
-        rc.cell(r, 4).number_format = "#,##0;△#,##0"
-        _diff(r)
+        rc.cell(r, 3, round(est)).number_format = "#,##0;△#,##0"
+        rc.cell(r, 4, round(act)).number_format = "#,##0;△#,##0"
+        rc.cell(r, 5, round(act - est)).number_format = "+#,##0;△#,##0"
+        # 推計値がマイナス（経常損益）の行は乖離率が符号を反転して読めるため出さない
+        rc.cell(r, 6, round(act / est - 1, 4) if est > 0 else None).number_format = "+0.0%;△0.0%"
+        for j in (3, 4, 5, 6):
+            rc.cell(r, j).font = BOLD if strong else BODY
+            rc.cell(r, j).alignment = Alignment(horizontal="right")
         rc.cell(r, 7, memo).font = Font(size=9, color="475569")
         for j in range(1, 8):
             rc.cell(r, j).border = BOX
-            if strong:
-                rc.cell(r, j).fill = GREY if j != 4 else INPUT
-            elif i % 2:
-                rc.cell(r, j).fill = BAND if j != 4 else INPUT
+            rc.cell(r, j).fill = GREY if strong else (GAP if big else (BAND if i % 2 else PatternFill()))
         r += 1
-    # 指標（比率）は実績記入後に自動算出
-    base = r - len(FIN)                                # 明細ブロックの先頭行（＝使用料収入の行）
-    idx = {"c": base + 8, "d": base + 20, "u": base + 0, "m": base + 22}
-    for name, formula, memo in (
-            ("経常収支比率", "=IF(D{c}=\"\",\"\",D{c}/D{d})", "経常収入(C)÷経常支出(D)"),
-            ("経費回収率", "=IF(D{u}=\"\",\"\",D{u}/D{m})", "使用料収入÷汚水処理費（維持管理費分）")):
+    cr_e, er_e = M[biz]["経常収支比率"]["現行"][0], M[biz]["経費回収率"]["現行"][0]
+    for name, est, act, memo in (
+            ("経常収支比率", cr_e, a_in / a_out, "経常収入(C)÷経常支出(D)"),
+            ("経費回収率", er_e, a["下水道使用料"] / a_mnt, "使用料収入÷汚水処理費（維持管理費分）")):
         rc.cell(r, 2, name).font = BOLD
-        rc.cell(r, 3, "—").alignment = Alignment(horizontal="right")
-        rc.cell(r, 4, formula.format(**idx)).number_format = "0.0%"
-        rc.cell(r, 4).fill = GREY
+        rc.cell(r, 3, round(est, 4)).number_format = "0.0%"
+        rc.cell(r, 4, round(act, 4)).number_format = "0.0%"
+        rc.cell(r, 5, round(act - est, 4)).number_format = "+0.0%;△0.0%"
+        for j in (3, 4, 5):
+            rc.cell(r, j).font = BOLD
+            rc.cell(r, j).alignment = Alignment(horizontal="right")
         rc.cell(r, 7, memo).font = Font(size=9, color="475569")
         for j in range(1, 8):
-            rc.cell(r, j).border = BOX
+            rc.cell(r, j).border, rc.cell(r, j).fill = BOX, GREY
         r += 1
     r += 1
 
-for line in ("※ 参考：R7推計値の経常収支比率は公共98.5%・農集82.0%、経費回収率は公共34.4%・農集39.9%。",
-             "※ 依頼資料：令和7年度決算の損益計算書（３条 収益的収支）、"
-             "経費の科目別内訳（特に委託料）、有収水量・調定口数の実績、一般会計繰入金の内訳。"):
+# 「その他」の実績内訳と、貸借対照表から読み取れる情報
+rc.cell(r, 1, "■ 「その他（主に委託料）」の実績内訳（千円）").font = BOLD
+r += 1
+for j, h in enumerate(["費目", "公共下水道", "農業集落排水", "備考"], start=1):
+    c = rc.cell(r, j, h)
+    c.fill, c.font, c.alignment, c.border = NAVY, HEAD, Alignment(horizontal="center"), BOX
+r += 1
+DETAIL = [("流域下水道管理運営費負担金", 63706663, 0, "公共の最大費目。実績の51%"),
+          ("委託料", 24284955, 13640109, "管渠・処理場・業務・総係の合計"),
+          ("工事請負費", 14480000, 2270000, ""),
+          ("光熱水費・燃料費", 7285678, 1669521, ""),
+          ("手数料", 2361589, 6739571, ""),
+          ("通信運搬費・備消品費・保険料ほか", 2113111, 1332999, "残差")]
+for i, (name, ko, no, memo) in enumerate(DETAIL):
+    rc.cell(r, 1, name).font = BODY
+    for j, val in ((2, ko), (3, no)):
+        c = rc.cell(r, j, round(val / 1000))
+        c.number_format, c.alignment, c.font = "#,##0", Alignment(horizontal="right"), BODY
+    rc.cell(r, 4, memo).font = Font(size=9, color="475569")
+    for j in range(1, 5):
+        rc.cell(r, j).border = BOX
+        if i % 2:
+            rc.cell(r, j).fill = BAND
+    r += 1
+r += 1
+
+rc.cell(r, 1, "■ 貸借対照表（令和8年3月31日）から読み取れる財政指標（確認事項Q）").font = BOLD
+r += 1
+for j, h in enumerate(["項目", "公共下水道", "農業集落排水", "合計"], start=1):
+    c = rc.cell(r, j, h)
+    c.fill, c.font, c.alignment, c.border = NAVY, HEAD, Alignment(horizontal="center"), BOX
+r += 1
+BS = [("企業債残高（固定＋流動）", "企業債残高"), ("　うち固定負債", "企業債_固定"),
+      ("　うち流動負債（1年以内償還）", "企業債_流動"), ("現金預金", "現金預金"),
+      ("基金", "基金"), ("未収金", "未収金"), ("当年度未処分利益剰余金", "当年度未処分利益剰余金")]
+for i, (name, key) in enumerate(BS):
+    ko, no = ACT["公共"]["貸借"][key], ACT["農集"]["貸借"][key]
+    rc.cell(r, 1, name).font = BOLD if i == 0 else BODY
+    for j, val in ((2, ko), (3, no), (4, ko + no)):
+        c = rc.cell(r, j, round(val / 1000))
+        c.number_format, c.alignment = "#,##0;△#,##0", Alignment(horizontal="right")
+        c.font = BOLD if i == 0 else BODY
+    for j in range(1, 5):
+        rc.cell(r, j).border = BOX
+        if i % 2:
+            rc.cell(r, j).fill = BAND
+    r += 1
+r += 1
+
+for line in ("※ 有収水量・調定口数の実績は未受領のため、使用料単価・汚水処理原価は"
+             "経営戦略の推計水量（公共452,992㎥・農集94,354㎥）で試算しています。",
+             "※ 一般会計繰入金の繰入基準別内訳（基準内／基準外）は未受領です。"
+             "農業集落排水の実績51,777千円は資本費19,185千円の約2.7倍で、維持管理費分への充当が含まれるとみられます。"):
     rc.cell(r, 1, line).font = Font(size=9, color="B45309")
     r += 1
 
-rc.column_dimensions["A"].width = 10
+rc.column_dimensions["A"].width = 30
 rc.column_dimensions["B"].width = 26
 for col in ("C", "D", "E", "F"):
-    rc.column_dimensions[col].width = 16
-rc.column_dimensions["G"].width = 42
+    rc.column_dimensions[col].width = 15
+rc.column_dimensions["G"].width = 46
 
 # ------------------------------------------------ パターン別SIM結果シート
 if "パターン別SIM結果" in wb.sheetnames:
@@ -574,6 +632,164 @@ nc.cell(r, 1, "※「汚水処理費等」は経費回収率の行は汚水処�
 nc.column_dimensions["A"].width = 30
 for j in range(2, len(YEARS) + 3):
     nc.column_dimensions[get_column_letter(j)].width = 13
+
+# ------------------------------------------------ R7実績ベース試算シート
+# 令和7年度決算が確定したため、シミュレーションの起点をR7実績に置き換えた場合の試算。
+# 使用料収入は基本使用料の年間乗数を公共・農集とも6回として再計算し、R7実績で補正する。
+# 汚水処理費・減価償却費・支払利息・長期前受金戻入・補助金は R7実績÷R7推計 の比率で全年度をスケールする。
+if "R7実績ベース試算" in wb.sheetnames:
+    del wb["R7実績ベース試算"]
+rb = wb.create_sheet("R7実績ベース試算")
+rb.sheet_view.showGridLines = False
+YKEY = ["R7", "R8", "R9", "R10", "R11", "R12", "R13", "R14", "R15", "R16"]
+# 使用料改定ブック「使用料算定」シートの調定口数と、R6実績で固定した区分別水量の構成比
+KUCHI = {"公共": [2563, 2545, 2527, 2508, 2490, 2472, 2452, 2432, 2412, 2391],
+         "農集": [524, 520, 517, 513, 509, 506, 501, 497, 493, 489]}
+SHARE = {"公共": [0.03184, 0.254673, 0.18661, 0.115417, 0.063915, 0.043817, 0.026321, 0.00904, 0.021102],
+         "農集": [0.295786, 0.249802, 0.180081, 0.113113, 0.068836, 0.054322, 0.026809, 0.005093, 0.003074]}
+STEP = {"①": [1150, 130, 130, 140, 140, 150, 155, 160, 180],
+        "②": [1050, 140, 140, 150, 150, 160, 165, 170, 190],
+        "④": [1100, 130, 135, 140, 145, 155, 155, 165, 185]}
+STEP2 = {"①": [1300, 140, 140, 150, 150, 160, 170, 180, 200],
+         "②": [1100, 160, 160, 170, 170, 180, 190, 200, 220],
+         "④": [1200, 140, 150, 150, 160, 170, 170, 190, 210]}
+
+
+def _rate(p, span, i):
+    if p == "現行":
+        return RATES["現行"]
+    if i == 0:
+        return RATES["現行"]
+    if span == "2":
+        return RATES[p + "中間"] if i == 1 else RATES[p + "最終"]
+    return STEP[p] if i == 1 else (STEP2[p] if i == 2 else RATES[p + "最終"])
+
+
+def _gross(biz, rate, i):
+    """基本使用料（年6回）＋超過使用料の算定額（千円・補正前）."""
+    vol = M[biz]["財政計画"]["有収水量"][i]
+    q = [round(vol * s) for s in SHARE[biz]]
+    base = round(rate[0] * KUCHI[biz][i] * 6 / 1000, 1)
+    over = sum(round(rate[j] * q[j] / 1000, 1) for j in range(1, 9))
+    return round(base + over)
+
+
+SC = {}
+for biz in ("公共", "農集"):
+    fp, L = M[biz]["財政計画"], {k: v / 1000 for k, v in ACT[biz]["損益"].items()}
+    a_mnt = (L["下水道事業費用"] - L["特別損失"] - L["減価償却費"]
+             - L["支払利息"] - L["その他営業外費用"])
+    SC[biz] = {"補正率": L["下水道使用料"] / _gross(biz, RATES["現行"], 0),
+               "汚水処理費": a_mnt / fp["汚水処理費"][0],
+               "減価償却費": L["減価償却費"] / fp["減価償却費"][0],
+               "支払利息": L["支払利息"] / fp["支払利息"][0],
+               "補助金": L["他会計補助金"] / fp["補助金"][0],
+               "長期前受金戻入": L["長期前受金戻入"] / fp["長期前受金戻入"][0],
+               "その他営業収益": L["その他営業収益"],
+               "その他営業外収益": L["営業外収益"] - L["他会計補助金"] - L["長期前受金戻入"]}
+
+r = 1
+rb.cell(r, 1, "令和7年度決算を起点に組み直した場合の試算（暫定）").font = Font(bold=True, size=12)
+r += 1
+for line in ("・本シートは決算突合の結果を機械的に将来へ反映した「試算」です。第2回審議会資料（37ページ）には反映していません。",
+             "・使用料収入：基本使用料の年間乗数を公共・農集とも6回（隔月請求）として再計算し、"
+             "R7実績÷R7算定値の補正率（公共1.005・農集1.015）を全年度に乗じています。",
+             "・費用・繰入金等：R7実績÷R7推計の比率を全年度に乗じています（伸び率は経営戦略の想定を踏襲）。",
+             "・経常収支比率は一般会計繰入金の前提で大きく変わるため、2ケースを併記しています。"):
+    rb.cell(r, 1, line).font = Font(size=9, color="475569")
+    r += 1
+r += 1
+
+rb.cell(r, 1, "■ 推計値と実績から得た換算率").font = BOLD
+r += 1
+for j, h in enumerate(["項目", "公共下水道", "農業集落排水", "内容"], start=1):
+    c = rb.cell(r, j, h)
+    c.fill, c.font, c.alignment, c.border = NAVY, HEAD, Alignment(horizontal="center"), BOX
+r += 1
+for i, (name, memo) in enumerate((("補正率", "R7実績使用料 ÷ R7算定値（基本×6）"),
+                                  ("汚水処理費", "R7実績 ÷ R7推計"),
+                                  ("減価償却費", "同上"), ("支払利息", "同上"),
+                                  ("補助金", "同上（農集は基準外繰入を含むとみられる）"),
+                                  ("長期前受金戻入", "同上"))):
+    rb.cell(r, 1, name).font = BODY
+    for j, biz in ((2, "公共"), (3, "農集")):
+        c = rb.cell(r, j, round(SC[biz][name], 4))
+        c.number_format, c.alignment, c.font = "0.000", Alignment(horizontal="right"), BODY
+    rb.cell(r, 4, memo).font = Font(size=9, color="475569")
+    for j in range(1, 5):
+        rb.cell(r, j).border = BOX
+        if i % 2:
+            rb.cell(r, j).fill = BAND
+    r += 1
+r += 1
+
+CASES = [("現行（改定なし）", "現行", "2"), ("パターン①2か年", "①", "2"),
+         ("パターン②2か年", "②", "2"), ("パターン④2か年", "④", "2"),
+         ("パターン①3か年", "①", "3"), ("パターン②3か年", "②", "3"),
+         ("パターン④3か年", "④", "3")]
+SHOW = ["R7", "R8", "R9", "R10", "R12"]
+
+for biz in ("公共", "農集"):
+    label = "公共下水道事業" if biz == "公共" else "農業集落排水事業"
+    fp, s = M[biz]["財政計画"], SC[biz]
+    rb.cell(r, 1, f"■ {label}　経費回収率　※（ ）内は現行資料の値").font = BOLD
+    r += 1
+    for j, h in enumerate(["ケース"] + SHOW, start=1):
+        c = rb.cell(r, j, h)
+        c.fill, c.font, c.alignment, c.border = NAVY, HEAD, Alignment(horizontal="center"), BOX
+    r += 1
+    for i, (lab, p, span) in enumerate(CASES):
+        key = "現行" if p == "現行" else p + span
+        rb.cell(r, 1, lab).font = BOLD if p == "②" else BODY
+        for j, y in enumerate(SHOW, start=2):
+            k = YKEY.index(y)
+            inc = _gross(biz, _rate(p, span, k), k) * s["補正率"]
+            oz = fp["汚水処理費"][k] * s["汚水処理費"]
+            c = rb.cell(r, j, f"{inc/oz*100:.1f}%　({M[biz]['経費回収率'][key][k]*100:.1f}%)")
+            c.alignment, c.font = Alignment(horizontal="right"), (BOLD if p == "②" else BODY)
+        for j in range(1, len(SHOW) + 2):
+            rb.cell(r, j).border = BOX
+            if i % 2:
+                rb.cell(r, j).fill = BAND
+        r += 1
+    r += 1
+
+    for mode, sub in (("計画どおり（資本費相当）", 1.0), ("R7実績水準を維持", s["補助金"])):
+        rb.cell(r, 1, f"■ {label}　経常収支比率　一般会計繰入金＝{mode}　※（ ）内は現行資料の値").font = BOLD
+        r += 1
+        for j, h in enumerate(["ケース"] + SHOW, start=1):
+            c = rb.cell(r, j, h)
+            c.fill, c.font, c.alignment, c.border = NAVY, HEAD, Alignment(horizontal="center"), BOX
+        r += 1
+        for i, (lab, p, span) in enumerate(CASES[:4]):
+            key = "現行" if p == "現行" else p + span
+            rb.cell(r, 1, lab).font = BOLD if p == "②" else BODY
+            for j, y in enumerate(SHOW, start=2):
+                k = YKEY.index(y)
+                cin = (_gross(biz, _rate(p, span, k), k) * s["補正率"] + s["その他営業収益"]
+                       + fp["補助金"][k] * sub + fp["長期前受金戻入"][k] * s["長期前受金戻入"]
+                       + s["その他営業外収益"])
+                cout = (fp["汚水処理費"][k] * s["汚水処理費"] + fp["減価償却費"][k] * s["減価償却費"]
+                        + fp["支払利息"][k] * s["支払利息"])
+                c = rb.cell(r, j, f"{cin/cout*100:.1f}%　({M[biz]['経常収支比率'][key][k]*100:.1f}%)")
+                c.alignment, c.font = Alignment(horizontal="right"), (BOLD if p == "②" else BODY)
+            for j in range(1, len(SHOW) + 2):
+                rb.cell(r, j).border = BOX
+                if i % 2:
+                    rb.cell(r, j).fill = BAND
+            r += 1
+        r += 1
+
+for line in ("※ R7列が決算実績（公共 経費回収率45.3%・経常収支比率104.1%／農集 37.2%・112.6%）を再現することで、"
+             "換算方法の妥当性を確認しています。",
+             "※ 有収水量・調定口数の実績が未受領のため、水量・口数は経営戦略の推計値を使用しています。"
+             "実績を受領し次第、補正率を再計算する必要があります。"):
+    rb.cell(r, 1, line).font = Font(size=9, color="B45309")
+    r += 1
+
+rb.column_dimensions["A"].width = 22
+for j in range(2, 8):
+    rb.column_dimensions[get_column_letter(j)].width = 18
 
 wb.save(DST)
 print("saved", DST)
