@@ -393,7 +393,7 @@ for j, h in enumerate(hdr, start=1):
     c = sim.cell(r, j, h)
     c.fill, c.font, c.alignment, c.border = NAVY, HEAD, Alignment(horizontal="center", wrap_text=True), BOX
 r += 1
-for i, vol in enumerate([10, 20, 30, 40, 50, 100, 200, 500]):
+for i, vol in enumerate([10, 15, 20, 30, 40, 50, 100, 200, 500]):
     cur = fee(RATES["現行"], vol)
     curt = int(round(cur * 1.1))
     vals = [f"{vol}㎥", cur, curt]
@@ -419,6 +419,161 @@ sim.column_dimensions["A"].width = 26
 for j in range(2, len(hdr) + 1):
     sim.column_dimensions[get_column_letter(j)].width = 12
 sim.freeze_panes = "B1"
+
+# ------------------------------------------------ 改定なしとの比較シート
+# 「使用料改定を行わない場合」の影響（資料01-1）と、目標到達に必要な増収額の根拠。
+# 経常損益は 財政計画（ベース）の使用料収入をパターン別の値に差し替えて算定する。
+if "改定なしとの比較" in wb.sheetnames:
+    del wb["改定なしとの比較"]
+nc = wb.create_sheet("改定なしとの比較")
+nc.sheet_view.showGridLines = False
+YI = {y: i for i, y in enumerate(
+    ["R7", "R8", "R9", "R10", "R11", "R12", "R13", "R14", "R15", "R16"])}
+CMP = [("現行（改定なし）", "現行"), ("パターン①（標準型）2か年", "①2"),
+       ("パターン②（家庭軽減型）2か年", "②2"), ("パターン④（段階累進型）2か年", "④2")]
+SPAN = ["R8", "R9", "R10", "R11", "R12", "R13", "R14", "R15", "R16"]   # 改定効果が及ぶ期間
+
+
+def _plan(biz, item, i):
+    return M[biz]["財政計画"][item][i]
+
+
+def _pl(biz, key, i):
+    """経常損益（千円）＝ 経常収入 − 使用料収入(ベース) ＋ 使用料収入(パターン) − 経常支出."""
+    return (_plan(biz, "経常収入", i) - _plan(biz, "使用料収入", i)
+            + M[biz]["使用料収入"][key][i] - _plan(biz, "経常支出", i))
+
+
+r = 1
+nc.cell(r, 1, "使用料改定を行わない場合との比較（資料01-1・想定問答Q4の算定根拠）").font = Font(bold=True, size=12)
+r += 1
+nc.cell(r, 1, "経常損益＝経常収入−経常支出。使用料収入以外の収支項目は「財政計画（ベース）」の値を"
+              "全ケース共通で用い、使用料収入のみパターン別比較シートの値に差し替えて算定。"
+              ).font = Font(size=9, color="475569")
+r += 2
+
+for biz in ("公共", "農集"):
+    label = "公共下水道事業" if biz == "公共" else "農業集落排水事業"
+    nc.cell(r, 1, f"■ {label}　経常損益の見込み（千円）").font = BOLD
+    r += 1
+    c = nc.cell(r, 1, "ケース／年度")
+    c.fill, c.font, c.border = NAVY, HEAD, BOX
+    for j, y in enumerate(YEARS, start=2):
+        c = nc.cell(r, j, y)
+        c.fill, c.font, c.alignment, c.border = NAVY, HEAD, Alignment(horizontal="center"), BOX
+    c = nc.cell(r, len(YEARS) + 2, "R8〜R16 累計")
+    c.fill, c.font, c.alignment, c.border = NAVY, HEAD, Alignment(horizontal="center", wrap_text=True), BOX
+    r += 1
+    for i, (name, key) in enumerate(CMP):
+        emph = "②" in name or "現行" in name
+        c = nc.cell(r, 1, name)
+        c.font, c.border = (BOLD if emph else BODY), BOX
+        if i % 2:
+            c.fill = BAND
+        for j, y in enumerate(["R7"] + SPAN, start=2):
+            c = nc.cell(r, j, round(_pl(biz, key, YI[y])))
+            c.number_format = "#,##0;△#,##0"
+            c.alignment, c.border = Alignment(horizontal="right"), BOX
+            c.font = BOLD if emph else BODY
+            if i % 2:
+                c.fill = BAND
+        c = nc.cell(r, len(YEARS) + 2, round(sum(_pl(biz, key, YI[y]) for y in SPAN)))
+        c.number_format = "#,##0;△#,##0"
+        c.alignment, c.border, c.font = Alignment(horizontal="right"), BOX, BOLD
+        c.fill = GREY
+        r += 1
+    r += 1
+
+nc.cell(r, 1, "■ 両事業合計　R8〜R16 経常損益の累計（千円）").font = BOLD
+r += 1
+for j, h in enumerate(["ケース", "公共下水道", "農業集落排水", "合計", "改定なしとの差"], start=1):
+    c = nc.cell(r, j, h)
+    c.fill, c.font, c.alignment, c.border = NAVY, HEAD, Alignment(horizontal="center"), BOX
+r += 1
+_base = sum(sum(_pl(b, "現行", YI[y]) for y in SPAN) for b in ("公共", "農集"))
+for i, (name, key) in enumerate(CMP):
+    ko = sum(_pl("公共", key, YI[y]) for y in SPAN)
+    no = sum(_pl("農集", key, YI[y]) for y in SPAN)
+    for j, v in enumerate([name, round(ko), round(no), round(ko + no), round(ko + no - _base)], start=1):
+        c = nc.cell(r, j, v)
+        c.border, c.font = BOX, (BOLD if ("②" in name or "現行" in name) else BODY)
+        if j > 1:
+            c.number_format = "#,##0;△#,##0"
+            c.alignment = Alignment(horizontal="right")
+        if i % 2:
+            c.fill = BAND
+    r += 1
+r += 1
+
+nc.cell(r, 1, "■ 使用料単価（円/㎥）＝ 使用料収入 ÷ 有収水量　"
+              "※ 交付要件の除外判定（150円/㎥未満）に用いる指標").font = BOLD
+r += 1
+for j, h in enumerate(["事業／ケース", "R7", "R9", "R10", "R12"], start=1):
+    c = nc.cell(r, j, h)
+    c.fill, c.font, c.alignment, c.border = NAVY, HEAD, Alignment(horizontal="center"), BOX
+r += 1
+for biz in ("公共", "農集"):
+    for i, (name, key) in enumerate(CMP):
+        c = nc.cell(r, 1, f"{biz}　{name}")
+        c.border, c.font = BOX, (BOLD if "②" in name else BODY)
+        for j, y in enumerate(["R7", "R9", "R10", "R12"], start=2):
+            k = YI[y]
+            c = nc.cell(r, j, round(M[biz]["使用料収入"][key][k] * 1000 / _plan(biz, "有収水量", k), 1))
+            c.number_format = "#,##0.0"
+            c.alignment, c.border = Alignment(horizontal="right"), BOX
+            c.font = BOLD if "②" in name else BODY
+        r += 1
+r += 1
+
+nc.cell(r, 1, "■ 目標水準に到達するために必要な使用料収入（千円）").font = BOLD
+r += 1
+for j, h in enumerate(["事業／指標", "年度", "目標", "汚水処理費等",
+                       "必要な使用料収入", "②改定後の見込み", "不足額（△は超過）", "必要な増収率"], start=1):
+    c = nc.cell(r, j, h)
+    c.fill, c.font, c.alignment, c.border = NAVY, HEAD, Alignment(horizontal="center", wrap_text=True), BOX
+r += 1
+NEEDS = [("公共　経費回収率", "R9", 0.47), ("公共　経費回収率", "R10", 0.50),
+         ("公共　経費回収率", "R12", 0.55), ("農集　経費回収率", "R9", 0.47)]
+for i, (lab, y, tgt) in enumerate(NEEDS):
+    biz = lab[:2]
+    k = YI[y]
+    base = _plan(biz, "汚水処理費", k)
+    need = base * tgt
+    now = M[biz]["使用料収入"]["②2"][k]
+    for j, v in enumerate([lab, y, f"{tgt*100:.0f}%", round(base), round(need), now,
+                           round(need - now), round(need / now - 1, 4)], start=1):
+        c = nc.cell(r, j, v)
+        c.border, c.font = BOX, BODY
+        if j >= 4:
+            c.number_format = "0.0%" if j == 8 else "#,##0;△#,##0"
+            c.alignment = Alignment(horizontal="right")
+        if i % 2:
+            c.fill = BAND
+    r += 1
+# 農集の経常収支比率100%（目標①）
+for i, y in enumerate(["R9", "R10"]):
+    k = YI[y]
+    out = _plan("農集", "経常支出", k)
+    other = _plan("農集", "経常収入", k) - _plan("農集", "使用料収入", k)
+    need = out - other
+    now = M["農集"]["使用料収入"]["②2"][k]
+    for j, v in enumerate(["農集　経常収支比率", y, "100%", round(out), round(need), now,
+                           round(need - now), round(need / now - 1, 4)], start=1):
+        c = nc.cell(r, j, v)
+        c.border, c.font = BOX, BOLD
+        if j >= 4:
+            c.number_format = "0.0%" if j == 8 else "#,##0;△#,##0"
+            c.alignment = Alignment(horizontal="right")
+        c.fill = GREY
+    r += 1
+r += 1
+nc.cell(r, 1, "※「汚水処理費等」は経費回収率の行は汚水処理費（維持管理費分）、"
+              "経常収支比率の行は経常支出。必要な使用料収入は前者が汚水処理費×目標、"
+              "後者が経常支出−使用料収入以外の経常収入。").font = Font(size=9, color="475569")
+
+nc.column_dimensions["A"].width = 30
+for j in range(2, len(YEARS) + 3):
+    nc.column_dimensions[get_column_letter(j)].width = 13
 
 wb.save(DST)
 print("saved", DST)
