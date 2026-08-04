@@ -20,6 +20,7 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 
 from kitashiobara_common import (
+    AGE_BANDS_OTHER, AGE_BANDS_PHYSICAL,
     COLORS, OUT_DIR, FONT, POPULATION, TEGATA, TEGATA_YEARS,
     add_sheet, ensure_out_dir, set_col_widths, style_data_cell,
     style_header_row, style_note, style_status, style_title, write_row,
@@ -464,9 +465,11 @@ def sheet_uncertainty(wb):
         r += 1
     ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
     style_note(ws.cell(row=r, column=1),
-               "本ブックの方法Bは総人口を分母としています。しかし障がい者手帳の所持は年齢構成に強く依存するため、"
-               "本来は年齢階層別の所持率を用いるべきです。年齢階層別の手帳所持者数は村資料待ちであり、"
-               "受領後に方法Bを年齢階層別に組み替えることを推奨します（06_村確認事項の該当行）。")
+               "本ブックの方法Bは総人口を分母としています。北塩原村は総人口が減る一方で老年人口は増えるため、"
+               "高齢層に偏る身体障害者手帳では総人口ベースの所持率法が推計を実態と逆方向に働かせます。"
+               "ただしこれは所持率法そのものの欠陥ではなく、分母の取り方の問題です。"
+               "年齢階級別の所持率を用いれば所持率法は有効に使えるため、"
+               "村から年齢階級別の手帳所持者数を受領した時点で05_年齢階級別推計（方法C）へ切り替えます。")
     ws.row_dimensions[r].height = 34
     r += 2
 
@@ -535,12 +538,124 @@ def sheet_uncertainty(wb):
     return ws
 
 
+
 # ============================================================
-# 05_推計方法
+# 05_年齢階級別推計（方法C）
+# ============================================================
+# 総人口を分母とする所持率法（方法B）は、年齢構成の変化を捉えられない。
+# 北塩原村は総人口が減る一方で老年人口が増えるため、身体障害者手帳の
+# ように高齢層に偏る区分では推計が逆方向に働く。
+# 年齢階級別の所持率を用いれば所持率法は有効に使えるため、村から
+# 年齢階級別の手帳所持者数を受領した時点で本シートを正式版とする。
+def sheet_age_band(wb):
+    ws = add_sheet(
+        wb, "05_年齢階級別推計", "年齢階級別所持率法（方法C・村資料受領後に使用）",
+        "手帳の所持は年齢構成に強く左右されます。総人口を分母とする方法Bは簡便法であり、"
+        "年齢階級別人口と年齢階級別所持率が揃った時点で本シートの方法Cへ切り替えてください。"
+        "算式は「年齢区分別人口 × 年齢区分別手帳所持率」です。",
+        [20, 14, 14, 14, 14, 14, 16, 40])
+
+    r = 5
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=8)
+    style_title(ws.cell(row=r, column=1), "1. 身体障害者手帳（5区分）", fill=COLORS["subhead"], size=11)
+    r += 1
+    style_header_row(ws, r, ["年齢区分", "令和8年\n人口", "令和8年\n所持者数", "所持率",
+                             "令和11年\n人口", "令和11年\n推計", "", "備考"])
+    r += 1
+    notes5 = {
+        "0〜17歳": "障がい児支援の対象年齢。就学状況とあわせて確認する",
+        "18〜39歳": "就労・日中活動の中心層",
+        "40〜64歳": "特定疾病により介護保険第2号被保険者となる可能性がある層",
+        "65〜74歳": "介護保険優先原則の対象。前期高齢者",
+        "75歳以上": "後期高齢者。人口が増えるため所持者数も増える可能性が高い",
+    }
+    first = r
+    for i, band in enumerate(AGE_BANDS_PHYSICAL):
+        write_row(ws, r, [band, None, None,
+                          f"=IFERROR(C{r}/B{r},\"\")", None,
+                          f"=IFERROR(ROUND(D{r}*E{r},0),\"\")", "", notes5[band]],
+                  alt=(i % 2 == 1),
+                  aligns=["left", "right", "right", "right", "right", "right", "left", "left"],
+                  numfmts=[None, INT_FMT, INT_FMT, RATE_FMT, INT_FMT, INT_FMT, None, None],
+                  fills=[None, COLORS["input"], COLORS["input"], COLORS["calc"],
+                         COLORS["input"], COLORS["calc"], None, None])
+        ws.row_dimensions[r].height = 26
+        r += 1
+    write_row(ws, r, ["合計", f"=SUM(B{first}:B{r-1})", f"=SUM(C{first}:C{r-1})",
+                      f"=IFERROR(C{r}/B{r},\"\")", f"=SUM(E{first}:E{r-1})",
+                      f"=SUM(F{first}:F{r-1})", "",
+                      "方法A・方法B（03_手帳将来推計）と突合する"],
+              aligns=["left", "right", "right", "right", "right", "right", "left", "left"],
+              numfmts=[None, INT_FMT, INT_FMT, RATE_FMT, INT_FMT, INT_FMT, None, None],
+              fills=[COLORS["band"]] * 8)
+    for c in range(1, 7):
+        ws.cell(row=r, column=c).font = Font(name=FONT, size=10, bold=True)
+    r += 2
+
+    for title, bands, note in (
+        ("2. 療育手帳（3区分・コーホート移行）", AGE_BANDS_OTHER,
+         "18歳未満から18〜64歳、64歳から65歳以上への移動をコーホートとして追跡します。"
+         "母数が小さいため、推計値は1人単位で丸めてください。"),
+        ("3. 精神障害者保健福祉手帳（3区分）", AGE_BANDS_OTHER,
+         "人口比だけでなく、過去3〜5年の交付数・新規交付・更新・返還・死亡・転出、"
+         "及び自立支援医療受給者数を併用して補正します。"),
+    ):
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=8)
+        style_title(ws.cell(row=r, column=1), title, fill=COLORS["subhead"], size=11)
+        r += 1
+        style_header_row(ws, r, ["年齢区分", "令和8年\n人口", "令和8年\n所持者数", "所持率",
+                                 "令和11年\n人口", "令和11年\n推計", "", "備考"])
+        r += 1
+        first = r
+        for i, band in enumerate(bands):
+            write_row(ws, r, [band, None, None,
+                              f"=IFERROR(C{r}/B{r},\"\")", None,
+                              f"=IFERROR(ROUND(D{r}*E{r},0),\"\")", "", ""],
+                      alt=(i % 2 == 1),
+                      aligns=["left", "right", "right", "right", "right", "right", "left", "left"],
+                      numfmts=[None, INT_FMT, INT_FMT, RATE_FMT, INT_FMT, INT_FMT, None, None],
+                      fills=[None, COLORS["input"], COLORS["input"], COLORS["calc"],
+                             COLORS["input"], COLORS["calc"], None, None])
+            r += 1
+        write_row(ws, r, ["合計", f"=SUM(B{first}:B{r-1})", f"=SUM(C{first}:C{r-1})",
+                          f"=IFERROR(C{r}/B{r},\"\")", f"=SUM(E{first}:E{r-1})",
+                          f"=SUM(F{first}:F{r-1})", "", ""],
+                  aligns=["left", "right", "right", "right", "right", "right", "left", "left"],
+                  numfmts=[None, INT_FMT, INT_FMT, RATE_FMT, INT_FMT, INT_FMT, None, None],
+                  fills=[COLORS["band"]] * 8)
+        for c in range(1, 7):
+            ws.cell(row=r, column=c).font = Font(name=FONT, size=10, bold=True)
+        r += 1
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=8)
+        style_note(ws.cell(row=r, column=1), note)
+        ws.row_dimensions[r].height = 30
+        r += 2
+
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=8)
+    style_title(ws.cell(row=r, column=1), "4. 手帳推計とサービス見込量の関係",
+                fill=COLORS["subhead"], size=11)
+    r += 1
+    for txt in [
+        "・手帳所持者数の推計と、障害福祉サービス見込量の推計は分離します。手帳所持者数が増減しても、"
+        "サービス利用者数が同じ割合で増減するとは限りません。",
+        "・サービス見込量は「北塩原村_サービス見込量.xlsx」の個別積上げによります。"
+        "手帳推計はサービス見込量の直接の根拠ではなく、計画の基礎データ及び相談支援体制・"
+        "権利擁護等の施策規模を考える材料として用います。",
+        "・北塩原村は母数が小さいため、推計値は1人単位で丸めます。小数点以下の統計値をそのまま計画値にしないでください。",
+    ]:
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=8)
+        style_note(ws.cell(row=r, column=1), txt)
+        ws.row_dimensions[r].height = 30
+        r += 1
+    return ws
+
+
+# ============================================================
+# 06_推計方法
 # ============================================================
 def sheet_method(wb):
     ws = add_sheet(
-        wb, "05_推計方法", "推計方法と前提",
+        wb, "06_推計方法", "推計方法と前提",
         "計画書 第2章及びアンケート調査報告書に転記するための、推計方法の説明です。",
         [22, 62, 58])
     style_header_row(ws, 5, ["方法", "考え方", "特性・留意点"])
@@ -553,7 +668,14 @@ def sheet_method(wb):
          "人口減少の影響を反映するが、所持率自体の変化（精神の増加傾向等）は捉えない。人口推計が村公式値であるため、村の他計画と整合が取りやすい。"),
         ("中位推計",
          "方法Aと方法Bの単純平均。",
-         "代表値として計画書に記載する場合に用いる。ただし単一値のみを示さず、方法A・方法Bの幅を併記する。"),
+         "前提の異なる2手法の平均であり、それ自体に理論的裏付けはない。計画書ではA〜Bの幅を主に示し、中位は参考値とする。"),
+        ("方法C　年齢階級別所持率法\n（村資料受領後の正式版）",
+         "年齢区分別人口 × 年齢区分別手帳所持率。身体障害者手帳は0〜17歳／18〜39歳／40〜64歳／65〜74歳／75歳以上の5区分、"
+         "療育手帳・精神障害者保健福祉手帳は18歳未満／18〜64歳／65歳以上の3区分。",
+         "年齢構成の変化を織り込めるため、総人口を分母とする方法Bの欠点を解消する。"
+         "療育手帳はコーホート移行（18歳未満→18〜64歳→65歳以上）を反映する。"
+         "精神障害者保健福祉手帳は人口比だけでなく交付数・新規交付・更新・返還等の実績を併用する。"
+         "村から年齢階級別の手帳所持者数を受領した時点で、本方法を正式版とする（05_年齢階級別推計）。"),
     ]
     r = 6
     for i, rec in enumerate(rows):
@@ -582,14 +704,22 @@ def sheet_method(wb):
 # ============================================================
 def sheet_confirm(wb):
     ws = add_sheet(
-        wb, "06_村確認事項", "村への確認・依頼事項（将来推計関係）",
+        wb, "07_村確認事項", "村への確認・依頼事項（将来推計関係）",
         "受領・確認が済んだものは「状態」を更新し、反映先シートに入力してください。",
         [28, 52, 26, 12, 34])
     style_header_row(ws, 5, ["確認事項", "確認したい内容", "使途・反映先", "優先度", "状態・回答"])
     rows = [
         ("令和6〜8年度の手帳所持者数",
-         "身体・療育・精神の各年4月1日現在の所持者数。年齢階層別内訳もあわせて依頼する。",
+         "身体・療育・精神の各年4月1日現在の所持者数。",
          "02_手帳実績／03_手帳将来推計", "高", "村資料待ち"),
+        ("年齢階級別の手帳所持者数",
+         "身体は0〜17歳／18〜39歳／40〜64歳／65〜74歳／75歳以上、療育・精神は18歳未満／18〜64歳／"
+         "65歳以上の区分。方法C（年齢階級別所持率法）へ切り替えるために必須。",
+         "05_年齢階級別推計", "最優先", "村資料待ち"),
+        ("年齢階級別の人口",
+         "令和8年及び令和11年の年齢階級別人口。上記と同じ区分。"
+         "こども・子育て計画の推計に年齢階級別の内訳があればそれを用いる。",
+         "05_年齢階級別推計", "最優先", "村資料待ち"),
         ("令和2〜4年、令和7〜8年の人口",
          "総人口・年少人口・生産年齢人口・老年人口（各年4月1日現在）。",
          "01_人口推計", "高", "村資料待ち"),
@@ -599,7 +729,7 @@ def sheet_confirm(wb):
          "02_手帳実績／アンケート発送設計", "高", "村資料待ち"),
         ("村独自の人口ビジョン・将来推計",
          "総合振興計画の人口ビジョン、社人研推計等がある場合はその数値。",
-         "01_人口推計／05_推計方法", "中", "村資料待ち"),
+         "01_人口推計／06_推計方法", "中", "村資料待ち"),
         ("身体障害者手帳の減少要因",
          "老年人口が横ばい〜微減である一方、身体障害者手帳所持者数が減少している要因。"
          "手帳更新時期・制度改正・転出入・死亡等の影響を確認する。",
@@ -747,6 +877,7 @@ def main():
     sheet_tegata_actual(wb)
     sheet_tegata_projection(wb)
     sheet_uncertainty(wb)
+    sheet_age_band(wb)
     sheet_method(wb)
     sheet_confirm(wb)
     wb.save(OUT_FILE)
