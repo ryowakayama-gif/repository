@@ -17,6 +17,7 @@ ROOT = pathlib.Path(__file__).parent
 BASE = ROOT / "小野町_引継ぎ_整理済" / "07_介護保険_見える化整理"
 TEIIN = BASE / "入所（利用）定員"
 YOBO = BASE / "介護予防・総合事業"
+NINCHI = BASE / "認知症施策"
 
 
 def nendo(p):
@@ -38,6 +39,11 @@ def nendo(p):
     m = re.match(r"^平成(\d+)年3月$", p)
     if m:
         return f"H{int(m.group(1)) - 1}"
+    # 「R2」「H29」のような略記、「令和6年4月」のような時点表記はそのまま扱う
+    if re.match(r"^(H|R)\d{1,2}$", p) or p in ("R元", "R元年"):
+        return "R1" if p in ("R元", "R元年") else p
+    if re.match(r"^(令和|平成)\d+年\d+月$", p):
+        return p
     return None
 
 
@@ -230,13 +236,36 @@ def main():
         ws4.column_dimensions[col].width = w
     ws4.freeze_panes = "A2"
 
+    # ------------------------------------------------ 04_認知症施策
+    ws45 = wb.create_sheet("04_認知症施策")
+    ws45.append(["指標ID", "指標名", "項目", "前回", "直近", "備考"])
+    for c in ws45[1]:
+        c.font = Font(bold=True)
+        c.fill = head
+    for f in sorted(NINCHI.glob("J*.xlsx")):
+        sid = re.match(r"^(J\d+)_", f.name).group(1)
+        d, p = read(f)
+        name = f.name.split("_", 1)[1].replace("_時系列.xlsx", "")
+        for lab, vals in d.items():
+            v = [vals.get(x) for x in p]
+            ws45.append([sid, name[:40], lab[:30]] + (v + [None, None])[:2] +
+                        [f"{p[0]}→{p[-1]}" if p else ""])
+    ws45.append([])
+    for t in ["公表されているのはJ16・J17・J18の3指標のみ。研修系（J1〜J15）は本町の値が未公表",
+              "初期集中支援チームの訪問実績は令和2年度・令和5年度とも0件（県内59団体中30団体が0件）",
+              "認知症地域支援推進員は1人（令和3年3月）から4人（令和6年3月）へ増員。県内中央値3人",
+              "認知症カフェは1か所で横ばい。県内中央値1か所"]:
+        ws45.append(["備考", t])
+    for col, w in zip("ABCDEF", (9, 42, 32, 12, 12, 24)):
+        ws45.column_dimensions[col].width = w
+
     # ------------------------------------------------ 90_取込確認
     ws5 = wb.create_sheet("90_取込確認")
     ws5.append(["区分", "指標ID", "ファイル", "自治体", "小野町の値"])
     for c in ws5[1]:
         c.font = Font(bold=True)
         c.fill = head
-    for folder, kubun in ((TEIIN, "入所定員"), (YOBO, "介護予防・総合事業")):
+    for folder, kubun in ((TEIIN, "入所定員"), (YOBO, "介護予防・総合事業"), (NINCHI, "認知症施策")):
         for f in sorted(folder.glob("*.xlsx")):
             m = re.match(r"^([A-Z]\d+)_", f.name)
             if not m:
