@@ -45,6 +45,26 @@ TEG_YEAR_HDR = 5  # 西暦を並べたヘッダ行
 TEG_FIRST_COL = 3  # C列 = 平成31年
 TEG_LAST_COL = TEG_FIRST_COL + len(TEGATA_YEARS) - 1  # J列 = 令和8年
 
+# 手帳所持率の推移（現行計画本編の年齢3区分別人口により算定）
+RATE_HISTORY = [
+    ("身体障害者手帳", (0.04594, 0.04486, 0.04867, 0.04813, 0.04666), "横ばい（4.49〜4.87％）"),
+    ("療育手帳", (0.00474, 0.00482, 0.00532, 0.00473, 0.00491), "横ばい"),
+    ("精神障害者保健福祉手帳", (0.00875, 0.01038, 0.01027, 0.01026, 0.01228),
+     "明確な上昇（平成31年比＋40％）"),
+    ("合計", (0.05942, 0.06007, 0.06426, 0.06312, 0.06386), "上昇（5.94％→6.39％）"),
+]
+
+# 令和11年の推計値（方法A・B・D・中位）
+METHOD_D = [
+    ("身体障害者手帳", 104, 102, 111, 103,
+     "実数は減少しているが所持率は横ばい。方法Dは所持率のわずかな上昇を拾って高めに出る"),
+    ("療育手帳", 10, 11, 11, 11, "いずれの方法でも10〜11人。差に意味はない"),
+    ("精神障害者保健福祉手帳", 35, 27, 35, 31,
+     "方法Dが方法Aと一致。方法Bの27人は所持率一定の仮定による過小推計"),
+    ("合計", 149, 140, 157, 145, "方法Dは中位より12人多い"),
+]
+
+
 
 # ============================================================
 # 00_概要
@@ -511,7 +531,46 @@ def sheet_uncertainty(wb):
 
     ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
     style_title(ws.cell(row=r, column=1),
-                "4. 過去稿との数値の異同", fill=COLORS["subhead"], size=11)
+                "4. 手帳所持率の推移と方法D（所持率トレンド法）", fill=COLORS["subhead"], size=11)
+    r += 1
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
+    style_note(ws.cell(row=r, column=1),
+               "現行計画本編（令和6年3月）の受領により、平成31年から令和5年までの年齢3区分別人口が"
+               "判明したため、各年の手帳所持率を算定できるようになりました。"
+               "方法Bは令和5年の所持率が将来も一定と仮定していますが、実際には所持率が上昇しています。")
+    ws.row_dimensions[r].height = 30
+    r += 1
+    style_header_row(ws, r, ["区分", "平成31年", "令和2年", "令和3年", "令和4年", "令和5年", "傾向"])
+    r += 1
+    for i, (name, rates, trend) in enumerate(RATE_HISTORY):
+        write_row(ws, r, [name] + list(rates) + [trend], alt=(i % 2 == 1),
+                  aligns=["left"] + ["right"] * 5 + ["left"],
+                  numfmts=[None] + [RATE_FMT] * 5 + [None])
+        r += 1
+    r += 1
+    style_header_row(ws, r, ["区分", "方法A\nトレンド延長", "方法B\n所持率一定",
+                             "方法D\n所持率トレンド", "中位\n（A・B平均）", "", "評価"])
+    r += 1
+    for i, (name, a, b, d, m, note) in enumerate(METHOD_D):
+        write_row(ws, r, [name, a, b, d, m, "", note], alt=(i % 2 == 1),
+                  aligns=["left", "right", "right", "right", "right", "left", "left"],
+                  numfmts=[None, INT_FMT, INT_FMT, INT_FMT, INT_FMT, None, None])
+        ws.row_dimensions[r].height = 30
+        r += 1
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
+    style_note(ws.cell(row=r, column=1),
+               "精神障害者保健福祉手帳では、所持率トレンドを延長した方法Dが35人となり、"
+               "実数のトレンドを延長した方法Aの35人と一致します。"
+               "所持率一定を仮定する方法Bの27人は、所持率が上昇している実態を反映できていません。"
+               "一方で身体障害者手帳は、方法Dが111人と方法A（104人）・方法B（102人）を上回ります。"
+               "母数が小さく所持率の年次変動が大きいため、方法Dも単独では確定値になりません。"
+               "村から年齢階級別の手帳所持者数を受領し、05_年齢階級別推計（方法C）へ移行することが本筋です。")
+    ws.row_dimensions[r].height = 56
+    r += 2
+
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
+    style_title(ws.cell(row=r, column=1),
+                "5. 過去稿との数値の異同", fill=COLORS["subhead"], size=11)
     r += 1
     style_header_row(ws, r, ["版", "方法Bの人口基礎", "令和11年\n総人口", "身体", "療育", "精神", "合計（中位）"])
     r += 1
@@ -864,7 +923,31 @@ def _verify_uncertainty():
         r5 = TEGATA[name][4]
         assert _round_half_up(r5 / base_tot * (base_tot - 75 * 6)) == expected, \
             f"過去稿の方法B（{name}）が第9稿記載値 {expected}人 を再現しません"
+    _verify_rates()
     print("  自己検証: 予測区間・分母感度・過去稿方法Bの再現 いずれも一致")
+
+
+def _verify_rates():
+    """手帳所持率の推移と方法Dの推計値を再計算して表示値と突合する。"""
+    pop = dict((rec[1], rec[3]) for rec in POPULATION)
+    years = [2019, 2020, 2021, 2022, 2023]
+    xbar = sum(years) / len(years)
+    sxx = sum((x - xbar) ** 2 for x in years)
+
+    series = {name: [v for v in vals[:5]] for name, vals in TEGATA.items()}
+    series["合計"] = [sum(series[k][i] for k in TEGATA) for i in range(5)]
+
+    d_calc = {}
+    for name, shown, _ in RATE_HISTORY:
+        rates = [series[name][i] / pop[y] for i, y in enumerate(years)]
+        for got, exp in zip(rates, shown):
+            assert abs(got - exp) < 5e-5, f"{name} 所持率 {got:.5f} ≠ 表示 {exp}"
+        ybar = sum(rates) / len(rates)
+        sxy = sum((x - xbar) * (r - ybar) for x, r in zip(years, rates))
+        d_calc[name] = _round_half_up((ybar + sxy / sxx * (2029 - xbar)) * pop[2029])
+
+    for name, a, b, d, m, _ in METHOD_D:
+        assert d_calc[name] == d, f"{name} 方法D {d_calc[name]} ≠ 表示 {d}"
 
 
 def main():
