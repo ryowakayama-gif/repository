@@ -46,7 +46,7 @@ CHIIKI_ITEMS = 10                                      # 06_地域生活支援�
 CHIIKI_TOTAL_ROW = DATA_START + CHIIKI_ITEMS           # 06 合計行
 TANDOKU_ITEMS = 5                                      # 07_村単独事業 の事業数
 TANDOKU_TOTAL_ROW = DATA_START + TANDOKU_ITEMS         # 07 合計行
-PROJ_R11_ROW = DATA_START + 1 + 4                      # 08_R9R11推計 令和11年度
+# 08_R9R11推計 の行位置は同シート側で定義（PROJ_TABLE_LAST）
 
 
 # ============================================================
@@ -85,8 +85,10 @@ def sheet_overview(wb):
         ("村単独事業費（令和7年度）", f"='07_村単独事業'!D{TANDOKU_TOTAL_ROW}",
          "07_村単独事業", "村資料待ち",
          "重度心身障害者医療費助成、人工透析患者通院交通費助成等"),
-        ("令和11年度 給付費推計", f"='08_R9R11推計'!B{PROJ_R11_ROW}", "08_R9R11推計", "暫定",
-         "伸び率を入力欄で調整する試算。見込量確定後に置き換える"),
+        ("令和11年度 給付費推計（低位）", "='08_R9R11推計'!E16", "08_R9R11推計", "暫定",
+         "介護給付費 年+2.2%（直近1年）シナリオ。見込量確定後に積上げへ置き換える"),
+        ("令和11年度 給付費推計（中位）", "='08_R9R11推計'!F16", "08_R9R11推計", "暫定",
+         "介護給付費 年+8.4%（令和2〜7年度CAGR）シナリオ"),
     ]
     for i, row in enumerate(rows):
         write_row(ws, r, list(row), alt=(i % 2 == 1),
@@ -476,59 +478,140 @@ def sheet_tandoku(wb):
 # ============================================================
 # 08_R9R11推計
 # ============================================================
+# レッドチーム検証を受け、単一の伸び率による推計をやめ、
+# (1) 介護給付費と障害児給付費を分離し、
+# (2) 低位・中位の2シナリオで幅を示す構成に改めた。
+# 障害児給付費は対象児童の卒業・転入で大きく動くため伸び率法を用いない。
+PROJ_SCENARIO_ROW = 6      # 介護給付費の伸び率入力行
+PROJ_JIDO_ADJ_ROW = 8      # 障害児給付費の個別加算入力行
+PROJ_TABLE_FIRST = 12      # 推計表の令和7年度行
+PROJ_TABLE_LAST = PROJ_TABLE_FIRST + 4   # 令和11年度行
+
+
 def sheet_projection(wb):
     ws = add_sheet(
         wb, "08_R9R11推計", "次期計画期間（令和9〜11年度）の給付費・財源構成 推計",
-        "令和8年度見込を起点に、年伸び率を掛けた試算です。伸び率は黄色セルで調整できます。"
-        "サービス見込量が確定したら、見込量×単価による積上げに置き換えてください。単位：円。",
-        [16, 18, 18, 18, 18, 18, 18, 34])
+        "給付費の年次変動が大きく、単一の伸び率では幅を表現できないため、低位・中位の2シナリオで示します。"
+        "障害児給付費は対象児童の卒業・転入により大きく動くため、伸び率法を用いず令和7年度実績を横置きし、"
+        "個別ケースによる増減を加算欄で調整します。サービス見込量が確定したら積上げに置き換えてください。単位：円。",
+        [16, 17, 17, 16, 17, 17, 17, 17, 30])
 
-    ws.cell(row=4, column=1, value="年伸び率（自立支援給付）")
-    style_data_cell(ws.cell(row=4, column=1))
-    c = ws.cell(row=4, column=2, value=0.02)
-    style_data_cell(c, align="center", numfmt=PCT1, fill=COLORS["input"])
-    c.font = Font(name=FONT, size=10, bold=True)
-    ws.merge_cells("C4:H4")
-    style_note(ws["C4"],
-               "初期値2.0％は令和6→令和7年度の介護給付費の伸び（＋2.2％）を踏まえた仮置きです。"
-               "利用者の増減・報酬改定・重度化の見通しを踏まえて村と協議のうえ確定してください。")
-
-    style_header_row(ws, 6, ["年度", "自立支援給付計", "国庫負担", "県負担", "村負担",
-                             "対令和7年度", "区分", "備考"])
-    aligns = ["center", "right", "right", "right", "right", "right", "center", "left"]
-    numfmts = [None, YEN, YEN, YEN, YEN, PCT1, None, None]
-
-    r = DATA_START + 1
-    base_row = r
-    rows = [
-        ("令和7年度", "='04_財源構成試算'!D11", "実績", "受領データによる確定値"),
-        ("令和8年度", f"=ROUND(B{r}*(1+$B$4),0)", "見込", "現行計画最終年度。村の最新見込に差し替える"),
-        ("令和9年度", None, "推計", "次期計画1年目"),
-        ("令和10年度", None, "推計", "次期計画2年目"),
-        ("令和11年度", None, "推計", "次期計画目標年度"),
-    ]
-    for i, (wareki, formula, kubun, note) in enumerate(rows):
-        if formula is None:
-            formula = f"=ROUND(B{r - 1}*(1+$B$4),0)"
-        write_row(ws, r, [wareki, formula,
-                          f"=ROUND(B{r}*{RATE_KUNI},0)",
-                          f"=ROUND(B{r}*{RATE_KEN},0)",
-                          f"=B{r}-C{r}-D{r}",
-                          f"=B{r}/B${base_row}-1",
-                          kubun, note],
-                  alt=(i % 2 == 1), aligns=aligns, numfmts=numfmts,
-                  fills=[None] + [COLORS["calc"]] * 4 + [None, None, None])
-        if wareki == "令和11年度":
-            assert r == PROJ_R11_ROW, f"08_R9R11推計 令和11年度の行位置が想定と異なります: {r}"
-        r += 1
-
+    r = 4
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=9)
+    style_title(ws.cell(row=r, column=1), "シナリオ設定（黄色セルが入力欄）",
+                fill=COLORS["subhead"], size=11)
     r += 1
-    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=8)
+    style_header_row(ws, r, ["区分", "低位シナリオ", "中位シナリオ", "", "", "", "", "", "根拠・考え方"])
+    r += 1
+    assert r == PROJ_SCENARIO_ROW, f"シナリオ行が想定と異なります: {r}"
+    write_row(ws, r, ["介護給付費 年伸び率", 0.022, 0.084, "", "", "", "", "",
+                      "低位＝令和6→7年度の実績伸び率（＋2.2％）／中位＝令和2→7年度のCAGR（＋8.4％）"],
+              aligns=["left", "center", "center", "left", "left", "left", "left", "left", "left"],
+              numfmts=[None, PCT1, PCT1, None, None, None, None, None, None],
+              fills=[None, COLORS["input"], COLORS["input"], None, None, None, None, None, None])
+    ws.row_dimensions[r].height = 26
+    r += 1
+    write_row(ws, r, ["障害児給付費", "令和7年度実績を横置き", "同左", "", "", "", "", "",
+                      "令和4年度4,030千円→令和7年度1,636千円と3年で約6割減。対象児童の個別事情で動くため伸び率法は用いない"],
+              alt=True,
+              aligns=["left", "center", "center", "left", "left", "left", "left", "left", "left"])
+    ws.row_dimensions[r].height = 26
+    r += 1
+    assert r == PROJ_JIDO_ADJ_ROW, f"障害児加算行が想定と異なります: {r}"
+    write_row(ws, r, ["障害児給付費 個別加算（年額）", None, "←低位・中位で共通", "", "", "", "", "",
+                      "新規利用・卒業・転出入の見込みを金額で入力する（減額はマイナスで入力）"],
+              aligns=["left", "right", "center", "left", "left", "left", "left", "left", "left"],
+              numfmts=[None, YEN, None, None, None, None, None, None, None],
+              fills=[None, COLORS["input"], None, None, None, None, None, None, None])
+    ws.row_dimensions[r].height = 26
+
+    r = 10
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=9)
+    style_title(ws.cell(row=r, column=1), "給付費・財源構成の推計", fill=COLORS["subhead"], size=11)
+    r += 1
+    style_header_row(ws, r, ["年度", "介護給付費\n低位", "介護給付費\n中位", "障害児\n給付費",
+                             "計\n低位", "計\n中位", "村負担\n低位", "村負担\n中位", "区分・備考"])
+    r += 1
+    assert r == PROJ_TABLE_FIRST, f"推計表の先頭行が想定と異なります: {r}"
+
+    aligns = ["center"] + ["right"] * 7 + ["left"]
+    numfmts = [None] + [YEN] * 7 + [None]
+    base = PROJ_TABLE_FIRST
+    rows = [
+        ("令和7年度", "実績", "受領データによる確定値"),
+        ("令和8年度", "見込", "現行計画最終年度。村の最新見込を受領したら実額に差し替える"),
+        ("令和9年度", "推計", "次期計画1年目"),
+        ("令和10年度", "推計", "次期計画2年目"),
+        ("令和11年度", "推計", "次期計画目標年度"),
+    ]
+    for i, (wareki, kubun, note) in enumerate(rows):
+        if i == 0:
+            kaigo_lo = f"='02_給付実績_介護給付費'!H20"
+            kaigo_mid = f"=B{r}"
+            jido = f"='03_給付実績_障害児給付費'!H10"
+        else:
+            kaigo_lo = f"=ROUND(B{r-1}*(1+$B${PROJ_SCENARIO_ROW}),0)"
+            kaigo_mid = f"=ROUND(C{r-1}*(1+$C${PROJ_SCENARIO_ROW}),0)"
+            jido = f"=D{base}+N($B${PROJ_JIDO_ADJ_ROW})"
+        write_row(ws, r, [wareki, kaigo_lo, kaigo_mid, jido,
+                          f"=B{r}+D{r}", f"=C{r}+D{r}",
+                          f"=ROUND(E{r}*(1-{RATE_KUNI}-{RATE_KEN}),0)",
+                          f"=ROUND(F{r}*(1-{RATE_KUNI}-{RATE_KEN}),0)",
+                          f"{kubun}／{note}"],
+                  alt=(i % 2 == 1), aligns=aligns, numfmts=numfmts,
+                  fills=[None] + [COLORS["calc"]] * 7 + [None])
+        ws.row_dimensions[r].height = 26
+        r += 1
+    assert r - 1 == PROJ_TABLE_LAST, f"推計表の末尾行が想定と異なります: {r-1}"
+
+    write_row(ws, r, ["低位と中位の差", "", "", "",
+                      f"=F{PROJ_TABLE_LAST}-E{PROJ_TABLE_LAST}", "",
+                      f"=H{PROJ_TABLE_LAST}-G{PROJ_TABLE_LAST}", "",
+                      "令和11年度における両シナリオの差（左：給付費／右：村負担）"],
+              aligns=aligns, numfmts=numfmts, fills=[COLORS["note"]] * 9)
+    for col in range(1, 10):
+        ws.cell(row=r, column=col).font = Font(name=FONT, size=10, bold=True)
+    r += 2
+
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=9)
+    style_title(ws.cell(row=r, column=1), "伸び率を単一値で置けない理由（実績の年次変動）",
+                fill=COLORS["subhead"], size=11)
+    r += 1
+    style_header_row(ws, r, ["年度", "介護給付費", "前年度比", "障害児給付費", "前年度比",
+                             "", "", "", "備考"])
+    r += 1
+    hist = [
+        ("令和2年度", 36002274, None, 746064, None, "基準年度"),
+        ("令和3年度", 45991635, 0.277, 3254621, 3.362, "共同生活援助・就労継続支援B型の増"),
+        ("令和4年度", 44234021, -0.038, 4030423, 0.238, "障害児給付費のピーク"),
+        ("令和5年度", 44419974, 0.004, 3577832, -0.112, "ほぼ横ばい"),
+        ("令和6年度", 52698808, 0.186, 1641275, -0.541, "介護は大幅増、障害児は大幅減"),
+        ("令和7年度", 53877076, 0.022, 1635703, -0.003, "介護の伸びは鈍化"),
+    ]
+    for i, (wareki, k, kg, j, jg, note) in enumerate(hist):
+        write_row(ws, r, [wareki, k, kg, j, jg, "", "", "", note],
+                  alt=(i % 2 == 1),
+                  aligns=["center", "right", "right", "right", "right", "left", "left", "left", "left"],
+                  numfmts=[None, YEN, "+0.0%;-0.0%", YEN, "+0.0%;-0.0%", None, None, None, None])
+        r += 1
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=9)
+    style_note(ws.cell(row=r, column=1),
+               "介護給付費の前年度比は＋27.7％から−3.8％まで振れており、"
+               "直近1年（＋2.2％）を将来4年に当てはめる根拠も、令和2〜7年度のCAGR（＋8.4％）を"
+               "当てはめる根拠も、それぞれ単独では弱いものです。"
+               "また、前回計画課題整理でも「1人の利用開始・終了で実績が大きく動くため、"
+               "機械的な伸び率推計を避ける」ことを方針としています。"
+               "本シートの2シナリオは、村の財政影響の幅を把握するための暫定的なものと位置づけ、"
+               "サービス見込量が確定したら下表の積上げに置き換えてください。")
+    ws.row_dimensions[r].height = 50
+    r += 2
+
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=9)
     style_title(ws.cell(row=r, column=1), "見込量×単価による積上げ（確定後に使用）",
                 fill=COLORS["subhead"], size=11)
     r += 1
     style_header_row(ws, r, ["サービス", "単位", "令和7年度\n月平均量", "月額単価",
-                             "令和9年度\n見込量", "令和10年度\n見込量", "令和11年度\n見込量", "備考"])
+                             "令和9年度\n見込量", "令和10年度\n見込量", "令和11年度\n見込量", "", "備考"])
     r += 1
     svc_rows = [
         ("就労継続支援（B型）", "人／月", 11.9, "令和7年度 給付費19,707,121円。令和2年度比2.08倍の要因分析が必要"),
@@ -544,17 +627,16 @@ def sheet_projection(wb):
         ("障害児相談支援", "人／月", 0.7, "令和7年度 給付費330,460円"),
     ]
     for i, (svc, unit, cur, note) in enumerate(svc_rows):
-        write_row(ws, r, [svc, unit, cur, None, None, None, None, note],
+        write_row(ws, r, [svc, unit, cur, None, None, None, None, "", note],
                   alt=(i % 2 == 1),
-                  aligns=["left", "center", "right", "right", "right", "right", "right", "left"],
-                  numfmts=[None, None, "#,##0.0", YEN, "#,##0.0", "#,##0.0", "#,##0.0", None],
+                  aligns=["left", "center", "right", "right", "right", "right", "right", "left", "left"],
+                  numfmts=[None, None, "#,##0.0", YEN, "#,##0.0", "#,##0.0", "#,##0.0", None, None],
                   fills=[None, None, None, COLORS["input"], COLORS["input"],
-                         COLORS["input"], COLORS["input"], None])
-        ws.row_dimensions[r].height = 28
+                         COLORS["input"], COLORS["input"], None, None])
+        ws.row_dimensions[r].height = 26
         r += 1
 
-    r += 1
-    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=8)
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=9)
     style_note(ws.cell(row=r, column=1),
                "令和7年度の月平均量は、受領データの件数を12で除した参考値です（件数＝延べ利用月数と仮定）。"
                "実際の見込量は「人／月」「人日／月」「時間／月」など計画上の単位で設定する必要があるため、"

@@ -71,12 +71,12 @@ def sheet_overview(wb):
          "こども・子育て計画のコーホート変化率法による村公式推計"),
         ("令和11年度 高齢化率",
          f"='01_人口推計'!H{POP_R11}", "01_人口推計", "確定", "老年人口÷総人口"),
-        ("令和9年度末 手帳所持者数（中位推計）",
+        ("令和9年 手帳所持者数（中位推計）",
          "='03_手帳将来推計'!C16", "03_手帳将来推計", "暫定",
          "平成31〜令和5年の5か年実績に基づく暫定値。R6〜R8実績の入力で自動更新／次期計画1年目"),
-        ("令和10年度末 手帳所持者数（中位推計）",
+        ("令和10年 手帳所持者数（中位推計）",
          "='03_手帳将来推計'!D16", "03_手帳将来推計", "暫定", "次期計画2年目"),
-        ("令和11年度末 手帳所持者数（中位推計）",
+        ("令和11年 手帳所持者数（中位推計）",
          "='03_手帳将来推計'!E16", "03_手帳将来推計", "暫定", "次期計画目標年度"),
         ("推計の基準年",
          "='03_手帳将来推計'!C4", "03_手帳将来推計", "暫定",
@@ -252,7 +252,8 @@ def sheet_tegata_projection(wb):
     ws = add_sheet(
         wb, "03_手帳将来推計", "障がい者手帳所持者数 将来推計",
         "性質の異なる2つの方法を併用し、幅を持たせて提示します。方法A・方法Bの差が推計の不確実性の幅です。"
-        "計画書には単一値ではなく幅を併記してください。すべて数式のため、02_手帳実績への入力で自動更新されます。",
+        "推計の時点は実績と同じ「各年4月1日現在」です（実績が4月1日現在のため、年度末で予測すると1年ずれます）。"
+        "計画書には単一値ではなく幅を併記してください。不確実性の定量評価は04_推計の不確実性を参照。",
         [24, 18, 14, 14, 14, 14, 46])
 
     fc = get_column_letter(TEG_FIRST_COL)
@@ -274,8 +275,8 @@ def sheet_tegata_projection(wb):
     style_note(ws["F4"], "R6〜R8実績の受領後は基準年を2026（令和8年）に変更してください。")
 
     # --- 推計表 ---
-    style_header_row(ws, 6, ["区分", "手法", "令和9年度末\n(2027)", "令和10年度末\n(2028)",
-                             "令和11年度末\n(2029)", "基準年所持率", "考え方・特性"])
+    style_header_row(ws, 6, ["区分", "手法", "令和9年\n(2027.4.1)", "令和10年\n(2028.4.1)",
+                             "令和11年\n(2029.4.1)", "基準年所持率", "考え方・特性"])
 
     aligns = ["left", "left", "right", "right", "right", "right", "left"]
     numfmts = [None, None, INT_FMT, INT_FMT, INT_FMT, RATE_FMT, None]
@@ -313,7 +314,7 @@ def sheet_tegata_projection(wb):
         # 中位
         ra, rb = method_rows[(name, "A")], method_rows[(name, "B")]
         vals_m = [f"=IFERROR(ROUND(AVERAGE({col}{ra},{col}{rb}),0),\"\")" for col in ("C", "D", "E")]
-        write_row(ws, row, ["", "中位（A・Bの単純平均）"] + vals_m + ["", "計画書に記載する場合は中位を代表値とし、A・Bの幅を併記する。"],
+        write_row(ws, row, ["", "中位（A・Bの単純平均）"] + vals_m + ["", "前提の異なる2手法の平均であり、それ自体に理論的裏付けはない。計画書ではA〜Bの幅を主に示し、中位は参考値として扱う。"],
                   aligns=aligns, numfmts=numfmts,
                   fills=[None, COLORS["band"], COLORS["band"], COLORS["band"], COLORS["band"], None, None])
         for col in range(2, 6):
@@ -360,7 +361,7 @@ def sheet_tegata_projection(wb):
                 "参考：平成31〜令和5年の5か年実績に基づく計算値（静的・検証用）",
                 fill=COLORS["subhead"], size=11)
     row += 1
-    style_header_row(ws, row, ["区分", "手法", "令和9年度末", "令和10年度末", "令和11年度末", "", ""])
+    style_header_row(ws, row, ["区分", "手法", "令和9年", "令和10年", "令和11年", "", ""])
     row += 1
     static = [
         ("身体障害者手帳", "方法A", 108, 106, 104), ("", "方法B", 106, 104, 102), ("", "中位", 107, 105, 103),
@@ -382,12 +383,164 @@ def sheet_tegata_projection(wb):
     return ws
 
 
+
 # ============================================================
-# 04_推計方法
+# 04_推計の不確実性（レッドチーム検証結果）
+# ============================================================
+# n=5 の単回帰から3〜6年先を外挿する際の予測区間、及び所持率法の
+# 分母の選び方による感度を定量化する。値はビルド時に verify() で再計算し、
+# 表示値と一致することを確認している。
+UNCERTAINTY_A = [
+    # 区分, 傾き, r2, 残差s, R9点推計, R9下限, R9上限, R11点推計, R11下限, R11上限
+    ("身体障害者手帳", -2.30, 0.453, 4.62, 108, 76, 141, 104, 63, 144),
+    ("療育手帳", -0.30, 0.321, 0.80, 11, 5, 17, 10, 3, 17),
+    ("精神障害者保健福祉手帳", 1.00, 0.500, 1.83, 33, 20, 46, 35, 19, 51),
+]
+
+UNCERTAINTY_B = [
+    # 区分, 総人口ベース, 老年人口ベース, 生産年齢人口ベース, 方法A
+    ("身体障害者手帳", 102, 120, 94, 104),
+    ("療育手帳", 11, 13, 10, 10),
+    ("精神障害者保健福祉手帳", 27, 32, 25, 35),
+]
+
+
+def sheet_uncertainty(wb):
+    ws = add_sheet(
+        wb, "04_推計の不確実性", "推計の不確実性（レッドチーム検証）",
+        "本ブックの推計値をそのまま計画書の確定値として用いてよいかを検証したものです。"
+        "結論として、現時点の推計は「方向性の目安」であり、令和6〜8年度実績の受領前に確定値として"
+        "記載することは避けてください。",
+        [24, 12, 12, 12, 16, 20, 40])
+
+    r = 5
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
+    style_title(ws.cell(row=r, column=1),
+                "1. 方法A（トレンド延長法）の統計的信頼性", fill=COLORS["subhead"], size=11)
+    r += 1
+    style_header_row(ws, r, ["区分", "傾き\n(人/年)", "決定係数\nr²", "残差\n標準誤差",
+                             "令和9年\n点推計", "令和9年\n95%予測区間", "評価"])
+    r += 1
+    evals = {
+        "身体障害者手帳": "r²が0.45で、実績の変動の半分以上を直線では説明できない。予測区間が実測値の幅を大きく超える。",
+        "療育手帳": "母数12〜14人に対し傾き−0.3人/年。実質的にノイズであり、10人と11人を区別する意味はない。",
+        "精神障害者保健福祉手帳": "増加傾向自体は一貫しているが、予測区間は20〜46人と広く、点推計を目標値の根拠にはできない。",
+    }
+    for i, (name, slope, r2, se, p9, l9, u9, p11, l11, u11) in enumerate(UNCERTAINTY_A):
+        write_row(ws, r, [name, slope, r2, se, f"{p9}人", f"{l9}〜{u9}人", evals[name]],
+                  alt=(i % 2 == 1),
+                  aligns=["left", "right", "right", "right", "right", "center", "left"],
+                  numfmts=[None, "+0.00;-0.00", "0.000", "0.00", None, None, None])
+        ws.row_dimensions[r].height = 34
+        r += 1
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
+    style_note(ws.cell(row=r, column=1),
+               "令和11年（目標年度）ではさらに広がり、身体障害者手帳の95%予測区間は63〜144人、"
+               "精神障害者保健福祉手帳は19〜51人、療育手帳は3〜17人となります。"
+               "標本が5か年しかなく、そこから3〜6年先を外挿しているためです。"
+               "点推計（104人・35人・10人）は中心値にすぎず、統計的な確からしさを主張できる数値ではありません。")
+    ws.row_dimensions[r].height = 44
+    r += 2
+
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
+    style_title(ws.cell(row=r, column=1),
+                "2. 方法B（所持率法）の分母による感度（令和11年）", fill=COLORS["subhead"], size=11)
+    r += 1
+    style_header_row(ws, r, ["区分", "総人口\nベース", "老年人口\nベース", "生産年齢\n人口ベース",
+                             "方法A\n（参考）", "最大−最小", "考え方"])
+    r += 1
+    notes_b = {
+        "身体障害者手帳": "所持者は高齢層に集中するため、総人口ではなく老年人口を分母にすると120人となり、18人増える。仕様書の約130人に近づく。",
+        "療育手帳": "分母によらず11〜13人。母数が小さく差も小さいが、そもそも推計の意味が薄い。",
+        "精神障害者保健福祉手帳": "所持者は生産年齢層が中心とみられ、分母の選択で25〜32人と振れる。方法Aの35人とも乖離する。",
+    }
+    for i, (name, tot, old, work, a) in enumerate(UNCERTAINTY_B):
+        write_row(ws, r, [name, tot, old, work, a, max(tot, old, work) - min(tot, old, work),
+                          notes_b[name]],
+                  alt=(i % 2 == 1),
+                  aligns=["left", "right", "right", "right", "right", "right", "left"],
+                  numfmts=[None, INT_FMT, INT_FMT, INT_FMT, INT_FMT, INT_FMT, None])
+        ws.row_dimensions[r].height = 34
+        r += 1
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
+    style_note(ws.cell(row=r, column=1),
+               "本ブックの方法Bは総人口を分母としています。しかし障がい者手帳の所持は年齢構成に強く依存するため、"
+               "本来は年齢階層別の所持率を用いるべきです。年齢階層別の手帳所持者数は村資料待ちであり、"
+               "受領後に方法Bを年齢階層別に組み替えることを推奨します（06_村確認事項の該当行）。")
+    ws.row_dimensions[r].height = 34
+    r += 2
+
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
+    style_title(ws.cell(row=r, column=1),
+                "3. 仕様書の調査対象者数との突合（最重要）", fill=COLORS["subhead"], size=11)
+    r += 1
+    style_header_row(ws, r, ["区分", "令和5年\n実績", "仕様書\n（約）", "差", "増減率",
+                             "本ブックの推計方向", "評価"])
+    r += 1
+    spec_rows = [
+        ("身体障害者手帳", 114, 130, "減少（令和11年 102〜104人）"),
+        ("療育手帳", 12, 20, "横ばい〜減少（10〜11人）"),
+        ("精神障害者保健福祉手帳", 30, 40, "増加（27〜35人）"),
+    ]
+    for i, (name, r5, spec, direction) in enumerate(spec_rows):
+        write_row(ws, r, [name, r5, spec, spec - r5, (spec - r5) / r5, direction,
+                          "仕様書の数値が令和8年時点の実数であれば、推計の方向と矛盾する"],
+                  alt=(i % 2 == 1),
+                  aligns=["left", "right", "right", "right", "right", "left", "left"],
+                  numfmts=[None, INT_FMT, INT_FMT, "+0;-0", "+0%", None, None])
+        ws.row_dimensions[r].height = 30
+        r += 1
+    write_row(ws, r, ["合計", 156, 190, 34, 34 / 156, "減少（145人）",
+                      "同期間の総人口は約5%減。手帳所持者だけが22%増える説明が必要"],
+              aligns=["left", "right", "right", "right", "right", "left", "left"],
+              numfmts=[None, INT_FMT, INT_FMT, "+0;-0", "+0%", None, None],
+              fills=[COLORS["note"]] * 7)
+    r += 1
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
+    style_note(ws.cell(row=r, column=1),
+               "これは確認事項ではなく、推計を確定できない前提条件です。仕様書の約190人が"
+               "（a）発送数に余裕を見た概数なのか、（b）集計基準・対象年齢が異なるのか、"
+               "（c）実際に令和6〜8年で増加しているのか、のいずれであるかによって、"
+               "推計の方向（減少か増加か）そのものが変わります。"
+               "村への確認が済むまで、手帳所持者数の将来推計を計画書の確定値として記載しないでください。")
+    ws.row_dimensions[r].height = 48
+    r += 2
+
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
+    style_title(ws.cell(row=r, column=1),
+                "4. 過去稿との数値の異同", fill=COLORS["subhead"], size=11)
+    r += 1
+    style_header_row(ws, r, ["版", "方法Bの人口基礎", "令和11年\n総人口", "身体", "療育", "精神", "合計（中位）"])
+    r += 1
+    hist = [
+        ("計画素案 第4〜9稿", "令和5年から75人/年の定数減（線形）", 1993, "93人", "10人", "25人", "139人"),
+        ("将来推計ワークブック(20260707)", "こども・子育て計画の公式推計", 2185, "102人", "11人", "27人", "145人"),
+        ("本ブック", "こども・子育て計画の公式推計", 2185, "102人", "11人", "27人", "145人"),
+    ]
+    for i, rec in enumerate(hist):
+        write_row(ws, r, list(rec), alt=(i % 2 == 1),
+                  aligns=["left", "left", "right", "right", "right", "right", "right"],
+                  numfmts=[None, None, INT_FMT, None, None, None, None])
+        ws.row_dimensions[r].height = 28
+        r += 1
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
+    style_note(ws.cell(row=r, column=1),
+               "計画素案第4〜9稿の方法Bは、本文では「人口減少率をそのまま延長した簡易推計」と説明していますが、"
+               "実際の計算は率ではなく定数人数減（平成31年→令和5年の300人減÷4年＝75人/年）です。"
+               "記載と計算が一致していません。また、第8稿で村公式推計を「第2章2-2の基礎として明記した」と"
+               "整理していますが、2-2の数値は第7稿から変更されておらず、実際には反映されていません。"
+               "本ブックは公式推計に統一しているため、第4〜9稿及び前回計画評価表（20260703、身体104→99等）の"
+               "記載とは一致しません。計画書への転記時は本ブックの値に揃えてください。")
+    ws.row_dimensions[r].height = 62
+    return ws
+
+
+# ============================================================
+# 05_推計方法
 # ============================================================
 def sheet_method(wb):
     ws = add_sheet(
-        wb, "04_推計方法", "推計方法と前提",
+        wb, "05_推計方法", "推計方法と前提",
         "計画書 第2章及びアンケート調査報告書に転記するための、推計方法の説明です。",
         [22, 62, 58])
     style_header_row(ws, 5, ["方法", "考え方", "特性・留意点"])
@@ -429,7 +582,7 @@ def sheet_method(wb):
 # ============================================================
 def sheet_confirm(wb):
     ws = add_sheet(
-        wb, "05_村確認事項", "村への確認・依頼事項（将来推計関係）",
+        wb, "06_村確認事項", "村への確認・依頼事項（将来推計関係）",
         "受領・確認が済んだものは「状態」を更新し、反映先シートに入力してください。",
         [28, 52, 26, 12, 34])
     style_header_row(ws, 5, ["確認事項", "確認したい内容", "使途・反映先", "優先度", "状態・回答"])
@@ -446,11 +599,11 @@ def sheet_confirm(wb):
          "02_手帳実績／アンケート発送設計", "高", "村資料待ち"),
         ("村独自の人口ビジョン・将来推計",
          "総合振興計画の人口ビジョン、社人研推計等がある場合はその数値。",
-         "01_人口推計／04_推計方法", "中", "村資料待ち"),
+         "01_人口推計／05_推計方法", "中", "村資料待ち"),
         ("身体障害者手帳の減少要因",
          "老年人口が横ばい〜微減である一方、身体障害者手帳所持者数が減少している要因。"
          "手帳更新時期・制度改正・転出入・死亡等の影響を確認する。",
-         "03_手帳将来推計の留意点", "中", "村資料待ち"),
+         "03_手帳将来推計／04_推計の不確実性", "中", "村資料待ち"),
         ("精神障害者保健福祉手帳の増加要因",
          "所持者数・所持率とも増加傾向にある背景（受診機会の広がり、相談体制、新規申請の動向等）。",
          "03_手帳将来推計／相談支援施策", "中", "村資料待ち"),
@@ -535,6 +688,53 @@ def verify():
     assert _interpolated_population(2027) == 2269, "令和9年 総人口の補間が想定と異なります"
     assert _interpolated_population(2029) == 2185, "令和11年 総人口が公式推計と一致しません"
     print("  自己検証: 手帳推計3区分×3手法・合計・人口補間 いずれも一致")
+    _verify_uncertainty()
+
+
+def _verify_uncertainty():
+    """04_推計の不確実性に表示した統計値を再計算して突合する。"""
+    import math
+    xs = [s for (_, s) in TEGATA_YEARS[:5]]
+    xbar = sum(xs) / len(xs)
+    sxx = sum((x - xbar) ** 2 for x in xs)
+    t975 = 3.182  # t(0.975, df=3)
+
+    pop = dict((rec[1], (rec[3], rec[5], rec[6])) for rec in POPULATION)  # 総/生産年齢/老年
+    base_tot, base_work, base_old = pop[2023]
+    proj_tot, proj_work, proj_old = pop[2029]
+
+    for name, slope_x, r2_x, se_x, p9, l9, u9, p11, l11, u11 in UNCERTAINTY_A:
+        ys = [v for v in TEGATA[name] if v is not None]
+        ybar = sum(ys) / len(ys)
+        sxy = sum((x - xbar) * (y - ybar) for x, y in zip(xs, ys))
+        syy = sum((y - ybar) ** 2 for y in ys)
+        slope = sxy / sxx
+        r2 = sxy ** 2 / (sxx * syy)
+        sse = syy - sxy ** 2 / sxx
+        s_res = math.sqrt(sse / 3)
+        assert abs(slope - slope_x) < 0.005, f"{name} 傾き {slope:.3f} ≠ 表示 {slope_x}"
+        assert abs(r2 - r2_x) < 0.001, f"{name} r² {r2:.4f} ≠ 表示 {r2_x}"
+        assert abs(s_res - se_x) < 0.005, f"{name} 残差s {s_res:.3f} ≠ 表示 {se_x}"
+        for x0, pt, lo, hi in ((2027, p9, l9, u9), (2029, p11, l11, u11)):
+            pred = ybar + slope * (x0 - xbar)
+            pi = t975 * s_res * math.sqrt(1 + 1 / len(ys) + (x0 - xbar) ** 2 / sxx)
+            assert abs(_round_half_up(pred) - pt) <= 1, f"{name} {x0} 点推計 {pred:.1f} ≠ 表示 {pt}"
+            assert abs(_round_half_up(pred - pi) - lo) <= 1, f"{name} {x0} 下限 {pred-pi:.1f} ≠ 表示 {lo}"
+            assert abs(_round_half_up(pred + pi) - hi) <= 1, f"{name} {x0} 上限 {pred+pi:.1f} ≠ 表示 {hi}"
+
+    for name, tot_x, old_x, work_x, a_x in UNCERTAINTY_B:
+        r5 = TEGATA[name][4]
+        got = (_round_half_up(r5 / base_tot * proj_tot),
+               _round_half_up(r5 / base_old * proj_old),
+               _round_half_up(r5 / base_work * proj_work))
+        assert got == (tot_x, old_x, work_x), f"{name} 分母感度 {got} ≠ 表示 ({tot_x}, {old_x}, {work_x})"
+
+    # 過去稿の方法B（75人/年の定数減）が第9稿の記載値を再現することの確認
+    for name, expected in (("身体障害者手帳", 93), ("療育手帳", 10)):
+        r5 = TEGATA[name][4]
+        assert _round_half_up(r5 / base_tot * (base_tot - 75 * 6)) == expected, \
+            f"過去稿の方法B（{name}）が第9稿記載値 {expected}人 を再現しません"
+    print("  自己検証: 予測区間・分母感度・過去稿方法Bの再現 いずれも一致")
 
 
 def main():
@@ -546,6 +746,7 @@ def main():
     sheet_population(wb)
     sheet_tegata_actual(wb)
     sheet_tegata_projection(wb)
+    sheet_uncertainty(wb)
     sheet_method(wb)
     sheet_confirm(wb)
     wb.save(OUT_FILE)
