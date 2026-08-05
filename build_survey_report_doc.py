@@ -19,6 +19,13 @@
   本文　　BIZ UDPゴシック 10.5pt
   見出1　16pt 太字　　見出2　14pt 太字
   注記　　ＭＳ Ｐゴシック 11pt（灰色）
+
+改ページの制御
+  ・図表の表題は次の段落（図）と同じページに固定する（keepNext）。
+  ・表は行の途中で改ページしない（cantSplit）。
+    14行以下の表は表全体を同じページに収める。
+  ・表とその図が1ページに収まる場合は、両者を同じページに固定する。
+  ・見出しは直後の本文と同じページに置く。
 """
 
 import collections
@@ -73,6 +80,8 @@ def _ramp(n):
         out.append("#%02X%02X%02X" % (v, v, v))
     return out
 FIGN = [0]
+# 直前に描いた表。表とその図を同じページに収めるために用いる。
+LAST = {"table": None, "spacer": None, "cm": 0.0}
 
 BODY = "BIZ UDPゴシック"
 NOTEF = "ＭＳ Ｐゴシック"
@@ -181,6 +190,7 @@ nt.paragraph_format.space_after = Pt(11.25)
 
 def P(text="", size=None, bold=False, align=None, space_after=6,
       style=None, color=None):
+    LAST["table"] = None
     p = doc.add_paragraph(style=style)
     p.paragraph_format.space_after = Pt(space_after)
     p.paragraph_format.line_spacing = 1.15
@@ -199,12 +209,16 @@ def P(text="", size=None, bold=False, align=None, space_after=6,
 
 
 def H1(text):
+    LAST["table"] = None
     p = doc.add_paragraph(text, style="Heading 1")
+    p.paragraph_format.keep_with_next = True
     return p
 
 
 def H2(text):
+    LAST["table"] = None
     p = doc.add_paragraph(text, style="Heading 2")
+    p.paragraph_format.keep_with_next = True
     return p
 
 
@@ -244,6 +258,18 @@ def cell_text(cell, text, size=9, bold=False, align=None):
         r._element.rPr.rFonts.set(qn("w:eastAsia"), BODY)
 
 
+def _keep_table(t, limit=14):
+    """行の途中で改ページさせない。短い表は表全体を同じページに収める。"""
+    whole = len(t.rows) <= limit
+    for i, row in enumerate(t.rows):
+        trPr = row._tr.get_or_add_trPr()
+        trPr.append(OxmlElement("w:cantSplit"))
+        if whole and i < len(t.rows) - 1:
+            for c in row.cells:
+                for p_ in c.paragraphs:
+                    p_.paragraph_format.keep_with_next = True
+
+
 def TBL(head, rows, widths=None, size=9, num_from=1):
     t = doc.add_table(rows=0, cols=len(head))
     t.style = "Table Grid"
@@ -262,7 +288,13 @@ def TBL(head, rows, widths=None, size=9, num_from=1):
         for r_ in t.rows:
             for i, w in enumerate(widths):
                 r_.cells[i].width = Cm(w)
-    doc.add_paragraph().paragraph_format.space_after = Pt(4)
+    _keep_table(t)
+    sp = doc.add_paragraph()
+    sp.paragraph_format.space_after = Pt(4)
+    sp.paragraph_format.space_before = Pt(0)
+    LAST["table"] = t
+    LAST["spacer"] = sp
+    LAST["cm"] = 0.72 + 0.52 * (len(t.rows) - 1)
     return t
 
 
@@ -273,11 +305,39 @@ def _fin(fig, name):
     return path
 
 
+def _bind_table(fig_cm):
+    """直前の表と図が1ページに収まる場合、同じページに固定する。"""
+    t = LAST["table"]
+    if t is None:
+        return
+    if LAST["cm"] + fig_cm + 1.6 > 21.0:
+        return
+    last = t.rows[-1]
+    for c in last.cells:
+        for p_ in c.paragraphs:
+            p_.paragraph_format.keep_with_next = True
+    LAST["spacer"].paragraph_format.keep_with_next = True
+
+
+def _emit(fig, name, title, width):
+    """図を保存し、表題と図を同じページに置いて挿入する。"""
+    from PIL import Image
+    path = _fin(fig, name)
+    with Image.open(path) as im:
+        cm = width * im.height / im.width
+    _bind_table(cm)
+    _cap(title)
+    _put(path, width)
+
+
 def _cap(title):
+    """図表の表題。次の段落（図）と必ず同じページに置く。"""
     FIGN[0] += 1
     p = doc.add_paragraph()
-    p.paragraph_format.space_before = Pt(4)
+    p.paragraph_format.space_before = Pt(6)
     p.paragraph_format.space_after = Pt(2)
+    p.paragraph_format.keep_with_next = True
+    p.paragraph_format.keep_together = True
     r = p.add_run("【図表%d】　%s" % (FIGN[0], title))
     r.font.size = Pt(9)
     r.font.bold = True
@@ -286,9 +346,13 @@ def _cap(title):
 
 
 def _put(path, width=15.6):
+    LAST["table"] = None
     doc.add_picture(path, width=Cm(width))
-    doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-    doc.paragraphs[-1].paragraph_format.space_after = Pt(8)
+    pp = doc.paragraphs[-1]
+    pp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    pp.paragraph_format.space_after = Pt(8)
+    pp.paragraph_format.space_before = Pt(0)
+    pp.paragraph_format.keep_together = True
 
 
 def BAND(name, title, pairs, width=15.6, ncol=4, height=0.95, ramp=False):
@@ -323,8 +387,7 @@ def BAND(name, title, pairs, width=15.6, ncol=4, height=0.95, ramp=False):
     ax.legend(fontsize=7.5, ncol=ncol, frameon=False, loc="upper center",
               bbox_to_anchor=(0.5, -0.35), handlelength=1.4,
               handletextpad=0.5, columnspacing=1.2)
-    _cap(title)
-    _put(_fin(fig, name), width)
+    _emit(fig, name, title, width)
 
 
 def HBAR(name, title, pairs, denom=None, unit="件", width=15.6,
@@ -354,8 +417,7 @@ def HBAR(name, title, pairs, denom=None, unit="件", width=15.6,
     if xlabel:
         ax.set_xlabel(xlabel, fontsize=8)
     ax.tick_params(labelsize=7.5)
-    _cap(title)
-    _put(_fin(fig, name), width)
+    _emit(fig, name, title, width)
 
 
 def MBAND(name, title, rows, cats, width=15.6, ncol=4, ramp=False):
@@ -391,8 +453,7 @@ def MBAND(name, title, rows, cats, width=15.6, ncol=4, ramp=False):
     ax.legend(fontsize=7.5, ncol=ncol, frameon=False, loc="upper center",
               bbox_to_anchor=(0.5, -0.12 - 0.06 * len(rows)),
               handlelength=1.4, handletextpad=0.5, columnspacing=1.2)
-    _cap(title)
-    _put(_fin(fig, name), width)
+    _emit(fig, name, title, width)
 
 
 def GBAR(name, title, cats, series, width=15.6, unit="", ncol=3,
@@ -421,8 +482,7 @@ def GBAR(name, title, cats, series, width=15.6, unit="", ncol=3,
     ax.legend(fontsize=7.5, ncol=ncol, frameon=False, loc="upper center",
               bbox_to_anchor=(0.5, -0.14), handlelength=1.4,
               handletextpad=0.5, columnspacing=1.2)
-    _cap(title)
-    _put(_fin(fig, name), width)
+    _emit(fig, name, title, width)
 
 
 def dist_rows(d, labels, total=None):
