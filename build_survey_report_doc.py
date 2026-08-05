@@ -22,6 +22,12 @@
 """
 
 import collections
+import os
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib import rcParams
 
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
@@ -38,6 +44,35 @@ import data_hokkaido_shitei as H
 
 OUT = ("/home/user/repository/output/"
        "第10期計画_実施済み調査_結果報告書.docx")
+FIGDIR = "/home/user/repository/output/figures_report"
+os.makedirs(FIGDIR, exist_ok=True)
+
+# 白黒印刷を前提としたグレースケール。前回計画及び図表集と同じ配色。
+rcParams["font.family"] = "IPAGothic"
+rcParams["axes.unicode_minus"] = False
+rcParams["figure.dpi"] = 220
+rcParams["savefig.dpi"] = 220
+rcParams["savefig.bbox"] = "tight"
+rcParams["savefig.pad_inches"] = 0.04
+rcParams["font.size"] = 8.5
+rcParams["axes.edgecolor"] = "#000000"
+rcParams["axes.linewidth"] = 0.8
+
+GRAYS = ["#595959", "#A6A6A6", "#D9D9D9", "#F2F2F2", "#7F7F7F", "#BFBFBF",
+         "#4D4D4D", "#E6E6E6"]
+HATCH = ["", "", "", "", "///", "...", "\\\\", "xxx"]
+DARK = {0, 4, 6}          # 白文字にする濃い色の位置
+
+
+def _ramp(n):
+    """順序のある区分（要介護度等）に用いる淡→濃の階調。"""
+    lo, hi = 0xF2, 0x4D
+    out = []
+    for i in range(n):
+        v = int(lo + (hi - lo) * (i / max(1, n - 1)))
+        out.append("#%02X%02X%02X" % (v, v, v))
+    return out
+FIGN = [0]
 
 BODY = "BIZ UDPゴシック"
 NOTEF = "ＭＳ Ｐゴシック"
@@ -231,6 +266,165 @@ def TBL(head, rows, widths=None, size=9, num_from=1):
     return t
 
 
+def _fin(fig, name):
+    path = os.path.join(FIGDIR, name + ".png")
+    fig.savefig(path, facecolor="white")
+    plt.close(fig)
+    return path
+
+
+def _cap(title):
+    FIGN[0] += 1
+    p = doc.add_paragraph()
+    p.paragraph_format.space_before = Pt(4)
+    p.paragraph_format.space_after = Pt(2)
+    r = p.add_run("【図表%d】　%s" % (FIGN[0], title))
+    r.font.size = Pt(9)
+    r.font.bold = True
+    r.font.name = BODY
+    r._element.rPr.rFonts.set(qn("w:eastAsia"), BODY)
+
+
+def _put(path, width=15.6):
+    doc.add_picture(path, width=Cm(width))
+    doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    doc.paragraphs[-1].paragraph_format.space_after = Pt(8)
+
+
+def BAND(name, title, pairs, width=15.6, ncol=4, height=0.95, ramp=False):
+    """単数回答の帯グラフ（100％積み上げ横棒）。"""
+    labs = [k for k, _ in pairs]
+    vals = [float(v) for _, v in pairs]
+    tot = sum(vals) or 1.0
+    cols = _ramp(len(labs)) if ramp else \
+        [GRAYS[i % len(GRAYS)] for i in range(len(labs))]
+    hats = [""] * len(labs) if ramp else \
+        [HATCH[i % len(HATCH)] for i in range(len(labs))]
+    dark = set(range(len(labs))[len(labs) // 2 + 1:]) if ramp else DARK
+    fig, ax = plt.subplots(figsize=(6.5, height))
+    left = 0.0
+    for i, (lab, v) in enumerate(zip(labs, vals)):
+        pct = v / tot * 100
+        ax.barh([0], [pct], left=left, height=0.55, label=lab,
+                color=cols[i], hatch=hats[i],
+                edgecolor="black", linewidth=0.7)
+        if pct >= 6:
+            ax.text(left + pct / 2, 0, "%.1f%%" % pct, ha="center",
+                    va="center", fontsize=7.5,
+                    color="white" if i in dark else "black")
+        left += pct
+    ax.set_xlim(0, 100)
+    ax.set_ylim(-0.5, 0.5)
+    ax.set_yticks([])
+    ax.set_xticks([0, 20, 40, 60, 80, 100])
+    ax.set_xticklabels(["0%", "20%", "40%", "60%", "80%", "100%"], fontsize=7.5)
+    for sp in ["top", "right", "left"]:
+        ax.spines[sp].set_visible(False)
+    ax.legend(fontsize=7.5, ncol=ncol, frameon=False, loc="upper center",
+              bbox_to_anchor=(0.5, -0.35), handlelength=1.4,
+              handletextpad=0.5, columnspacing=1.2)
+    _cap(title)
+    _put(_fin(fig, name), width)
+
+
+def HBAR(name, title, pairs, denom=None, unit="件", width=15.6,
+         xlabel=None, height=None):
+    """複数回答・度数分布の横棒グラフ。上位から並べる。"""
+    labs = [k for k, _ in pairs]
+    vals = [float(v) for _, v in pairs]
+    n = len(labs)
+    h = height or max(1.5, 0.32 * n + 0.6)
+    fig, ax = plt.subplots(figsize=(6.5, h))
+    ys = list(range(n))[::-1]
+    ax.barh(ys, vals, height=0.62, color=GRAYS[1], edgecolor="black",
+            linewidth=0.7)
+    mx = max(vals) if vals else 1
+    for y, v in zip(ys, vals):
+        t = "%d%s" % (v, unit)
+        if denom:
+            t += "（%.1f%%）" % (v / denom * 100)
+        ax.text(v + mx * 0.015, y, t, va="center", fontsize=7.5)
+    ax.set_yticks(ys)
+    ax.set_yticklabels(labs, fontsize=8)
+    ax.set_xlim(0, mx * 1.28)
+    ax.grid(axis="x", color="#BFBFBF", linewidth=0.5)
+    ax.set_axisbelow(True)
+    for sp in ["top", "right"]:
+        ax.spines[sp].set_visible(False)
+    if xlabel:
+        ax.set_xlabel(xlabel, fontsize=8)
+    ax.tick_params(labelsize=7.5)
+    _cap(title)
+    _put(_fin(fig, name), width)
+
+
+def MBAND(name, title, rows, cats, width=15.6, ncol=4, ramp=False):
+    """複数系列の帯グラフ。rows は [(行名, [値, ...]), ...]。"""
+    cols = _ramp(len(cats)) if ramp else \
+        [GRAYS[i % len(GRAYS)] for i in range(len(cats))]
+    hats = [""] * len(cats) if ramp else \
+        [HATCH[i % len(HATCH)] for i in range(len(cats))]
+    dark = set(range(len(cats))[len(cats) // 2 + 1:]) if ramp else DARK
+    fig, ax = plt.subplots(figsize=(6.5, max(1.3, 0.52 * len(rows) + 0.8)))
+    ys = list(range(len(rows)))[::-1]
+    for y, (_lab, vals) in zip(ys, rows):
+        tot = sum(vals) or 1.0
+        left = 0.0
+        for i, v in enumerate(vals):
+            pct = v / tot * 100
+            ax.barh([y], [pct], left=left, height=0.58,
+                    color=cols[i], hatch=hats[i],
+                    edgecolor="black", linewidth=0.7,
+                    label=cats[i] if y == ys[0] else None)
+            if pct >= 7:
+                ax.text(left + pct / 2, y, "%.1f" % pct, ha="center",
+                        va="center", fontsize=7,
+                        color="white" if i in dark else "black")
+            left += pct
+    ax.set_xlim(0, 100)
+    ax.set_yticks(ys)
+    ax.set_yticklabels([r[0] for r in rows], fontsize=8)
+    ax.set_xticks([0, 20, 40, 60, 80, 100])
+    ax.set_xticklabels(["0%", "20%", "40%", "60%", "80%", "100%"], fontsize=7.5)
+    for sp in ["top", "right", "left"]:
+        ax.spines[sp].set_visible(False)
+    ax.legend(fontsize=7.5, ncol=ncol, frameon=False, loc="upper center",
+              bbox_to_anchor=(0.5, -0.12 - 0.06 * len(rows)),
+              handlelength=1.4, handletextpad=0.5, columnspacing=1.2)
+    _cap(title)
+    _put(_fin(fig, name), width)
+
+
+def GBAR(name, title, cats, series, width=15.6, unit="", ncol=3,
+         ylabel=None):
+    """系列比較の縦棒グラフ。series は [(系列名, [値, ...]), ...]。"""
+    import numpy as np
+    fig, ax = plt.subplots(figsize=(6.5, 2.8))
+    x = np.arange(len(cats))
+    w = 0.8 / len(series)
+    for i, (lab, vals) in enumerate(series):
+        ax.bar(x + i * w - 0.4 + w / 2, vals, width=w * 0.9, label=lab,
+               color=GRAYS[i % len(GRAYS)], hatch=HATCH[i % len(HATCH)],
+               edgecolor="black", linewidth=0.7)
+        for xi, v in zip(x + i * w - 0.4 + w / 2, vals):
+            ax.annotate("%g%s" % (v, unit), (xi, v), textcoords="offset points",
+                        xytext=(0, 3), ha="center", fontsize=7)
+    ax.set_xticks(x)
+    ax.set_xticklabels(cats, fontsize=8)
+    ax.grid(axis="y", color="#BFBFBF", linewidth=0.5)
+    ax.set_axisbelow(True)
+    for sp in ["top", "right"]:
+        ax.spines[sp].set_visible(False)
+    if ylabel:
+        ax.set_ylabel(ylabel, fontsize=8)
+    ax.tick_params(labelsize=7.5)
+    ax.legend(fontsize=7.5, ncol=ncol, frameon=False, loc="upper center",
+              bbox_to_anchor=(0.5, -0.14), handlelength=1.4,
+              handletextpad=0.5, columnspacing=1.2)
+    _cap(title)
+    _put(_fin(fig, name), width)
+
+
 def dist_rows(d, labels, total=None):
     tot = total or sum(v for k, v in d.items() if k != "-")
     rows = []
@@ -334,7 +528,17 @@ NOTE("４．複数回答可の設問では、各選択肢の割合の合計が10
 NOTE("５．グラフや表の選択肢（カテゴリー）は、"
      "文字数の制約により簡略化して表記している場合があります。")
 P("")
-SUB("（３） 本報告書を読む際の留意点")
+SUB("（３） グラフ・集計表の見方")
+P("・単数回答（帯グラフ）")
+P("単数回答形式の設問は、原則として帯グラフで表示します。"
+  "構成比が6%に満たない区分は、グラフ内の数値表記を省略しています。")
+P("・複数回答（横棒グラフ）")
+P("複数回答形式の設問は、回答の多い順に横棒グラフで表示します。"
+  "件数と、回答者数に対する割合を併記します。")
+P("・図表はいずれも白黒印刷を前提とし、"
+  "濃淡とハッチング（網掛け）で区分を表しています。")
+P("")
+SUB("（４） 本報告書を読む際の留意点")
 P("４つの調査は対象者が異なります。"
   "在宅生活改善調査は事業所が課題があると判断した利用者、"
   "居所変更実態調査は施設入所者、介護人材実態調査は事業所の職員、"
@@ -359,6 +563,8 @@ rows, tot = dist_rows(S.RIYO["現在の居所"],
                        "3": "サービス付き高齢者向け住宅",
                        "4": "軽費老人ホーム"})
 TBL(["区分", "件数", "割合"], rows, [8.0, 3.0, 3.0])
+BAND("f_kyosho", "現在の居所（n=98）",
+     [("自宅等", 81), ("住宅型有料老人ホーム", 11), ("軽費老人ホーム", 6)])
 P("回答のあった99人のうち、自宅等で生活している方が81人（82.7%）と"
   "大半を占めます。"
   "住宅型有料老人ホームが11人（11.2%）、軽費老人ホームが６人（6.1%）で、"
@@ -370,6 +576,9 @@ rows, tot = dist_rows(S.RIYO["要介護度"],
                        "4": "要介護2", "5": "要介護3", "6": "要介護4",
                        "7": "要介護5", "8": "新規申請中"})
 TBL(["区分", "件数", "割合"], rows, [8.0, 3.0, 3.0])
+HBAR("f_yokaigo", "利用者の要支援・要介護度（n=98）",
+     [("要支援1", 3), ("要支援2", 13), ("要介護1", 33), ("要介護2", 22),
+      ("要介護3", 19), ("要介護4", 5), ("要介護5", 3)], denom=98, unit="人")
 P("要介護1が33人（33.7%）と最も多く、要介護2が22人（22.4%）、"
   "要介護3が19人（19.4%）と続きます。"
   "要介護4・5は８人（8.2%）で、中軽度の方が多数を占めています。"
@@ -381,6 +590,9 @@ rows, tot = dist_rows(S.RIYO["世帯類型"],
                       {"1": "独居", "2": "夫婦のみ", "3": "単身の子との同居",
                        "4": "その他の同居"})
 TBL(["区分", "件数", "割合"], rows, [8.0, 3.0, 3.0])
+BAND("f_setai", "世帯類型（n=98）",
+     [("独居", 45), ("夫婦のみ", 17), ("単身の子との同居", 14),
+      ("その他の同居", 22)])
 P("独居が45人（45.9%）と最も多く、夫婦のみが17人（17.3%）です。"
   "独居と夫婦のみを合わせると62人（63.3%）となり、"
   "介護の担い手が同居していない、"
@@ -391,6 +603,10 @@ rows, tot = dist_rows(S.RIYO["生活の維持"],
                       {"1": "現在の状態では在宅生活の維持が困難",
                        "2": "当面は在宅生活を維持できる"})
 TBL(["区分", "件数", "割合"], rows, [10.0, 3.0, 3.0])
+MBAND("f_iji", "在宅生活の維持の見通しと就労継続（n=98）",
+      [("在宅生活の維持が困難", [72, 26]),
+       ("介護者の就労継続が困難", [41, 57])],
+      ["該当する", "該当しない"], ncol=2)
 P("回答のあった98人のうち、現在の状態では在宅生活の維持が困難とされた方は"
   "72人（73.5%）です。"
   "本調査は事業所が課題があると判断した利用者を抽出する設計であるため、"
@@ -407,6 +623,8 @@ rows = [[k, "%d" % v, "%.1f%%" % (v / 99 * 100)]
         for k, v in sorted(S.RIYO["本人の状態等"].items(),
                            key=lambda x: -x[1])]
 TBL(["要因", "件数", "回答者99人に対する割合"], rows, [8.6, 2.6, 3.4])
+HBAR("f_honnin", "在宅生活の継続を困難にしている要因（本人の状態等・複数回答）",
+     sorted(S.RIYO["本人の状態等"].items(), key=lambda x: -x[1]), denom=99)
 P("認知症の症状の悪化が37件（37.4%）と最も多く、"
   "必要な生活支援の発生・増大が30件（30.3%）、"
   "必要な身体介護の増大が29件（29.3%）と続きます。"
@@ -417,6 +635,8 @@ rows = [[k, "%d" % v, "%.1f%%" % (v / 99 * 100)]
         for k, v in sorted(S.RIYO["家族等介護者"].items(),
                            key=lambda x: -x[1])]
 TBL(["要因", "件数", "回答者99人に対する割合"], rows, [8.6, 2.6, 3.4])
+HBAR("f_kazoku", "在宅生活の継続を困難にしている要因（家族等介護者・複数回答）",
+     sorted(S.RIYO["家族等介護者"].items(), key=lambda x: -x[1]), denom=99)
 P("介護者の介護に係る不安・負担量の増大が50件（50.5%）と最も多く、"
   "回答者の半数を超えます。"
   "家族等の介護等技術では対応が困難が21件（21.2%）、"
@@ -429,6 +649,9 @@ rows = [[k, "%d" % v, "%.1f%%" % (v / 99 * 100)]
         for k, v in sorted(S.RIYO["介護者の負担"].items(),
                            key=lambda x: -x[1])[:10]]
 TBL(["介護の内容", "件数", "回答者99人に対する割合"], rows, [8.6, 2.6, 3.4])
+HBAR("f_futan", "主な介護者の負担となっている介護（上位10・複数回答）",
+     sorted(S.RIYO["介護者の負担"].items(), key=lambda x: -x[1])[:10],
+     denom=99)
 P("外出の付き添い、送迎等が30件（30.3%）と最も多く、"
   "認知症状への対応が28件（28.3%）、"
   "日中の排泄と夜間の排泄がそれぞれ20件（20.2%）と続きます。"
@@ -439,6 +662,8 @@ rows = [[k, "%d" % v, "%.1f%%" % (v / 99 * 100)]
         for k, v in sorted(S.RIYO["必要な生活支援"].items(),
                            key=lambda x: -x[1])]
 TBL(["生活支援", "件数", "回答者99人に対する割合"], rows, [8.6, 2.6, 3.4])
+HBAR("f_seikatsu", "必要な生活支援（複数回答）",
+     sorted(S.RIYO["必要な生活支援"].items(), key=lambda x: -x[1]), denom=99)
 P("外出同行（通院、買い物など）が51件（51.5%）と最も多く、"
   "回答者の半数を超えます。"
   "移送サービス19件（19.2%）を含めると、"
@@ -455,6 +680,9 @@ SVC = S.RIYO["より適切なサービス"]
 rows = [[k, "%d" % v, "%.1f%%" % (v / 99 * 100)]
         for k, v in sorted(SVC.items(), key=lambda x: -x[1]) if v > 0]
 TBL(["サービス", "件数", "回答者99人に対する割合"], rows, [8.6, 2.6, 3.4])
+HBAR("f_svc", "より適切と思われるサービス（複数回答）",
+     [(k, v) for k, v in sorted(SVC.items(), key=lambda x: -x[1]) if v > 0],
+     denom=99)
 P("小規模多機能型居宅介護が44件（44.4%）と最も多く、"
   "住宅型有料老人ホーム27件（27.3%）、"
   "認知症対応型共同生活介護（グループホーム）と特別養護老人ホームが"
@@ -477,6 +705,8 @@ rows, tot = dist_rows(S.RIYO["緊急度"],
                       {"1": "3か月以内", "2": "1年以内", "3": "1年より先"},
                       total=60)
 TBL(["区分", "件数", "割合"], rows, [8.0, 3.0, 3.0])
+BAND("f_kinkyu", "施設等への入所の緊急度（n=60）",
+     [("3か月以内", 17), ("1年以内", 39), ("1年より先", 4)], ncol=3)
 P("より適切と思われるサービスとして施設等を選んだ60人のうち、"
   "３か月以内の入所が必要とされた方は17人（28.3%）です。"
   "１年以内を含めると56人（93.3%）となります。")
@@ -486,6 +716,9 @@ rows = [["空きがない", "30", "―"], ["費用負担", "8", "―"],
         ["本人が望まない", "3", "―"], ["家族が望まない", "2", "―"],
         ["その他", "10", "―"]]
 TBL(["理由", "件数", "備考"], rows, [8.0, 2.6, 4.0])
+HBAR("f_riyu", "入所できていない理由",
+     [("空きがない", 30), ("その他", 10), ("費用負担", 8),
+      ("本人が望まない", 3), ("家族が望まない", 2)], denom=53)
 P("空きがないが30件と最も多くなっています。"
   "特定施設入居者生活介護は区域内３施設の定員156人に対し入居者154人"
   "（98.7%）でほぼ満室であり（第３章）、"
@@ -505,6 +738,8 @@ tz3 = sum(Z3.values())
 rows = [[k, "%d" % v, "%.1f%%" % (v / tz3 * 100)] for k, v in Z3.most_common()]
 rows.append(["合計", "%d" % tz3, "100.0%"])
 TBL(["変更先", "人数", "割合"], rows, [8.0, 3.0, 3.0])
+HBAR("f_henkou", "過去1年間の居場所の変更先（171人）",
+     Z3.most_common(), denom=tz3, unit="人")
 
 # ================================================================== 第3章
 doc.add_page_break()
@@ -537,6 +772,13 @@ rows.append(["合計", "%d" % sum(d["n"] for d in CAPD.values()),
              "%d" % tc, "%d" % tr, "%.1f%%" % (tr / tc * 100)])
 TBL(["区分", "施設数", "定員", "入所者", "入所率"], rows,
     [5.6, 2.2, 2.2, 2.2, 2.4])
+HBAR("f_nyusho", "種別ごとの入所率（回答した18施設）",
+     [(g, round(
+         (CAPD[g]["res"] + (58 if g == "特養・地域密着型特養" else 0))
+         / CAPD[g]["cap"] * 100, 1))
+      for g in ["特養・地域密着型特養", "介護老人保健施設", "グループホーム",
+                "特定施設", "住宅型有料・サ高住"]], unit="%",
+     xlabel="入所率（％）")
 NOTE("特別養護老人ホーム美瑛慈光園は入所者数が未記入のため、"
      "要介護度別の内訳58人を加えています。"
      "特定施設は区域内３施設のうち２施設の分です。")
@@ -553,6 +795,13 @@ for g, d in C.CS["種別×入所者の要介護度"].items():
     rows.append([g, "%d" % n, "%d" % hv, "%.1f%%" % (hv / n * 100) if n else "―"])
 TBL(["種別", "入所者", "うち要介護4・5", "重度者の割合"], rows,
     [5.6, 2.4, 3.0, 3.0])
+_KC = ["要支援1", "要支援2", "要介護1", "要介護2", "要介護3", "要介護4",
+       "要介護5"]
+MBAND("f_shubetsu_kaigo", "種別ごとの入所者の要介護度（重いほど濃い）",
+      [(g, [C.CS["種別×入所者の要介護度"][g].get(k, 0) for k in _KC])
+       for g in ["特養・地域密着型特養", "介護老人保健施設", "グループホーム",
+                 "特定施設", "住宅型有料・サ高住"]],
+      _KC, ncol=4, ramp=True)
 P("特養・地域密着型特養は要介護4・5が73人（50.0%）と重度者の割合が高く、"
   "介護老人保健施設は83人（40.3%）です。"
   "一方、グループホームは22人（29.3%）、特定施設は18人（31.6%）と"
@@ -569,6 +818,8 @@ _n = sum(_all.values())
 rows = [[k, "%d" % v, "%.1f%%" % (v / _n * 100)] for k, v in _all.items()]
 rows.append(["合計", "%d" % _n, "100.0%"])
 TBL(["要介護度", "人数", "割合"], rows, [8.0, 3.0, 3.0])
+HBAR("f_tokutei_kaigo", "特定施設入居者生活介護の入居者の要介護度（154人）",
+     list(_all.items()), denom=_n, unit="人")
 NOTE("居所変更実態調査に回答した２施設（57人）と、"
      "介護サービス情報公表システムの個別公表画面による１施設"
      "（さわやか東神楽館・97人、記入日 令和７年10月６日）を"
@@ -589,6 +840,8 @@ ti = sum(IN_.values())
 rows = [[k, "%d" % v, "%.1f%%" % (v / ti * 100)] for k, v in IN_.most_common()]
 rows.append(["合計", "%d" % ti, "100.0%"])
 TBL(["入所前の居場所", "人数", "割合"], rows, [8.6, 2.6, 2.8])
+HBAR("f_nyushomae", "新規入所者の入所前の居場所（335人）",
+     IN_.most_common(), denom=ti, unit="人")
 P("新規入所者335人のうち、病院・診療所からの入所が191人（57.0%）と"
   "最も多く、自宅からが92人（27.5%）です。"
   "施設・居住系への入所の主要な経路は医療機関にあり、"
@@ -605,6 +858,14 @@ for g, d in C.CS["種別×入所前の居場所"].items():
                  "%.1f%%" % (out / (inn + out) * 100)])
 TBL(["種別", "区域内", "区域外", "区域外の割合"], rows,
     [5.6, 2.4, 2.4, 3.0])
+_IO = []
+for g, d in C.CS["種別×入所前の居場所"].items():
+    inn = sum(v for k, v in d.items() if "区域内" in k or "町内" in k)
+    out = sum(v for k, v in d.items() if "区域外" in k or "町外" in k)
+    if inn + out:
+        _IO.append((g, [inn, out]))
+MBAND("f_kuiki", "新規入所者の区域内・区域外の別", _IO, ["区域内", "区域外"],
+      ncol=2)
 P("グループホームと特定施設は区域外からの入所が大半を占めます。"
   "これらの施設には住所地特例が適用され、"
   "保険者は従前の市町村のままとなります。"
@@ -618,12 +879,17 @@ rows = [["病院・診療所", "164", "47.0%"], ["死亡", "95", "27.2%"],
         ["自宅", "43", "12.3%"], ["その他", "47", "13.5%"],
         ["合計", "349", "100.0%"]]
 TBL(["退去先", "人数", "割合"], rows, [8.0, 3.0, 3.0])
+HBAR("f_taikyosaki", "退去者の退去先（349人）",
+     [("病院・診療所", 164), ("死亡", 95), ("自宅", 43), ("その他", 47)],
+     denom=349, unit="人")
 rr = collections.Counter()
 for s_ in S.SHI:
     for k, v in (s_.get("退去理由") or {}).items():
         rr[k] += v or 0
 rows = [[k, "%d" % v] for k, v in rr.most_common()]
 TBL(["退去理由", "件数"], rows, [9.0, 3.0])
+HBAR("f_taikyoriyu", "退去理由（複数回答）", rr.most_common(),
+     denom=sum(rr.values()))
 P("退去先は病院・診療所が164人（47.0%）と最も多く、"
   "死亡が95人（27.2%）です。"
   "自宅へ戻った方は43人（12.3%）にとどまります。"
@@ -648,6 +914,9 @@ for s_ in S.SHI:
 rows = [[k, "%d" % v, "%.1f%%" % (v / 18 * 100)]
         for k, v in mp.most_common() if k != "対応可能な医療処置はない"]
 TBL(["医療処置", "施設数", "18施設に対する割合"], rows, [8.6, 2.6, 3.4])
+HBAR("f_iryo", "受け入れ可能な医療処置（複数回答・18施設）",
+     [(k, v) for k, v in mp.most_common() if k != "対応可能な医療処置はない"],
+     denom=18, unit="施設")
 P("褥瘡の処置が16施設（88.9%）と最も多く、"
   "酸素療法とストーマの処置がそれぞれ13施設（72.2%）と続きます。"
   "一方、モニター測定は１施設のみで、"
@@ -674,6 +943,10 @@ for cat in ["特養", "地密特養", "老健", "通所リハ", "通所介護等
     rows.append([cat, "%d" % n, "%d" % BYCAT[cat]])
 rows.append(["合計", "%d" % len(S.JIN), "%d" % sum(BYCAT.values())])
 TBL(["サービス区分", "事業所数", "介護職員数"], rows, [7.0, 3.0, 3.0])
+HBAR("f_cat_shokuin", "サービス区分別の介護職員数（348人・重複を除く）",
+     [(c, BYCAT[c]) for c in
+      ["GH", "老健", "特養", "訪問介護", "通所リハ", "特定施設", "地密特養",
+       "通所介護等", "住宅型有料", "サ高住"]], denom=348, unit="人")
 NOTE("サービス区分は、事業所票の種別と事業所名により受託者が付したものです。"
      "住宅型有料老人ホームの介護職員数は、"
      "同一法人の訪問介護事業所と重複する13人を除いた後の数値です。")
@@ -689,6 +962,12 @@ rows = [["施設・通所系（24事業所）", "%d" % N_SIS,
         ["単純合計", "%d" % (N_SIS + N_HOU), "―", "―"],
         ["重複を除く", "%d" % N_ALL, "―", "―"]]
 TBL(["区分", "介護職員", "常勤", "非常勤"], rows, [6.0, 3.0, 2.4, 2.4])
+MBAND("f_kinmu_kubun", "介護職員の常勤・非常勤の別",
+      [("施設・通所系", [sum(j["常勤"] or 0 for j in SIS),
+                        sum(j["非常勤"] or 0 for j in SIS)]),
+       ("訪問系", [sum(j["常勤"] or 0 for j in HOU),
+                  sum(j["非常勤"] or 0 for j in HOU)])],
+      ["常勤", "非常勤"], ncol=2)
 P("施設・通所系24事業所の介護職員は319人、"
   "訪問系３事業所は42人で、単純合計は361人です。"
   "ただし、同一法人が施設・通所系と訪問系の両方の事業所票に"
@@ -712,6 +991,9 @@ rows = [["採用者数", "%d" % SAIYO, "%.1f%%" % (SAIYO / N_ALL * 100)],
         ["離職者数", "%d" % RISHOKU, "%.1f%%" % (RISHOKU / N_ALL * 100)],
         ["差（採用－離職）", "%+d" % (SAIYO - RISHOKU), "―"]]
 TBL(["区分", "人数", "介護職員に対する割合"], rows, [6.0, 3.0, 4.0])
+GBAR("f_saiyo", "令和6年度の採用者数と離職者数（重複を除く）",
+     ["採用者数", "離職者数"],
+     [("人数", [SAIYO, RISHOKU])], unit="人", ncol=1, ylabel="人")
 P("令和６年度の採用者数は%d人、離職者数は%d人で、"
   "差は%+d人です。"
   "採用が離職を上回っていますが、"
@@ -738,6 +1020,9 @@ rows, tot = dist_rows(SK["資格"],
                        "3": "介護職員初任者研修修了又は同等",
                        "4": "資格・研修なし"})
 TBL(["区分", "人数", "割合"], rows, [9.0, 2.6, 2.6])
+BAND("f_shikaku", "資格の取得・研修の修了状況（n=316）",
+     [("介護福祉士", 212), ("実務者研修修了", 11), ("初任者研修修了", 38),
+      ("資格・研修なし", 55)])
 P("介護福祉士が212人（67.1%）を占めます。"
   "実務者研修修了11人（3.5%）、初任者研修修了38人（12.0%）を合わせると、"
   "何らかの資格・研修を有する方が261人（82.6%）となります。"
@@ -750,11 +1035,14 @@ H2("問２　雇用形態、性別、年齢、勤務年数について")
 SUB("（１） 雇用形態")
 rows, tot = dist_rows(SK["雇用形態"], {"1": "常勤職員", "2": "非常勤職員"})
 TBL(["区分", "人数", "割合"], rows, [9.0, 2.6, 2.6])
+BAND("f_koyou", "雇用形態（n=316）", [("常勤職員", 253), ("非常勤職員", 63)],
+     ncol=2)
 P("常勤職員が253人（80.1%）を占めます。")
 P("")
 SUB("（２） 性別")
 rows, tot = dist_rows(SK["性別"], {"1": "男性", "2": "女性"})
 TBL(["区分", "人数", "割合"], rows, [9.0, 2.6, 2.6])
+BAND("f_seibetsu", "性別（n=316）", [("男性", 134), ("女性", 182)], ncol=2)
 P("女性が182人（57.6%）、男性が134人（42.4%）です。")
 P("")
 SUB("（３） 年齢")
@@ -763,6 +1051,9 @@ rows, tot = dist_rows(SK["年齢"],
                        "4": "40代", "5": "50代", "6": "60代",
                        "7": "70代以上"})
 TBL(["区分", "人数", "割合"], rows, [9.0, 2.6, 2.6])
+HBAR("f_nenrei", "年齢（n=316）",
+     [("20歳未満", 11), ("20代", 66), ("30代", 59), ("40代", 77),
+      ("50代", 61), ("60代", 36), ("70代以上", 6)], denom=316, unit="人")
 P("40代が77人（24.4%）と最も多く、20代66人（20.9%）、"
   "50代61人（19.3%）、30代59人（18.7%）と続きます。"
   "60代以上は42人（13.3%）です。"
@@ -772,6 +1063,8 @@ P("")
 SUB("（４） 現在の事業所での勤務年数")
 rows, tot = dist_rows(SK["勤務年数"], {"1": "1年以上", "2": "1年未満"})
 TBL(["区分", "人数", "割合"], rows, [9.0, 2.6, 2.6])
+BAND("f_kinzoku", "現在の事業所での勤務年数（n=316）",
+     [("1年以上", 253), ("1年未満", 63)], ncol=2)
 P("現在の事業所での勤務年数が１年未満の方は63人（19.9%）です。")
 P("")
 SUB("（５） 雇用形態と勤務年数の関係")
@@ -780,6 +1073,9 @@ TBL(["雇用形態", "1年以上", "1年未満", "計", "1年未満の割合"],
      ["非常勤", "47", "16", "63", "25.4%"],
      ["計", "253", "63", "316", "19.9%"]],
     [3.6, 2.4, 2.4, 2.4, 3.2])
+MBAND("f_koyou_kinzoku", "雇用形態別の勤務年数（n=316）",
+      [("常勤", [206, 47]), ("非常勤", [47, 16])],
+      ["1年以上", "1年未満"], ncol=2)
 P("勤続１年未満の割合は、常勤18.6%に対し非常勤25.4%と非常勤の方が"
   "高くなっています。"
   "一方、勤続１年未満の63人のうち47人（74.6%）は常勤職員であり、"
@@ -804,6 +1100,12 @@ rows, tot = dist_rows(
      "8": "その他の介護サービス", "9": "不明"},
     total=64)
 TBL(["区分", "人数", "割合"], rows, [10.0, 2.4, 2.4])
+HBAR("f_zenshoku", "直前の職場（n=64）",
+     [("現在の職場が初めての勤務先", 19),
+      ("特養・老健等の施設系", 17), ("介護以外の職場", 13),
+      ("住宅型有料・サ高住", 6), ("その他の介護サービス", 3),
+      ("不明", 2), ("通所介護・通所リハ等", 2),
+      ("小規模多機能等", 1), ("訪問介護等", 1)], denom=64, unit="人")
 NOTE("本設問は勤続１年未満の方等を対象とするもので、"
      "回答は64人です。「*」（対象外）253人を除いています。")
 P("現在の職場が初めての勤務先という方が19人（29.7%）と最も多く、"
@@ -822,6 +1124,9 @@ rows = [[k, "%d" % v, "%.1f%%" % (v / tot_h * 100)]
         for k, v in h.most_common() if v > 0]
 rows.append(["合計", "%d" % tot_h, "100.0%"])
 TBL(["内容", "分", "割合"], rows, [8.0, 3.0, 3.0])
+BAND("f_houmon", "訪問介護のサービス提供時間の内訳（24,643分）",
+     [("身体介護", 22103), ("生活援助（掃除）", 1880),
+      ("生活援助（その他）", 660)], ncol=3)
 P("訪問系の職員票26件によると、"
   "サービス提供時間の合計24,643分のうち、"
   "身体介護が22,103分（89.7%）を占めます。"
@@ -846,6 +1151,11 @@ TBL(["指標", "本広域連合", "同規模保険者40", "差"],
      ["1年間の転倒あり", "35.5%", "30.0%", "＋5.5pt"],
      ["口腔機能低下", "24.7%", "21.8%", "＋2.9pt"]],
     [6.4, 3.4, 3.4, 2.4])
+GBAR("f_jages", "同規模保険者40との比較",
+     ["1年間の転倒あり", "口腔機能低下", "友人知人と会う頻度が高い"],
+     [("本広域連合", [35.5, 24.7, 63.0]),
+      ("同規模保険者40", [30.0, 21.8, 71.2])], unit="%", ncol=2,
+     ylabel="％")
 P("フレイル該当割合は19.1%です。"
   "町別では美瑛町21.6%、東神楽町17.0%と差がありますが、"
   "美瑛町は回答者に占める75歳以上の割合が高く、"
@@ -926,6 +1236,14 @@ TBL(["区分", "施設数", "定員・戸数", "調査の把握"],
      ["軽費老人ホーム（ケアハウス）", "1", "%d人" % CAP_KEIHI, "―"],
      ["養護老人ホーム", "0", "―", "―"]],
     [6.4, 2.2, 4.0, 3.4])
+HBAR("f_teiin", "区域内の施設・住まいの定員",
+     [("介護老人保健施設", CAP_ROKEN), ("住宅型有料老人ホーム", CAP_JUTAKU),
+      ("介護老人福祉施設", CAP_TOKUYO),
+      ("特定施設入居者生活介護", CAP_TOKUTEI),
+      ("認知症対応型共同生活介護", CAP_GH),
+      ("サービス付き高齢者向け住宅", CAP_SAKO),
+      ("地域密着型介護老人福祉施設", CAP_CHITOKU),
+      ("軽費老人ホーム", CAP_KEIHI)], unit="人")
 NOTE("出典：北海道保健福祉部の各名簿（令和８年６月30日～７月１日現在）。"
      "介護老人保健施設及び認知症対応型共同生活介護の一部は"
      "居所変更実態調査及び介護サービス情報公表システムの"
@@ -950,6 +1268,14 @@ for key, label in [("訪問介護", "訪問介護"), ("訪問看護", "訪問看
     rows.append([label, "%d" % len(recs)] + ["%d" % c for c in cov])
 TBL(["サービス", "事業所数", "東川町", "美瑛町", "東神楽町"], rows,
     [6.4, 2.6, 2.4, 2.4, 2.4])
+GBAR("f_jisshi", "町ごとに通常の事業実施地域とする事業所の数",
+     ["訪問介護", "訪問看護", "地域密着型通所介護", "小規模多機能",
+      "居宅介護支援"],
+     [(t, [sum(1 for x in H.SHITEI.get(k, [])
+                if t in (x["実施地域"] or ""))
+           for k in ["訪問介護", "訪問看護", "地域通所", "小規模居宅",
+                     "居宅支援"]]) for t in TOWNS], unit="", ncol=3,
+     ylabel="事業所数")
 NOTE("単位：当該町を通常の事業実施地域とする事業所の数。"
      "出典：北海道「介護保険事業所一覧」（令和８年６月30日現在）。"
      "訪問介護13事業所のうち３事業所は実施地域欄が空欄です。")
@@ -971,6 +1297,8 @@ for h_, n in BYH.most_common(6):
     rows.append([h_, "%d" % n, "%.1f%%" % (n / N_JIG * 100),
                  "%.1f%%" % (cum / N_JIG * 100)])
 TBL(["運営法人", "事業所数", "割合", "累積"], rows, [7.6, 2.4, 2.4, 2.4])
+HBAR("f_hojin", "運営法人別の事業所数（上位8法人・実75事業所）",
+     BYH.most_common(8), denom=N_JIG, unit="")
 P("区域内の実%d事業所を%d法人が運営しています。"
   "上位６法人が%d事業所（%.1f%%）を運営する一方、"
   "13法人は１事業所のみを運営しています。"
@@ -1002,7 +1330,8 @@ for nm, cat, code in [("介護老人福祉施設", "特養", "M2a"),
                       ("サービス付き高齢者向け住宅", "サ高住", None)]:
     mv = None
     if code:
-        v = MK.M[code]["職種"].get("介護職員", {})
+        v = MK.M[code]["職種"].get("介護職員") \
+            or MK.M[code]["職種"].get("訪問介護員", {})
         ks = [k for k in v if v[k] is not None]
         mv = int(v[ks[-1]]) if ks else None
     rows.append([nm, "%d" % BYCAT[cat],
@@ -1010,6 +1339,24 @@ for nm, cat, code in [("介護老人福祉施設", "特養", "M2a"),
                  "%+d" % (BYCAT[cat] - mv) if mv is not None else "―"])
 TBL(["サービス", "調査の介護職員", "見える化の従事者数", "差"], rows,
     [6.4, 3.0, 3.4, 2.2])
+_M = []
+for nm, cat, code in [("介護老人福祉施設", "特養", "M2a"),
+                      ("地域密着型特養", "地密特養", "M2k"),
+                      ("介護老人保健施設", "老健", "M2b"),
+                      ("通所リハ", "通所リハ", "M2g"),
+                      ("訪問介護", "訪問介護", "M2e")]:
+    v = MK.M[code]["職種"].get("介護職員") \
+        or MK.M[code]["職種"].get("訪問介護員", {})
+    ks = [k for k in v if v[k] is not None]
+    _M.append((nm, BYCAT[cat], int(v[ks[-1]])))
+GBAR("f_juji", "調査と見える化システムの介護職員数の対照",
+     [m[0] for m in _M],
+     [("調査（令和7年4月1日）", [m[1] for m in _M]),
+      ("見える化（令和6年度）", [m[2] for m in _M])], unit="人", ncol=2,
+     ylabel="人")
+BAND("f_noser", "介護職員の把握手段（348人）",
+     [("見える化で把握できる", N_ALL - NOSER),
+      ("本調査が唯一の把握手段", NOSER)], ncol=2)
 NOTE("見える化システムのM2系列は介護サービス施設・事業所調査"
      "（各年10月１日現在）による職種別の実人員です。"
      "本調査は令和７年４月１日現在であり、半年のずれがあります。")
@@ -1036,6 +1383,11 @@ TBL(["区分", "令和7年度実績", "令和11年度見込み", "区域内定�
      ["居住系サービス", "144人", "145人", "%d人" % (CAP_GH + CAP_TOKUTEI),
       "%.1f%%" % (145 / (CAP_GH + CAP_TOKUTEI) * 100)]],
     [4.0, 3.0, 3.2, 3.0, 3.4])
+GBAR("f_teiin_mikomi", "見込量と区域内定員の対照（令和11年度）",
+     ["施設サービス", "居住系サービス"],
+     [("令和11年度の見込み", [339, 145]),
+      ("区域内定員", [CAP_TOKUYO + CAP_CHITOKU + CAP_ROKEN,
+                    CAP_GH + CAP_TOKUTEI])], unit="人", ncol=2, ylabel="人")
 NOTE("見込みは別冊「将来推計 第２段階　サービス見込量」によります。"
      "利用率と受給者１人当たりの利用日数・回数を"
      "令和７年度の値で固定した基本ケースの値です。")
@@ -1044,6 +1396,12 @@ P("施設・居住系の見込量はいずれも区域内定員の範囲内に�
   "入居しており、定員と見込量の差がそのまま空きを示すものではありません。"
   "特定施設は定員156人に対し入居者154人（98.7%）でほぼ満室です。")
 P("")
+BAND("f_riyou", "認定者1,984人のサービス利用状況（令和7年度）",
+     [("在宅サービス", 51.2), ("居住系サービス", 7.3),
+      ("施設サービス", 17.0), ("いずれも利用していない", 24.5)])
+NOTE("利用者数は月平均、認定者数は令和８年３月末の値であり、"
+     "区分ごとの人数の合計は認定者数と一致しません。"
+     "構成比は認定者数1,984人に対する割合です。")
 P("認定を受けている1,984人のうち、"
   "在宅サービスの利用者は1,013人（51.2%）、"
   "居住系は144人（7.3%）、施設は336人（17.0%）で、"
