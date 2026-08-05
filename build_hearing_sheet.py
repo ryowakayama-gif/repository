@@ -155,7 +155,46 @@ P("会議資料の青枠（調査結果の反映に関して確認したい事�
   "ご記入いただいた内容は、そのまま議事の記録となります。", size=10,
   space_after=6)
 
-P("【進め方の案】", size=11, bold=True, color=NAVY, space_after=3)
+P("【進め方の案（60分の場合）】", size=11, bold=True, color=NAVY,
+  space_after=3)
+P("会議の時間が60分の場合は、次の6項目に絞ってご確認いただき、"
+  "残る8項目は本シートに書面でご記入いただく形をご提案いたします。"
+  "別冊「キックオフ会議 トークスクリプト（60分）」が"
+  "この進め方に対応しています。", size=9.5, space_after=3)
+t = doc.add_table(rows=0, cols=4)
+t.style = "Table Grid"
+row = t.add_row().cells
+for i, h in enumerate(["時刻", "内容", "対象", "扱い"]):
+    set_text(row[i], h, size=9, bold=True, color=RGBColor(0xFF, 0xFF, 0xFF))
+    shade(row[i], "4472C4")
+for cont, obj, tm, kb in [
+    ("開会と本日のねらい", "―", "0:00–0:05", "会議"),
+    ("進捗のご報告と開示の順序", "―", "0:05–0:12", "会議"),
+    ("事業所実態調査の実施の要否", "項目1", "0:12–0:22", "会議"),
+    ("委員会日程とパブリックコメント期間", "項目2", "0:22–0:30", "会議"),
+    ("推計の前提と採用シナリオ", "項目6", "0:30–0:40", "会議"),
+    ("第9期実績の提供時期と点検事項の取扱い", "項目3・13", "0:40–0:50",
+     "会議"),
+    ("個人情報・公開範囲・原稿レビュー", "項目9・10・11", "0:50–0:57",
+     "会議"),
+    ("まとめと次回まで", "―", "0:57–1:00", "会議"),
+    ("上記以外", "項目4・5・7・8・12・14・15・16", "―", "書面"),
+]:
+    row = t.add_row().cells
+    set_text(row[0], tm, size=9)
+    set_text(row[1], cont, size=9)
+    set_text(row[2], obj, size=9)
+    set_text(row[3], kb, size=9)
+for r in t.rows:
+    r.cells[0].width, r.cells[1].width = Cm(2.4), Cm(6.6)
+    r.cells[2].width, r.cells[3].width = Cm(6.0), Cm(2.2)
+doc.add_paragraph().paragraph_format.space_after = Pt(4)
+P("※ 書面でご確認いただく8項目は、いずれも受託者側で仮に置いて"
+  "作業を進められるものです。仮置きの内容は各項目に記載しています。",
+  size=9, space_after=8)
+
+P("【進め方の案（120分の場合）】", size=11, bold=True, color=NAVY,
+  space_after=3)
 t = doc.add_table(rows=0, cols=4)
 t.style = "Table Grid"
 row = t.add_row().cells
@@ -179,9 +218,8 @@ for r in t.rows:
     r.cells[0].width, r.cells[1].width = Cm(1.2), Cm(7.0)
     r.cells[2].width, r.cells[3].width = Cm(5.0), Cm(4.0)
 doc.add_paragraph().paragraph_format.space_after = Pt(4)
-P("※ 合計120分です。時間が限られる場合は、項目1・2・7・13・14を"
-  "優先してください。"
-  "この5件はいずれも他の作業の前提となります。", size=9, space_after=0)
+P("※ 合計120分です。時間が限られる場合は、"
+  "上記の60分の進め方によってください。", size=9, space_after=0)
 
 doc.add_page_break()
 
