@@ -16,6 +16,7 @@
 | `output/六戸町_第2回審議会資料.pptx` | 審議会資料（37ページ） |
 | `output/六戸町_第2回審議会資料_別紙_R7決算突合.pptx` | 別紙（4ページ）：令和7年度決算との突合・決算を起点とした指標の試算・確認事項の整理 |
 | `output/六戸町_使用料改定_成果物エビデンス集.xlsx` | 成果物一覧・料金データ確認・**汚水処理費の算定**・**R7決算突合**・**R7実績ベース試算**・**パターン別SIM結果**・**改定なしとの比較** |
+| `トークスクリプト.md` | 60分想定の進行台本（時刻配分・読み上げ文・削るページの優先順位）。同じ内容を pptx のノート欄にも収録 |
 | `想定問答.md` | 審議会で想定される質問13問への回答案（事務局用） |
 | `確認事項.md` / `レビュー対応_第2次.md` / `確認事項レビュー_整合確認.md` / `R7決算突合.md` | 判断待ち事項・レビュー対応・データ照会 |
 
@@ -210,7 +211,10 @@ python3 scripts/extract_metrics.py   # 使用料改定ブックを再計算し d
 python3 scripts/build_deck.py        # output/六戸町_第2回審議会資料.pptx を生成
 python3 scripts/build_evidence.py    # output/六戸町_使用料改定_成果物エビデンス集.xlsx を生成
 python3 scripts/build_appendix.py    # output/六戸町_第2回審議会資料_別紙_R7決算突合.pptx を生成
+python3 scripts/build_talk_script.py # トークスクリプト.md を生成し、両pptxのノート欄に書き込む
 ```
+
+`build_talk_script.py` は pptx のノート欄を書き換えるため、**`build_deck.py`・`build_appendix.py` の後に実行**します。
 
 必要なもの: `python-pptx`, `openpyxl`, `libreoffice-calc`（`extract_metrics.py` のみ）。
 単価や収支の前提を変えた場合は `extract_metrics.py` から順に流し直せば資料に反映されます。
