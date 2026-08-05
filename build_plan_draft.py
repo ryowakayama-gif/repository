@@ -32,8 +32,11 @@ for st in ("Normal", "Heading 1", "Heading 2", "Heading 3", "List Bullet"):
 doc.styles["Normal"].font.size = Pt(10.5)
 
 sec = doc.sections[0]
+sec.page_width = Cm(21.0)                # A4判（仕様書４（10））
+sec.page_height = Cm(29.7)
 sec.top_margin = sec.bottom_margin = Cm(2.0)
 sec.left_margin = sec.right_margin = Cm(1.9)
+TEXTW = 21.0 - 1.9 * 2                   # 本文幅 17.2cm
 
 
 # ------------------------------------------------------------------ 部品
@@ -122,6 +125,9 @@ def TBL(head, rows, widths=None, size=8.5, headsize=None):
             r.font.name = FONT
             r._element.rPr.rFonts.set(qn("w:eastAsia"), FONT)
     if widths:
+        tot = sum(widths)
+        if tot > TEXTW:                  # 本文幅に収まるよう比例配分する
+            widths = [w * TEXTW / tot for w in widths]
         for i, w in enumerate(widths):
             for row in t.rows:
                 row.cells[i].width = Cm(w)
@@ -135,7 +141,7 @@ def NOTE(text, size=8.5):
 FIGDIR = "/home/user/repository/output/figures"
 
 
-def FIG(png, source=None, width=15.2):
+def FIG(png, source=None, width=16.6):
     """図（PNG）を本文に差し込む。図の表題は画像内に描画されている。"""
     path = os.path.join(FIGDIR, png + ".png")
     if not os.path.exists(path):
@@ -985,7 +991,7 @@ TBL(["職種", "H29", "H30", "R元", "R3", "R4", "R5", "R6", "H29→R6", "評価
      ["機能訓練指導員", 2, 3, 2, 2, 2, 2, 1, "▲1", "令和6年度に1人。自立支援・重度化防止の実施体制に関わる"],
      ["介護支援専門員", 3, 3, 3, 3, 3, 3, 3, "±0", "―"],
      ["合計", 116, 104, 123, 119, 115, 119, 105, "▲11", "▲9.5％"]],
-    [3.4, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.5, 6.1])
+    [2.8, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1.4, 5.3])
 
 H3("6 施設・住まいの供給量")
 P("北海道が公表する名簿（届出済有料老人ホーム一覧、特別養護老人ホーム名簿、"

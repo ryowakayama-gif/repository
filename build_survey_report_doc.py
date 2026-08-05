@@ -149,8 +149,8 @@ def klast(code):
 # ---------------------------------------------------------------- 文書
 doc = Document()
 sec = doc.sections[0]
-sec.page_width, sec.page_height = Cm(21.6), Cm(27.9)
-sec.top_margin = sec.bottom_margin = Cm(2.5)
+sec.page_width, sec.page_height = Cm(21.0), Cm(29.7)   # A4判
+sec.top_margin = sec.bottom_margin = Cm(2.2)
 sec.left_margin = sec.right_margin = Cm(1.9)
 
 st = doc.styles["Normal"]
@@ -270,6 +270,9 @@ def _keep_table(t, limit=14):
                     p_.paragraph_format.keep_with_next = True
 
 
+TEXTW = 21.0 - 1.9 * 2                   # 本文幅 17.2cm
+
+
 def TBL(head, rows, widths=None, size=9, num_from=1):
     t = doc.add_table(rows=0, cols=len(head))
     t.style = "Table Grid"
@@ -285,6 +288,9 @@ def TBL(head, rows, widths=None, size=9, num_from=1):
             al = WD_ALIGN_PARAGRAPH.RIGHT if i >= num_from else None
             cell_text(c[i], v, size=size, align=al)
     if widths:
+        tot = sum(widths)
+        if tot > TEXTW:                  # 本文幅に収まるよう比例配分する
+            widths = [w * TEXTW / tot for w in widths]
         for r_ in t.rows:
             for i, w in enumerate(widths):
                 r_.cells[i].width = Cm(w)
@@ -345,7 +351,7 @@ def _cap(title):
     r._element.rPr.rFonts.set(qn("w:eastAsia"), BODY)
 
 
-def _put(path, width=15.6):
+def _put(path, width=16.6):
     LAST["table"] = None
     doc.add_picture(path, width=Cm(width))
     pp = doc.paragraphs[-1]
@@ -355,7 +361,7 @@ def _put(path, width=15.6):
     pp.paragraph_format.keep_together = True
 
 
-def BAND(name, title, pairs, width=15.6, ncol=4, height=0.95, ramp=False):
+def BAND(name, title, pairs, width=16.6, ncol=4, height=0.95, ramp=False):
     """単数回答の帯グラフ（100％積み上げ横棒）。"""
     labs = [k for k, _ in pairs]
     vals = [float(v) for _, v in pairs]
@@ -390,7 +396,7 @@ def BAND(name, title, pairs, width=15.6, ncol=4, height=0.95, ramp=False):
     _emit(fig, name, title, width)
 
 
-def HBAR(name, title, pairs, denom=None, unit="件", width=15.6,
+def HBAR(name, title, pairs, denom=None, unit="件", width=16.6,
          xlabel=None, height=None):
     """複数回答・度数分布の横棒グラフ。上位から並べる。"""
     labs = [k for k, _ in pairs]
@@ -420,7 +426,7 @@ def HBAR(name, title, pairs, denom=None, unit="件", width=15.6,
     _emit(fig, name, title, width)
 
 
-def MBAND(name, title, rows, cats, width=15.6, ncol=4, ramp=False):
+def MBAND(name, title, rows, cats, width=16.6, ncol=4, ramp=False):
     """複数系列の帯グラフ。rows は [(行名, [値, ...]), ...]。"""
     cols = _ramp(len(cats)) if ramp else \
         [GRAYS[i % len(GRAYS)] for i in range(len(cats))]
@@ -456,7 +462,7 @@ def MBAND(name, title, rows, cats, width=15.6, ncol=4, ramp=False):
     _emit(fig, name, title, width)
 
 
-def GBAR(name, title, cats, series, width=15.6, unit="", ncol=3,
+def GBAR(name, title, cats, series, width=16.6, unit="", ncol=3,
          ylabel=None):
     """系列比較の縦棒グラフ。series は [(系列名, [値, ...]), ...]。"""
     import numpy as np

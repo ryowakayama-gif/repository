@@ -20,6 +20,8 @@ from docx import Document
 from docx.shared import Pt, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.table import WD_ALIGN_VERTICAL
+from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
 import data_survey2025 as S
@@ -27,6 +29,7 @@ import data_hokkaido_roster as R
 import data_hokkaido_shitei as H
 
 FONT = "游ゴシック"
+HEADFILL = "F2F2F2"      # 表の見出し行の網掛け（白黒印刷を前提）
 doc = Document()
 
 for st in ("Normal", "Heading 1", "Heading 2", "Heading 3", "List Bullet"):
@@ -34,10 +37,16 @@ for st in ("Normal", "Heading 1", "Heading 2", "Heading 3", "List Bullet"):
     f.name = FONT
     doc.styles[st].element.rPr.rFonts.set(qn("w:eastAsia"), FONT)
 doc.styles["Normal"].font.size = Pt(10.5)
+# 本文の行送りをわずかに広げる（素案の体裁を保ったまま可読性を上げる）
+doc.styles["Normal"].paragraph_format.line_spacing = 1.12
+doc.styles["List Bullet"].paragraph_format.line_spacing = 1.12
 
 sec = doc.sections[0]
+sec.page_width = Cm(21.0)                # A4判（仕様書４（10））
+sec.page_height = Cm(29.7)
 sec.top_margin = sec.bottom_margin = Cm(2.0)
 sec.left_margin = sec.right_margin = Cm(1.9)
+TEXTW = 21.0 - 1.9 * 2                   # 本文幅 17.2cm
 
 
 # ------------------------------------------------------------------ 部品
@@ -107,33 +116,77 @@ def SRC(text, size=8.5):
              space_after=8)
 
 
-def TBL(head, rows, widths=None, size=8.5, headsize=None):
+def _shade(cell, hexcolor):
+    """セルに網掛けを設定する（白黒印刷を前提とした薄い網）。"""
+    tcPr = cell._tc.get_or_add_tcPr()
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:val"), "clear")
+    shd.set(qn("w:color"), "auto")
+    shd.set(qn("w:fill"), hexcolor)
+    tcPr.append(shd)
+
+
+def _cellmargin(t, left=0.12, right=0.12, top=0.06, bottom=0.06):
+    """表全体のセル内余白（cm）。文字が罫線に接するのを避ける。"""
+    tblPr = t._tbl.tblPr
+    mar = OxmlElement("w:tblCellMar")
+    for tag, v in (("top", top), ("left", left),
+                   ("bottom", bottom), ("right", right)):
+        e = OxmlElement("w:" + tag)
+        e.set(qn("w:w"), str(int(v * 567)))      # cm → twip
+        e.set(qn("w:type"), "dxa")
+        mar.append(e)
+    tblPr.append(mar)
+
+
+def TBL(head, rows, widths=None, size=9, headsize=None, center=None):
+    """表。1行目は見出しとして薄い網掛けと中央揃えを施す。
+
+    center は中央揃えとする列番号（0 起点）の集合。
+    """
+    center = center or set()
     t = doc.add_table(rows=1, cols=len(head))
     t.style = "Table Grid"
     t.alignment = WD_TABLE_ALIGNMENT.CENTER
+    _cellmargin(t)
     for i, hh in enumerate(head):
         c = t.rows[0].cells[i]
         c.text = ""
-        r = c.paragraphs[0].add_run(hh)
+        c.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+        p = c.paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.paragraph_format.space_before = Pt(1)
+        p.paragraph_format.space_after = Pt(1)
+        r = p.add_run(hh)
         r.bold = True
         r.font.size = Pt(headsize or size)
         r.font.name = FONT
         r._element.rPr.rFonts.set(qn("w:eastAsia"), FONT)
+        _shade(c, HEADFILL)
     for row in rows:
         cells = t.add_row().cells
         for i, v in enumerate(row):
             cells[i].text = ""
-            r = cells[i].paragraphs[0].add_run("" if v is None else str(v))
+            cells[i].vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+            p = cells[i].paragraphs[0]
+            if i in center:
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            p.paragraph_format.space_before = Pt(1)
+            p.paragraph_format.space_after = Pt(1)
+            r = p.add_run("" if v is None else str(v))
             r.font.size = Pt(size)
             r.font.name = FONT
             r._element.rPr.rFonts.set(qn("w:eastAsia"), FONT)
     if widths:
+        tot = sum(widths)
+        if tot > TEXTW:                  # 本文幅に収まるよう比例配分する
+            widths = [w * TEXTW / tot for w in widths]
         for i, w in enumerate(widths):
             for row in t.rows:
                 row.cells[i].width = Cm(w)
-    for row in t.rows:                       # 行の途中で改ページさせない
-        from docx.oxml import OxmlElement
+    for i, row in enumerate(t.rows):         # 行の途中で改ページさせない
         row._tr.get_or_add_trPr().append(OxmlElement("w:cantSplit"))
+    t.rows[0]._tr.get_or_add_trPr().append(OxmlElement("w:tblHeader"))
     P("", size=6, space_after=2)
     return t
 
@@ -208,7 +261,7 @@ TBL(["区分", "確定させる内容", "時期（仕様書5）", "本業務で�
      ["パブリックコメント用素案", "住民に示す素案", "令和9年1月", "未着手"],
      ["計画最終案", "意見反映後の計画", "令和9年2月", "未着手"],
      ["計画書・概要版", "印刷・納品", "令和9年3月", "未着手"]],
-    [3.0, 6.8, 2.6, 5.4])
+    [3.0, 6.6, 2.6, 5.0], center={0, 2})
 NOTE("本業務では、貸与資料の分析と実施済み調査の集計を先行したため、"
      "計画素案が骨子案より先に第11稿まで作成されています。"
      "このため本骨子案は素案の要約ではなく、"
@@ -231,7 +284,7 @@ TBL(["項目", "内容"],
       "居所変更実態調査、介護人材実態調査（いずれも実施済み）"],
      ["進行管理", "毎年度、代表KPIを算定して介護保険運営協議会に報告し、"
       "構成3町と共有する"]],
-    [3.4, 14.4], size=10)
+    [3.2, 14.0], size=10, center={0})
 NOTE("日常生活圏域は第9期の6圏域を引き継ぐことを前提としていますが、"
      "圏域別のデータが未受領のため、圏域の設定の見直しの要否は"
      "確定していません（第10節No.4）。")
@@ -279,7 +332,7 @@ TBL(["区分", "施設数", "定員・戸数", "備考"],
      ["軽費老人ホーム（ケアハウス）", "1", "%d" % CAP_KEIHI,
       "介護保険の指定なし"],
      ["合計", "31", "―", "単位が異なるため合計しない"]],
-    [6.6, 2.0, 3.0, 6.2])
+    [6.4, 1.8, 2.6, 6.4], center={1, 2})
 SRC("北海道保健福祉部の各名簿、介護サービス情報公表システム、居所変更実態調査")
 
 H2("3　介護人材")
@@ -311,7 +364,7 @@ TBL(["指標", "第9期目標", "実績", "評価"],
       "未達（＋1.1pt）。差は統計的に有意でない"],
      ["④ 通いの場参加率", "令和8年度 10.0％", "8.8％",
       "未達。国の目標値と統計が異なり直接比較できない"]],
-    [3.6, 4.6, 2.2, 7.4])
+    [3.4, 4.4, 2.0, 7.4], center={2})
 SRC("第9期介護保険事業計画、地域包括ケア「見える化」システム、"
     "令和7年度 健康とくらしの調査")
 P("")
@@ -347,8 +400,8 @@ H1("第5節　基本理念・基本目標・施策の体系")
 
 H2("1　基本理念")
 TBL(["基本理念", "住み慣れた地域で、必要な介護と支援を持続的に受けながら、"
-     "自分らしく暮らし続けられる大雪圏域"], [], [3.4, 14.4], size=11,
-    headsize=11)
+     "自分らしく暮らし続けられる大雪圏域"], [], [3.4, 13.8], size=11.5,
+    headsize=11.5)
 P("")
 
 H2("2　基本目標")
@@ -373,7 +426,7 @@ TBL(["区分", "基本目標", "目指す成果", "主な根拠"],
       "財政安定、給付適正化、BCP、評価公表、改善",
       "交付金の推進Ⅱ（公正・公平な給付）が全国の39.0％で最低。"
       "第9期に年次評価の手順がない"]],
-    [2.2, 4.6, 4.2, 6.8])
+    [1.8, 4.2, 4.0, 7.2], center={0})
 
 H2("3　施策の展開の構成")
 P("第5章は、5つの基本目標について次の5層で記述します。"
@@ -425,7 +478,7 @@ TBL(["ID", "指標", "領域", "データ源", "確保"],
       "介護保険特別会計決算／見える化", "確保"],
      ["H16", "災害・感染症時の必須サービス継続率", "レジリエンス",
       "事業所実態調査", "未確保"]],
-    [1.2, 6.2, 2.4, 5.6, 2.4])
+    [1.1, 6.0, 2.4, 5.6, 2.1], center={0, 4})
 NOTE("「未確保」の4項目（H07・H08・H12・H16）は、"
      "在宅介護実態調査及び事業所実態調査を必要とします。"
      "この2調査は仕様書4（3）が定める対象4調査に含まれておらず、"
@@ -445,7 +498,7 @@ TBL(["区分", "件数", "指標", "決まっていないもの"],
      ["データ源が未確保", "4", "H07・H08・H12・H16",
       "在宅介護実態調査・事業所実態調査の取扱い（第10節No.3）"],
      ["合計", "16", "―", "―"]],
-    [5.4, 1.4, 4.0, 7.0])
+    [5.0, 1.2, 3.6, 7.4], center={1})
 
 doc.add_page_break()
 
@@ -469,7 +522,7 @@ TBL(["段階", "算定するもの", "算定式・方法", "用いる資料", "�
       "サービス単価、介護給付費準備基金の残高、保険料収納率、"
       "所得段階別被保険者数",
       "資料の受領待ち"]],
-    [1.8, 3.8, 5.0, 4.4, 2.8])
+    [1.6, 3.4, 4.8, 4.4, 3.0], center={0, 4})
 NOTE("第2段階の基本ケースは、利用率と受給者1人当たりの利用日数・回数を"
      "令和7年度の値で固定したものです。"
      "低位・標準・高位の3シナリオは、"
@@ -484,7 +537,7 @@ TBL(["区分", "令和7年度実績", "令和11年度見込み", "区域内定�
       "%.1f％" % (339 / CAP_SHISETSU * 100)],
      ["居住系サービス", "144", "145", "%d" % CAP_KYOJU,
       "%.1f％" % (145 / CAP_KYOJU * 100)]],
-    [4.0, 3.2, 3.4, 3.2, 3.6])
+    [4.0, 3.2, 3.4, 3.2, 3.4], center={1, 2, 3, 4})
 SRC("将来推計 第2段階（サービス見込量）、北海道保健福祉部の各名簿")
 NOTE("施設・居住系の見込量はいずれも区域内定員の範囲内に収まります。"
      "ただし、区域内の施設には住所地特例により他の保険者の被保険者も"
@@ -598,7 +651,7 @@ CH = [
 for title, secs in CH:
     H2(title)
     TBL(["節", "記載する内容", "根拠となる資料"],
-        [[a, b, c] for a, b, c in secs], [3.8, 7.4, 6.6])
+        [[a, b, c] for a, b, c in secs], [3.8, 7.0, 6.4])
 
 NOTE("「［要確認］」は、資料の受領又は発注者のご決定がないと"
      "記載を確定できないものです（第10節）。")
@@ -630,9 +683,10 @@ TBL(["区分", "第9期", "第10期（骨子案）", "理由"],
       "調査結果は施策の根拠・感度検討・KPIの基準値に用い、"
       "見込量の算定式には直接入力しない",
       "調査の母集団と見込量の母集団が異なる"]],
-    [2.6, 4.2, 5.6, 5.4])
+    [2.4, 4.0, 5.4, 5.4])
 
 # ================================================================== 第10節
+doc.add_page_break()
 H1("第10節　決定・確認を要する事項")
 P("本骨子案の段階でご決定・ご確認をお願いする事項は次のとおりです。"
   "計画素案には確認事項の注記を置かず、確定した記述のみを載せるため、"
@@ -672,7 +726,7 @@ TBL(["No.", "事項", "決まらないと確定しないもの", "確認先", "�
       "発注者", "令和8年8月"],
      ["12", "成果品の仕様（章別のページ配分、図表の掲載点数、概要版の頁数）",
       "計画書（印刷200部）、概要版", "発注者", "令和8年10月"]],
-    [1.0, 4.6, 6.0, 2.4, 3.6])
+    [1.0, 4.4, 5.8, 2.4, 3.6], center={0, 3, 4})
 NOTE("上記のほか、計画素案には［要協議］51箇所、［要確認］14箇所を"
      "残しています。全件の一覧は別冊「計画素案の別管理表」及び"
      "「業務工程管理表」（確認事項一覧38件、資料提供依頼一覧20件）に"
@@ -703,7 +757,7 @@ TBL(["時期", "作業", "成果物", "状況"],
       "計画最終案、運営協議会資料原案", "未着手"],
      ["令和9年3月", "計画書・概要版完成、成果品納品",
       "計画書（印刷200部）、電子データ、分析資料", "未着手"]],
-    [2.4, 5.0, 7.4, 2.2])
+    [2.4, 4.8, 7.6, 2.4], center={0, 3})
 NOTE("時期・作業は仕様書5の業務スケジュールによります。"
      "令和8年11月以降は、構成3町との協議及び"
      "介護保険事業計画策定委員会の日程が確定した後に着手します"
