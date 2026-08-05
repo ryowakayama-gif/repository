@@ -46,7 +46,10 @@ CHIIKI_ITEMS = 10                                      # 06_地域生活支援�
 CHIIKI_TOTAL_ROW = DATA_START + CHIIKI_ITEMS           # 06 合計行
 TANDOKU_ITEMS = 5                                      # 07_村単独事業 の事業数
 TANDOKU_TOTAL_ROW = DATA_START + TANDOKU_ITEMS         # 07 合計行
-PROJ_SVC_FIRST = 7                      # サービス別積上げ表の先頭行
+REV_R8_ROW = 7                          # 令和8年度報酬改定の改定率入力行
+REV_R9_ROW = 8                          # 令和9年度報酬改定の改定率入力行
+REV_TOTAL_ROW = 9                       # 適用倍率（合計）行
+PROJ_SVC_FIRST = 13                     # サービス別積上げ表の先頭行
 PROJ_SVC_COUNT = 16                     # 積上げ表のサービス数
 PROJ_SVC_TOTAL_ROW = PROJ_SVC_FIRST + PROJ_SVC_COUNT   # 積上げ合計行
 
@@ -496,7 +499,49 @@ def sheet_projection(wb):
     r = 5
     ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=9)
     style_title(ws.cell(row=r, column=1),
-                "1. サービス別の積上げ（見込量×単価）", fill=COLORS["subhead"], size=11)
+                "1. 報酬改定の前提（単価の補正率）", fill=COLORS["subhead"], size=11)
+    r += 1
+    style_header_row(ws, r, ["区分", "改定率", "施行", "内容", "", "", "", "", ""])
+    r += 1
+    assert r == REV_R8_ROW, f"報酬改定行が想定と異なります: {r}"
+    rev_rows = [
+        ("令和8年度報酬改定", 1.000, "令和8年6月1日",
+         "①福祉・介護職員等処遇改善加算の拡充（対象を障害福祉従事者へ拡大。月1.0万円＝3.3％の賃上げ、"
+         "生産性向上・協働化に取り組む事業者は月0.3万円＝1.0％を上乗せ。計画相談支援・障害児相談支援・"
+         "地域相談支援に新設）②就労継続支援B型の基本報酬区分の基準見直し "
+         "③新規指定事業所に限る応急的な報酬単価（B型 所定単位数の984/1000、"
+         "共同生活援助（介護サービス包括型・日中サービス支援型）972/1000 ほか児童発達支援・放課後等デイサービス）"),
+        ("令和9年度報酬改定", 1.000, "令和9年4月（予定）",
+         "次期計画期間の初年度に当たる。令和8年度改定の応急的単価が「令和9年度報酬改定までの間」と"
+         "されていることから実施が見込まれる。内容確定後に改定率を入力する"),
+    ]
+    for i, (kubun, rate, shikou, naiyou) in enumerate(rev_rows):
+        write_row(ws, r, [kubun, rate, shikou, naiyou, "", "", "", "", ""],
+                  alt=(i % 2 == 1),
+                  aligns=["left", "right", "center", "left", "left", "left", "left", "left", "left"],
+                  numfmts=[None, "0.000", None, None, None, None, None, None, None],
+                  fills=[None, COLORS["input"], None, None, None, None, None, None, None])
+        ws.merge_cells(start_row=r, start_column=4, end_row=r, end_column=9)
+        ws.row_dimensions[r].height = 58
+        r += 1
+    write_row(ws, r, ["適用倍率（合計）", f"=B{REV_R8_ROW}*B{REV_R9_ROW}", "―",
+                      "下表の令和11年度年間給付費に乗じます。改定率が確定するまでは1.000（改定なし）として計算します。"
+                      "離島・中山間地域（特別地域加算の対象地域）の事業所や重度障がい者に係る基本報酬には"
+                      "従前単価が適用される配慮措置があるため、圏域事業所の該当状況を確認してください。",
+                      "", "", "", "", ""],
+              aligns=["left", "right", "center", "left", "left", "left", "left", "left", "left"],
+              numfmts=[None, "0.000", None, None, None, None, None, None, None],
+              fills=[COLORS["band"], COLORS["calc"]] + [COLORS["band"]] * 7)
+    ws.merge_cells(start_row=r, start_column=4, end_row=r, end_column=9)
+    ws.cell(row=r, column=1).font = Font(name=FONT, size=10, bold=True)
+    ws.cell(row=r, column=2).font = Font(name=FONT, size=10, bold=True)
+    ws.row_dimensions[r].height = 44
+    assert r == REV_TOTAL_ROW, f"適用倍率行が想定と異なります: {r}"
+    r += 2
+
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=9)
+    style_title(ws.cell(row=r, column=1),
+                "2. サービス別の積上げ（見込量×単価）", fill=COLORS["subhead"], size=11)
     r += 1
     style_header_row(ws, r, ["サービス", "単位", "月額単価",
                              "令和8年度\n見込量", "令和9年度\n見込量",
@@ -527,7 +572,7 @@ def sheet_projection(wb):
     first = r
     for i, (svc, unit, note) in enumerate(svc_rows):
         write_row(ws, r, [svc, unit, None, None, None, None, None,
-                          f"=IFERROR(ROUND(C{r}*G{r}*12,0),\"\")", note],
+                          f"=IFERROR(ROUND(C{r}*G{r}*12*$B${REV_TOTAL_ROW},0),\"\")", note],
                   alt=(i % 2 == 1),
                   aligns=["left", "center", "right", "right", "right", "right", "right",
                           "right", "left"],
@@ -550,13 +595,14 @@ def sheet_projection(wb):
     ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=9)
     style_note(ws.cell(row=r, column=1),
                "見込量は「北塩原村_サービス見込量.xlsx」の03・04シートの『月間サービス量』を転記します。"
-               "単価は直近の実績単価（令和7年度の給付費÷利用量）を基本とし、報酬改定が見込まれる場合は補正します。"
+               "単価は直近の実績単価（令和7年度の給付費÷利用量）を基本とし、"
+               "報酬改定による補正は上表1の適用倍率で一括して行います（単価欄には改定前の実績単価を入力してください）。"
                "外部リンクにするとファイル移動時に壊れるため、転記は手作業としています。")
     ws.row_dimensions[r].height = 34
     r += 2
 
     ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=9)
-    style_title(ws.cell(row=r, column=1), "2. 財源構成", fill=COLORS["subhead"], size=11)
+    style_title(ws.cell(row=r, column=1), "3. 財源構成", fill=COLORS["subhead"], size=11)
     r += 1
     style_header_row(ws, r, ["年度", "", "", "自立支援給付計", "国庫負担", "県負担", "村負担",
                              "対令和7年度", "区分・備考"])
@@ -590,7 +636,7 @@ def sheet_projection(wb):
 
     ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=9)
     style_title(ws.cell(row=r, column=1),
-                "3. 参考：伸び率による推計（第3層の補正にのみ用いる）",
+                "4. 参考：伸び率による推計（第3層の補正にのみ用いる）",
                 fill=COLORS["subhead"], size=11)
     r += 1
     style_header_row(ws, r, ["年度", "介護給付費", "前年度比", "障害児給付費", "前年度比",
