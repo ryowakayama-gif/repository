@@ -7,8 +7,10 @@
 import copy
 import json
 import pathlib
+import re
 
 from pptx import Presentation
+from pptx.dml.color import RGBColor
 from pptx.util import Inches, Pt
 
 HERE = pathlib.Path(__file__).resolve().parent.parent
@@ -354,6 +356,38 @@ for _s in sl:
     for _n in NOTE_NAMES:
         for _sp in _many.get(_n, []):
             fit_note(_s, _sp)
+
+# ================================================================ 上部の見出し行を削除
+# 本編と同じく、ページ上部の「参考資料　別紙N　…」はタイトルと重複するため取り除き、
+# 別紙番号はタイトルの先頭へ移す。紺帯（hb）のページは帯ごと外して罫線を最上部へ寄せる。
+ITEM_NO = re.compile(r"別紙\d")
+
+for _s in sl:
+    _one, _many = sh(_s)
+    _hdrs = _many.get("hdr_txt", []) + _many.get("hb", [])
+    _no = next((m.group(0) for _h in _hdrs
+                for m in [ITEM_NO.search(_h.text_frame.text)] if m), None)
+    if _no and "ttl" in _one:
+        _lines = _one["ttl"].text_frame.text.split("\n")
+        _lines[0] = f"{_no}　{_lines[0]}"
+        set_text(_one["ttl"], "\n".join(_lines))
+    for _sp in _hdrs:
+        _sp._element.getparent().remove(_sp._element)
+    for _n, _rgb in (("hl", "E2E8F0"), ("ha", None)):
+        for _sp in _many.get(_n, []):
+            _sp.top = Inches(0.02)
+            if _rgb:
+                _sp.fill.solid()
+                _sp.fill.fore_color.rgb = RGBColor.from_string(_rgb)
+
+for _s in sl:
+    _one, _many = sh(_s)
+    for _t in _many.get("ttl", []):
+        _below = [sp.top.inches for sp in _s.shapes
+                  if sp._element is not _t._element and sp.name not in BG + ("pgnum",)
+                  and sp.top is not None and sp.top.inches >= _t.top.inches]
+        if _below and 0.79 + _t.height.inches + 0.10 <= min(_below):
+            _t.top = Inches(0.79)
 
 for i, _s in enumerate(sl, start=1):
     _one, _ = sh(_s)

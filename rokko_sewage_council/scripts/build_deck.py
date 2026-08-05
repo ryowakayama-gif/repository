@@ -877,6 +877,41 @@ for _s in sl:
         for _sp in _many.get(_n, []):
             fit_note(_s, _sp)
 
+# ================================================================ 上部の見出し行を削除
+# 各ページ上部の「章名＋項番＋ページ名」はタイトルと内容が重複するため取り除く。
+# 項番（01-1 等）は本文の相互参照に使っているので、タイトルの先頭へ移す。
+# 見出しを紺帯（hb）で持つページは帯ごと外し、罫線とアクセントを最上部へ寄せる。
+ITEM_NO = re.compile(r"\d{2}-\d")
+
+for _s in sl:
+    _one, _many = sh(_s)
+    _hdrs = _many.get("hdr_txt", []) + _many.get("hb", [])
+    _no = next((m.group(0) for _h in _hdrs
+                for m in [ITEM_NO.search(_h.text_frame.text)] if m), None)
+    if _no and "ttl" in _one:
+        _lines = _one["ttl"].text_frame.text.split("\n")
+        _lines[0] = f"{_no}　{_lines[0]}"
+        set_text(_one["ttl"], "\n".join(_lines))
+    for _sp in _hdrs:
+        _sp._element.getparent().remove(_sp._element)
+    for _n, _rgb in (("hl", "E2E8F0"), ("ha", None)):        # 紺帯の下にあった罫線を最上部へ
+        for _sp in _many.get(_n, []):
+            _sp.top = Inches(0.02)
+            if _rgb:
+                _sp.fill.solid()
+                _sp.fill.fore_color.rgb = RGBColor.from_string(_rgb)
+
+# タイトルの高さを揃える。上に詰めても直下の要素に掛からない場合のみ動かす。
+for _s in sl:
+    _one, _many = sh(_s)
+    for _t in _many.get("ttl", []):
+        # python-pptx は走査のたびに別インスタンスを返すため、同一性は要素で判定する
+        _below = [sp.top.inches for sp in _s.shapes
+                  if sp._element is not _t._element and sp.name not in BG + ("pgnum",)
+                  and sp.top is not None and sp.top.inches >= _t.top.inches]
+        if _below and 0.79 + _t.height.inches + 0.10 <= min(_below):
+            _t.top = Inches(0.79)
+
 # ================================================================ ページ番号
 for i, s in enumerate(sl, start=1):
     one, _ = sh(s)
