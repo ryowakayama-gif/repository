@@ -39,6 +39,8 @@ SRC_DEFAULT = [
     "/root/.claude/uploads/6ba69703-c476-5e43-a82e-705be12592ce/a988ab72-Tables_f2013_2023_ver1.0.xlsx",
     "/root/.claude/uploads/6ba69703-c476-5e43-a82e-705be12592ce/f5e69661-Tables_f2023_kohi_ver1.0.xlsx",
 ]
+# 630調査 従来ベース集計（リポジトリに格納済み。20MB級のNDBと違い軽い）
+SRC_630 = "source/精神保健/630調査/630調査_令和5年度_従来ベース集計.xlsx"
 PREF = "福島県"
 
 SHEET_SEIKATSU = "付表1.1 精神病床退院患者における地域平均生活日数"
@@ -120,6 +122,58 @@ def read_source(path):
     return {"生活日数": seikatsu, "再入院": sainyuin, "在院": zaiin}
 
 
+def read_630(path):
+    """630調査 従来ベース集計から福島県分の在院患者数を読み出す。
+
+    Ⅲ.2.(11) 在院患者数（入院期間×住所地・施設所在地×年齢）
+        別表第四のCは「当該都道府県の区域に住所を有する者」を前提とするため、
+        住所地ベースの列を採る。
+    Ⅲ.2.(4)  在院患者数（年齢階級・入院形態×性）
+        75歳以上の在院患者数（ただし在院期間との交差はない）。
+    Ⅲ.4.(1)  認知症治療病棟の在院患者数（在院期間別）
+    """
+    wb = load_workbook(path, data_only=True, read_only=True)
+    out = {}
+
+    ws = wb["Ⅲ.2.(11)"]
+    for r in ws.iter_rows(min_row=7, max_row=80, max_col=15, values_only=True):
+        if r[0] != PREF:
+            continue
+        out["期間別"] = [
+            ("3ヶ月未満", _num(r[1]), _num(r[2]), _num(r[3]), _num(r[4])),
+            ("3ヶ月以上12ヶ月未満", _num(r[5]), _num(r[6]), _num(r[7]), _num(r[8])),
+            ("1年以上", _num(r[9]), _num(r[10]), _num(r[11]), _num(r[12])),
+        ]
+        break
+
+    ws = wb["Ⅲ.2.(4)"]
+    labels = ["20歳未満", "20歳以上40歳未満", "40歳以上65歳未満",
+              "65歳以上75歳未満", "75歳以上", "不明"]
+    for r in ws.iter_rows(min_row=7, max_row=80, max_col=20, values_only=True):
+        if r[0] != PREF:
+            continue
+        rows = []
+        for i, lb in enumerate(labels):
+            m, f, u = _num(r[2 + i * 3]), _num(r[3 + i * 3]), _num(r[4 + i * 3])
+            rows.append((lb, m, f, u, (m or 0) + (f or 0) + (u or 0)))
+        out["年齢階級"] = rows
+        out["総数"] = _num(r[1])
+        break
+
+    ws = wb["Ⅲ.4.(1)"]
+    heads = ["合計", "1ヶ月未満", "1ヶ月以上3ヶ月未満", "3ヶ月以上6ヶ月未満",
+             "6ヶ月以上1年未満", "1年以上5年未満", "5年以上10年未満",
+             "10年以上20年未満", "20年以上", "不明"]
+    for r in ws.iter_rows(min_row=6, max_row=80, max_col=11, values_only=True):
+        if r[0] != PREF:
+            continue
+        out["認知症病棟"] = [(h, _num(r[1 + i])) for i, h in enumerate(heads)]
+        break
+
+    wb.close()
+    return out
+
+
 def latest_year(rows):
     years = [r["年度"] for r in rows if r["年度"] is not None]
     return max(years) if years else None
@@ -166,6 +220,8 @@ def sheet_overview(wb, sources):
          "退院患者の30日以上の再入院率。特定時点3種と年齢調整済み"),
         ("03_長期入院患者", "第二の二の2、別表第四", "付表3.3",
          "精神病床在院患者延数（年齢区分×在院日数区分×認知症区分）。366日以上がA1・A2・B1・B2の実績側"),
+        ("05_630調査R5", "第二の二の2、別表第四のC", "630調査 Ⅲ.2.(11)・Ⅲ.2.(4)・Ⅲ.4.(1)",
+         "令和5年6月30日現在の在院患者数。住所地ベースの1年以上入院患者数がCに相当"),
         ("04_別表第四", "別表第四 一〜三の項", "付表3.3から集計",
          "別表第四の記号への当てはめと、算定に不足している要素の一覧"),
     ]
@@ -260,6 +316,85 @@ def sheet_zaiin(wb, data):
     return ws
 
 
+def sheet_630(wb, d630):
+    ws = add_sheet(
+        wb, "05_630調査R5", "精神保健福祉資料（630調査）令和5年度・福島県",
+        "令和5年6月30日午前0時現在。別表第四のCは「令和五年における精神病床における入院期間が"
+        "1年以上である入院患者数」であり、A1〜B2が「当該都道府県の区域に住所を有する者」を前提と"
+        "していることから、住所地ベースの値を採るのが整合的。単位：人（実人数）。",
+        [26, 18, 18, 18, 18, 16])
+
+    r = 5
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
+    style_title(ws.cell(row=r, column=1),
+                "1. 在院患者数（入院期間×住所地・施設所在地×年齢）　Ⅲ.2.(11)",
+                fill=COLORS["subhead"], size=11)
+    r += 1
+    style_header_row(ws, r, ["入院期間", "住所地\n65歳未満", "住所地\n65歳以上",
+                             "所在地\n65歳未満", "所在地\n65歳以上", "住所地 計"])
+    r += 1
+    for i, (lb, a, b, c, d) in enumerate(d630.get("期間別", [])):
+        total = (a or 0) + (b or 0)
+        write_row(ws, r, [lb, a, b, c, d, total],
+                  alt=(i % 2 == 1),
+                  aligns=["left"] + ["right"] * 5,
+                  numfmts=[None] + [INT] * 5,
+                  fills=[COLORS["calc"] if lb == "1年以上" else None] * 6)
+        r += 1
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
+    style_note(ws.cell(row=r, column=1),
+               "※「1年以上」の住所地計が別表第四のCに相当する。"
+               "福島県第7期障がい福祉計画が掲げる長期在院者数（令和4年度 65歳未満995人・"
+               "65歳以上1,813人）と同じ系統であり、Cは630調査の住所地ベース実人数と解される。")
+    ws.row_dimensions[r].height = 34
+    r += 2
+
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
+    style_title(ws.cell(row=r, column=1),
+                "2. 在院患者数（年齢階級別）　Ⅲ.2.(4)", fill=COLORS["subhead"], size=11)
+    r += 1
+    style_header_row(ws, r, ["年齢階級", "男性", "女性", "不明", "計", "備考"])
+    r += 1
+    for i, (lb, m, f, u, t) in enumerate(d630.get("年齢階級", [])):
+        note = "第8期で新設された目標区分。ただし在院期間との交差表がない" if lb == "75歳以上" else ""
+        write_row(ws, r, [lb, m, f, u, t, note],
+                  alt=(i % 2 == 1),
+                  aligns=["left", "right", "right", "right", "right", "left"],
+                  numfmts=[None] + [INT] * 4 + [None])
+        r += 1
+    write_row(ws, r, ["総数", None, None, None, d630.get("総数"), "全在院期間の合計"],
+              aligns=["left", "right", "right", "right", "right", "left"],
+              numfmts=[None] + [INT] * 4 + [None],
+              fills=[COLORS["band"]] * 6)
+    r += 2
+
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
+    style_title(ws.cell(row=r, column=1),
+                "3. 認知症治療病棟の在院患者数（在院期間別）　Ⅲ.4.(1)",
+                fill=COLORS["subhead"], size=11)
+    r += 1
+    style_header_row(ws, r, ["在院期間", "患者数", "", "", "", "備考"])
+    r += 1
+    dem = d630.get("認知症病棟", [])
+    for i, (lb, v) in enumerate(dem):
+        write_row(ws, r, [lb, v, None, None, None, ""],
+                  alt=(i % 2 == 1),
+                  aligns=["left", "right", "right", "right", "right", "left"],
+                  numfmts=[None, INT, None, None, None, None])
+        r += 1
+    long = sum(v for lb, v in dem
+               if lb in ("1年以上5年未満", "5年以上10年未満",
+                         "10年以上20年未満", "20年以上") and v is not None)
+    write_row(ws, r, ["うち1年以上", long, None, None, None,
+                      "認知症治療病棟に限った数であり、別表第四の「認知症である者」とは一致しない"
+                      "（一般精神病棟にも認知症患者がいる）。認知症区分での按分にはNDB付表3.3を用いる"],
+              aligns=["left", "right", "right", "right", "right", "left"],
+              numfmts=[None, INT, None, None, None, None],
+              fills=[COLORS["band"]] * 6)
+    ws.row_dimensions[r].height = 34
+    return ws
+
+
 def sheet_beppyo4(wb, data):
     ws = add_sheet(
         wb, "04_別表第四", "基本指針 別表第四への当てはめ（福島県）",
@@ -325,13 +460,14 @@ def sheet_beppyo4(wb, data):
          "現行計画に令和5年度5人の記載あり",
          "村・県照会"),
         ("定義確認", "Cを630調査の実人数とするかNDBの1日平均在院患者数とするか",
-         "福島県第7期計画の長期在院者数は630調査ベースであり、本ブックのNDB値と定義が異なる",
-         "国が示す算定要領、または福島県への照会",
-         "要確認"),
+         "福島県第7期計画の長期在院者数は630調査ベースであり、NDBの1日平均在院患者数と定義が異なる",
+         "令和5年度630調査 Ⅲ.2.(11) の住所地ベース1年以上入院患者数（65歳未満901人・"
+         "65歳以上1,690人・計2,591人）が県計画と同系統。Cはこれと解する",
+         "解消"),
         ("年度", "令和5年度630調査の福島県データ",
-         "別表第四のCは「令和五年における」入院患者数。受領済みの630調査は令和7年度",
-         "国立精神・神経医療研究センター 精神保健福祉資料",
-         "未入手"),
+         "別表第四のCは「令和五年における」入院患者数",
+         "受領済み（05_630調査R5シート）",
+         "解消"),
         ("年齢区分", "40歳以上の認知症である者の1年以上長期入院患者数",
          "第8期で新設された目標項目",
          "付表3.3は366日以上を0〜64歳／65〜74歳／75〜84歳／85歳以上でしか公表しておらず、"
@@ -368,6 +504,11 @@ def main():
     sheet_seikatsu(wb, [(lb, d["生活日数"]) for lb, d in loaded])
     sheet_sainyuin(wb, [(lb, d["再入院"]) for lb, d in loaded])
     sheet_zaiin(wb, [(lb, d["在院"]) for lb, d in loaded])
+    if os.path.exists(SRC_630):
+        print(f"  読込: 630調査R5 <- {os.path.basename(SRC_630)}")
+        sheet_630(wb, read_630(SRC_630))
+    else:
+        print(f"  スキップ（未配置）: {SRC_630}")
     sheet_beppyo4(wb, [(lb, d["在院"]) for lb, d in loaded])
     wb.save(OUT_FILE)
     print(f"作成: {OUT_FILE}")
