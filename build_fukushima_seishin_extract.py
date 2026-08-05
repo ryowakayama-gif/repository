@@ -22,6 +22,7 @@
 """
 
 import os
+import re
 import sys
 import warnings
 
@@ -41,6 +42,8 @@ SRC_DEFAULT = [
 ]
 # 630調査 従来ベース集計（リポジトリに格納済み。20MB級のNDBと違い軽い）
 SRC_630 = "source/精神保健/630調査/630調査_令和5年度_従来ベース集計.xlsx"
+# ReMHRAD 市町村タブから取得した北塩原村の在院者状況
+SRC_VILLAGE_DIR = "source/精神保健/村在院者"
 PREF = "福島県"
 
 SHEET_SEIKATSU = "付表1.1 精神病床退院患者における地域平均生活日数"
@@ -174,6 +177,36 @@ def read_630(path):
     return out
 
 
+def read_village(src_dir=SRC_VILLAGE_DIR):
+    """ReMHRAD 市町村タブの北塩原村 在院者状況（年別）を読み出す。"""
+    if not os.path.isdir(src_dir):
+        return []
+    out = []
+    for name in sorted(os.listdir(src_dir)):
+        if not name.endswith(".xlsx"):
+            continue
+        wb = load_workbook(os.path.join(src_dir, name), data_only=True, read_only=True)
+        title = wb.sheetnames[0]
+        m = re.search(r"（(\d{4})）", title)
+        year = int(m.group(1)) if m else None
+        ws = wb[title]
+        rec = {"年": year, "合計": None, "人口10万対": None, "内訳": []}
+        for r in ws.iter_rows(min_row=2, max_row=30, max_col=2, values_only=True):
+            k, v = (r[0], r[1]) if r else (None, None)
+            if k is None:
+                continue
+            k = str(k)
+            if k.startswith("合計"):
+                rec["合計"] = str(v)
+            elif k.startswith("人口10万人あたり"):
+                rec["人口10万対"] = str(v)
+            elif v is not None:
+                rec["内訳"].append((k, v))
+        wb.close()
+        out.append(rec)
+    return sorted(out, key=lambda x: x["年"] or 0)
+
+
 def latest_year(rows):
     years = [r["年度"] for r in rows if r["年度"] is not None]
     return max(years) if years else None
@@ -222,6 +255,8 @@ def sheet_overview(wb, sources):
          "精神病床在院患者延数（年齢区分×在院日数区分×認知症区分）。366日以上がA1・A2・B1・B2の実績側"),
         ("05_630調査R5", "第二の二の2、別表第四のC", "630調査 Ⅲ.2.(11)・Ⅲ.2.(4)・Ⅲ.4.(1)",
          "令和5年6月30日現在の在院患者数。住所地ベースの1年以上入院患者数がCに相当"),
+        ("06_村の在院者", "別表第二 三の項㈠⑤", "ReMHRAD 市町村タブ",
+         "患者住所地が北塩原村である在院者数と入院先。村の基盤整備量を実数で定める起点"),
         ("04_別表第四", "別表第四 一〜三の項", "付表3.3から集計",
          "別表第四の記号への当てはめと、算定に不足している要素の一覧"),
     ]
@@ -395,6 +430,40 @@ def sheet_630(wb, d630):
     return ws
 
 
+def sheet_village(wb, rows):
+    ws = add_sheet(
+        wb, "06_村の在院者", "北塩原村の住民のうち精神病床に入院している方（ReMHRAD）",
+        "ReMHRAD 市町村タブによる、患者住所地が北塩原村である在院者数と入院先。"
+        "別表第二 三の項㈠⑤が求める「当該市町村の区域における基盤整備量」を"
+        "実数で定めるための起点となる。",
+        [14, 20, 26, 40, 40])
+    style_header_row(ws, 5, ["年", "在院者数", "人口10万人あたり",
+                             "入院先の内訳", "備考"])
+    r = 6
+    for i, rec in enumerate(rows):
+        uchiwake = "／".join(f"{k} {v}人" for k, v in rec["内訳"])
+        write_row(ws, r, [rec["年"], rec["合計"], rec["人口10万対"], uchiwake, ""],
+                  alt=(i % 2 == 1),
+                  aligns=["center", "center", "center", "left", "left"])
+        ws.row_dimensions[r].height = 26
+        r += 1
+    r += 1
+    for t in [
+        "※（）内は全国中央値。本村は人口10万人あたりで全国中央値の2倍を超える水準にある。"
+        "母数が小さく1人の増減が大きく振れるため、率ではなく実数で扱う。",
+        "※【要確認】ReMHRADの当該タブが「全在院者」か「1年以上の長期入院者」かを、"
+        "ダウンロード時の画面表示で確認すること。現行計画は令和5年度の1年以上長期入院者を5人と"
+        "記載しており、本表の2023年10人が全在院者であれば整合する。",
+        "※別表第四のCは1年以上入院患者数である。本村の値を定める際は、"
+        "全在院者数ではなく1年以上の人数を用いる。",
+    ]:
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=5)
+        style_note(ws.cell(row=r, column=1), t)
+        ws.row_dimensions[r].height = 30
+        r += 1
+    return ws
+
+
 def sheet_beppyo4(wb, data):
     ws = add_sheet(
         wb, "04_別表第四", "基本指針 別表第四への当てはめ（福島県）",
@@ -456,9 +525,9 @@ def sheet_beppyo4(wb, data):
          "県照会"),
         ("市町村別", "北塩原村の区域における1年以上入院患者数",
          "当該市町村区域の基盤整備量を定めるための起点",
-         "ReMHRADの市町村タブ（患者住所地別）、村・会津保健所の把握。"
-         "現行計画に令和5年度5人の記載あり",
-         "村・県照会"),
+         "ReMHRAD市町村タブで在院者数を取得済み（06シート。2022年7人・2023年10人・2024年8人）。"
+         "ただし全在院者か1年以上かの区別、及び年齢区分の内訳は村・会津保健所への照会が必要",
+         "一部取得"),
         ("定義確認", "Cを630調査の実人数とするかNDBの1日平均在院患者数とするか",
          "福島県第7期計画の長期在院者数は630調査ベースであり、NDBの1日平均在院患者数と定義が異なる",
          "令和5年度630調査 Ⅲ.2.(11) の住所地ベース1年以上入院患者数（65歳未満901人・"
@@ -509,6 +578,10 @@ def main():
         sheet_630(wb, read_630(SRC_630))
     else:
         print(f"  スキップ（未配置）: {SRC_630}")
+    village = read_village()
+    if village:
+        print(f"  読込: 村在院者 <- {len(village)}年分")
+        sheet_village(wb, village)
     sheet_beppyo4(wb, [(lb, d["在院"]) for lb, d in loaded])
     wb.save(OUT_FILE)
     print(f"作成: {OUT_FILE}")

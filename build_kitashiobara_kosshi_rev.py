@@ -1314,8 +1314,12 @@ def apply_kokuji_verification(doc):
                   "福島県全体では、令和５年６月30日現在、精神病床に１年以上入院している方のうち"
                   "県内に住所を有する方は2,591人（65歳未満901人、65歳以上1,690人）です"
                   "（精神保健福祉資料・630調査）。本村では、現行計画に令和５年度の"
-                  "１年以上長期入院者５人という実績があることから、"
-                  "対象となる方の状況と退院の可能性を個別に確認し、"
+                  "１年以上長期入院者５人という実績があります。"
+                  "また、ＲｅＭＨＲＡＤによれば、本村に住所を有する方で精神病床に入院している方は"
+                  "令和４年７人、令和５年10人、令和６年８人であり、"
+                  "入院先は喜多方市及び会津若松市の医療機関です。"
+                  "人口10万人あたりでは全国中央値の２倍を超える水準にあります。"
+                  "これらを踏まえ、対象となる方の状況と退院の可能性を個別に確認し、"
                   "令和11年度末の基盤整備量（利用者数）を実数により設定します。"),
         make_note(doc,
                   "【要確認：村・県】①令和７年度末時点の１年以上長期入院者の実数と、"
@@ -1394,13 +1398,63 @@ def add_estimation_basis(doc):
     changes.append("第5章1：見込量の算定方法の根拠（告示第三の二・別表第一・別表第五）を追加")
 
 
+SHIGEN_DIR = "/home/user/repository/source/障害福祉資源"
+SHIGEN_MUNI = ["北塩原村", "猪苗代町", "磐梯町", "湯川村", "会津若松市", "喜多方市"]
+SHIGEN_SERVICES = ["居宅介護", "重度訪問介護", "生活介護", "就労継続支援（B型）",
+                   "共同生活援助", "短期入所", "施設入所支援"]
+
+
+def load_shigen():
+    """ReMHRAD 障害福祉資源から、対象市町村の令和7年時点の事業所数を読む。
+
+    骨子案に数値を直接書き込まず、必ず原典から読み出して表を生成する。
+    """
+    import re as _re
+    from openpyxl import load_workbook
+
+    out = {}
+    if not os.path.isdir(SHIGEN_DIR):
+        return out
+    for name in sorted(os.listdir(SHIGEN_DIR)):
+        if not name.endswith(".xlsx"):
+            continue
+        wb = load_workbook(os.path.join(SHIGEN_DIR, name), data_only=True, read_only=True)
+        title = wb.sheetnames[0]
+        m = _re.search(r"（(.+?)）の状況", title)
+        svc = (m.group(1) if m else title).replace("(", "（").replace(")", "）")
+        vals = {}
+        for r in wb[title].iter_rows(min_row=2, values_only=True):
+            if r and r[0] in SHIGEN_MUNI:
+                vals[str(r[0])] = (r[2], r[4])
+        wb.close()
+        out[svc] = vals
+    return out
+
+
 def add_kakuho_hosaku(doc):
     """第5章8・10の確保方策に、告示が小規模町村・中山間地域について定める具体策を追加する。"""
     anchor = find_para(doc, "８　必要な見込量の確保のための方策", style="Heading 2")
+
+    shigen = load_shigen()
+    shigen_rows = [["区分", "本村", "猪苗代町", "磐梯町", "湯川村", "会津若松市", "喜多方市"]]
+    for svc in SHIGEN_SERVICES:
+        vals = shigen.get(svc, {})
+        label = svc.replace("（B型）", "（Ｂ型）")
+        shigen_rows.append([label] + [
+            str(vals.get(m, (None, None))[1] if vals.get(m) else "―") for m in SHIGEN_MUNI])
+    has = [(s, shigen.get(s, {}).get("北塩原村", (None, 0))[1]) for s in SHIGEN_SERVICES]
+    has = [(s, n) for s, n in has if n]
+    if has:
+        village_txt = "、".join(f"{s.replace('（B型）', '（Ｂ型）')}{n}か所" for s, n in has)
+    else:
+        village_txt = "ありません"
+
     insert_after(anchor, [
         make_para(doc,
-                  "本村には障がい福祉サービスを提供する事業所がなく、"
-                  "会津北部圏域（猪苗代町・磐梯町・湯川村）及び近隣市の事業所を利用しています。"
+                  f"本村に所在する障がい福祉サービス事業所は、{village_txt}です"
+                  "（ＲｅＭＨＲＡＤ 障害福祉資源、令和７年時点）。"
+                  "それ以外のサービスは会津北部圏域（猪苗代町・磐梯町・湯川村）及び"
+                  "会津若松市・喜多方市等の事業所を利用しています。"
                   "国の基本指針は、訪問系サービス及び指定通所支援について"
                   "「各市町村において事業を実施する事業所を最低一箇所確保できるよう努める」"
                   "こととした上で、小規模町村等において確保できない場合の工夫を具体的に示しています"
@@ -1438,6 +1492,12 @@ def add_kakuho_hosaku(doc):
              "のぞまないセルフプランの解消（第４章（６））と一体で、"
              "圏域の相談支援事業所の受入余力を把握する。"],
         ], [2400, 4000, 3238]),
+        make_table(doc, shigen_rows, [2000, 1200, 1300, 1200, 1200, 1400, 1338]),
+        make_para(doc,
+                  "上表は令和７年時点の事業所数です（ＲｅＭＨＲＡＤ 障害福祉資源）。"
+                  "事業所数は所在地の市町村で計上されるため、"
+                  "本村の住民が圏域外の事業所を利用している分は現れません。"
+                  "実際に利用できる量は、事業所の定員・空き状況・送迎範囲を照会して把握します。"),
         make_note(doc,
                   "【要確認：村・圏域】本村は過疎法第２条により全域が過疎地域に該当し、"
                   "福島県過疎・中山間地域振興条例の中山間地域（全域）でもあります。"
@@ -1445,7 +1505,14 @@ def add_kakuho_hosaku(doc):
                   "上表の方策は本計画の重点事項として位置づけることが適当です。"
                   "圏域４町村（猪苗代町・磐梯町・湯川村・北塩原村）の担当者会議で、"
                   "共生型サービスの指定状況、多機能型・従たる事業所の設置可能性、"
-                  "介護保険事業所の指定取得意向を確認し、結果を本節に反映してください。"),
+                  "介護保険事業所の指定取得意向を確認し、結果を本節に反映してください。"
+                  f"あわせて、上表の本村の事業所（{village_txt}）について、"
+                  "事業所名、指定年月、共生型サービスの指定の有無、受入可能人数を確認してください。"
+                  "令和２年時点はいずれも０か所であり、その後に指定を受けた事業所と考えられます。"
+                  "また、会津北部圏域の居宅介護・重度訪問介護は、令和２年時点で猪苗代町に"
+                  "各１か所ありましたが令和７年時点では０か所となっており、"
+                  "圏域内に残るのは本村の事業所のみです。"
+                  "圏域全体の訪問系サービスの提供体制について、県及び３町と協議してください。"),
         make_empty(doc),
     ])
     changes.append("第5章8：小規模町村・中山間地域向けの確保方策（介護保険事業所への指定働きかけ、"
