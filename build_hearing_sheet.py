@@ -130,7 +130,7 @@ P("第10期介護保険事業計画策定支援業務", size=12,
   align=WD_ALIGN_PARAGRAPH.CENTER, space_after=2)
 P("キックオフ会議　ヒアリングシート", size=17, bold=True,
   align=WD_ALIGN_PARAGRAPH.CENTER, space_after=6, color=NAVY)
-P("令和8年8月4日", size=10, align=WD_ALIGN_PARAGRAPH.RIGHT, space_after=10)
+P("令和8年8月5日", size=10, align=WD_ALIGN_PARAGRAPH.RIGHT, space_after=10)
 
 t = doc.add_table(rows=0, cols=4)
 t.style = "Table Grid"
