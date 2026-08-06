@@ -761,6 +761,91 @@ def sheet_method(wb):
 # ============================================================
 # 05_村確認事項
 # ============================================================
+# ============================================================
+# 08_県との比較
+# ============================================================
+# 福島県の精神障害者保健福祉手帳所持者数（630調査 自治体票）
+KEN_SEISHIN = [
+    ("令和5年度", 18002, 1469, 9443, 7090),
+    ("令和7年度", 19107, 1399, 9879, 7829),
+]
+
+
+def sheet_ken_hikaku(wb):
+    ws = add_sheet(
+        wb, "08_県との比較", "福島県の精神障害者保健福祉手帳所持者数との比較",
+        "精神保健福祉資料（630調査）自治体票による福島県の所持者数。"
+        "本村の精神障害者保健福祉手帳所持者数が5年間で約40%増加していることが"
+        "県全体の傾向と比べてどうかを確認する。",
+        [18, 16, 14, 14, 14, 58])
+
+    r = 5
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
+    style_title(ws.cell(row=r, column=1), "1. 福島県の所持者数（630調査 自治体票）",
+                fill=COLORS["subhead"], size=11)
+    r += 1
+    style_header_row(ws, r, ["年度", "所持者数", "1級", "2級", "3級", "備考"])
+    r += 1
+    first = r
+    for i, (yr, tot, g1, g2, g3) in enumerate(KEN_SEISHIN):
+        write_row(ws, r, [yr, tot, g1, g2, g3, ""], alt=(i % 2 == 1),
+                  aligns=["center"] + ["right"] * 4 + ["left"],
+                  numfmts=[None] + ["#,##0"] * 4 + [None])
+        r += 1
+    write_row(ws, r, ["2年間の増減率",
+                      f"=IFERROR(B{first+1}/B{first}-1,\"\")",
+                      f"=IFERROR(C{first+1}/C{first}-1,\"\")",
+                      f"=IFERROR(D{first+1}/D{first}-1,\"\")",
+                      f"=IFERROR(E{first+1}/E{first}-1,\"\")",
+                      "令和5年度から令和7年度への変化"],
+              aligns=["center"] + ["right"] * 4 + ["left"],
+              numfmts=[None] + ["+0.0%;-0.0%;0.0%"] * 4 + [None],
+              fills=[COLORS["band"]] + [COLORS["calc"]] * 4 + [COLORS["band"]])
+    ken_row = r
+    r += 2
+
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
+    style_title(ws.cell(row=r, column=1), "2. 本村との比較", fill=COLORS["subhead"], size=11)
+    r += 1
+    style_header_row(ws, r, ["区分", "起点", "直近", "増減率", "年平均", "評価"])
+    r += 1
+    write_row(ws, r, ["福島県（精神手帳所持者数）", 18002, 19107,
+                      f"=IFERROR(C{r}/B{r}-1,\"\")",
+                      f"=IFERROR((C{r}/B{r})^(1/2)-1,\"\")",
+                      "令和5年度→令和7年度の2年間"],
+              aligns=["left", "right", "right", "right", "right", "left"],
+              numfmts=[None, "#,##0", "#,##0", "+0.0%;-0.0%;0.0%", "+0.0%;-0.0%;0.0%", None])
+    r += 1
+    write_row(ws, r, ["本村（精神手帳所持者数）", TEGATA["精神障害者保健福祉手帳"][0], TEGATA["精神障害者保健福祉手帳"][4],
+                      f"=IFERROR(C{r}/B{r}-1,\"\")",
+                      f"=IFERROR((C{r}/B{r})^(1/4)-1,\"\")",
+                      "平成31年→令和5年の4年間。母数が小さく1人の増減が3〜4%に相当する"],
+              alt=True,
+              aligns=["left", "right", "right", "right", "right", "left"],
+              numfmts=[None, "#,##0", "#,##0", "+0.0%;-0.0%;0.0%", "+0.0%;-0.0%;0.0%", None])
+    r += 2
+
+    for t in [
+        "※ 県・村とも精神障害者保健福祉手帳の所持者数は増加しており、"
+        "方法B（所持率一定）が精神で成り立たないという本ブック03・04の判断と方向が一致する。",
+        "※ 期間が異なる（県は2年、村は4年）ため直接比較はできない。年平均で比較する。",
+        "※【検討したが採用しなかった方法】630調査 自治体票には手帳の「交付件数」の"
+        "性年齢階級別内訳があるが（福島県 令和7年度1,016件）、これは所持者数19,107人の"
+        "約5%にすぎず、2年更新の制度であることを踏まえると新規交付のみと考えられる。"
+        "新規交付は40歳以上65歳未満が約48%を占め、所持者全体の年齢構成とは異なる。"
+        "このため、県の交付件数の年齢構成を本村の所持者に当てはめる方法は採らない。"
+        "年齢階級別の推計（方法C）には、引き続き村の年齢階級別所持者数が必要である。",
+    ]:
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
+        style_note(ws.cell(row=r, column=1), t)
+        ws.row_dimensions[r].height = 44
+        r += 1
+
+    assert ws.cell(row=ken_row, column=1).value == "2年間の増減率", \
+        "08_県との比較 の増減率行の位置がずれています"
+    return ws
+
+
 def sheet_confirm(wb):
     ws = add_sheet(
         wb, "07_村確認事項", "村への確認・依頼事項（将来推計関係）",
@@ -963,6 +1048,7 @@ def main():
     sheet_age_band(wb)
     sheet_method(wb)
     sheet_confirm(wb)
+    sheet_ken_hikaku(wb)
     wb.save(OUT_FILE)
     print(f"作成: {OUT_FILE}")
 
