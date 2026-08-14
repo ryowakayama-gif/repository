@@ -189,6 +189,8 @@ OUTCOME_TARGETS = [
      "医療的ケア児 1人、協議の場 0か所、コーディネーター 0人",
      "児童発達支援センター 0か所（据置）、協議の場 1か所、コーディネーター 1人",
      "近隣市町村のセンターを利用しているため村内設置は0か所",
+     "医療的ケア児1人は令和8年8月の村の朱書きで再確認（経管栄養が毎日必要）。"
+     "障がい児入所施設・児童福祉施設の利用児0件、障害児通所支援の申請中0件も確認。"
      "協議の場・コーディネーターの設置状況は村資料待ち",
      "第8期は児童発達支援センターの4つの中核機能、インクルージョン推進の協議の場、"
      "伴走的な相談支援体制、強度行動障害児の支援ニーズ把握が新規"),
@@ -196,9 +198,11 @@ OUTCOME_TARGETS = [
      "基幹相談支援センター 0か所、協議会専門部会 0か所",
      "基幹相談支援センター 1か所、協議会専門部会 2か所",
      "猪苗代町・磐梯町・湯川村・北塩原村の4町村での広域設置を検討",
-     "設置状況は村資料待ち。計画相談支援の実績は見込どおりで推移",
+     "基幹相談支援センターは令和8年8月時点で未設置。目標1か所は未達。"
+     "計画相談支援の実績は見込どおりで推移",
      "第8期は「のぞまないセルフプラン」の件数を令和11年度末までに0とすることが新規。"
-     "村内にセルフプラン利用者がいないことを7月7日打合せで確認済み"),
+     "セルフプラン率0％を令和8年8月の村の朱書きで再確認したため、目標は「0を維持」となる。"
+     "基幹相談支援センターは4町村での広域設置の検討状況を踏まえ目標年次を再設定する"),
     ("（７）障がい福祉サービス等の質を向上させるための取組みに係る体制の構築",
      "県研修への村職員参加人数 1人（令和4年度実績）", "参加人数 2人",
      "サービス利用者の約4割が「サービス内容が分からない」等の不満",
@@ -225,7 +229,10 @@ POLICY_TARGETS = [
     ("⑥生活環境", "障がい者に配慮した公共施設トイレの設置率", "56.8％（令和5年度）", "100％",
      "行政データ", "―（村の施設整備状況）", "測定可能"),
     ("⑥生活環境", "個別避難計画の策定件数", "1件（令和5年度）", "10件",
-     "行政データ", "―（防災部局の作成状況）", "測定可能"),
+     "行政データ",
+     "―（防災部局の作成状況）※令和8年8月の村の朱書きでは「作成者なし（0件）」。"
+     "策定時の1件が失効したのか集計方法が異なるのかを要確認（進捗管理 R-18）",
+     "要確認"),
     ("⑦スポーツ・文化", "外出目的が趣味・スポーツ・グループ活動である人の割合",
      "28.1％（趣味・スポーツ15.3％＋グループ活動12.8％、令和5年度）", "40％",
      "アンケート", "**該当設問なし**（問13は外出頻度、問14は困ること、問15は移動手段）",
@@ -427,12 +434,9 @@ def sheet_policy(wb):
         write_row(ws, r, list(rec), alt=(i % 2 == 1),
                   aligns=["center", "left", "left", "center", "center", "left", "center"])
         c = ws.cell(row=r, column=7)
-        if c.value == "測定不能":
-            c.fill = PatternFill("solid", fgColor="C00000")
-            c.font = Font(name=FONT, size=10, bold=True, color="FFFFFF")
-        else:
-            c.fill = PatternFill("solid", fgColor="2CA02C")
-            c.font = Font(name=FONT, size=10, bold=True, color="FFFFFF")
+        judge_fill = {"測定不能": "C00000", "要確認": "ED7D31"}.get(c.value, "2CA02C")
+        c.fill = PatternFill("solid", fgColor=judge_fill)
+        c.font = Font(name=FONT, size=10, bold=True, color="FFFFFF")
         ws.row_dimensions[r].height = 42
         r += 1
     r += 1
@@ -616,9 +620,11 @@ def verify():
     assert recv == total_recv, f"回収数の合計 {recv} ≠ {total_recv}"
     assert abs(recv / send - total_rate) < 0.001, "回収率が合計と一致しません"
     measurable = sum(1 for r in POLICY_TARGETS if r[6] == "測定可能")
+    unmeasurable = sum(1 for r in POLICY_TARGETS if r[6] == "測定不能")
+    needs_check = len(POLICY_TARGETS) - measurable - unmeasurable
     print(f"  自己検証: サービス{len(SERVICE_GAP)}区分・地域生活支援事業{len(CHIIKI_GAP)}事業・"
           f"成果目標{len(OUTCOME_TARGETS)}区分・施策指標{len(POLICY_TARGETS)}件"
-          f"（測定可能{measurable}／測定不能{len(POLICY_TARGETS) - measurable}）／"
+          f"（測定可能{measurable}／測定不能{unmeasurable}／要確認{needs_check}）／"
           f"前回調査 発送{total_send}・回収{total_recv}・{total_rate:.1%} 整合")
 
 
