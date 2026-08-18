@@ -879,6 +879,211 @@ note(ws, r + 1,
      "令和8年12月までに終えておく。", 7)
 
 
+# ============================================================ 08 計算過程
+# 成果品のExcelは算定結果の転記表であり、セルに計算式が入っていない。
+# 本シートのみ計算式を入れ、入力欄を変えると出力が更新される形にする。
+ws = sheet("08_計算過程確認（再計算可能）",
+           "計算過程確認シート（入力値を変えると出力が更新される）",
+           "他のシートは算定結果を書き出した転記表であるが、"
+           "本シートはセルに計算式を入れている。"
+           "黄色の入力欄（設定・階級別の基準値・社人研推計の階級別人口）を"
+           "変更すると、階級別人口・認定率・認定者数・計画本文への転記値が"
+           "すべて更新される。"
+           "第三者による検算及び、修正値を受領したときの更新に用いる。",
+           [11, 11, 11, 11, 11, 11, 11, 13, 30], freeze="A5")
+
+CY = {"65-74": "C", "75-84": "D", "85+": "E"}
+
+r = lead(ws, 4, "【1　入力欄①　推計の設定】", 9)
+r = header(ws, r, ["項目", "値", "", "", "", "", "", "", "説明"])
+R_SET = r
+for lab, val, exp in [
+    ("基準年度（西暦）", int(BASE_Y),
+     "階級別人口・認定率の基準となる年。令和7年度＝2025"),
+    ("シナリオ", 2,
+     "1＝現状固定／2＝トレンド継続／3＝令和元年水準へ回帰。"
+     "計画本文は2による"),
+    ("トレンドの延長年数", TREND_END,
+     "基準年度から何年まで認定率の変化を延長するか。以後は固定"),
+    ("人口補正の適用", 0,
+     "0＝適用しない／1＝適用する。"
+     "1にすると【2】の補正係数が階級別人口に乗じられる"),
+]:
+    r = body(ws, r, [lab, val, "", "", "", "", "", "", exp],
+             {2: IN_Y}, height=20, align={2: "center"})
+    ws.merge_cells(start_row=r - 1, start_column=2, end_row=r - 1, end_column=8)
+B_BASEY, B_SC, B_TREND, B_ADJ = (R_SET, R_SET + 1, R_SET + 2, R_SET + 3)
+
+r += 1
+r = lead(ws, r, "【2　入力欄②　階級別の基準値】", 9)
+r = header(ws, r, ["階級", "基準人口\n（令和8年3月末）",
+                   "基準認定率\n（％）", "令和元年\n認定率（％）",
+                   "補正係数", "年平均変化\n（pt・計算値）", "", "", "説明"])
+R_CL = r
+for c in CL:
+    i = CL.index(c)
+    rr = R_CL + i
+    r = body(ws, r, [CLL[c], round(BP[c]), round(BR[c], 2), round(R1[c], 2),
+                     1.0, None, "", "",
+                     "補正係数は人口推計の補正（案B）による。"
+                     "65〜74歳1.0377／75歳以上0.9927"],
+             {2: IN_Y, 3: IN_Y, 4: IN_Y, 5: IN_Y}, height=20,
+             align={2: "right", 3: "right", 4: "right", 5: "right",
+                    6: "right"})
+    ws.cell(row=rr, column=6).value = "=(C%d-D%d)/7" % (rr, rr)
+    ws.cell(row=rr, column=6).number_format = "0.000"
+    ws.merge_cells(start_row=rr, start_column=7, end_row=rr, end_column=8)
+
+r += 1
+r = lead(ws, r, "【3　入力欄③　社人研推計の階級別人口（見える化A4）】", 9)
+r = header(ws, r, ["年度", "西暦", "65〜74歳", "75〜84歳", "85歳以上",
+                   "計", "", "", "説明"])
+R_A4 = r
+for y, wa, kb in YRS:
+    rr = R_A4 + [a[0] for a in YRS].index(y)
+    r = body(ws, r, [wa, int(y), round(apop("65-74", y)),
+                     round(apop("75-84", y)), round(apop("85+", y)),
+                     None, "", "", kb],
+             {3: IN_Y, 4: IN_Y, 5: IN_Y}, height=18,
+             align={2: "center", 3: "right", 4: "right", 5: "right",
+                    6: "right"})
+    ws.cell(row=rr, column=6).value = "=SUM(C%d:E%d)" % (rr, rr)
+    ws.merge_cells(start_row=rr, start_column=7, end_row=rr, end_column=8)
+R_A4_BASE = R_A4 + [a[0] for a in YRS].index(BASE_Y)
+
+r += 1
+r = lead(ws, r, "【4　計算欄　推計上の階級別人口　＝　基準人口×社人研の伸び率"
+         "×補正係数】", 9)
+r = header(ws, r, ["年度", "西暦", "65〜74歳", "75〜84歳", "85歳以上",
+                   "65歳以上", "", "", "計算式"])
+R_POP = r
+for i, (y, wa, kb) in enumerate(YRS):
+    rr = R_POP + i
+    a4 = R_A4 + i
+    r = body(ws, r, [wa, int(y), None, None, None, None, "", "",
+                     "基準人口×当年の社人研人口÷基準年の社人研人口"
+                     "×補正係数（適用する場合）" if i == 0 else ""],
+             {}, height=18,
+             align={2: "center", 3: "right", 4: "right", 5: "right",
+                    6: "right"})
+    for j, c in enumerate(CL):
+        col = chr(ord("C") + j)
+        cr = R_CL + j
+        ws.cell(row=rr, column=3 + j).value = (
+            "=$B$%d*%s%d/%s$%d*IF($B$%d=1,$E$%d,1)"
+            % (cr, col, a4, col, R_A4_BASE, B_ADJ, cr))
+        ws.cell(row=rr, column=3 + j).number_format = "#,##0"
+    ws.cell(row=rr, column=6).value = "=SUM(C%d:E%d)" % (rr, rr)
+    ws.cell(row=rr, column=6).number_format = "#,##0"
+    ws.merge_cells(start_row=rr, start_column=7, end_row=rr, end_column=8)
+
+r += 1
+r = lead(ws, r, "【5　計算欄　階級別認定率（シナリオにより切り替わる）】", 9)
+r = header(ws, r, ["年度", "西暦", "65〜74歳", "75〜84歳", "85歳以上",
+                   "", "", "", "計算式"])
+R_RATE = r
+for i, (y, wa, kb) in enumerate(YRS):
+    rr = R_RATE + i
+    r = body(ws, r, [wa, int(y), None, None, None, "", "", "",
+                     "CHOOSE(シナリオ，基準率，"
+                     "基準率＋年平均変化×経過年数，"
+                     "基準率＋（令和元年率－基準率）×経過年数÷延長年数)"
+                     if i == 0 else ""],
+             {}, height=18,
+             align={2: "center", 3: "right", 4: "right", 5: "right"})
+    for j, c in enumerate(CL):
+        cr = R_CL + j
+        d = "MIN(MAX(B%d-$B$%d,0),$B$%d)" % (rr, B_BASEY, B_TREND)
+        f = ("=CHOOSE($B$%d,$C$%d,$C$%d+$F$%d*%s,"
+             "$C$%d+($D$%d-$C$%d)*%s/$B$%d)"
+             % (B_SC, cr, cr, cr, d, cr, cr, cr, d, B_TREND))
+        ws.cell(row=rr, column=3 + j).value = f
+        ws.cell(row=rr, column=3 + j).number_format = "0.00"
+    ws.merge_cells(start_row=rr, start_column=6, end_row=rr, end_column=8)
+
+r += 1
+r = lead(ws, r, "【6　計算欄　認定者数　＝　階級別人口×階級別認定率÷100】", 9)
+r = header(ws, r, ["年度", "西暦", "65〜74歳", "75〜84歳", "85歳以上",
+                   "認定者数計", "認定率（％）", "", "備考"])
+R_N = r
+for i, (y, wa, kb) in enumerate(YRS):
+    rr = R_N + i
+    pr, rt = R_POP + i, R_RATE + i
+    r = body(ws, r, [wa, int(y), None, None, None, None, None, "", kb],
+             {6: OK_G}, height=18,
+             align={2: "center", 3: "right", 4: "right", 5: "right",
+                    6: "right", 7: "right"})
+    for j in range(3):
+        col = chr(ord("C") + j)
+        ws.cell(row=rr, column=3 + j).value = (
+            "=%s%d*%s%d/100" % (col, pr, col, rt))
+        ws.cell(row=rr, column=3 + j).number_format = "#,##0"
+    ws.cell(row=rr, column=6).value = "=SUM(C%d:E%d)" % (rr, rr)
+    ws.cell(row=rr, column=6).number_format = "#,##0"
+    ws.cell(row=rr, column=7).value = "=F%d/F%d*100" % (rr, pr)
+    ws.cell(row=rr, column=7).number_format = "0.0"
+
+r += 1
+r = lead(ws, r, "【7　出力　計画本文への転記値】", 9)
+r = header(ws, r, ["項目", "値", "", "", "", "", "", "", "転記先"])
+IDX = {y: R_N + i for i, (y, _w, _k) in enumerate(YRS)}
+IDXP = {y: R_POP + i for i, (y, _w, _k) in enumerate(YRS)}
+R_OUT = r
+for lab, f, dest in [
+    ("令和9年度の認定者数", "=ROUND(F%d,0)" % IDX["2027"], "第6章第1節"),
+    ("令和10年度の認定者数", "=ROUND(F%d,0)" % IDX["2028"], "第6章第1節"),
+    ("令和11年度の認定者数", "=ROUND(F%d,0)" % IDX["2029"], "第6章第1節"),
+    ("第10期3年計", "=ROUND(F%d,0)+ROUND(F%d,0)+ROUND(F%d,0)"
+     % (IDX["2027"], IDX["2028"], IDX["2029"]), "第6章第1節・第3節"),
+    ("令和11年度の65歳以上", "=ROUND(F%d,0)" % IDXP["2029"], "第6章第1節"),
+    ("令和11年度の認定率（％）", "=ROUND(G%d,1)" % IDX["2029"], "第6章第1節"),
+    ("令和22年度の認定者数", "=ROUND(F%d,0)" % IDX["2040"], "第2章第8節"),
+]:
+    r = body(ws, r, [lab, None, "", "", "", "", "", "", dest],
+             {2: OK_G}, height=20, align={2: "right"}, bold=True)
+    ws.cell(row=r - 1, column=2).value = f
+    ws.merge_cells(start_row=r - 1, start_column=2, end_row=r - 1,
+                   end_column=8)
+
+r += 1
+r = lead(ws, r, "【8　検算　他シートの値との一致】", 9)
+r = header(ws, r, ["項目", "本シート", "03シート", "差", "", "", "", "",
+                   "判定"])
+R_CHK = r
+for lab, cell, val in [
+    ("令和7年度の認定者数（基準）", "F%d" % IDX["2025"], round(total("2025", 2))),
+    ("令和11年度の認定者数", "F%d" % IDX["2029"], round(total("2029", 2))),
+    ("令和22年度の認定者数", "F%d" % IDX["2040"], round(total("2040", 2))),
+    ("令和11年度の65歳以上", "F%d" % IDXP["2029"], round(pop_all("2029"))),
+]:
+    rr = r
+    r = body(ws, r, [lab, None, val, None, "", "", "", "", None],
+             {}, height=20, align={2: "right", 3: "right", 4: "right",
+                                   9: "center"})
+    ws.cell(row=rr, column=2).value = "=ROUND(%s,0)" % cell
+    ws.cell(row=rr, column=4).value = "=B%d-C%d" % (rr, rr)
+    ws.cell(row=rr, column=9).value = (
+        '=IF(ABS(D%d)<=1,"一致","要確認")' % rr)
+    ws.merge_cells(start_row=rr, start_column=5, end_row=rr, end_column=8)
+
+note(ws, r + 1,
+     "注1）本シートは、シナリオ2（トレンド継続）・人口補正なしの状態で"
+     "他シートと一致するように作っている。"
+     "【8】の判定欄がすべて「一致」であることを確認したうえで、"
+     "入力欄を変更していただきたい。"
+     "注2）人口補正を適用する場合は【1】の「人口補正の適用」を1にする。"
+     "補正係数は【2】のE列で変更できる。"
+     "初期値は1.000（補正なしと同じ）としているため、"
+     "適用する場合は65〜74歳に1.0377、75〜84歳及び85歳以上に0.9927を"
+     "入力する（人口推計の補正 04シートによる）。"
+     "注3）本シートで変更できるのは第1段階（人口と認定者数）までである。"
+     "サービス見込量（第2段階）及び給付費・保険料（第3段階）への波及は、"
+     "【7】の転記値を各成果品に入力して再計算する。"
+     "注4）他のシート（00〜07）は本シートの計算結果を書き出した転記表である。"
+     "入力欄を変更しても他のシートは自動では変わらない。"
+     "変更を成果品に反映する場合は受託者にご連絡いただきたい。", 9)
+
+
 del wb["Sheet"]
 wb.save(OUT)
 print("saved:", OUT, "sheets=%d" % len(wb.sheetnames))
