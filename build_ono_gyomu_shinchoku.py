@@ -253,6 +253,56 @@ def spec_text(ref, spec):
     return "\n".join(out) if out else "―"
 
 
+# ============================================================ 仕様書の業務ブロック
+# 仕様書の条立てにそのまま対応させる。段階（フェーズ）は業務の進み方の切り口、
+# ブロックは委託契約上の業務単位の切り口で、両方で見ないと抜けが分からない。
+# 作業が複数の条項にまたがる場合は、先頭の条項が属するブロックに数える。
+
+BLOCKS_E = [
+    ("B1 現状分析（基礎データ・資料の整理分析）", ["4(1)"]),
+    ("B2 統計分析", ["4(1)①ア", "4(1)①イ", "4(1)①ウ", "4(1)①エ", "4(1)①オ"]),
+    ("B3 介護保険給付費等の分析", ["4(1)②"]),
+    ("B4 令和7年度調査結果の反映", ["4(1)③"]),
+    ("B5 事業量推計・保険料算出・介護財政", ["4(2)"]),
+    ("B6 骨子案・素案の作成", ["4(3)"]),
+    ("B7 最終調整及び計画書の作成", ["4(4)"]),
+    ("B8 協議会・パブリックコメントの支援", ["4(5)"]),
+    ("B9 成果品の納品", ["成果品①", "成果品②", "成果品③", "成果品④",
+                   "成果品⑤", "成果品⑥", "成果品"]),
+    ("B10 業務管理・計画の基本的な考え方",
+     ["1", "2(1)", "2(2)", "2(3)", "3", "5(1)", "5(2)", "5(3)", "公告10⑥", "全般"]),
+    ("B11 仕様書に定めのない作業", []),
+]
+
+BLOCKS_D = [
+    ("B1 障がい者ニーズ調査", ["5(1)", "5(1)①ア", "5(1)①イ", "5(1)①ウ", "5(1)①エ",
+                       "5(1)①オ", "5(1)①カ", "5(1)①キ", "5(1)①ク", "作業分担表"]),
+    ("B2 現状分析と課題の整理", ["5(3)"]),
+    ("B3 計画策定支援業務", ["5(4)"]),
+    ("B4 パブリックコメントの実施支援", ["5(5)"]),
+    ("B5 成果品の納品", ["成果品①", "成果品②"]),
+    ("B6 業務管理・打合せ", ["2", "4", "7", "8①", "8②", "11④", "公告10⑥", "全般"]),
+    ("B7 仕様書に定めのない作業", []),
+]
+
+
+def block_of(ref, blocks):
+    """作業の仕様書参照から、属する業務ブロックを返す（先頭の条項で判定する）。
+
+    どの条項にも当たらない作業は、末尾の受け皿ブロック（キーが空のもの）に入れる。
+    黙って集計から落とすと、仕様書外の作業が見えなくなる。
+    """
+    keys = spec_keys(ref)
+    fallback = next((nm for nm, ks in blocks if not ks), "―")
+    if not keys:
+        return fallback
+    for k in keys:                       # 先頭優先で、順に探す
+        for name, ks in blocks:
+            if k in ks:
+                return name
+    return fallback
+
+
 # ============================================================ 高齢者 WBS
 # (段階, No, 作業, 内容, 仕様書根拠, 担当, 予定開始, 予定完了, 状態, 進捗率, 重み,
 #  実績・根拠, 前提条件・ブロッカー)
@@ -262,7 +312,7 @@ WBS_ELDERLY = [
      "公告10⑥（技術者の配置）", "受託者", "2026-06", "2026-07", "完了", 100, 2,
      "キックオフ資料・業務計画書（02_キックオフ・業務計画）", "―"),
     ("P1 準備・現状把握", "1-2", "引継ぎ資料の整理", "前受託者からの引継ぎ資料の棚卸しと索引化",
-     "―", "受託者", "2026-07", "2026-07", "完了", 100, 2,
+     "仕様書全般", "受託者", "2026-07", "2026-07", "完了", 100, 2,
      "manifest_全ファイル（207ファイル）", "―"),
     ("P1 準備・現状把握", "1-3", "委託仕様書の確認と適合性チェック",
      "原典4件（公告・仕様書×2計画）を読み、成果品要件・工程・作業分担を確定",
@@ -364,7 +414,7 @@ WBS_ELDERLY = [
      "仕様書4(1)③", "受託者", "2026-09", "2026-10", "データ待ち", 0, 3,
      "―", "**令和7年度調査の個票データ（依頼票H16）。地区情報の有無も要確認**"),
     ("P4 調査結果の反映", "4-6", "レッドチームレビュー", "集計・分析の反証検証",
-     "―", "受託者", "2026-08", "2026-08", "完了", 100, 1,
+     "仕様書4(1)③", "受託者", "2026-08", "2026-08", "完了", 100, 1,
      "REDTEAM 2本（14_アンケート集計）。数値の取り違え1件を自己検出し修正", "―"),
     # ---------- P5 第9期計画の評価
     ("P5 第9期の評価", "5-1", "協議会資料（第9期評価・調査結果）の作成",
@@ -672,53 +722,54 @@ WBS_DISABILITY = [
      "―", "**完了日が公告（3月31日）と仕様書（3月25日）で異なる（依頼票C1）**"),
 ]
 
-HDR_WBS = ["段階", "No", "作業", "内容", "仕様書 条項", "仕様書の記載内容（原文）",
-           "担当", "予定開始", "予定完了",
+HDR_WBS = ["段階", "No", "作業", "内容", "仕様書ブロック", "仕様書 条項",
+           "仕様書の記載内容（原文）", "担当", "予定開始", "予定完了",
            "状態", "進捗率", "重み", "実績・根拠", "前提条件・ブロッカー"]
-W_WBS = (18, 7, 30, 40, 16, 64, 12, 11, 11, 11, 8, 6, 50, 44)
+W_WBS = (18, 7, 30, 38, 26, 15, 60, 12, 11, 11, 11, 8, 6, 48, 42)
 
 
-def sheet_wbs(wb, rows, spec):
+def sheet_wbs(wb, rows, spec, blocks):
     ws = wb.create_sheet("01_WBS")
     ws.append(HDR_WBS)
     for r in rows:
         r = list(r)
         # 仕様書の記載内容は SPEC 辞書から引いて挿入する（行ごとの書き写しをしない）
         r.insert(5, spec_text(r[4], spec))
+        r.insert(4, block_of(r[4], blocks))
         ws.append(r)
     head_row(ws)
     last = ws.max_row
     for r in range(2, last + 1):
-        st = ws[f"J{r}"].value
+        st = ws[f"K{r}"].value
         if st in ST_FILL:
-            ws[f"J{r}"].fill = ST_FILL[st]
-            ws[f"J{r}"].alignment = Alignment(horizontal="center", vertical="center")
-        ws[f"K{r}"].fill = IN_FILL
-        ws[f"K{r}"].number_format = '0"%"'
+            ws[f"K{r}"].fill = ST_FILL[st]
+            ws[f"K{r}"].alignment = Alignment(horizontal="center", vertical="center")
         ws[f"L{r}"].fill = IN_FILL
-        ws[f"L{r}"].alignment = Alignment(horizontal="center", vertical="center")
-        ws[f"E{r}"].alignment = Alignment(horizontal="center", vertical="top")
-    body_style(ws, wrap_cols=(0, 2, 3, 5, 12, 13), max_row=last)
+        ws[f"L{r}"].number_format = '0"%"'
+        ws[f"M{r}"].fill = IN_FILL
+        ws[f"M{r}"].alignment = Alignment(horizontal="center", vertical="center")
+        ws[f"F{r}"].alignment = Alignment(horizontal="center", vertical="top")
+    body_style(ws, wrap_cols=(0, 2, 3, 4, 6, 13, 14), max_row=last)
     # 状態の入力規則
     dv = DataValidation(type="list", formula1='"' + ",".join(STATES) + '"', allow_blank=True)
     ws.add_data_validation(dv)
-    dv.add(f"J2:J{last}")
+    dv.add(f"K2:K{last}")
     dv2 = DataValidation(type="whole", operator="between", formula1=0, formula2=100,
                          allow_blank=True)
     ws.add_data_validation(dv2)
-    dv2.add(f"K2:K{last}")
+    dv2.add(f"L2:L{last}")
     # 進捗率の色分け
     ws.conditional_formatting.add(
-        f"K2:K{last}",
+        f"L2:L{last}",
         CellIsRule(operator="equal", formula=["100"],
                    fill=PatternFill("solid", bgColor="C6EFCE")))
     ws.conditional_formatting.add(
-        f"K2:K{last}",
+        f"L2:L{last}",
         CellIsRule(operator="equal", formula=["0"],
                    fill=PatternFill("solid", bgColor="EEEEEE")))
     widths(ws, W_WBS)
     ws.freeze_panes = "C2"
-    ws.auto_filter.ref = f"A1:N{last}"
+    ws.auto_filter.ref = f"A1:O{last}"
     return ws, last
 
 
@@ -738,14 +789,14 @@ def sheet_phase(wb, rows, last, bottleneck):
         ws.append([
             ph,
             f'=COUNTIF({W}!$A$2:$A${last},$A{rr})',
-            f'=COUNTIFS({W}!$A$2:$A${last},$A{rr},{W}!$J$2:$J${last},"完了")',
-            f'=COUNTIFS({W}!$A$2:$A${last},$A{rr},{W}!$J$2:$J${last},"進行中")',
-            f'=COUNTIFS({W}!$A$2:$A${last},$A{rr},{W}!$J$2:$J${last},"要対応")',
-            f'=COUNTIFS({W}!$A$2:$A${last},$A{rr},{W}!$J$2:$J${last},"データ待ち")',
-            f'=COUNTIFS({W}!$A$2:$A${last},$A{rr},{W}!$J$2:$J${last},"未着手")',
-            f'=IF(SUMPRODUCT(({W}!$A$2:$A${last}=$A{rr})*{W}!$L$2:$L${last})=0,0,'
-            f'SUMPRODUCT(({W}!$A$2:$A${last}=$A{rr})*{W}!$K$2:$K${last}*{W}!$L$2:$L${last})'
-            f'/SUMPRODUCT(({W}!$A$2:$A${last}=$A{rr})*{W}!$L$2:$L${last})/100)',
+            f'=COUNTIFS({W}!$A$2:$A${last},$A{rr},{W}!$K$2:$K${last},"完了")',
+            f'=COUNTIFS({W}!$A$2:$A${last},$A{rr},{W}!$K$2:$K${last},"進行中")',
+            f'=COUNTIFS({W}!$A$2:$A${last},$A{rr},{W}!$K$2:$K${last},"要対応")',
+            f'=COUNTIFS({W}!$A$2:$A${last},$A{rr},{W}!$K$2:$K${last},"データ待ち")',
+            f'=COUNTIFS({W}!$A$2:$A${last},$A{rr},{W}!$K$2:$K${last},"未着手")',
+            f'=IF(SUMPRODUCT(({W}!$A$2:$A${last}=$A{rr})*{W}!$M$2:$M${last})=0,0,'
+            f'SUMPRODUCT(({W}!$A$2:$A${last}=$A{rr})*{W}!$L$2:$L${last}*{W}!$M$2:$M${last})'
+            f'/SUMPRODUCT(({W}!$A$2:$A${last}=$A{rr})*{W}!$M$2:$M${last})/100)',
             min(r[6] for r in sub),
             max(r[7] for r in sub),
             bottleneck.get(ph, "―"),
@@ -755,8 +806,8 @@ def sheet_phase(wb, rows, last, bottleneck):
     ws.append([
         "合計", f"=SUM(B2:B{tot - 1})", f"=SUM(C2:C{tot - 1})", f"=SUM(D2:D{tot - 1})",
         f"=SUM(E2:E{tot - 1})", f"=SUM(F2:F{tot - 1})", f"=SUM(G2:G{tot - 1})",
-        f'=IF(SUM({W}!$L$2:$L${last})=0,0,'
-        f'SUMPRODUCT({W}!$K$2:$K${last},{W}!$L$2:$L${last})/SUM({W}!$L$2:$L${last})/100)',
+        f'=IF(SUM({W}!$M$2:$M${last})=0,0,'
+        f'SUMPRODUCT({W}!$L$2:$L${last},{W}!$M$2:$M${last})/SUM({W}!$M$2:$M${last})/100)',
         min(r[6] for r in rows), max(r[7] for r in rows), "",
     ])
     head_row(ws)
@@ -778,7 +829,7 @@ def sheet_phase(wb, rows, last, bottleneck):
     return ws, tot, phases
 
 
-def sheet_dash(wb, plan, tot_row, phases, headline, milestones, alerts):
+def sheet_dash(wb, plan, tot_row, phases, headline, milestones, alerts, blocks):
     ws = wb.create_sheet("00_ダッシュボード")
     wb.move_sheet(ws, -(len(wb.sheetnames) - 1))
     ws.append([f"小野町　{plan}　業務進捗管理表"])
@@ -803,6 +854,25 @@ def sheet_dash(wb, plan, tot_row, phases, headline, milestones, alerts):
                    f"='02_段階サマリ'!H{rr}", f"='02_段階サマリ'!K{rr}"])
     head_row(ws, r0)
     for r in range(r0 + 1, r0 + 1 + len(phases)):
+        ws[f"C{r}"].number_format = "0.0%"
+        ws[f"C{r}"].fill = CALC_FILL
+        ws[f"B{r}"].alignment = Alignment(horizontal="center", vertical="center")
+        for c in ws[r]:
+            c.border = BORDER
+            c.font = Font(size=9)
+        ws[f"D{r}"].alignment = Alignment(wrap_text=True, vertical="top")
+    # 仕様書の業務ブロック別（10_ブロック別進捗を参照）
+    ws.append([])
+    ws.append(["■ 仕様書の業務ブロック別"])
+    ws[f"A{ws.max_row}"].font = Font(bold=True, size=11)
+    ws.append(["仕様書ブロック", "作業数", "加重進捗率", "現況・律速"])
+    b0 = ws.max_row
+    for i in range(len(blocks)):
+        rr = 2 + i
+        ws.append([f"='10_ブロック別進捗'!A{rr}", f"='10_ブロック別進捗'!C{rr}",
+                   f"='10_ブロック別進捗'!I{rr}", f"='10_ブロック別進捗'!J{rr}"])
+    head_row(ws, b0)
+    for r in range(b0 + 1, b0 + 1 + len(blocks)):
         ws[f"C{r}"].number_format = "0.0%"
         ws[f"C{r}"].fill = CALC_FILL
         ws[f"B{r}"].alignment = Alignment(horizontal="center", vertical="center")
@@ -940,6 +1010,59 @@ KOTEI_D = [
 
 
 
+def sheet_block(wb, wbs, blocks, last, note_map):
+    """10_ブロック別進捗。仕様書の条立てにそろえた集計。02と同じく数式で01を参照する。"""
+    ws = wb.create_sheet("10_ブロック別進捗")
+    ws.append(["仕様書ブロック", "該当条項", "作業数", "完了", "進行中", "要対応",
+               "データ待ち", "未着手", "加重進捗率", "現況・律速"])
+    W = "'01_WBS'"
+    names = [b[0] for b in blocks]
+    used = {block_of(r[4], blocks) for r in wbs}
+    rows_out = []
+    for i, (name, ks) in enumerate(blocks):
+        rr = 2 + i
+        ws.append([
+            name, ("、".join(ks) if len(ks) <= 6 else "、".join(ks[:6]) + " ほか")
+            if ks else "（該当条項なし）",
+            f'=COUNTIF({W}!$E$2:$E${last},$A{rr})',
+            f'=COUNTIFS({W}!$E$2:$E${last},$A{rr},{W}!$K$2:$K${last},"完了")',
+            f'=COUNTIFS({W}!$E$2:$E${last},$A{rr},{W}!$K$2:$K${last},"進行中")',
+            f'=COUNTIFS({W}!$E$2:$E${last},$A{rr},{W}!$K$2:$K${last},"要対応")',
+            f'=COUNTIFS({W}!$E$2:$E${last},$A{rr},{W}!$K$2:$K${last},"データ待ち")',
+            f'=COUNTIFS({W}!$E$2:$E${last},$A{rr},{W}!$K$2:$K${last},"未着手")',
+            f'=IF(SUMPRODUCT(({W}!$E$2:$E${last}=$A{rr})*{W}!$M$2:$M${last})=0,"―",'
+            f'SUMPRODUCT(({W}!$E$2:$E${last}=$A{rr})*{W}!$L$2:$L${last}*{W}!$M$2:$M${last})'
+            f'/SUMPRODUCT(({W}!$E$2:$E${last}=$A{rr})*{W}!$M$2:$M${last})/100)',
+            note_map.get(name, "―"),
+        ])
+        rows_out.append(name)
+    tot = 2 + len(blocks)
+    ws.append(["合計", "", f"=SUM(C2:C{tot - 1})", f"=SUM(D2:D{tot - 1})",
+               f"=SUM(E2:E{tot - 1})", f"=SUM(F2:F{tot - 1})", f"=SUM(G2:G{tot - 1})",
+               f"=SUM(H2:H{tot - 1})",
+               f'=IF(SUM({W}!$M$2:$M${last})=0,0,'
+               f'SUMPRODUCT({W}!$L$2:$L${last},{W}!$M$2:$M${last})/SUM({W}!$M$2:$M${last})/100)',
+               ""])
+    head_row(ws)
+    for r in range(2, tot + 1):
+        ws[f"I{r}"].number_format = "0.0%"
+        ws[f"I{r}"].fill = CALC_FILL
+        for col in "CDEFGH":
+            ws[f"{col}{r}"].alignment = Alignment(horizontal="center", vertical="center")
+    for col in "ABCDEFGHI":
+        ws[f"{col}{tot}"].font = Font(bold=True, size=10)
+    body_style(ws, wrap_cols=(0, 1, 9), max_row=tot)
+    widths(ws, (34, 26, 8, 8, 9, 9, 11, 9, 12, 54))
+    ws.freeze_panes = "C2"
+    ws.append([])
+    ws.append(["※ 段階（02_段階サマリ）は業務の進み方の切り口、ブロックは委託契約上の業務単位の切り口です。"
+               "同じ作業を別の軸で見ています。"])
+    ws.append(["※ 作業が複数の条項にまたがる場合は、先頭の条項が属するブロックに数えています。"])
+    if set(rows_out) != used - {"―"}:
+        ws.append([f"※ 未分類の作業があります：{sorted(used - set(rows_out))}"])
+    return ws
+
+
 def sheet_spec_map(wb, spec, wbs, order, no_task=()):
     """09_仕様書対応表。仕様書の条項ごとに、条文と、対応するWBSの作業を並べる。
 
@@ -982,12 +1105,12 @@ def sheet_spec_map(wb, spec, wbs, order, no_task=()):
     return ws
 
 
-def build(plan, wbs, spec, spec_order, no_task, seikahin, kotei, bottleneck, headline,
-          milestones, alerts, juryo, kaigi, risk, henko, fname):
+def build(plan, wbs, spec, spec_order, no_task, blocks, block_note, seikahin, kotei,
+          bottleneck, headline, milestones, alerts, juryo, kaigi, risk, henko, fname):
     OUT.mkdir(parents=True, exist_ok=True)
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
-    _, last = sheet_wbs(wb, wbs, spec)
+    _, last = sheet_wbs(wb, wbs, spec, blocks)
     _, tot_row, phases = sheet_phase(wb, wbs, last, bottleneck)
     sheet_simple(wb, "03_成果品管理",
                  ["成果品", "名称", "納品仕様", "版", "状態", "進捗率", "現状", "確定に必要なもの"],
@@ -1012,7 +1135,8 @@ def build(plan, wbs, spec, spec_order, no_task, seikahin, kotei, bottleneck, hea
                  notes=["※ 仕様書8①により、打合せ記録は受託者が作成し町と相互に確認する。",
                         "※ 様式は 02_キックオフ・業務計画/小野町_工程変更協議資料 の第5節。"])
     sheet_spec_map(wb, spec, wbs, spec_order, no_task)
-    sheet_dash(wb, plan, tot_row, phases, headline, milestones, alerts)
+    sheet_block(wb, wbs, blocks, last, block_note)
+    sheet_dash(wb, plan, tot_row, phases, headline, milestones, alerts, blocks)
     path = OUT / fname
     wb.save(path)
     c = Counter(r[8] for r in wbs)  # 状態（挿入前のタプル基準）
@@ -1399,6 +1523,49 @@ SPEC_ORDER_E = [
 NO_TASK_E = {"1", "2(1)", "5(2)"}
 NO_TASK_D = {"2", "4"}
 
+BLOCK_NOTE_E = {
+    "B1 現状分析（基礎データ・資料の整理分析）":
+        "第9期計画・第3期地域福祉計画の確認は完了。町からの実績データが未受領",
+    "B2 統計分析":
+        "**認定者数の20期系列は確定。令和8年3月末の値の確認と、"
+        "介護予防（総合事業・通いの場）のデータ欠落が残る**",
+    "B3 介護保険給付費等の分析":
+        "成果品①は第5版。町の給付実績で数値を確定する段階",
+    "B4 令和7年度調査結果の反映":
+        "**単純集計は完了。個票がないとクロス集計17件ができない**",
+    "B5 事業量推計・保険料算出・介護財政":
+        "**算定シートとケース設定は完了。推計・算定そのものは認定者数の確定待ちで着手できない**",
+    "B6 骨子案・素案の作成":
+        "骨子案第3版・素案第2版・成果指標の目標値案まで到達。見込量と保険料の反映が残る",
+    "B7 最終調整及び計画書の作成":
+        "パブリックコメント後に着手する。時期が来ていない",
+    "B8 協議会・パブリックコメントの支援":
+        "**資料と様式は揃っている。協議会の開催回数・時期が未定で工程が引けない**",
+    "B9 成果品の納品":
+        "**製本・印刷が納品仕様に含まれる。令和9年2月下旬の校了が動かせない期限**",
+    "B10 業務管理・計画の基本的な考え方":
+        "仕様書の適合性チェック・データ依頼票は完了。工程と協議会日程の合意が残る",
+    "B11 仕様書に定めのない作業":
+        "該当なし。仕様書のいずれかの条項に紐づかない作業が発生した場合はここに現れる",
+}
+
+BLOCK_NOTE_D = {
+    "B1 障がい者ニーズ調査":
+        "**実施設計は完了。★0727版が入手できず調査票が確定しないため発送できない**",
+    "B2 現状分析と課題の整理":
+        "前回調査による検証は済み。今期調査・ヒアリングの結果待ち",
+    "B3 計画策定支援業務":
+        "**骨子案は作成済み。素案の第2版改訂は外部条件に依存せず着手できるが未着手**",
+    "B4 パブリックコメントの実施支援":
+        "様式は作成済み。実施時期の確定待ち",
+    "B5 成果品の納品":
+        "**成果品①はヒアリングの実施が前提。②はレイアウトデザイン工程が未確保**",
+    "B6 業務管理・打合せ":
+        "**仕様書工程から3〜4か月遅延。工程変更の協議と記録化が要対応**",
+    "B7 仕様書に定めのない作業":
+        "該当なし。仕様書のいずれかの条項に紐づかない作業が発生した場合はここに現れる",
+}
+
 SPEC_ORDER_D = [
     ("目的・期間", ["2", "4", "7"]),
     ("委託業務の内容", ["5(1)", "5(1)①ア", "5(1)①イ", "5(1)①ウ", "5(1)①エ", "5(1)①オ",
@@ -1410,12 +1577,13 @@ SPEC_ORDER_D = [
 
 def main():
     e = build("高齢者保健福祉計画・第10期介護保険事業計画", WBS_ELDERLY, SPEC_ELDERLY,
-              SPEC_ORDER_E, NO_TASK_E, SEIKAHIN_E,
+              SPEC_ORDER_E, NO_TASK_E, BLOCKS_E, BLOCK_NOTE_E, SEIKAHIN_E,
               KOTEI_E, BN_E, HEADLINE_E, MILESTONE_E, ALERTS_E, JURYO_E, KAIGI_E,
               RISK_E, HENKO_E,
               f"小野町_業務進捗管理表_高齢者_{ASOF}.xlsx")
     d = build("おのまち障がい者計画・第4期障がい児福祉計画・第8期障がい福祉計画",
-              WBS_DISABILITY, SPEC_DISABILITY, SPEC_ORDER_D, NO_TASK_D, SEIKAHIN_D, KOTEI_D,
+              WBS_DISABILITY, SPEC_DISABILITY, SPEC_ORDER_D, NO_TASK_D,
+              BLOCKS_D, BLOCK_NOTE_D, SEIKAHIN_D, KOTEI_D,
               BN_D, HEADLINE_D, MILESTONE_D,
               ALERTS_D, JURYO_D, KAIGI_D, RISK_D, HENKO_D,
               f"小野町_業務進捗管理表_障がい_{ASOF}.xlsx")
