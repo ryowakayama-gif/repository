@@ -6,15 +6,41 @@
 """
 
 import os
+import sys
+
+import naming
 from PIL import Image, ImageDraw, ImageFont
 from openpyxl import load_workbook, Workbook
 from openpyxl.drawing.image import Image as XLImage
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
-OUT_DIR  = "/home/user/repository/output"
-IMG_DIR  = os.path.join(OUT_DIR, "images_basic")
+if {"-h", "--help"} & set(sys.argv[1:]):
+    print("使い方: python3 build_component_images.py [オプション]")
+    print("")
+    print("オプション:")
+    print("  --ascii      画像・ブックのファイル名を半角英数字（ASCII）にする")
+    print("  --no-ascii   日本語ファイル名にする（既定）")
+    print("  -h, --help   このヘルプを表示")
+    print("")
+    print("※ build_excel.py と同じオプションで実行すること。")
+    print("   ブック名が一致しないと貼り付け先が見つからず失敗する。")
+    sys.exit(0)
+
+OUT_DIR  = naming.OUT_DIR
+IMG_DIR  = naming.IMG_DIR
 os.makedirs(IMG_DIR, exist_ok=True)
+
+
+def require_book(key):
+    """貼り付け先ブックの存在を確認し、無ければ理由を示して終了する。"""
+    path = naming.book_path(key)
+    if not os.path.exists(path):
+        print(f"エラー: 貼り付け先のブックがありません -> {path}")
+        print("       先に同じオプションで build_excel.py を実行してください。")
+        print(f"       （現在のモード … {naming.describe_mode()}）")
+        sys.exit(1)
+    return path
 
 FONT_REG = "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf"
 FONT_BOLD = "/usr/share/fonts/opentype/ipafont-gothic/ipagp.ttf"
@@ -115,7 +141,7 @@ def render_part(p):
     d.text((PAD, eg_y), "使用例：", fill=hex_to_rgb(p["accent"]), font=f_label)
     d.text((PAD+62, eg_y), p["ex"], fill=(80,80,80), font=f_small)
 
-    path = os.path.join(IMG_DIR, f'{p["id"]}_{p["name"]}.png')
+    path = naming.image_path(p["id"], p["name"])
     img.save(path, "PNG")
     return path
 
@@ -123,7 +149,8 @@ def render_part(p):
 # ============================================================
 # 画像生成
 # ============================================================
-print("【1】基本コラム部品の見本画像を生成")
+print(f"出力モード … {naming.describe_mode()}")
+print("\n【1】基本コラム部品の見本画像を生成")
 image_paths = []
 for p in PARTS:
     path = render_part(p)
@@ -134,9 +161,9 @@ for p in PARTS:
 # ============================================================
 # Excelへ貼り付け（新規シート『部品画像一覧』を追加）
 # ============================================================
-print("\n【2】共通_基本コラム部品.xlsx に画像シートを追加")
+src = require_book("common")
+print(f"\n【2】{os.path.basename(src)} に画像シートを追加")
 
-src = os.path.join(OUT_DIR, "01_共通_基本コラム部品.xlsx")
 wb = load_workbook(src)
 
 # 既存に同名シートがあれば削除
@@ -204,7 +231,7 @@ print(f"  ✓ 保存: {out}")
 
 # マスターブックにも同じシートを追加
 print("\n【3】全計画マスター管理表にも画像シートを追加")
-master_src = os.path.join(OUT_DIR, "00_全計画マスター管理表.xlsx")
+master_src = require_book("master")
 wbm = load_workbook(master_src)
 if "基本部品画像一覧" in wbm.sheetnames:
     del wbm["基本部品画像一覧"]

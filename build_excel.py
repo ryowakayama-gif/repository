@@ -7,12 +7,15 @@
 """
 
 import os
+import sys
+
+import naming
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
-OUT_DIR = "/home/user/repository/output"
+OUT_DIR = naming.OUT_DIR
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # ============================================================
@@ -246,16 +249,24 @@ def add_cover_sheet(wb, plan_name, scope_desc):
     return ws
 
 
+MERGE_HEADERS = ["部品ID","分類","部品名","アイコン","タイトル","本文","出典","レイアウト","配色","対象計画","使用頻度","備考"]
+
+
+def merge_data_row(c):
+    """差込データ1行分。Excelシートと提出用CSVで共用する。"""
+    return [c["id"], c["cat"], c["name"], c["icon"], c["title_ex"], c["body_ex"], "",
+            c["layout"], c["color"], c["target"], "★"*c["freq"], c["note"]]
+
+
 def add_merge_data_sheet(wb, components):
     ws = wb.create_sheet("差込データ")
-    headers = ["部品ID","分類","部品名","アイコン","タイトル","本文","出典","レイアウト","配色","対象計画","使用頻度","備考"]
+    headers = MERGE_HEADERS
     set_col_widths(ws, [10, 8, 16, 10, 28, 50, 16, 18, 10, 14, 10, 28])
     ws.row_dimensions[1].height = 28
     style_header_row(ws, 1, headers)
 
     for i, c in enumerate(components, 2):
-        row = [c["id"], c["cat"], c["name"], c["icon"], c["title_ex"], c["body_ex"], "",
-               c["layout"], c["color"], c["target"], "★"*c["freq"], c["note"]]
+        row = merge_data_row(c)
         for col, v in enumerate(row, 1):
             cell = ws.cell(row=i, column=col, value=v)
             style_data_cell(cell, alt=(i % 2 == 0))
@@ -380,7 +391,7 @@ def add_guide_sheet(wb, components):
 # ============================================================
 # ブック生成
 # ============================================================
-def build_book(filename, plan_name, scope_desc, components):
+def build_book(book_key, plan_name, scope_desc, components):
     wb = Workbook()
     add_cover_sheet(wb, plan_name, scope_desc)
     add_merge_data_sheet(wb, components)
@@ -389,7 +400,7 @@ def build_book(filename, plan_name, scope_desc, components):
     add_layout_sheet(wb)
     add_design_sheet(wb)
     add_guide_sheet(wb, components)
-    path = os.path.join(OUT_DIR, filename)
+    path = naming.book_path(book_key)
     wb.save(path)
     print(f"  ✓ 作成: {path}  （{len(components)}部品）")
     return path
@@ -426,30 +437,69 @@ def build_master_book():
         ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}{len(target)+1}"
         ws.sheet_view.showGridLines = False
 
-    path = os.path.join(OUT_DIR, "00_全計画マスター管理表.xlsx")
+    path = naming.book_path("master")
     wb.save(path)
     print(f"  ✓ 作成: {path}  （マスター: {len(COMPONENTS)}部品）")
     return path
 
 
-if __name__ == "__main__":
-    print("【1】マスター管理表を作成")
-    build_master_book()
+# ============================================================
+# 提出用CSV出力（既定 Shift_JIS / CP932）
+# ============================================================
+def export_csv(book_key, components):
+    """差込データを行政系提出向けのCSVで書き出す。"""
+    filename = os.path.splitext(naming.book_filename(book_key))[0] + ".csv"
+    path = os.path.join(naming.CSV_DIR, filename)
+    naming.write_csv(path, MERGE_HEADERS, [merge_data_row(c) for c in components])
+    print(f"  ✓ 作成: {path}  （{len(components)}件 / {naming.CSV_ENCODING}）")
+    return path
 
-    print("\n【2】計画別ブックを作成")
+
+def print_usage():
+    print("使い方: python3 build_excel.py [オプション]")
+    print("")
+    print("オプション:")
+    print("  --ascii      出力ファイル名を半角英数字（ASCII）にする")
+    print("  --no-ascii   出力ファイル名を日本語にする（既定）")
+    print("  -h, --help   このヘルプを表示")
+    print("")
+    print("環境変数:")
+    print("  ASCII_FILENAMES=1   --ascii と同じ")
+    print("  CSV_ENCODING=cp932  提出用CSVの文字コード（既定）")
+    print("                      utf-8-sig（BOM付きUTF-8）/ utf-8 も指定可")
+
+
+if __name__ == "__main__":
+    if {"-h", "--help"} & set(sys.argv[1:]):
+        print_usage()
+        sys.exit(0)
+
+    print(f"出力モード … {naming.describe_mode()}")
+
     # 共通＝基本コラム部品のみ
     common = [c for c in COMPONENTS if c["cat"] == "基本"]
     senior = [c for c in COMPONENTS if c["cat"] in ("基本","高齢者")]
     disab  = [c for c in COMPONENTS if c["cat"] in ("基本","障がい")]
     child  = [c for c in COMPONENTS if c["cat"] in ("基本","こども")]
 
-    build_book("01_共通_基本コラム部品.xlsx", "共通（基本コラム部品）",
+    print("\n【1】マスター管理表を作成")
+    build_master_book()
+
+    print("\n【2】計画別ブックを作成")
+    build_book("common", "共通（基本コラム部品）",
                "全計画で共通利用する6種類の基本部品", common)
-    build_book("02_高齢者介護保険事業計画.xlsx", "高齢者介護保険事業計画",
+    build_book("senior", "高齢者介護保険事業計画",
                "基本6部品＋高齢者計画向け3部品", senior)
-    build_book("03_障がい福祉計画.xlsx", "障がい福祉計画",
+    build_book("disability", "障がい福祉計画",
                "基本6部品＋障がい計画向け3部品", disab)
-    build_book("04_こども計画.xlsx", "こども計画",
+    build_book("child", "こども計画",
                "基本6部品＋こども計画向け3部品", child)
+
+    print(f"\n【3】提出用CSVを作成（{naming.CSV_ENCODING}）")
+    export_csv("master", COMPONENTS)
+    export_csv("common", common)
+    export_csv("senior", senior)
+    export_csv("disability", disab)
+    export_csv("child", child)
 
     print("\n完了。出力先: " + OUT_DIR)
