@@ -51,6 +51,7 @@ SEIKA = [
         "第10期計画_第9期評価のレッドチームレビュー.xlsx",
         "第10期計画_第9期施策と調査・KPIの紐付けレビュー.xlsx",
         "第10期計画_第9期計画の評価・検証_中間報告.docx",
+        "第10期計画_中間報告の根拠対照表.xlsx",
         "第10期計画_第9期施策別評価表と暫定評価ルール.xlsx",
         "第10期計画_事業所調査の照会票と確定値管理表.xlsx",
         "第10期計画_主張の根拠水準の棚卸しと再レビュー.xlsx",
@@ -95,6 +96,7 @@ SEIKA = [
 TEISHUTSU = [
     ("第10期計画_第9期計画の評価・検証_令和8年8月.zip", ROOT, [
         "第10期計画_第9期計画の評価・検証_中間報告.docx",
+        "第10期計画_中間報告の根拠対照表.xlsx",
         "第10期計画_妥当性検証報告書.xlsx",
         "第10期計画_第9期評価のレッドチームレビュー.xlsx",
         "第10期計画_第9期施策と調査・KPIの紐付けレビュー.xlsx",
@@ -103,6 +105,34 @@ TEISHUTSU = [
         "第10期計画_施策体系新旧対照表.xlsx",
         "第10期計画_業務進捗報告書_令和8年8月分.docx",
     ], []),
+]
+
+# ------------------------------------------------ 中間報告の検証用エビデンス
+# 第三者が中間報告の記述を検証するための一式。
+# 報告本体・根拠対照表・根拠となる成果品・原データを1つにまとめる。
+# 個票（個人情報）及び見える化δは収録しない（根拠対照表 05シートに明示）。
+KENSHO_ROOT = [
+    "第10期計画_第9期計画の評価・検証_中間報告.docx",
+    "第10期計画_中間報告の根拠対照表.xlsx",
+    "第10期計画_妥当性検証報告書.xlsx",
+    "第10期計画_第9期評価のレッドチームレビュー.xlsx",
+    "第10期計画_第9期施策と調査・KPIの紐付けレビュー.xlsx",
+    "第10期計画_第9期施策別評価表と暫定評価ルール.xlsx",
+    "第10期計画_主張の根拠水準の棚卸しと再レビュー.xlsx",
+    "第10期計画_施策体系新旧対照表.xlsx",
+    "第10期計画_認定率の年齢調整分析.xlsx",
+    "第10期計画_地域差の分析.xlsx",
+    "第10期計画_調査クロス集計・分析.xlsx",
+    "第10期計画_アンケート調査の集計分析報告書.xlsx",
+    "第10期計画_サービス受給者数データの確認.xlsx",
+    "第10期計画_要介護認定データの確認.xlsx",
+    "第10期計画_業務進捗報告書_令和8年8月分.docx",
+]
+KENSHO_EVID = [
+    "第10期計画_エビデンス_0_索引.xlsx",
+    "第10期計画_エビデンス_1_統計データ.xlsx",
+    "第10期計画_エビデンス_2_事業所と公表情報.xlsx",
+    "第10期計画_エビデンス_3_調査の集計値.xlsx",
 ]
 
 # ---------------------------------------------------------------- エビデンス
@@ -164,8 +194,36 @@ if __name__ == "__main__":
     ne = sum(build(nm, base, f, d, missing) for nm, base, f, d in EVID)
     print("【工程提出用（第9期評価）】")
     nt = sum(build(nm, base, f, d, missing) for nm, base, f, d in TEISHUTSU)
+
+    # 検証用は1つのZIPに2つの階層で格納する
+    print("【中間報告の検証用エビデンス】")
+    _nm = "第10期計画_中間報告の検証用エビデンス.zip"
+    nk = 0
+    with zipfile.ZipFile(os.path.join(DEST, _nm), "w",
+                         zipfile.ZIP_DEFLATED) as z:
+        for fn in KENSHO_ROOT:
+            src = os.path.join(ROOT, fn)
+            if not os.path.exists(src):
+                missing.append(fn)
+                continue
+            add(z, "01_報告と根拠/" + fn, src)
+            nk += 1
+        for fn in KENSHO_EVID:
+            src = os.path.join(EDIR, fn)
+            if not os.path.exists(src):
+                missing.append(fn)
+                continue
+            add(z, "02_原データ/" + fn, src)
+            nk += 1
+        d = os.path.join(ROOT, "figures")
+        for fn in sorted(os.listdir(d)):
+            add(z, "03_図表/" + fn, os.path.join(d, fn))
+            nk += 1
+    _sz = os.path.getsize(os.path.join(DEST, _nm)) / 1024
+    print("  %-52s %3d件 %6.0f KB" % (_nm, nk, _sz))
     print()
-    print("成果物 %d件／エビデンス %d件／工程提出用 %d件" % (ns, ne, nt))
+    print("成果物 %d件／エビデンス %d件／工程提出用 %d件／検証用 %d件"
+          % (ns, ne, nt, nk))
     print("欠落: %s" % ("なし" if not missing else "、".join(missing)))
 
     # 成果品一覧との突合（一覧にあってZIPに入っていないものを検出する）
