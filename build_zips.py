@@ -107,6 +107,22 @@ TEISHUTSU = [
     ], []),
 ]
 
+# ------------------------------------------------ 計画素案（読むための一式）
+# 素案は［要協議］等90箇所を本文に残す運用のため、
+# 決定事項一覧・別管理表・図表集と併せて読む必要がある。
+SOAN = [
+    ("第10期計画_計画素案一式_第12稿.zip", ROOT, [
+        "第10期介護保険事業計画_素案_第12稿.docx",
+        "第10期計画_レビュー指摘への対応と決定事項一覧.xlsx",
+        "第10期計画_計画素案の別管理表.xlsx",
+        "第10期計画_図表集_白黒.xlsx",
+        "第10期計画素案_第11稿→第12稿_修正指示書.xlsx",
+        "第10期介護保険事業計画_骨子案.docx",
+        "第10期計画_施策体系新旧対照表.xlsx",
+        "第10期計画_代表KPIの振替案と確認事項の精査.xlsx",
+    ], []),
+]
+
 # ------------------------------------------------ 中間報告の検証用エビデンス
 # 第三者が中間報告の記述を検証するための一式。
 # 報告本体・根拠対照表・根拠となる成果品・原データを1つにまとめる。
@@ -192,6 +208,8 @@ if __name__ == "__main__":
     ns = sum(build(nm, ROOT, f, d, missing) for nm, f, d in SEIKA)
     print("【エビデンス】")
     ne = sum(build(nm, base, f, d, missing) for nm, base, f, d in EVID)
+    print("【計画素案（読むための一式）】")
+    nso = sum(build(nm, base, f, d, missing) for nm, base, f, d in SOAN)
     print("【工程提出用（第9期評価）】")
     nt = sum(build(nm, base, f, d, missing) for nm, base, f, d in TEISHUTSU)
 
@@ -222,8 +240,8 @@ if __name__ == "__main__":
     _sz = os.path.getsize(os.path.join(DEST, _nm)) / 1024
     print("  %-52s %3d件 %6.0f KB" % (_nm, nk, _sz))
     print()
-    print("成果物 %d件／エビデンス %d件／工程提出用 %d件／検証用 %d件"
-          % (ns, ne, nt, nk))
+    print("成果物 %d件／エビデンス %d件／素案一式 %d件／"
+          "工程提出用 %d件／検証用 %d件" % (ns, ne, nso, nt, nk))
     print("欠落: %s" % ("なし" if not missing else "、".join(missing)))
 
     # 成果品一覧との突合（一覧にあってZIPに入っていないものを検出する）
