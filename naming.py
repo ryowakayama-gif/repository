@@ -49,6 +49,7 @@ SHEET_SLUGS = {
     "05_更新メモ": "05_update_log",
     "06_町村改訂時期_20260825": "06_town_revision_20260825",
     "07_提出仕様_文字コード": "07_submission_encoding",
+    "08_改定時期調査_20260825b": "08_revision_survey_20260825b",
     "01_財源整理": "01_funding",
     "02_国の動向": "02_national_trends",
     "03_県の動向": "03_pref_trends",
