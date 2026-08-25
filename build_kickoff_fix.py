@@ -196,9 +196,9 @@ print()
 ng = [k for (k, _n, must) in REPS if must and not done.get(k)]
 for old, new, must in REPS:
     n = done.get(old, 0)
-    mark = "OK " if n else ("★未置換" if must else "―  ")
+    mark = "OK " if n else ("未置換" if must else "―  ")
     print("%s %d件  %s" % (mark, n, old[:48].replace("\n", "/")))
 for k in ["工程・会議資料の状況", "5.の差額0円の削除", "目次の頁番号"]:
     print("OK  %d件  %s" % (done.get(k, 0), k))
 if ng:
-    print("\n★置換できなかった項目があります:", ng)
+    print("\n置換できなかった項目があります:", ng)

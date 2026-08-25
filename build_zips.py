@@ -3,7 +3,7 @@
 
 【成果物】仕様書４が求める成果品。納品対象。
   D1 計画本体と管理表　　　計画素案・骨子案・図表集・管理表・会議資料
-  D2 第9期の評価と分析　　 評価、レッドチームレビュー、調査・地域差・推計
+  D2 第9期の評価と分析　　 評価、自己点検記録、調査・地域差・推計
   D3 設計と他団体比較　　　概要版の構成案、修正指示書、他計画の参考資料
 
 【エビデンス】成果物の数値の根拠となるデータ。納品対象ではないが、
@@ -26,8 +26,9 @@ EDIR = os.path.join(ROOT, "evidence")
 SEIKA = [
     ("第10期計画_成果物_1_計画本体と管理表.zip", [
         "第10期計画_成果品一覧.xlsx",
+        "第10期計画_成果品の送付区分表.xlsx",
         "第10期介護保険事業計画_骨子案.docx",
-        "第10期介護保険事業計画_素案_第12稿.docx",
+        "第10期介護保険事業計画_協議用素案_令和8年8月.docx",
         "第10期計画_図表集_白黒.xlsx",
         "第10期計画_必要事項の一覧.xlsx",
         "第10期計画_資料提供依頼_第9期の施策事業実績.xlsx",
@@ -36,7 +37,7 @@ SEIKA = [
         "第10期計画_業務進捗報告書_令和8年8月分.docx",
         "第10期計画_計画素案の別管理表.xlsx",
         "第10期計画_3町ヒアリング資料.docx",
-        "第10期計画_キックオフ会議資料_第6稿.docx",
+        "第10期計画_キックオフ会議資料_点検反映版.docx",
         "第10期計画_キックオフ会議ヒアリングシート.docx",
         "第10期計画_キックオフ会議資料（更新版）_校正反映.docx",
         "第10期計画_キックオフ会議資料（更新版）の校正結果.xlsx",
@@ -48,7 +49,7 @@ SEIKA = [
     ], []),
     ("第10期計画_成果物_2_第9期の評価と分析.zip", [
         "第10期計画_妥当性検証報告書.xlsx",
-        "第10期計画_第9期評価のレッドチームレビュー.xlsx",
+        "第10期計画_第9期評価の自己点検記録.xlsx",
         "第10期計画_第9期施策と調査・KPIの紐付けレビュー.xlsx",
         "第10期計画_第9期計画の評価・検証_中間報告.docx",
         "第10期計画_中間報告の根拠対照表.xlsx",
@@ -79,9 +80,10 @@ SEIKA = [
         "第10期計画_施策体系新旧対照表.xlsx",
         "第10期計画_代表KPIの振替案と確認事項の精査.xlsx",
         "第10期計画_概要版の構成案.xlsx",
-        "第10期計画素案_第9稿→第10稿_修正指示書.xlsx",
-        "第10期計画素案_第11稿→第12稿_修正指示書.xlsx",
-        "第10期計画_レビュー指摘への対応と決定事項一覧.xlsx",
+        "第10期計画素案_修正指示書_令和8年7月.xlsx",
+        "第10期計画素案_修正指示書_令和8年8月.xlsx",
+        "第10期計画_発注者確認事項一覧.xlsx",
+        "第10期計画_レビュー対応記録.xlsx",
         "00_全計画マスター管理表.xlsx",
         "01_共通_基本コラム部品.xlsx",
         "02_高齢者介護保険事業計画.xlsx",
@@ -98,7 +100,7 @@ TEISHUTSU = [
         "第10期計画_第9期計画の評価・検証_中間報告.docx",
         "第10期計画_中間報告の根拠対照表.xlsx",
         "第10期計画_妥当性検証報告書.xlsx",
-        "第10期計画_第9期評価のレッドチームレビュー.xlsx",
+        "第10期計画_第9期評価の自己点検記録.xlsx",
         "第10期計画_第9期施策と調査・KPIの紐付けレビュー.xlsx",
         "第10期計画_第9期施策別評価表と暫定評価ルール.xlsx",
         "第10期計画_主張の根拠水準の棚卸しと再レビュー.xlsx",
@@ -111,12 +113,12 @@ TEISHUTSU = [
 # 素案は［要協議］等90箇所を本文に残す運用のため、
 # 決定事項一覧・別管理表・図表集と併せて読む必要がある。
 SOAN = [
-    ("第10期計画_計画素案一式_第12稿.zip", ROOT, [
-        "第10期介護保険事業計画_素案_第12稿.docx",
-        "第10期計画_レビュー指摘への対応と決定事項一覧.xlsx",
+    ("第10期計画_計画素案一式_協議用素案（令和8年8月時点）.zip", ROOT, [
+        "第10期介護保険事業計画_協議用素案_令和8年8月.docx",
+        "第10期計画_発注者確認事項一覧.xlsx",
         "第10期計画_計画素案の別管理表.xlsx",
         "第10期計画_図表集_白黒.xlsx",
-        "第10期計画素案_第11稿→第12稿_修正指示書.xlsx",
+        "第10期計画素案_修正指示書_令和8年8月.xlsx",
         "第10期介護保険事業計画_骨子案.docx",
         "第10期計画_施策体系新旧対照表.xlsx",
         "第10期計画_代表KPIの振替案と確認事項の精査.xlsx",
@@ -131,7 +133,7 @@ KENSHO_ROOT = [
     "第10期計画_第9期計画の評価・検証_中間報告.docx",
     "第10期計画_中間報告の根拠対照表.xlsx",
     "第10期計画_妥当性検証報告書.xlsx",
-    "第10期計画_第9期評価のレッドチームレビュー.xlsx",
+    "第10期計画_第9期評価の自己点検記録.xlsx",
     "第10期計画_第9期施策と調査・KPIの紐付けレビュー.xlsx",
     "第10期計画_第9期施策別評価表と暫定評価ルール.xlsx",
     "第10期計画_主張の根拠水準の棚卸しと再レビュー.xlsx",
@@ -162,6 +164,38 @@ EVID = [
     ("第10期計画_エビデンス_2_図表の画像.zip", ROOT, [],
      ["figures", "figures_report", "images_basic"]),
 ]
+
+
+def build_by_dispatch(missing):
+    """送付区分により、送付用と内部保管用のZIPを分けて作る。"""
+    from data_dispatch import DISPATCH
+    groups = {"送付": [], "条件付き": [], "内部保管": []}
+    for fn, (kb, _why) in DISPATCH.items():
+        if kb in groups and os.path.exists(os.path.join(ROOT, fn)):
+            groups[kb].append(fn)
+
+    n_sofu = 0
+    nm = "第10期計画_送付用_令和8年8月.zip"
+    with zipfile.ZipFile(os.path.join(DEST, nm), "w",
+                         zipfile.ZIP_DEFLATED) as z:
+        for sub, kb in [("01_そのまま送付できるもの", "送付"),
+                        ("02_お諮りする内容を含むもの", "条件付き")]:
+            for fn in sorted(groups[kb]):
+                add(z, "%s/%s" % (sub, fn), os.path.join(ROOT, fn))
+                n_sofu += 1
+    print("  %-52s %3d件 %6.0f KB"
+          % (nm, n_sofu, os.path.getsize(os.path.join(DEST, nm)) / 1024))
+
+    nm2 = "第10期計画_内部保管_作業記録.zip"
+    n_naibu = 0
+    with zipfile.ZipFile(os.path.join(DEST, nm2), "w",
+                         zipfile.ZIP_DEFLATED) as z:
+        for fn in sorted(groups["内部保管"]):
+            add(z, fn, os.path.join(ROOT, fn))
+            n_naibu += 1
+    print("  %-52s %3d件 %6.0f KB"
+          % (nm2, n_naibu, os.path.getsize(os.path.join(DEST, nm2)) / 1024))
+    return n_sofu, n_naibu
 
 
 def add(z, arc, src):
@@ -213,6 +247,9 @@ if __name__ == "__main__":
     print("【工程提出用（第9期評価）】")
     nt = sum(build(nm, base, f, d, missing) for nm, base, f, d in TEISHUTSU)
 
+    print("【送付区分別】")
+    n_so, n_na = build_by_dispatch(missing)
+
     # 検証用は1つのZIPに2つの階層で格納する
     print("【中間報告の検証用エビデンス】")
     _nm = "第10期計画_中間報告の検証用エビデンス.zip"
@@ -242,6 +279,7 @@ if __name__ == "__main__":
     print()
     print("成果物 %d件／エビデンス %d件／素案一式 %d件／"
           "工程提出用 %d件／検証用 %d件" % (ns, ne, nso, nt, nk))
+    print("送付用 %d件／内部保管 %d件" % (n_so, n_na))
     print("欠落: %s" % ("なし" if not missing else "、".join(missing)))
 
     # 成果品一覧との突合（一覧にあってZIPに入っていないものを検出する）
@@ -261,3 +299,13 @@ if __name__ == "__main__":
     gap = sorted(idx - zipped)
     print("成果品一覧との突合: %s"
           % ("全件がZIPに入っている" if not gap else "ZIP未収録 " + "、".join(gap)))
+
+    # 送付用ZIPに内部保管のものが混ざっていないことを確かめる
+    from data_dispatch import dispatch_of
+    with zipfile.ZipFile(
+            os.path.join(DEST, "第10期計画_送付用_令和8年8月.zip")) as z:
+        bad = [a for a in z.namelist()
+               if dispatch_of(os.path.basename(a))[0] in ("内部保管", "対象外")]
+    print("送付用ZIPの点検: %s"
+          % ("内部保管・対象外は含まれていない" if not bad
+             else "混入 " + "、".join(bad)))
