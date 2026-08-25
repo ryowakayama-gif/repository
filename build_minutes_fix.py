@@ -339,6 +339,13 @@ def main():
                 continue
             z.writestr(n, data[n])
 
+    # 原本から引き継いだ文書プロパティ（他団体名・作成ソフト名）を整える
+    from docmeta import clean_odt
+    clean_odt(OUT,
+              title="大雪地区広域連合　第10期介護保険事業計画"
+                    "　キックオフ会議議事録（令和8年8月6日開催）",
+              subject="キックオフ会議の議事録")
+
     print("saved:", OUT)
     for k, v in done.items():
         print("  OK %d件  %s" % (v, k.replace("\n", "/")[:60]))

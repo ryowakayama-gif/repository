@@ -2,11 +2,13 @@
 """成果品を外部送付の観点で機械的に点検する.
 
 発注者へ送付する資料に残っていると不適切な表現を検出する。
-  ① 内部品質管理用語（レッドチーム、誤り、撤回、的中 ほか）
+  ① 内部品質管理用語（レッドチーム、的中 ほか）
   ② 稿番号（第○稿）
   ③ 記述ルールで禁止した5表現
   ④ 自己評価的な文言
   ⑤ 記号（★）
+  ⑥ 文書プロパティ（本文検索では見つからない題名・作成者・作成ソフト）
+  ⑦ 内部保管資料への参照（送付資料だけで参照が閉じているか）
 
 使い方
   python3 check_external.py            一覧を表示する
@@ -154,7 +156,40 @@ def run(verbose=False, only_sofu=True):
             if verbose:
                 for d in detail[(fn, g)]:
                     print("        " + d)
+    # ------------------------------------------------ 文書プロパティ
+    from docmeta import scan_meta
+    meta_ng = []
+    for p in files:
+        h = scan_meta(p)
+        if h:
+            meta_ng.append((os.path.basename(p), h))
+
+    # ------------------------------------------------ 内部保管資料への参照
+    naibu = [os.path.splitext(f)[0]
+             .replace("第10期計画_", "").replace("第10期計画素案_", "")
+             for f, (k, _w) in dispatch_of.__globals__["DISPATCH"].items()
+             if k == "内部保管"]
+    ref_ng = []
+    for p in files:
+        fn = os.path.basename(p)
+        if fn in EXEMPT_FILES:
+            continue
+        try:
+            cells = scan(p)
+        except Exception:                         # noqa: BLE001
+            continue
+        got = sorted({k for _sh, t in cells for k in naibu if k and k in t})
+        if got:
+            ref_ng.append((fn, got))
+
     print("\n" + "-" * 78)
+    print("文書プロパティの点検: %s"
+          % ("該当なし" if not meta_ng
+             else "／".join("%s（%s）" % (f, "・".join(h)) for f, h in meta_ng)))
+    print("内部保管資料への参照: %s"
+          % ("該当なし" if not ref_ng
+             else "／".join("%s→%s" % (f, "・".join(g)) for f, g in ref_ng)))
+    print("-" * 78)
     print("区分別の合計:",
           "／".join("%s %d" % (k, v) for k, v in total.most_common()))
     print("該当ファイル数: %d / %d" % (len(perfile), len(files)))

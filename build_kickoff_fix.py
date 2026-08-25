@@ -191,6 +191,13 @@ for p in doc.paragraphs:
 
 doc.save(OUT)
 
+# 原本から引き継いだ文書プロパティ（題名の稿番号・担当者名）を整える
+from docmeta import clean_docx                    # noqa: E402
+clean_docx(OUT,
+           title="大雪地区広域連合　第10期介護保険事業計画"
+                 "　キックオフ会議資料（令和8年8月）",
+           subject="サービス見込量・保険料の検討手順及び工程")
+
 print("saved:", OUT)
 print()
 ng = [k for (k, _n, must) in REPS if must and not done.get(k)]
