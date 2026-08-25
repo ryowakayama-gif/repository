@@ -1,0 +1,35 @@
+⑦ 提出仕様（ファイル名・文字コード）｜ 文字コード調査報告の結論を本ブックへ適用したもの,,,
+区分,項目,内容,根拠・補足
+■ 結論（文字コード調査報告より）,,,
+結論,このリポジトリのエンコード,ソース・実行時・出力xlsxの全レイヤーがUTF-8であり、UTF-8化のための修正対象は存在しなかった,encodinginvestigation.md 第1章・第2章
+結論,行政系で弾かれる要因,①出力ファイル名が日本語（非ASCII）②CSV提出時の文字コード（行政系はUTF-8ではなくShift_JIS(CP932)指定が多い）の2点,同 第3章。「UTF-8へ直す」ことがかえって弾かれる原因になり得る
+結論,xlsxの内部XML,OOXML仕様上UTF-8固定。openpyxlに選択の余地がなく、変更対象にならない,同 第2.3節
+■ 本ブックのCP932変換可否（2026-08-25 検査）,,,
+検査,検査対象,"全7シートの文字列セル 6,685件を1文字ずつ検査",naming.check_encodable() による
+検査,CP932で表現できない文字,'―'（U+2014 EM DASH）が26箇所。ほかは無し,「―」（U+2015 HORIZONTAL BAR）へ置換して出力する
+検査,紛らわしいが問題なかった文字,★ ▲ ◆ ■ ○ △ × ？ ｜ ＝ ① ～ はいずれもCP932で表現できる,～ は U+301C（WAVE DASH）だが Python の cp932 コーデックで変換可能
+検査,xlsx本体は書き換えていない,'―' の置換はCSV書き出し時のみ行う。xlsxはUTF-8なので表示上の問題がなく、原文を保つ,encodinginvestigation.md 第5.3節と同じ方針
+■ 提出用の出力（output/csv/）,,,
+出力,文字コード,既定 cp932（Shift_JIS）。環境変数 CSV_ENCODING で変更する,行政系システムで最も多い指定
+出力,CSV_ENCODING=cp932,Shift_JIS指定の行政系システム向け（既定）,―
+出力,CSV_ENCODING=utf-8-sig,UTF-8指定かつExcelで開く場合。BOM付き,―
+出力,CSV_ENCODING=utf-8,BOMなしUTF-8,―
+出力,改行コード,CRLF固定,Excel・行政系システムの慣例
+出力,セル内改行の扱い,CSVでは半角スペースへ畳む。引用符で囲めばRFC4180上は正しいが、行政系の取り込みで行数がずれる原因になりやすいため,xlsx側の改行は保持している。畳みたくない場合は naming.write_csv(flatten_newlines=False)
+出力,変換不能文字の扱い,naming.CP932_SUBSTITUTIONS で代替文字へ置換し、置換内容を標準出力へ警告する,代替表に無い文字は '?' へ落とす
+■ ファイル名,,,
+ファイル名,既定,日本語ファイル名（環境基本計画_営業先リスト_北海道東北.xlsx）,社内利用はこちら
+ファイル名,半角英数モード,--ascii オプション、または環境変数 ASCII_FILENAMES=1 で切り替える,行政系へ提出する場合はこちら
+ファイル名,対応表（ブック）,環境基本計画_営業先リスト_北海道東北 → env_plan_sales_list_hokkaido_tohoku ／ 環境基本計画_営業整理_v8 → env_plan_sales_pack_v8 ／ 士幌町環境基本計画_レビューと提案 → shihoro_env_plan_review,naming.py の BOOKS
+ファイル名,対応表（シート→CSV）,02_営業先マスタ → 02_target_master.csv など。未登録シートも機械生成のため非ASCIIにはならない,naming.py の SHEET_SLUGS / sheet_slug()
+ファイル名,実例,本ブックをアップロードした際、日本語ファイル名がアンダースコアへ置換されて届いた（_____________________________20260825.xlsx）,日本語ファイル名が経路上で壊れる実例。半角英数モードを用意した理由そのもの
+■ 運用,,,
+運用,社内,python3 update_sales_list.py,日本語ファイル名 + cp932 CSV
+運用,行政系へ提出,python3 update_sales_list.py --ascii,半角英数ファイル名 + cp932 CSV
+運用,提出先がUTF-8指定,CSV_ENCODING=utf-8-sig python3 update_sales_list.py --ascii,BOM付きUTF-8
+運用,テキスト出力を追加する場合,必ず naming.write_csv() を通すか、open() に encoding= を明示する,Windows日本語環境では locale.getpreferredencoding() が cp932 を返すため
+■ 未確認事項,,,
+未確認,提出先システムの実際の仕様,システム名・実際のエラーメッセージ・要求されるファイル形式／文字コード／ファイル名の制約は未確認,encodinginvestigation.md 第7.2節。原因の特定にはこの3点が必要
+未確認,ファイル形式の制限,xlsxを受け付けず xls / csv / pdf のみ、という制限の有無は未確認,提出先への確認が必要
+,,,
+提出前に必ず確認すること: 提出先システム名／アップロード時の実際のエラーメッセージ／要求されるファイル形式・文字コード・ファイル名の制約。この3点が揃うまで、原因を文字コードと断定しないこと。,,,

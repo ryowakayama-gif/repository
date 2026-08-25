@@ -12,6 +12,12 @@
   → 令和9年度当初予算への計上が必要 ＝ 予算要求は令和8年度の夏〜秋。
   → 令和8年8月時点は、まさに予算要求支援で入り込む時期。
 
+【重要】このスクリプトは「初版」を生成するものである。
+  生成後のブックには、その後の調査結果（05_更新メモ / 06_町村改訂時期 ほか）が
+  直接編集で積み上がっている。本スクリプトを再実行するとそれらが失われるため、
+  既存ブックがある場合は上書きせず中断する（下の guard を参照）。
+  更新は update_sales_list.py で行うこと。
+
 計画期間の確認状況について:
   本スクリプトの計画期間は、Web検索で確認できた範囲のみ記載している。
   実行環境の制約で自治体サイトへの直接アクセスができず、全406市町村の
@@ -592,6 +598,30 @@ write_sheet(wb, "04_アプローチ設計", "④ 時期別のアプローチ ｜
                 "R9年度満了組の最大の注意点: 令和8年度当初予算には改定委託料は載っていない。今の時点で予算を探しても見つからないのが正常で、狙うのは令和9年度当初予算への計上である。ここを取り違えると『予算なし＝C（追わない）』と誤判定してしまう。",
                 "逆に言えば、令和8年8月の今は予算要求期のど真ん中で、無償の材料提供で庁内の予算要求を後押しできる最も効果的な時期にあたる。",
             ])
+
+# ------------------------------------------------------------
+# 上書き保護
+#   既存ブックに初版に無いシート（後日の調査結果）が含まれている場合、
+#   再生成すると調査結果を失う。中断して update_sales_list.py へ誘導する。
+# ------------------------------------------------------------
+def guard_overwrite(path, generated_sheets):
+    if not os.path.exists(path):
+        return
+    try:
+        from openpyxl import load_workbook
+        existing = load_workbook(path, read_only=True).sheetnames
+    except Exception:
+        return
+    extra = [s for s in existing if s not in generated_sheets]
+    if extra:
+        print(f"中断: 既存ブックに初版に無いシートがあります -> {path}")
+        print(f"      追加シート: {', '.join(extra)}")
+        print("      再生成すると後日の調査結果を失います。更新は update_sales_list.py で行ってください。")
+        print("      それでも初版へ戻す場合は、既存ブックを退避してから再実行してください。")
+        raise SystemExit(1)
+
+
+guard_overwrite(OUT_PATH, [ws.title for ws in wb.worksheets])
 
 wb.save(OUT_PATH)
 print("saved:", OUT_PATH)
