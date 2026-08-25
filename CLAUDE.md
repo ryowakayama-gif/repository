@@ -10,6 +10,7 @@ Word差し込み印刷用のコラム部品（管理表Excel・見本画像）�
 | `build_excel.py` | 管理表ブック（マスター＋計画別4冊）と提出用CSVを生成 |
 | `build_component_images.py` | 基本コラム部品6種の見本画像を生成し、Excelへ貼り付け |
 | `output/` | 生成物（xlsx / csv / png） |
+| `docs/encoding-investigation.md` | 文字コード調査報告（方針の根拠と検証結果） |
 
 ## 実行
 
