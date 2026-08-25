@@ -14,7 +14,7 @@
 校正結果の一覧に「提案」「要協議」として掲げる。
 
 出力
-  output/第10期計画_キックオフ会議議事録_校正反映.odt
+  output/第10期計画_キックオフ会議議事録_令和8年8月6日.odt
   output/第10期計画_キックオフ会議議事録の校正結果.xlsx
 """
 
@@ -29,7 +29,7 @@ from openpyxl.utils import get_column_letter
 SRC = ("/root/.claude/uploads/54f527c9-842b-534d-b822-e5a6c91f837c/"
        "99672316-_________10_____________________1.odt")
 OUT = ("/home/user/repository/output/"
-       "第10期計画_キックオフ会議議事録_校正反映.odt")
+       "第10期計画_キックオフ会議議事録_令和8年8月6日.odt")
 OUTX = ("/home/user/repository/output/"
         "第10期計画_キックオフ会議議事録の校正結果.xlsx")
 
@@ -367,7 +367,7 @@ def main():
     c.font = Font(name=FONT, size=14, bold=True, color=NAVY)
     c = ws.cell(row=2, column=1,
                 value="誤字脱字及び明らかな表記の誤りは"
-                      "「第10期計画_キックオフ会議議事録_校正反映.odt」に"
+                      "「第10期計画_キックオフ会議議事録_令和8年8月6日.odt」に"
                       "反映済みである。"
                       "「提案」及び「要協議」は反映していない。")
     c.font = Font(name=FONT, size=9)

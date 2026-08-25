@@ -7,6 +7,9 @@
 """
 
 from docx import Document
+import sys
+sys.path.insert(0, "/home/user/repository")
+from data_progress import PROGRESS, overall_pct, KIJUNBI   # noqa: E402
 from docx.shared import Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_ALIGN_VERTICAL
@@ -261,21 +264,12 @@ TBL(["区分", "内容"],
     [2.4, 14.8], first_bold=True)
 
 P("")
-CAP("業務内容別の進捗（令和8年8月20日現在）")
+CAP("業務内容別の進捗（%s現在）" % KIJUNBI)
 TBL(["仕様書４", "業務内容", "進捗", "状態", "前月からの動き"],
-    [["(1)", "制度改正等の整理", "85％", "実施中", "＋10pt"],
-     ["(2)", "第9期計画の評価・検証", "65％", "実施中", "＋35pt"],
-     ["(3)", "実施済み調査結果の集計・分析", "95％", "実施中", "＋75pt"],
-     ["(4)", "現状分析及び地域課題の整理", "85％", "実施中", "＋45pt"],
-     ["(5)", "将来推計", "78％", "実施中", "＋58pt"],
-     ["(6)", "計画書の作成", "70％", "実施中", "＋40pt"],
-     ["(7)", "計画策定支援", "65％", "実施中", "＋25pt"],
-     ["(8)", "各種会議への技術的支援", "15％", "実施中", "＋15pt"],
-     ["(9)", "パブリックコメント支援", "0％", "未着手", "―"],
-     ["(10)", "成果品の作成", "45％", "実施中", "＋35pt"],
-     ["(11)", "成果品の帰属", "―", "対象外", "―"],
-     ["(12)", "その他", "―", "随時", "―"],
-     ["", "全体（単純平均）", "60％", "―", "＋33pt"]],
+    [[no, nm, "―" if v is None else "%d％" % round(v * 100), st, d]
+     for no, nm, v, st, d in PROGRESS] +
+    [["", "全体（数値で表せる10業務の単純平均）",
+      "%d％" % overall_pct(), "―", "＋33pt"]],
     [1.8, 6.4, 1.8, 1.8, 3.2], center={0, 2, 3, 4}, first_bold=True)
 NOTE("進捗は、当該業務の作業項目のうち完了したものの割合を受託者が"
      "見積もったものです。"

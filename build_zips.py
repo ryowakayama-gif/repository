@@ -40,12 +40,12 @@ SEIKA = [
         "第10期計画_3町ヒアリング資料.docx",
         "第10期計画_キックオフ会議資料_点検反映版.docx",
         "第10期計画_キックオフ会議ヒアリングシート.docx",
-        "第10期計画_キックオフ会議資料（更新版）_校正反映.docx",
+        "第10期計画_キックオフ会議資料_令和8年8月.docx",
         "第10期計画_キックオフ会議資料（更新版）の校正結果.xlsx",
         "第10期計画_キックオフ会議_トークスクリプト_60分.docx",
         "第10期計画_キックオフ会議_ファシリテーションの分岐.xlsx",
         "第10期計画_キックオフ資料の点検結果.xlsx",
-        "第10期計画_キックオフ会議議事録_校正反映.odt",
+        "第10期計画_キックオフ会議議事録_令和8年8月6日.odt",
         "第10期計画_キックオフ会議議事録の校正結果.xlsx",
     ], []),
     ("第10期計画_成果物_2_第9期の評価と分析.zip", [
@@ -175,13 +175,25 @@ def build_by_dispatch(missing):
     nm = "第10期計画_送付用_令和8年8月.zip"
     with zipfile.ZipFile(os.path.join(DEST, nm), "w",
                          zipfile.ZIP_DEFLATED) as z:
-        for sub, kb in [("01_そのまま送付できるもの", "送付"),
+        for sub, kb in [("01_送付可能（留保明記済み）", "送付"),
                         ("02_お諮りする内容を含むもの", "条件付き")]:
             for fn in sorted(groups[kb]):
                 add(z, "%s/%s" % (sub, fn), os.path.join(ROOT, fn))
                 n_sofu += 1
     print("  %-52s %3d件 %6.0f KB"
           % (nm, n_sofu, os.path.getsize(os.path.join(DEST, nm)) / 1024))
+
+    # 計画本文に掲載する図表の画像を同送する
+    fig = os.path.join(ROOT, "figures")
+    n_png = 0
+    if os.path.isdir(fig):
+        with zipfile.ZipFile(os.path.join(DEST, nm), "a",
+                             zipfile.ZIP_DEFLATED) as z:
+            for f in sorted(os.listdir(fig)):
+                add(z, "03_図表の画像/" + f, os.path.join(fig, f))
+                n_png += 1
+                n_sofu += 1
+        print("  %-52s 図表の画像 %d点を同梱" % ("", n_png))
 
     doc = "/home/user/repository/docs/令和8年8月_送付状.md"
     if os.path.exists(doc):
