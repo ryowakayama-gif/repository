@@ -1,0 +1,544 @@
+<title>道北4自治体 訪問ブック</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;700&family=BIZ+UDPGothic:wght@400;700&family=Roboto+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#F4F6F5; --panel:#FFFFFF; --panel-2:#EDF1F0; --sunk:#E3E9E7;
+  --ink:#18211F; --ink-2:#3D4B48; --ink-3:#697A76; --ink-4:#8FA09B;
+  --line:#D3DCD9; --line-2:#BCC9C5;
+  --accent:#1D5C57; --accent-soft:#E0EBE8; --accent-ink:#134340;
+  --warn:#8A5A00; --warn-soft:#F6EEDC; --warn-line:#D9BE80;
+  --danger:#8E2C33; --danger-soft:#F7E9E9; --danger-line:#D9A6A8;
+  --ok:#2F6B45; --ok-soft:#E4EFE7;
+  --shadow:0 1px 2px rgba(24,33,31,.05), 0 8px 24px -16px rgba(24,33,31,.28);
+  --sans:"BIZ UDPGothic","Hiragino Sans","Yu Gothic UI","Meiryo",system-ui,sans-serif;
+  --serif:"Shippori Mincho","Hiragino Mincho ProN","Yu Mincho",serif;
+  --mono:"Roboto Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#111614; --panel:#181F1D; --panel-2:#1E2624; --sunk:#131A18;
+    --ink:#E6EDEA; --ink-2:#C0CCC8; --ink-3:#8FA09B; --ink-4:#6B7C77;
+    --line:#2A3532; --line-2:#3A4844;
+    --accent:#6FBDB2; --accent-soft:#1B302E; --accent-ink:#8FD3C8;
+    --warn:#D9AE5E; --warn-soft:#2A2418; --warn-line:#5C4B23;
+    --danger:#DE8A8E; --danger-soft:#2B1B1C; --danger-line:#5B3436;
+    --ok:#7FBF95; --ok-soft:#18271D;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#111614; --panel:#181F1D; --panel-2:#1E2624; --sunk:#131A18;
+  --ink:#E6EDEA; --ink-2:#C0CCC8; --ink-3:#8FA09B; --ink-4:#6B7C77;
+  --line:#2A3532; --line-2:#3A4844;
+  --accent:#6FBDB2; --accent-soft:#1B302E; --accent-ink:#8FD3C8;
+  --warn:#D9AE5E; --warn-soft:#2A2418; --warn-line:#5C4B23;
+  --danger:#DE8A8E; --danger-soft:#2B1B1C; --danger-line:#5B3436;
+  --ok:#7FBF95; --ok-soft:#18271D;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+}
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink); font-family:var(--sans);
+  font-size:15px; line-height:1.85; margin:0;
+  font-feature-settings:"palt" 1; text-underline-offset:.18em;
+}
+.wrap{max-width:1120px; margin:0 auto; padding:0 20px 96px}
+a{color:var(--accent-ink); text-decoration-thickness:1px}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:2px}
+
+/* ---- masthead ---- */
+.mast{border-bottom:1px solid var(--line); background:var(--panel)}
+.mast-in{max-width:1120px; margin:0 auto; padding:38px 20px 26px;
+  display:flex; flex-wrap:wrap; gap:28px; align-items:flex-end; justify-content:space-between}
+.eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.14em; color:var(--ink-3); text-transform:uppercase; margin:0 0 10px}
+h1{font-family:var(--serif); font-weight:700; font-size:clamp(28px,4.6vw,40px); line-height:1.3;
+   margin:0 0 12px; letter-spacing:.01em; text-wrap:balance}
+.sub{color:var(--ink-2); margin:0; max-width:56ch; font-size:14px}
+.asof{display:flex; flex-direction:column; gap:7px; min-width:190px}
+.asof div{display:flex; gap:10px; align-items:baseline; font-size:12.5px; color:var(--ink-2)}
+.asof dt{font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; color:var(--ink-4); min-width:64px}
+.towns{display:flex; flex-wrap:wrap; gap:6px; margin:16px 0 0}
+.town{font-family:var(--serif); font-weight:600; font-size:13px; padding:3px 12px;
+  border:1px solid var(--line-2); border-radius:2px; color:var(--ink-2); background:var(--panel-2)}
+
+/* ---- nav ---- */
+nav{position:sticky; top:0; z-index:20; background:color-mix(in srgb, var(--ground) 92%, transparent);
+  backdrop-filter:blur(8px); border-bottom:1px solid var(--line)}
+.nav-in{max-width:1120px; margin:0 auto; padding:0 20px; display:flex; gap:2px; overflow-x:auto}
+nav a{font-size:12.5px; padding:11px 12px; color:var(--ink-3); text-decoration:none;
+  white-space:nowrap; border-bottom:2px solid transparent}
+nav a:hover{color:var(--accent-ink); border-bottom-color:var(--line-2)}
+
+/* ---- sections ---- */
+section{padding-top:52px}
+h2{font-family:var(--serif); font-weight:700; font-size:22px; margin:0 0 6px;
+   letter-spacing:.02em; text-wrap:balance; display:flex; align-items:baseline; gap:11px}
+h2 .num{font-family:var(--mono); font-size:11px; font-weight:400; color:var(--accent);
+  letter-spacing:.1em; border:1px solid var(--line-2); border-radius:2px; padding:1px 6px}
+.lede{color:var(--ink-2); font-size:13.5px; margin:0 0 22px; max-width:70ch}
+h3{font-family:var(--serif); font-weight:600; font-size:16.5px; margin:30px 0 10px; letter-spacing:.02em}
+
+/* ---- badges ---- */
+.lv{font-family:var(--mono); font-size:10.5px; font-weight:500; letter-spacing:.06em;
+  padding:1px 6px; border-radius:2px; border:1px solid; vertical-align:1px; white-space:nowrap}
+.lv1{color:var(--ink-3); border-color:var(--line-2); background:var(--panel-2)}
+.lv2{color:var(--accent-ink); border-color:var(--accent); background:var(--accent-soft)}
+.chip{font-size:11px; padding:1px 7px; border-radius:2px; border:1px solid; white-space:nowrap}
+.c-ok{color:var(--ok); border-color:var(--ok); background:var(--ok-soft)}
+.c-warn{color:var(--warn); border-color:var(--warn-line); background:var(--warn-soft)}
+.star{color:var(--accent); font-size:12px}
+
+/* ---- callout ---- */
+.hit{background:var(--panel); border:1px solid var(--accent); border-left-width:4px;
+  border-radius:3px; padding:22px 24px; box-shadow:var(--shadow); margin:0 0 8px}
+.hit .k{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; color:var(--accent);
+  text-transform:uppercase; display:block; margin-bottom:8px}
+.hit p{margin:0 0 12px}
+.hit p:last-child{margin-bottom:0}
+.say{font-family:var(--serif); font-size:16px; line-height:1.95; color:var(--ink);
+  border-left:2px solid var(--accent); padding-left:16px; margin:14px 0}
+
+/* ---- tables ---- */
+.scroll{overflow-x:auto; border:1px solid var(--line); border-radius:3px; background:var(--panel)}
+table{border-collapse:collapse; width:100%; min-width:720px; font-size:13px}
+th{background:var(--panel-2); font-weight:700; text-align:left; padding:10px 13px;
+  border-bottom:1px solid var(--line-2); color:var(--ink-2); font-size:11.5px;
+  letter-spacing:.04em; white-space:nowrap; vertical-align:bottom}
+td{padding:11px 13px; border-bottom:1px solid var(--line); vertical-align:top; line-height:1.7}
+tr:last-child td{border-bottom:none}
+td.yr{font-family:var(--mono); font-size:12px; white-space:nowrap; font-variant-numeric:tabular-nums; color:var(--ink-2)}
+td.pri{text-align:center; white-space:nowrap}
+tbody tr:hover{background:var(--sunk)}
+
+/* ---- theme cards ---- */
+.theme{background:var(--panel); border:1px solid var(--line); border-radius:3px;
+  padding:0; margin:0 0 16px; box-shadow:var(--shadow); overflow:hidden}
+.theme > header{padding:16px 22px 14px; border-bottom:1px solid var(--line); background:var(--panel-2)}
+.theme h3{margin:0 0 5px; font-size:17px}
+.theme .law{font-size:11.5px; color:var(--ink-3); margin:0; line-height:1.75}
+.theme .law b{color:var(--ink-2); font-weight:400}
+.body{padding:18px 22px 22px}
+.row{display:grid; grid-template-columns:74px 1fr; gap:14px; padding:12px 0; border-top:1px dashed var(--line)}
+.row:first-child{border-top:none; padding-top:2px}
+.row .tag{font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; color:var(--ink-4); padding-top:4px}
+.row p{margin:0 0 6px}
+.row p:last-child{margin-bottom:0}
+.q{font-family:var(--serif); font-size:15px; line-height:1.95}
+.why{font-size:12.5px; color:var(--ink-3)}
+.ng{background:var(--danger-soft); border-left:3px solid var(--danger); border-radius:2px;
+  padding:11px 15px; margin:14px 0 0}
+.ng .k{font-family:var(--mono); font-size:10px; letter-spacing:.12em; color:var(--danger); display:block; margin-bottom:5px}
+.ng p{margin:0; font-size:12.5px; color:var(--ink-2)}
+.only{display:inline-block; font-size:11px; color:var(--accent-ink); background:var(--accent-soft);
+  border:1px solid var(--accent); border-radius:2px; padding:0 6px; margin-right:7px}
+
+/* ---- town panels ---- */
+.towns-grid{display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(330px,1fr))}
+.tp{background:var(--panel); border:1px solid var(--line); border-radius:3px; box-shadow:var(--shadow); overflow:hidden}
+.tp > header{padding:16px 20px 13px; border-bottom:1px solid var(--line)}
+.tp h3{font-family:var(--serif); font-size:19px; margin:0 0 3px}
+.tp .meta{font-size:11.5px; color:var(--ink-3); margin:0}
+.tp .in{padding:16px 20px 20px; font-size:13px}
+.tp dl{margin:0; display:grid; gap:13px}
+.tp dt{font-family:var(--mono); font-size:10px; letter-spacing:.1em; color:var(--ink-4); margin-bottom:3px}
+.tp dd{margin:0; line-height:1.75}
+.tp .hook{font-family:var(--serif); font-size:14px; line-height:1.9;
+  border-left:2px solid var(--accent); padding-left:13px; color:var(--ink)}
+
+/* ---- guardrail two-col ---- */
+.split{display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.card{background:var(--panel); border:1px solid var(--line); border-radius:3px; padding:19px 22px; box-shadow:var(--shadow)}
+.card h3{margin:0 0 12px; font-size:15.5px; display:flex; align-items:center; gap:9px}
+.card ul{margin:0; padding-left:1.15em; font-size:13px}
+.card li{margin-bottom:7px; line-height:1.75}
+.card li:last-child{margin-bottom:0}
+.card.stop{border-color:var(--danger-line)}
+.card.stop h3{color:var(--danger)}
+
+/* ---- notes ---- */
+.note{background:var(--warn-soft); border:1px solid var(--warn-line); border-radius:3px;
+  padding:16px 20px; font-size:12.5px; color:var(--ink-2); line-height:1.8}
+.note b{color:var(--warn)}
+footer{margin-top:60px; padding-top:22px; border-top:1px solid var(--line);
+  font-size:11.5px; color:var(--ink-4); line-height:1.85}
+@media (max-width:640px){
+  .row{grid-template-columns:1fr; gap:5px}
+  .row .tag{padding-top:0}
+  .mast-in{padding:28px 20px 22px}
+}
+</style>
+
+<header class="mast">
+  <div class="mast-in">
+    <div>
+      <p class="eyebrow">L1 – L2 ／ 訪問前ブリーフ</p>
+      <h1>道北4自治体 訪問ブック</h1>
+      <p class="sub">親ブックのシート19〜22（訪問前準備・ヒアリング項目・トークスクリプト）を、名寄市・美深町・下川町・当麻町の4団体に当てはめたもの。L1・L2が実際に口に出してよい範囲だけを収めている。</p>
+      <div class="towns"><span class="town">名寄市</span><span class="town">美深町</span><span class="town">下川町</span><span class="town">当麻町</span></div>
+    </div>
+    <dl class="asof">
+      <div><dt>基準時点</dt><dd>令和8年度／2026年8月</dd></div>
+      <div><dt>想定レベル</dt><dd>L1 理解する・L2 伝える</dd></div>
+      <div><dt>共通条件</dt><dd>4団体とも過疎関係市町村／人口3万人未満</dd></div>
+    </dl>
+  </div>
+</header>
+
+<nav><div class="nav-in">
+  <a href="#now">いま打つ手</a>
+  <a href="#line">越えてはいけない線</a>
+  <a href="#time">逆算タイムライン</a>
+  <a href="#themes">テーマ別</a>
+  <a href="#towns">自治体別</a>
+  <a href="#src">出典・未確認</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="now">
+  <h2><span class="num">01</span>いま打つ手</h2>
+  <p class="lede">令和8年8月時点で、4団体すべてに同じ話ができて、なおかつ予算要求の時期に間に合うのは1つだけ。まずこれを持って行く。</p>
+  <div class="hit">
+    <span class="k">4団体共通・今年度いちばん時期が合う</span>
+    <p><b>第3期子ども・子育て支援事業計画の中間年見直し。</b>第3期は令和7年度から令和11年度までの5年計画で、中間年は令和9年度。令和9年度に見直しを行うなら、予算要求は<b>今年の秋</b>。</p>
+    <p class="say">「子ども・子育て支援事業計画の第3期は令和7年度から令和11年度までですので、中間年が令和9年度になります。国の基本指針では、計画期間の中間年を目安に、量の見込みと実績に乖離がある場合は見直しを行うこととされております。見直しをされる場合は令和9年度当初のご発注、予算要求は今年の秋ということになるかと思いますので、ちょうど今がご検討の時期かと存じます。」</p>
+    <p class="why" style="font-size:12.5px;color:var(--ink-3)">この一言のために訪問する価値がある。ここで見積の話はしない。次回訪問の許可を取って帰る。</p>
+    <div class="ng"><span class="k">言ってはいけない</span><p>「中間年の見直しは義務です」── 義務ではない。「求められています」「行うこととされています」までにとどめる。一字一句を決めてから訪問すること。</p></div>
+  </div>
+</section>
+
+<section id="line">
+  <h2><span class="num">02</span>越えてはいけない線</h2>
+  <p class="lede">背伸びした提案は、失注より重い事故（財源の誤案内・官製談合の疑い）を招く。町村は担当者との距離が近く、つい踏み込みたくなるので、線を先に決めておく。</p>
+  <div class="split">
+    <div class="card">
+      <h3><span class="lv lv1">L1</span>理解する</h3>
+      <ul>
+        <li>話してよいのは<b>根拠法・計画期間・所管省庁</b>と自社の商品説明まで。</li>
+        <li>役割は記録。所管課・面談者・役職・同席者／相手が前のめりになった話題／宿題と期限／現行計画の名称と計画期間。</li>
+        <li>答えられない質問は「正確にお答えしたいので、確認のうえご連絡させていただいてもよろしいでしょうか」。</li>
+        <li>帰社後は当日中に議事録。翌日に回すと宿題が抜ける。</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="lv lv2">L2</span>伝える</h3>
+      <ul>
+        <li>国の指針・通知・審議会資料の内容、<b>出典付きの</b>公表事例、計画期間からの逆算まで。</li>
+        <li>最大の価値は「いつ動くべきか」を相手の代わりに計算して示すこと。</li>
+        <li>未確定は「議論されています／確定は告示後です」と区別して話す。</li>
+        <li>踏み込みを求められたら「上の者と一緒にお伺いしてもよろしいでしょうか」で L3 の場に切り替える。</li>
+      </ul>
+    </div>
+    <div class="card stop">
+      <h3>この4団体で特に危ない</h3>
+      <ul>
+        <li><b>広域化を勧めない。</b>当麻町は近隣3町（東川・美瑛・東神楽）が大雪地区広域連合を組む中で単独を選んでいる。町の選択を否定する話になる。</li>
+        <li><b>圏域を間違えない。</b>名寄市・美深町・下川町は北・北海道中央圏域定住自立圏。当麻町はこの圏域外。</li>
+        <li><b>未公表情報を持ち込まない。</b>名寄・美深・下川は同一圏域で、話は必ず伝わる。一度で3団体を失う。</li>
+        <li><b>施設の統廃合に触れない。</b>過疎地域で担当者を最も困らせる話題。</li>
+        <li><b>財源を断定しない。</b>充当率・措置率・対象事業は年度で変わる。当年度資料で確認するまで口頭でも出さない。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="time">
+  <h2><span class="num">03</span>逆算タイムライン</h2>
+  <p class="lede">令和8年度時点。年度の対応は R6=2024／R7=2025／R8=2026／R9=2027／R11=2029／R12=2030。この表を1枚に整えて持参する。団体固有の計画は訪問前にHPで確認すること。</p>
+  <div class="scroll"><table>
+    <thead><tr>
+      <th>優先</th><th>テーマ</th><th>計画</th><th>現行</th><th>次期</th><th>策定年度</th><th>予算要求</th><th>令和8年8月に打つ手</th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="pri"><span class="star">★</span></td><td>こども</td><td>第3期子ども・子育て支援事業計画 の中間年見直し</td><td class="yr">R7–R11</td><td class="yr">中間年 R9</td><td class="yr">R9</td><td class="yr">R8 夏〜秋</td><td>いま最も時期が合う。逆算を示して今年の秋の要求に載せてもらう。4団体共通。</td></tr>
+      <tr><td class="pri"><span class="star">★</span></td><td>こども</td><td>市町村こども計画（こども基本法・努力義務）</td><td class="yr">—</td><td class="yr">—</td><td class="yr">随時</td><td class="yr">R8 夏〜秋</td><td>未策定なら新規需要。策定済みなら「どの計画を統合されましたか」で次期を押さえる。</td></tr>
+      <tr><td class="pri"><span class="star">★</span></td><td>その他</td><td>下川町 第3期SDGs未来都市計画</td><td class="yr">2024–2026</td><td class="yr">2027–</td><td class="yr">R8</td><td class="yr">R8 夏〜秋</td><td>下川町限定。今年が最終年。3年周期での更新実績あり。次期の検討状況を聞く。</td></tr>
+      <tr><td class="pri">○</td><td>高齢者</td><td>第10期介護保険事業計画</td><td class="yr">第9期 R6–R8</td><td class="yr">R9–R11</td><td class="yr">R8</td><td class="yr">R7 夏〜秋（済）</td><td>今年度が策定年度。4〜6月に発注済みの可能性が高い。まず進捗を聞き、結果をDBに記録する。</td></tr>
+      <tr><td class="pri">○</td><td>障害</td><td>第8期障害福祉計画・第4期障害児福祉計画</td><td class="yr">第7期・第3期 R6–R8</td><td class="yr">R9–R11</td><td class="yr">R8</td><td class="yr">R7 夏〜秋（済）</td><td>介護と同年度に重なる。兼務体制の町村では負担が集中している時期。</td></tr>
+      <tr><td class="pri">○</td><td>公営企業</td><td>経営戦略（水道・下水道）</td><td class="yr">R2までに策定</td><td class="yr">—</td><td class="yr">随時</td><td class="yr">随時</td><td>法適用（R6〜）前に作った経営戦略は前提が変わっている。作り直しの予定を聞く。</td></tr>
+      <tr><td class="pri">○</td><td>公営企業</td><td>公営企業会計適用後の決算・分析</td><td class="yr">R6〜適用</td><td class="yr">—</td><td class="yr">毎年度</td><td class="yr">随時</td><td>令和8年度は移行後3期目。決算・統計・経営比較分析表が毎年度発生する。</td></tr>
+      <tr><td class="pri">○</td><td>公営企業</td><td>名寄市病院事業経営強化プラン</td><td class="yr">要確認</td><td class="yr">—</td><td class="yr">毎年度点検</td><td class="yr">随時</td><td>名寄市限定。毎年度の点検・評価が求められる。所管は病院事務局で市役所と別ルート。</td></tr>
+      <tr><td class="pri">△</td><td>地域福祉</td><td>下川町地域保健福祉計画（統合計画）</td><td class="yr">第4期 R1–R5<br>第5期 R6–R10（推定）</td><td class="yr">—</td><td class="yr">改正版 R8</td><td class="yr">R8 夏〜秋</td><td>第4期で改正Ⅱ版を出した実績がある。第10期介護を差し込む改正版の要否を確認する。</td></tr>
+      <tr><td class="pri">△</td><td>その他</td><td>公共施設等総合管理計画</td><td class="yr">R3年度末までに見直し要請</td><td class="yr">—</td><td class="yr">随時</td><td class="yr">随時</td><td>国の要請事項（個別施設計画の反映・保有量の目標・脱炭素・UD）の反映状況を聞く。</td></tr>
+      <tr><td class="pri">△</td><td>その他</td><td>過疎地域持続的発展市町村計画</td><td class="yr">前期 R3–R7</td><td class="yr">後期 R8–R12</td><td class="yr">R7（済の見込み）</td><td class="yr">—</td><td>改定は済んでいる前提で「毎年度の変更は誰が」を聞く。過疎法は令和12年度末まで。</td></tr>
+      <tr><td class="pri">△</td><td>公会計</td><td>財務書類・固定資産台帳</td><td class="yr">毎年度</td><td class="yr">—</td><td class="yr">毎年度</td><td class="yr">随時</td><td>公表が決算から1年以上空いていれば早期化の話。台帳の毎年度更新は継続受注の柱。</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="themes">
+  <h2><span class="num">04</span>テーマ別ヒアリング＆スクリプト</h2>
+  <p class="lede">1回の訪問で全部を聞かないこと。町村では担当が1〜2名の兼務であることが通例で、質問を並べると尋問になる。<b>聞くのは5問まで</b>を目安に、相手が前のめりになった1テーマを深掘りし、他は次回に回す。</p>
+
+  <article class="theme">
+    <header>
+      <h3><span class="star">★</span> こども・子育て</h3>
+      <p class="law">根拠法＝<b>子ども・子育て支援法第61条</b>（事業計画）／<b>こども基本法第10条</b>（こども計画・努力義務）　所管＝<b>こども家庭庁</b>（令和5年4月発足）　第3期＝<b>令和7年度〜令和11年度</b>の5年計画</p>
+    </header>
+    <div class="body">
+      <div class="row"><span class="tag lv lv1">L1</span><div>
+        <p class="q">「子ども・子育て支援事業計画は子ども・子育て支援法に基づく計画で、5年を1期として市町村が策定します。所管はこども家庭庁で、いまは第3期、令和7年度から令和11年度までの期間です。」</p>
+        <p class="why">根拠法・周期・所管省庁・現行期を、資料を見ずに言えることがL1の到達点。所管が内閣府・厚労省から移っている点を間違えない。</p>
+      </div></div>
+      <div class="row"><span class="tag lv lv2">L2</span><div>
+        <p class="q">「第3期の計画期間は令和7年度から令和11年度までですので、中間年が令和9年度になります。中間年の見直しについて、庁内で何かお話は出ていますか。」</p>
+        <p class="why">本命の質問。「まだ」＝情報提供のフェーズ。「そろそろ」＝上長同行のタイミング。</p>
+      </div></div>
+      <div class="row"><span class="tag lv lv2">L2</span><div>
+        <p class="q">「こども家庭センターという形には、もう整理されましたか。体制は何名でいらっしゃいますか。」</p>
+        <p class="why">児童福祉法・母子保健法の改正（令和6年4月施行）への対応状況。「兼務で回している」が最多。<span class="only">当麻町</span>町HPに子育て世代包括支援センターの記載があり、移行状況がそのまま論点になる。</p>
+      </div></div>
+      <div class="row"><span class="tag lv lv2">L2</span><div>
+        <p class="q">「いまは待機児童と定員割れでは、どちらが課題になっていますか。」</p>
+        <p class="why">4団体すべて過疎地域。待機児童を前提にした話し方をすると、実情を知らないと思われる。</p>
+      </div></div>
+      <div class="ng"><span class="k">言ってはいけない</span><p>「中間年の見直しは義務です」／「こども計画の策定は義務です」── どちらも努力義務・指針上の取扱いであって法律上の義務ではない。担当者を不必要に不安にさせるうえ、誤りとして残る。</p></div>
+    </div>
+  </article>
+
+  <article class="theme">
+    <header>
+      <h3>高齢者・介護保険</h3>
+      <p class="law">根拠法＝<b>介護保険法第117条</b>／<b>老人福祉法第20条の8</b>　所管＝<b>厚生労働省</b>　第9期＝<b>令和6年度〜令和8年度</b>（今年度が最終年＝第10期の策定年度）</p>
+    </header>
+    <div class="body">
+      <div class="row"><span class="tag lv lv1">L1</span><div>
+        <p class="q">「介護保険事業計画は介護保険法に基づく計画で、3年を1期として市町村が策定するものです。所管は厚生労働省で、いまは第9期、令和6年度から令和8年度までの期間になります。」</p>
+        <p class="why">あわせて、保険者が単独か広域連合かを記録する。発注元がどこになるかが決まる。</p>
+      </div></div>
+      <div class="row"><span class="tag lv lv2">L2</span><div>
+        <p class="q">「第10期の策定は、もう着手されていますか。庁内でお作りになりますか、それとも委託されるご予定でしょうか。」</p>
+        <p class="why">最初に聞く一問。<b>発注済み・未発注・庁内作成</b>の3択を確定させる。ここを聞かずに情報提供を続けると時間を無駄にする。小規模町村では秋以降の発注や庁内作成も珍しくない。</p>
+      </div></div>
+      <div class="row"><span class="tag lv lv2">L2</span><div>
+        <p class="q">「承知いたしました。それでしたら次は令和11年度の調査、令和12年度の策定ということになりますね。それまでの間ですと、認知症施策推進計画をどう位置づけるかといったご検討が出てくるかと思いますので、そのあたりで改めてご報告にお伺いできればと思います。」</p>
+        <p class="why">発注済みだった場合の撤退。次の周期を口に出して確定させ、その間の別テーマに接続する。引き際が良いと次の周期に呼ばれる。</p>
+      </div></div>
+      <div class="row"><span class="tag lv lv2">L2</span><div>
+        <p class="q">「下川町さんは、地域保健福祉計画の中に高齢者福祉計画と介護保険事業計画を一体で位置づけておられると拝見しました。第10期の部分は、第4期のときのように改正版という形で差し込まれるお考えでしょうか。」</p>
+        <p class="why"><span class="only">下川町</span>この質問ができるかどうかで、下川町でのL2の評価が決まる。ただし地域保健福祉計画のPDFを通読してから使うこと。</p>
+      </div></div>
+      <div class="ng"><span class="k">言ってはいけない</span><p>「次期の保険料は◯％くらい上がると思います」／「保険者機能強化推進交付金が取れます」／「前回の見込量の推計は甘かったですね」── 保険料の見通し・交付金の可否・前任者の否定は、いずれもL3以上の領域。</p></div>
+    </div>
+  </article>
+
+  <article class="theme">
+    <header>
+      <h3>障害者・障害児</h3>
+      <p class="law">根拠法＝<b>障害者基本法第11条第3項</b>（障害者計画）／<b>障害者総合支援法第88条</b>（障害福祉計画）／<b>児童福祉法第33条の20</b>（障害児福祉計画）　所管＝<b>こども家庭庁・厚生労働省</b>　第7期・第3期＝<b>令和6年度〜令和8年度</b></p>
+    </header>
+    <div class="body">
+      <div class="row"><span class="tag lv lv1">L1</span><div>
+        <p class="q">「障がい分野は3つの計画があります。障害者基本法に基づく障害者計画、障害者総合支援法に基づく障害福祉計画、児童福祉法に基づく障害児福祉計画です。福祉計画・児童福祉計画は3年1期で、いまは第7期・第3期、令和6年度から令和8年度までです。」</p>
+        <p class="why">3つの計画名を混同したまま話すと即座に見抜かれる。名称と根拠法をセットで暗記する。</p>
+      </div></div>
+      <div class="row"><span class="tag lv lv2">L2</span><div>
+        <p class="q">「第7期・第3期は令和8年度までですので、第8期・第4期は令和9年度からになります。策定は今年度ということになりますが、介護保険の第10期とちょうど重なる年でして、他の団体さんでもご担当の負担が集中する年になっております。」</p>
+        <p class="why">国の周期が重なっている事実を伝え、相手の負担を言語化する。共感ではなく事実で語る。兼務体制の町村で最も効く。</p>
+      </div></div>
+      <div class="row"><span class="tag lv lv2">L2</span><div>
+        <p class="q">「障がい者計画・障がい福祉計画・障がい児福祉計画は、一体で策定されていますか。」</p>
+        <p class="why">一体なら1本の発注、別々なら複数の受注機会。<span class="only">美深町</span>「第7期美深町障がい者福祉計画」が3計画をどこまで束ねているかを、訪問前に現物で確認しておくこと。</p>
+      </div></div>
+      <div class="row"><span class="tag lv lv2">L2</span><div>
+        <p class="q">「地域生活支援拠点をすでに整備されていて、相談・緊急時の受入れ・体験の機会・専門的人材の確保養成・地域づくりの5つの機能を掲げておられると拝見しました。運用を始めてみて、いかがでしょうか。」</p>
+        <p class="why"><span class="only">当麻町</span>整備済みであることを知った上で入る。「整備されていますか」と聞いた時点で、調べていないことが露見する。</p>
+      </div></div>
+      <div class="ng"><span class="k">言ってはいけない</span><p>「前期の成果目標は未達ですね」／「拠点が形だけになっていませんか」／「グループホームが足りていないですよね」── 未達の指摘・機能検証・不足の断定はL3の領域。代わりに「進めにくいと感じておられる点はございますか」と相手に語ってもらう。</p></div>
+    </div>
+  </article>
+
+  <article class="theme">
+    <header>
+      <h3>地域福祉</h3>
+      <p class="law">根拠法＝<b>社会福祉法第107条</b>　所管＝<b>厚生労働省</b>　福祉分野の共通事項を定め、高齢・障害・こどもの各計画に横串を通す上位計画。計画期間は5年が通例だが団体により異なる。</p>
+    </header>
+    <div class="body">
+      <div class="row"><span class="tag lv lv1">L1</span><div>
+        <p class="q">「地域福祉計画は社会福祉法第107条に基づく計画で、福祉分野の共通事項を定めるものです。高齢・障がい・こどもの各計画に横串を通す位置づけになります。」</p>
+        <p class="why">「福祉分野の共通事項」という言い方を覚える。個別計画との関係を図で説明できるとL2。</p>
+      </div></div>
+      <div class="row"><span class="tag lv lv2">L2</span><div>
+        <p class="q">「下川町さんの地域保健福祉計画は、社会福祉法107条の地域福祉計画を土台にして、高齢者福祉計画・介護保険事業計画・子ども子育て支援事業計画・障がいの3計画・健康しもかわ21まで一体化されていると拝見しました。第4期では改正Ⅱ版も出しておられますので、3年周期の介護の部分を改正版で差し込む運用をされているのかと理解しております。第5期の計画期間は令和6年度から令和10年度でよろしいでしょうか。」</p>
+        <p class="why"><span class="only">下川町</span>構造の理解を示しつつ、逆算の起点になる計画期間を確定させる。下川町ではこの一言が最大の武器になる。読まずに使うと次の一言で破綻する。</p>
+      </div></div>
+      <div class="row"><span class="tag lv lv2">L2</span><div>
+        <p class="q">「計画は町単独の策定でしょうか。社会福祉協議会の地域福祉活動計画と一体でしょうか。」／「併載されている計画はございますか。成年後見や再犯防止、自殺対策などです。」</p>
+        <p class="why">一体なら発注元が2つになる。町村では社協との距離が近く、実質的に一体で動いていることが多い。併載編が増えるほど業務量が上がる。</p>
+      </div></div>
+      <div class="row"><span class="tag lv lv2">L2</span><div>
+        <p class="q">「重層的支援体制整備事業は実施されていますか。移行準備事業はいかがでしょうか。」</p>
+        <p class="why">人口3千〜6千人規模では枠組みが過大に感じられ、未実施が多い。押し込まず、まず実情を聞く。</p>
+      </div></div>
+      <div class="ng"><span class="k">言ってはいけない</span><p>「重層事業はやったほうがいいですよ」／「中核機関は設置すべきです」／「圏域で共同設置すれば安く済みます」── 制度の実施を勧める・「べき」で語る・広域化を勧めるのは、いずれもL2の範囲外。</p></div>
+    </div>
+  </article>
+
+  <article class="theme">
+    <header>
+      <h3>公営企業会計</h3>
+      <p class="law">根拠＝<b>地方公営企業法</b>　所管＝<b>総務省</b>（水道は令和6年4月に厚労省から国交省・環境省へ移管）　人口3万人未満の団体は簡易水道・下水道について<b>令和6年度から</b>公営企業会計を適用（総務省ロードマップ）。4団体すべて該当。</p>
+    </header>
+    <div class="body">
+      <div class="row"><span class="tag lv lv1">L1</span><div>
+        <p class="q">「公営企業会計は地方公営企業法に基づく会計です。人口3万人未満の団体でも、簡易水道と下水道について令和6年度から適用することが総務省のロードマップで求められており、多くの町村が令和6年度に移行しています。」</p>
+        <p class="why">町村の会計担当は移行の当事者。時期を間違えると即座に分かる。あわせて、どの事業を持っているか（簡易水道・上水道・下水道・農業集落排水・病院）を棚卸しする。</p>
+      </div></div>
+      <div class="row"><span class="tag lv lv2">L2</span><div>
+        <p class="q">「法適用は令和6年度からでしょうか。移行されてから、もう3期目の決算ということになりますか。」</p>
+        <p class="why">移行時期の確認と、移行後の実務が回っているかの確認を同時に行う。移行の苦労は担当者が最も語りたい話題。聞き役に回る。</p>
+      </div></div>
+      <div class="row"><span class="tag lv lv2">L2</span><div>
+        <p class="q">「経営戦略は、法適用の前に作られたものでしょうか。作り直しのご予定はございますか。」</p>
+        <p class="why">総務省は策定から3〜5年を目安とした改定を求めている。法適用で財務の前提が変わっており、適用前の経営戦略は実態と合わなくなっている可能性がある。</p>
+      </div></div>
+      <div class="row"><span class="tag lv lv2">L2</span><div>
+        <p class="q">「名寄市さんは病院事業もお持ちですので、公立病院経営強化ガイドラインに基づく経営強化プランを策定しておられると拝見しました。プランの点検・評価は、毎年度どちらでされていますか。」</p>
+        <p class="why"><span class="only">名寄市</span>所管は病院事務局で市役所とは別ルート。市役所側との関係を作ってから紹介をお願いする順序を守る。</p>
+      </div></div>
+      <div class="ng"><span class="k">言ってはいけない</span><p>「料金回収率が100％を切っていますね」／「この経営戦略は投資試算が過大です」／「公営企業会計適用債が使えます」／「値上げが必要です」── 経営比較分析表は公表資料なので見ておくこと。ただし比較して指摘するのは上長同行の場で行う。料金は住民に直結する政治的な論点。</p></div>
+    </div>
+  </article>
+
+  <article class="theme">
+    <header>
+      <h3>公会計</h3>
+      <p class="law">根拠＝総務省<b>「統一的な基準による地方公会計マニュアル」</b>（平成27年策定・平成31年3月改訂）　所管＝<b>総務省</b>　所管課は財政課・会計課で福祉部門とは別ルート。補助がなく一般財源で行う業務のため、財源の話が使えないテーマ。</p>
+    </header>
+    <div class="body">
+      <div class="row"><span class="tag lv lv1">L1</span><div>
+        <p class="q">「地方公会計は、総務省の統一的な基準による地方公会計マニュアルに基づいて、貸借対照表・行政コスト計算書などの財務書類を毎年度作成するものです。」</p>
+        <p class="why">4表と固定資産台帳の関係を押さえる。財政担当は数字に厳しく、うろ覚えは即座に見抜かれる。</p>
+      </div></div>
+      <div class="row"><span class="tag lv lv2">L2</span><div>
+        <p class="q">「固定資産台帳の更新は、庁内でされていますか。それとも委託でしょうか。」／「財務書類は毎年度作成・公表されていますか。公表はいつ頃になりますか。」</p>
+        <p class="why">毎年度の更新業務は継続受注の柱。小規模町村では異動の反映が滞りがちで、担当者も自覚している。最も自然に話が続く質問。</p>
+      </div></div>
+      <div class="row"><span class="tag lv lv2">L2</span><div>
+        <p class="q">「総務省が地方公会計の整備状況等に関する調査を毎年度公表しておりまして、全国と北海道内の作成・公表・活用の状況が分かります。よろしければ次回、整理してお持ちします。」</p>
+        <p class="why">公表資料を届ける。次回訪問の口実になる。ただし「県内では御町は下位です」といった言い方はしない。</p>
+      </div></div>
+      <div class="ng"><span class="k">言ってはいけない</span><p>「備忘価額1円の資産が多いですね」／「公有財産台帳と突合されていないですよね」／「補助金が使えます」── 台帳精緻化の指摘はL3。公会計の整備は原則として一般財源で、補助はない。財政担当への財源の誤案内は会社ごと信用を失う。</p></div>
+    </div>
+  </article>
+
+  <article class="theme">
+    <header>
+      <h3>その他計画（公共施設・過疎・総合計画・広域）</h3>
+      <p class="law">所管は企画・総務・財政部門。<b>過疎地域の持続的発展の支援に関する特別措置法</b>は令和3年4月1日施行・令和12年度末までの時限法。市町村計画は前期＝令和3〜7年度、後期＝令和8〜12年度。4団体すべて過疎関係市町村。</p>
+    </header>
+    <div class="body">
+      <div class="row"><span class="tag lv lv1">L1</span><div>
+        <p class="q">「過疎地域持続的発展市町村計画は、過疎地域の持続的発展の支援に関する特別措置法に基づく計画です。この法律は令和3年4月に施行され、令和12年度末までの時限法になっています。」</p>
+        <p class="why">「過疎法」と略さず正式名称で一度言えると印象が変わる。あわせて、公共施設等総合管理計画と個別施設計画の上下関係を説明できるようにする。</p>
+      </div></div>
+      <div class="row"><span class="tag lv lv2">L2</span><div>
+        <p class="q">「後期計画への改定はお済みでしょうか。」→ 済んでいれば →「計画の毎年度の変更、事業の追加などは、どなたが担われていますか。」</p>
+        <p class="why">改定は令和7年度中に終えている団体が多い。<b>改定済みを前提に「その後」を聞けるか</b>が、L2とそれ以下の差になる。毎年度の変更が継続業務の入口。</p>
+      </div></div>
+      <div class="row"><span class="tag lv lv2">L2</span><div>
+        <p class="q">「公共施設等総合管理計画の見直しは、国の要請事項の反映まで済んでいますか。個別施設計画の反映や、保有量の数値目標、脱炭素、ユニバーサルデザインといった項目です。」</p>
+        <p class="why">要請事項を4つ挙げられるかどうかで、準備してきたかが伝わる。</p>
+      </div></div>
+      <div class="row"><span class="tag lv lv2">L2</span><div>
+        <p class="q">「第3期のSDGs未来都市計画は2024年から2026年ということで、今年が最終年になるかと存じます。第2期が2021年から2023年でしたので3年ごとの更新かと思いますが、次期のご検討はもう始まっておられますか。」</p>
+        <p class="why"><span class="only">下川町</span>時期がぴったり合う。「SDGsで有名ですよね」だけで終えないこと。視察・取材が多く、通り一遍の褒め言葉は聞き飽きられている。</p>
+      </div></div>
+      <div class="ng"><span class="k">言ってはいけない</span><p>「過疎債が使えます」／「この施設は統廃合すべきです」／「広域でやれば効率的です」── 起債の充当率・措置率・対象事業は年度で変わる。当年度の地方債計画・地方債同意等基準で確認するまで口頭でも出さない。施設と広域は住民感情に直結する。</p></div>
+    </div>
+  </article>
+</section>
+
+<section id="towns">
+  <h2><span class="num">05</span>自治体別の当て方</h2>
+  <p class="lede"><span class="chip c-ok">確認済</span> は自治体HP・国の公表資料で確認できた事実。そのまま口に出してよい。<span class="chip c-warn">要確認</span> は制度から導いた推定で、裏が取れていない ── 訪問前にHPで確認するまで断定で話さないこと。</p>
+  <div class="towns-grid">
+
+    <article class="tp">
+      <header><h3>名寄市</h3><p class="meta">人口約2.4万人／平成18年に名寄市・風連町が合併／過疎地域・豪雪地域／北・北海道中央圏域定住自立圏の<b>中心市</b></p></header>
+      <div class="in"><dl>
+        <div><dt>確認できている計画</dt><dd><span class="chip c-ok">確認済</span> 総合計画（第2次）後期基本計画／過疎地域持続的発展市町村計画（令和3〜7年度）／第3期地域福祉計画（保健医療福祉推進協議会 地域福祉部会で審議）／第3期データヘルス計画・第4期特定健診等実施計画（令和6〜11年度）／名寄市病院事業経営強化プラン（経営比較分析表も公表）／地域公共交通網形成計画／都市構造再編集中支援事業</dd></div>
+        <div><dt>本命</dt><dd>① こども（中間年見直し）　② 病院事業（経営強化プランの毎年度の点検・評価）　③ 総合計画・過疎（企画・総務部門）</dd></div>
+        <div><dt>最初の一言</dt><dd class="hook">「お伺いする前に、名寄市さんのHPで総合計画の後期基本計画と、地域福祉計画の審議の記録を拝見しました。」</dd></div>
+        <div><dt>この団体特有の注意</dt><dd>4団体で唯一、所管課が分かれている。<b>1課で全テーマを聞かない</b>。まず「その計画のご担当はどちらの課になりますでしょうか」で所管を正確に押さえるのがL1の仕事。紹介を得る前に他課へ直接飛び込むと担当者の顔を潰す。圏域の中心市なので、ここでの評価は周辺町村に伝わる。</dd></div>
+        <div><dt>訪問前に埋める</dt><dd><span class="chip c-warn">要確認</span> 総合計画の終期と第3次の検討状況／地域福祉計画の計画期間／第9期高齢者福祉計画・介護保険事業計画の正式名称／こども計画の策定状況／公共施設等総合管理計画の改訂状況／上下水道の法適用と経営戦略／病院の全部適用時期</dd></div>
+      </dl></div>
+    </article>
+
+    <article class="tp">
+      <header><h3>美深町</h3><p class="meta">中川郡／人口約4千人／過疎地域・豪雪地域／北・北海道中央圏域定住自立圏の構成町／名寄市・下川町・音威子府村と名寄地区の一部事務組合を構成</p></header>
+      <div class="in"><dl>
+        <div><dt>確認できている計画</dt><dd><span class="chip c-ok">確認済</span> 第9期美深町高齢者保健福祉計画・美深町介護保険事業計画（<b>町名を冠した計画＝単独保険者</b>）／第7期美深町障がい者福祉計画（令和6年7月時点で掲載、第6期の掲載もあり）／まち・ひと・しごと創生総合戦略（平成27年10月策定、以降毎年度の評価報告書を公表）／地域再生計画／子育て支援ガイドブック・幼児センター</dd></div>
+        <div><dt>本命</dt><dd>① こども（中間年見直し）　② 障がい（第8期・第4期）　③ 公営企業会計（法適用後3期目）</dd></div>
+        <div><dt>最初の一言</dt><dd class="hook">「お伺いする前に、美深町さんのHPで第9期の高齢者保健福祉計画・介護保険事業計画と、第7期の障がい者福祉計画を拝見しました。」</dd></div>
+        <div><dt>この団体特有の注意</dt><dd>総合戦略の<b>評価報告書を毎年度公表している</b>＝進捗評価の実務が回っている団体。「評価の仕組みがない」という前提で話すと外す。幼児センターで就学前施設が一元化されていれば、量の見込みの区域設定はシンプル。担当は兼務が通例なので聞くのは5問まで。</dd></div>
+        <div><dt>訪問前に埋める</dt><dd><span class="chip c-warn">要確認</span> <b>「第7期障がい者福祉計画」が3計画のどこまでを含むか（最重要・現物で確認）</b>／こども計画の策定状況／第6次総合計画の計画期間／地域福祉計画の有無／公共施設等総合管理計画／簡易水道・下水道の法適用と経営戦略</dd></div>
+      </dl></div>
+    </article>
+
+    <article class="tp">
+      <header><h3>下川町 <span class="star">★</span></h3><p class="meta">上川郡／人口約3千人／過疎地域・豪雪地域／北・北海道中央圏域定住自立圏の構成町／平成30年6月にSDGs未来都市・自治体SDGsモデル事業に選定</p></header>
+      <div class="in"><dl>
+        <div><dt>構造が特殊</dt><dd><span class="chip c-ok">確認済</span> <b>下川町地域保健福祉計画</b>＝社会福祉法107条の地域福祉計画を土台に、高齢者福祉計画・介護保険事業計画・子ども子育て支援事業計画・障がい者計画・障がい福祉計画・障がい児福祉計画・健康しもかわ21を<b>一体化した統合計画</b>。第4期は令和元年度〜令和5年度で「改正Ⅱ版」を公表し、その中に第8期介護保険事業計画（令和3〜5年度）を差し込む運用。</dd></div>
+        <div><dt>その他の確認済</dt><dd><span class="chip c-ok">確認済</span> 第6期総合計画（「2030年における下川町のありたい姿」の7目標を基本構想に置き、その下に分野方針・推進施策を基本計画として置く体系）／第3期SDGs未来都市計画 2024〜2026（第2期は2021〜2023）／認定こども園</dd></div>
+        <div><dt>本命</dt><dd>① 地域保健福祉計画の改正版（第10期介護の差し込み）　② 第4期SDGs未来都市計画　③ こども（統合計画の中で扱う）</dd></div>
+        <div><dt>最初の一言</dt><dd class="hook">「福祉の計画を1本に統合されていて、第4期では改正Ⅱ版まで出しておられるという構成が、他の団体さんではあまり見ない形だと感じました。第5期の計画期間は令和6年度から令和10年度でよろしいでしょうか。」</dd></div>
+        <div><dt>この団体特有の注意</dt><dd><b>準備不足が最も露見する団体。</b>地域保健福祉計画のPDFを読まずに訪問すると最初の一問で破綻する。全国から視察が来ており担当者は説明に慣れている。「介護だけ」「こどもだけ」の提案は構造に合わない。下川町を他団体の先進事例として使うのは有効だが、本人に他団体の事例を出すときは一言添える。</dd></div>
+        <div><dt>訪問前に埋める</dt><dd><span class="chip c-warn">要確認</span> <b>第5期地域保健福祉計画の計画期間</b>／第9期介護がどう位置づけられているか／第10期を改正版で差し込む予定の有無／第6期総合計画の計画期間／第4期SDGs未来都市計画の検討状況／公共施設等総合管理計画／簡易水道・下水道の法適用</dd></div>
+      </dl></div>
+    </article>
+
+    <article class="tp">
+      <header><h3>当麻町</h3><p class="meta">上川郡／人口約6千人／過疎関係市町村／旭川市に隣接／<b>北・北海道中央圏域定住自立圏の構成団体ではない</b></p></header>
+      <div class="in"><dl>
+        <div><dt>確認できている計画・体制</dt><dd><span class="chip c-ok">確認済</span> 第6次当麻町総合計画「人・夢・心がつながるまち とうま 〜次世代に責任がもてる『未来』の創造〜」／地域生活支援拠点（相談・緊急時の受入れ・体験の機会・専門的人材の確保養成・地域づくりの5機能）／地域包括支援センター／子育て世代包括支援センター</dd></div>
+        <div><dt>介護保険の保険者</dt><dd><span class="chip c-ok">確認済</span> 大雪地区広域連合は東川町・美瑛町・東神楽町の3町で構成され、<b>当麻町は含まれない</b>。<span class="chip c-warn">要確認</span> 単独保険者であること。</dd></div>
+        <div><dt>本命</dt><dd>① こども（中間年見直し＋こども家庭センターへの整理を一緒に話せる）　② 障がい（第8期・拠点の運用）　③ 公共施設・総合計画</dd></div>
+        <div><dt>最初の一言</dt><dd class="hook">「第6次総合計画を拝見しました。『人・夢・心がつながるまち とうま』という将来像で、次世代に責任がもてる未来の創造を掲げておられますね。」</dd></div>
+        <div><dt>この団体特有の注意</dt><dd><b>広域化に触れない。</b>近隣3町が広域連合を組む中で単独を選んでいる。<b>圏域を間違えない。</b>名寄・美深・下川と同じ圏域の話を持ち込むと調べていないことが露見する。旭川のコンサルの営業圏内なので「わざわざ来た」は価値にならない。<b>HPに書いてあることを聞かない</b>（拠点・包括・子育て世代包括はいずれも記載あり）。</dd></div>
+        <div><dt>訪問前に埋める</dt><dd><span class="chip c-warn">要確認</span> 第6次総合計画の計画期間／第9期高齢者保健福祉計画・介護保険事業計画の正式名称／障がい3計画が一体か別冊か／こども計画の策定状況／こども家庭センターへの整理／地域福祉計画／地域包括支援センターが直営か委託か／公共施設等総合管理計画／簡易水道・下水道の法適用</dd></div>
+      </dl></div>
+    </article>
+
+  </div>
+</section>
+
+<section id="src">
+  <h2><span class="num">06</span>出典と未確認事項</h2>
+  <p class="lede">このページの <span class="chip c-ok">確認済</span> は下記で確認したもの。<b>自治体HPの本体ページと計画PDFには直接アクセスできていない</b>ため、計画期間などの具体は訪問前に必ず自分で開いて確認すること。</p>
+  <div class="split">
+    <div class="card">
+      <h3>自治体・広域</h3>
+      <ul>
+        <li>名寄市HP（各計画・過疎計画・定住自立圏形成協定）／名寄市立総合病院HP（経営強化プラン・経営比較分析表）</li>
+        <li>美深町HP（第9期高齢者保健福祉計画・介護保険事業計画、第7期障がい者福祉計画、総合戦略・評価報告書）</li>
+        <li>下川町HP（地域保健福祉計画 第4期改正Ⅱ版、第6期総合計画、第3期・第2期SDGs未来都市計画、組織機構図）</li>
+        <li>当麻町HP（第6次総合計画、地域生活支援拠点、地域包括支援センター、子育て世代包括支援センター）</li>
+        <li>大雪地区広域連合HP（構成町）／北・北海道中央圏域定住自立圏共生ビジョン</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>国</h3>
+      <ul>
+        <li>総務省自治行政局過疎対策室「過疎関係市町村都道府県別分布図」／過疎法（令和3年4月1日施行・令和12年度末まで）</li>
+        <li>総務省「公営企業会計の適用の推進について」／国土交通省 公営企業としての上下水道事業の現状と課題（令和6年9月27日 総務省自治財政局公営企業経営室・準公営企業室）</li>
+        <li>総務省「持続可能な地域医療提供体制を確保するための公立病院経営強化ガイドライン」（令和4年3月29日 総財準第72号）</li>
+        <li>総務省「統一的な基準による地方公会計マニュアル」（平成27年策定・平成31年3月改訂）</li>
+        <li>厚生労働省（介護保険事業計画 基本指針）／こども家庭庁・厚生労働省（障害福祉計画・障害児福祉計画 基本指針）／こども家庭庁（子ども・子育て支援事業計画 基本指針、こども大綱 令和5年12月閣議決定）</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note" style="margin-top:16px">
+    <b>未確認のまま残っているもの</b> ── 下川町の第5期地域保健福祉計画の計画期間、名寄市の総合計画（第2次）後期基本計画の終期、4団体それぞれのこども計画・公共施設等総合管理計画・経営戦略の状況、当麻町が単独保険者であること。いずれも逆算の起点になる情報なので、訪問前にHPで確認し、確認できた時点でこのページと管理表を書き換えること。<br>
+    <b>年度の読み替え</b> ── 本ページは令和8年度（2026年度）時点で書いている。年度が変われば逆算が全部ずれる。
+  </div>
+</section>
+
+<footer>
+  親ブック「人材育成・営業レベル管理表」シート19（訪問前 準備チェックリスト）・20（ヒアリング項目_共通）・21（ヒアリング項目_テーマ別）・22（トークスクリプト）に準拠。<br>
+  全項目版は Excel「24_道北4自治体_ヒアリング＆トークスクリプト.xlsx」（19シート）を参照。訪問記録は親ブック シート23 の様式に当日中に記入すること。
+</footer>
+
+</div>
