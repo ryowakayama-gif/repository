@@ -12,6 +12,8 @@ from build_curriculum import (
 )
 from curriculum_sales import SALES_LEVELS, SALES_MATRIX, SALES_KIT, SALES_PREP
 from curriculum_talk import HEARING_COMMON, HEARING_THEME, TALK_SCRIPT
+from curriculum_csv import (CSV_HEADER, CSV_RULES, REMARK_GUIDE, THEME_TITLES,
+                            VISIT_FORM, DATA_STATUS)
 
 OUT = "/tmp/claude-0/-home-user-repository/9fe4feb1-e025-51cd-8697-f63e2951be22/scratchpad/curriculum.html"
 e = html.escape
@@ -424,6 +426,124 @@ def sec_talk():
     </section>"""
 
 
+def sec_csv():
+    # 入力規則
+    rrows = ""
+    for no, name, must, fmt, ch, ex, warn in CSV_RULES:
+        req = "req" if must.startswith("必須") else "opt"
+        rrows += (f'<tr><td class="cno">{no}</td><td class="cname">{e(name)}</td>'
+                  f'<td class="creq"><span class="{req}">{e(must)}</span></td>'
+                  f'<td>{e(fmt)}</td><td class="cch">{e(ch)}</td>'
+                  f'<td class="cex">{e(ex)}</td><td class="cwarn">{e(warn)}</td></tr>')
+
+    # 欠測率（順位付き横棒・単一系列）
+    ranked = sorted(DATA_STATUS, key=lambda r: -r[3])
+    bars = ""
+    for name, ok, ng, pct, note in ranked:
+        flag = '<span class="prio">要対応</span>' if pct >= 33 else ""
+        bars += f"""
+        <div class="brow">
+          <div class="blab">{e(name)}{flag}</div>
+          <div class="btrack"><div class="bfill" style="width:{pct}%"></div></div>
+          <div class="bval">{pct}<span>%</span></div>
+          <div class="bnote">{e(note) if note != "―" else ""}</div>
+        </div>"""
+
+    # 備考の書き方
+    rg = ""
+    for kind, ex, note in REMARK_GUIDE:
+        cls = ("good" if kind.startswith("◎") else
+               "bad" if kind.startswith("×") else
+               "warn2" if kind.startswith("△") else "neutral")
+        rg += (f'<li class="rg {cls}"><span class="rgk">{e(kind)}</span>'
+               f'<p class="rgx">{e(ex)}</p><p class="rgn">{e(note)}</p></li>')
+
+    # テーマ・タイトル
+    trows = ""
+    prev = None
+    for theme, title, cur, sheet in THEME_TITLES:
+        first = theme != prev
+        prev = theme
+        trows += (f'<tr class="{"tsep" if first else ""}">'
+                  f'<td class="kt">{e(theme) if first else ""}</td>'
+                  f'<td class="kn">{e(title)}</td><td>{e(cur)}</td>'
+                  f'<td class="ks">{e(sheet)}</td></tr>')
+
+    csv_items = [(no, item) for blk, no, item, *_ in VISIT_FORM if no]
+    int_items = [item for blk, no, item, *_ in VISIT_FORM if not no]
+    csv_l = "".join(f'<li><span class="cnum">{no}</span>{e(it)}</li>'
+                    for no, it in sorted(csv_items))
+    int_l = "".join(f"<li>{e(it)}</li>" for it in int_items)
+
+    return f"""
+    <section id="csv" class="sec">
+      <header class="sec-head">
+        <p class="eyebrow">06　訪問記録とCSV</p>
+        <h2>記録は営業活動の資産になって初めて意味がある</h2>
+        <p class="lead">最終的にTeams上でCSVとして管理するため、訪問記録の様式はCSVの15列をそのまま含む。
+        列構成は変更しない。選択肢は実データ141件で実際に使われている値をそのまま採用した。</p>
+      </header>
+
+      <h3 class="sub-h">様式の構成</h3>
+      <div class="fsplit">
+        <div class="fcol">
+          <p class="fhead"><b>CSV出力項目</b>　15列 ── Teamsに上げる</p>
+          <ol class="flist csv">{csv_l}</ol>
+        </div>
+        <div class="fcol">
+          <p class="fhead"><b>社内記録</b>　CSVには出さない</p>
+          <ul class="flist">{int_l}</ul>
+        </div>
+      </div>
+      <p class="note2">1回の訪問で複数テーマを話した場合、CSVはテーマごとに1行になる。訪問記録も1テーマ1枚とし、
+      訪問日・団体名・担当者は各行に同じ値を入れる。金額の枠感や競合の具体名は社内記録にとどめ、備考には書かない。</p>
+
+      <h3 class="sub-h">入力規則</h3>
+      <div class="tablewrap">
+        <table class="grid crules">
+          <thead><tr><th scope="col">No</th><th scope="col">列名</th><th scope="col">必須区分</th>
+          <th scope="col">入力形式</th><th scope="col">選択肢</th><th scope="col">記入例</th>
+          <th scope="col">よくある誤り・注意</th></tr></thead>
+          <tbody>{rrows}</tbody>
+        </table>
+      </div>
+
+      <figure class="chart">
+        <figcaption>
+          <h4>列ごとの欠測率</h4>
+          <p>現行データ141件。欠測率33%以上を要対応とした。契約予定・タイトル・前回策定の3列が、
+          受注確度の判断とテーマ別の集計をそのまま不能にしている。</p>
+        </figcaption>
+        <div class="bars">{bars}</div>
+        <p class="chart-src">出典：訪問記録CSV（141件、空行2行を除く）</p>
+      </figure>
+
+      <h3 class="sub-h">備考の書き方</h3>
+      <p class="sub-lead">15列のうち、読み手にとって最も価値があるのが備考。
+      型は［現況］＋［根拠・時期］＋［次の一手］を1行で。</p>
+      <ul class="rglist">{rg}</ul>
+
+      <h3 class="sub-h">テーマ・タイトル標準リスト</h3>
+      <p class="sub-lead">タイトルはここから選ぶ。現行データでは
+      「公共施設等総合管理計画」と「〜改定業務」、「台帳精緻化（所有外）」「所有外管理資産」
+      「固定資産台帳精緻化（所有外管理資産）」が併存しており、そのままでは業務別の集計ができない。</p>
+      <div class="tablewrap">
+        <table class="grid ttl">
+          <thead><tr><th scope="col">CSVのテーマ</th><th scope="col">標準タイトル</th>
+          <th scope="col">カリキュラム上のテーマ</th><th scope="col">訪問前に見るシート</th></tr></thead>
+          <tbody>{trows}</tbody>
+        </table>
+      </div>
+      <div class="warn">
+        <p><b>区分の当てはめで迷いやすいもの</b>　こども計画・子ども子育て支援事業計画・高齢者福祉計画は「福祉計画」
+        （現行データでは「その他計画」に入っている）。固定資産台帳精緻化は「公会計」。公営企業は、
+        料金改定＝経営改善／戦略の策定・改定＝経営戦略／日常の会計・決算＝会計支援。
+        なお「社会生活計画」と「その他計画」の線引きは現状定まっておらず（環境系が両方に存在）、
+        上表は案。社内で確定したうえで運用を統一してほしい。</p>
+      </div>
+    </section>"""
+
+
 def sec_calendar():
     cells = ""
     peak = {"8月": "営業", "9月": "営業", "10月": "営業", "1月": "営業", "2月": "営業",
@@ -441,7 +561,7 @@ def sec_calendar():
     return f"""
     <section id="calendar" class="sec">
       <header class="sec-head">
-        <p class="eyebrow">06　年間サイクル</p>
+        <p class="eyebrow">07　年間サイクル</p>
         <h2>学習計画は自治体の年度に従属する</h2>
         <p class="lead">新人が「今月なにをやるか」は本人の習熟度だけでは決まらない。顧客の年度が決める。ロードマップの各月はこの表と対応している。</p>
       </header>
@@ -459,7 +579,7 @@ def sec_rubric():
     return f"""
     <section id="rubric" class="sec">
       <header class="sec-head">
-        <p class="eyebrow">07　評価ルーブリック</p>
+        <p class="eyebrow">08　評価ルーブリック</p>
         <h2>テーマ知識に依存しない9つの軸</h2>
         <p class="lead">テーマ別スキルマップと合わせて判定する。自己評価と上長評価に2段階以上の差が出た項目は、必ず面談で認識を合わせる。</p>
       </header>
@@ -486,7 +606,7 @@ def sec_ops():
     return f"""
     <section id="ops" class="sec">
       <header class="sec-head">
-        <p class="eyebrow">08　運用</p>
+        <p class="eyebrow">09　運用</p>
         <h2>回し方と配布物</h2>
       </header>
       <div class="ops-grid">
@@ -818,6 +938,77 @@ html{scroll-behavior:smooth}
 .ttabs{margin-bottom:0}
 .hkit{min-width:820px}
 .hkit .hqt{width:400px; color:var(--ink)}
+
+/* ---------- 訪問記録とCSV ---------- */
+.fsplit{display:grid; grid-template-columns:1fr 1fr; gap:2px}
+@media(max-width:820px){.fsplit{grid-template-columns:1fr}}
+.fcol{background:var(--surface); border:1px solid var(--rule); padding:16px 20px 18px; min-width:0}
+.fhead{margin:0 0 12px; font-size:12.5px; color:var(--ink-3); letter-spacing:.04em;
+  padding-bottom:9px; border-bottom:1px solid var(--rule)}
+.fhead b{color:var(--ink); font-size:14px; margin-right:8px}
+.flist{list-style:none; margin:0; padding:0; display:grid; gap:5px; font-size:13.5px; color:var(--ink-2)}
+.flist li{display:flex; gap:11px; align-items:baseline}
+.flist.csv li{color:var(--ink)}
+.cnum{flex:none; width:22px; text-align:right; font-family:"IBM Plex Mono",monospace;
+  font-size:11px; color:var(--accent)}
+.flist:not(.csv) li::before{content:"—"; color:var(--ink-3); flex:none}
+.note2{margin:14px 0 0; font-size:12.5px; color:var(--ink-3); border-left:3px solid var(--rule-2);
+  padding-left:14px; line-height:1.9; max-width:84ch}
+
+.crules{min-width:1120px}
+.crules .cno{width:34px; text-align:center; font-family:"IBM Plex Mono",monospace; color:var(--ink-3)}
+.crules .cname{width:100px; color:var(--ink); font-weight:700; white-space:nowrap}
+.crules .creq{width:112px}
+.crules .cch{width:200px; font-size:11.5px}
+.crules .cex{width:180px; color:var(--ink)}
+.crules .cwarn{width:330px}
+.req,.opt{font-size:10.5px; padding:2px 8px; border-radius:2px; white-space:nowrap; display:inline-block}
+.req{background:#B03A2E; color:#fff}
+.opt{background:var(--surface-2); color:var(--ink-2); border:1px solid var(--rule-2)}
+
+/* 欠測率（単一系列・順位付き横棒） */
+.chart{margin:26px 0 0; padding:20px 22px 16px; background:var(--surface); border:1px solid var(--rule)}
+.chart figcaption{margin:0 0 18px}
+.chart h4{margin:0 0 6px; font-family:"Zen Old Mincho",serif; font-size:16px; font-weight:600}
+.chart figcaption p{margin:0; font-size:12.5px; color:var(--ink-2); max-width:76ch}
+.bars{display:grid; gap:7px}
+.brow{display:grid; grid-template-columns:150px minmax(90px,1fr) 52px minmax(0,1.5fr);
+  gap:14px; align-items:center}
+.blab{font-size:12.5px; color:var(--ink); display:flex; align-items:baseline; gap:8px; justify-content:flex-end}
+.prio{font-size:9.5px; letter-spacing:.04em; padding:1px 6px; border-radius:2px;
+  background:var(--warm); color:var(--paper); flex:none}
+.btrack{height:16px; background:var(--surface-2); border-radius:0 2px 2px 0; position:relative}
+.bfill{height:100%; background:var(--accent); border-radius:0 4px 4px 0}
+.bval{font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-variant-numeric:tabular-nums;
+  text-align:right; color:var(--ink)}
+.bval span{font-size:9.5px; color:var(--ink-3); margin-left:1px}
+.bnote{font-size:11.5px; color:var(--ink-3); line-height:1.6}
+.chart-src{margin:16px 0 0; font-size:10.5px; color:var(--ink-3); letter-spacing:.03em}
+@media(max-width:820px){.brow{grid-template-columns:112px 1fr 46px}
+  .bnote{grid-column:1/-1; padding-left:126px; margin-top:-2px}}
+@media(max-width:520px){.brow{grid-template-columns:100px 1fr 44px}
+  .blab{justify-content:flex-start; flex-wrap:wrap; gap:4px}
+  .bnote{padding-left:0}}
+
+.rglist{list-style:none; margin:0; padding:0; display:grid; gap:2px}
+.rg{background:var(--surface); border:1px solid var(--rule); border-left:5px solid var(--rule-2);
+  padding:13px 18px; display:grid; grid-template-columns:88px 1fr; gap:4px 16px; align-items:baseline}
+.rg.good{border-left-color:#4C8B54} .rg.bad{border-left-color:#B03A2E}
+.rg.warn2{border-left-color:var(--warm)} .rg.neutral{border-left-color:var(--accent)}
+.rgk{font-size:11.5px; font-weight:700; color:var(--ink-2)}
+.rg.good .rgk{color:#3F7547} .rg.bad .rgk{color:#B03A2E} .rg.warn2 .rgk{color:var(--warm)}
+:root[data-theme="dark"] .rg.good .rgk{color:#84C08D}
+:root[data-theme="dark"] .rg.bad .rgk{color:#E8897C}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .rg.good .rgk{color:#84C08D}
+  :root:not([data-theme="light"]) .rg.bad .rgk{color:#E8897C}}
+.rgx{margin:0; font-size:13.5px; color:var(--ink)}
+.rgn{margin:0; grid-column:2; font-size:12px; color:var(--ink-3); line-height:1.75}
+@media(max-width:620px){.rg{grid-template-columns:1fr} .rgn{grid-column:1}}
+
+.ttl{min-width:760px}
+.ttl .tsep td{border-top:2px solid var(--rule-2)}
+.ttl .kn{width:300px}
+
 @media(max-width:620px){.tmeta>div{grid-template-columns:1fr; gap:2px}
   .speech{font-size:14px} .hq{flex-wrap:wrap}}
 """
@@ -899,13 +1090,14 @@ def build():
 <nav class="nav" aria-label="目次">
   <div class="nav-in">
     <a href="#levels"><span class="n">01</span>階層</a>
-    <a href="#roadmap"><span class="n">02</span>月次ロードマップ</a>
-    <a href="#themes"><span class="n">03</span>テーマ別到達基準</a>
-    <a href="#sales"><span class="n">04</span>営業提案の深度</a>
-    <a href="#talk"><span class="n">05</span>ヒアリング・トーク</a>
-    <a href="#calendar"><span class="n">06</span>年間サイクル</a>
-    <a href="#rubric"><span class="n">07</span>評価ルーブリック</a>
-    <a href="#ops"><span class="n">08</span>運用</a>
+    <a href="#roadmap"><span class="n">02</span>ロードマップ</a>
+    <a href="#themes"><span class="n">03</span>到達基準</a>
+    <a href="#sales"><span class="n">04</span>提案の深度</a>
+    <a href="#talk"><span class="n">05</span>ヒアリング</a>
+    <a href="#csv"><span class="n">06</span>訪問記録・CSV</a>
+    <a href="#calendar"><span class="n">07</span>年間サイクル</a>
+    <a href="#rubric"><span class="n">08</span>ルーブリック</a>
+    <a href="#ops"><span class="n">09</span>運用</a>
   </div>
 </nav>
 
@@ -915,6 +1107,7 @@ def build():
   {sec_themes()}
   {sec_sales()}
   {sec_talk()}
+  {sec_csv()}
   {sec_calendar()}
   {sec_rubric()}
   {sec_ops()}

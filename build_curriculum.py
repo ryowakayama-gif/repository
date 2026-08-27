@@ -13,7 +13,9 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
 from curriculum_sales import SALES_LEVELS, SALES_MATRIX, SALES_KIT, SALES_PREP
-from curriculum_talk import HEARING_COMMON, HEARING_THEME, TALK_SCRIPT, VISIT_FORM
+from curriculum_talk import HEARING_COMMON, HEARING_THEME, TALK_SCRIPT
+from curriculum_csv import (CSV_HEADER, CHOICES, CSV_RULES, REMARK_GUIDE,
+                            THEME_TITLES, VISIT_FORM, DATA_STATUS)
 
 OUT_DIR = "/home/user/repository/output"
 os.makedirs(OUT_DIR, exist_ok=True)
@@ -1392,7 +1394,10 @@ def sheet_intro(wb):
             "20_ヒアリング項目_共通… L1〜L3の場面別に、そのまま聞ける質問文",
             "21_ヒアリング項目_テーマ別… テーマごとに押さえるべき質問（L2／L3）",
             "22_トークスクリプト… L1〜L3の台詞・意図・NG例",
-            "23_訪問記録シート… 訪問当日に記入する様式（印刷用）",
+            "23_訪問記録シート… 訪問当日に記入する様式（CSV15列＋社内記録。印刷用）",
+            "24_訪問記録CSV_入力シート… Teams提出用。このシートをCSVで保存する",
+            "25_CSV入力規則… 15列の必須区分・選択肢・記入例・よくある誤り／備考の書き方",
+            "26_テーマ・タイトル標準リスト… テーマ8区分と標準タイトル、カリキュラムとの対応",
         ]),
         ("4. 運用サイクル（推奨）", [
             "毎月　　… 上長と本人で30分の面談。当月の学習項目と習得目標の達成状況を確認し、翌月の重点を決める。",
@@ -1713,53 +1718,239 @@ def sheet_talk(wb):
     return ws
 
 
-def sheet_visit_form(wb):
+LIST_SHEET = "選択肢マスタ"
+
+
+def sheet_lists(wb):
+    """データの入力規則で参照する選択肢マスタ（非表示）。"""
+    ws = wb.create_sheet(LIST_SHEET)
+    lists = dict(CHOICES)
+    lists["温度感"] = ["A：今年度中に動く", "B：次年度予算で検討", "C：様子見", "D：当面なし"]
+    seen, titles = set(), []
+    for _, title, *_ in THEME_TITLES:
+        if title not in seen:
+            seen.add(title)
+            titles.append(title)
+    lists["タイトル"] = titles
+    refs = {}
+    for i, (name, vals) in enumerate(lists.items(), start=1):
+        col = get_column_letter(i)
+        c = ws.cell(row=1, column=i, value=name)
+        c.font = F_HEAD
+        c.fill = PatternFill("solid", fgColor=C["header"])
+        for j, v in enumerate(vals, start=2):
+            ws.cell(row=j, column=i, value=v).font = F_BODY
+        ws.column_dimensions[col].width = 24
+        refs[name] = f"={LIST_SHEET}!${col}$2:${col}${len(vals) + 1}"
+    ws.sheet_state = "hidden"
+    return refs
+
+
+def _dv(ws, ref, cells, warn=False):
+    dv = DataValidation(type="list", formula1=ref, allow_blank=True, showDropDown=False)
+    if warn:
+        dv.errorStyle = "warning"
+        dv.error = "標準リストにない値です。新しい業務名であればそのまま入力できます。"
+    ws.add_data_validation(dv)
+    dv.add(cells)
+
+
+def sheet_visit_form(wb, refs):
     ws = wb.create_sheet("23_訪問記録シート")
     ws.sheet_properties.tabColor = "FFC000"
     N = 6
     put_title(ws, "訪問記録シート（様式）",
-              "訪問当日中に記入する。温度感と次アクションが空欄の記録は、記録として成立していない。", N)
-    put_header(ws, 4, ["ブロック", "項目", "記入の仕方・記入例", "記入欄", "", ""],
-               [12, 26, 46, 30, 26, 26], fill=C["subhead"])
-    ws.merge_cells(start_row=4, start_column=4, end_row=4, end_column=6)
+              "上段がTeams管理用CSVの15列、下段が社内記録（CSVには出さない）。訪問当日中に記入する。"
+              "1回の訪問で複数テーマを話した場合は、CSVはテーマごとに1行になるため、本シートも1テーマ1枚とする。", N)
+    put_header(ws, 4, ["ブロック", "CSV\n列", "項目", "記入の仕方・記入例", "記入欄", ""],
+               [16, 6, 26, 54, 34, 30], fill=C["subhead"])
+    ws.merge_cells(start_row=4, start_column=5, end_row=4, end_column=6)
     r = 5
-    blocks = {}
-    for blk, item, hint, h in VISIT_FORM:
+    blocks, kind_rows = {}, {}
+    for blk, no, item, hint, h, kind in VISIT_FORM:
         blocks.setdefault(blk, []).append(r)
-        ws.cell(row=r, column=1, value=blk).font = F_BOLD
-        ws.cell(row=r, column=1).alignment = AL_CTR
-        ws.cell(row=r, column=1).fill = PatternFill("solid", fgColor=C["band"])
-        ws.cell(row=r, column=2, value=item).font = F_BOLD
-        ws.cell(row=r, column=2).alignment = AL_WRAP
-        hc = ws.cell(row=r, column=3, value=hint)
+        csv_blk = no > 0
+        bc = ws.cell(row=r, column=1, value=blk)
+        bc.font = F_BOLD
+        bc.alignment = AL_CTR
+        bc.fill = PatternFill("solid", fgColor=C["band"] if csv_blk else C["gray"])
+        nc = ws.cell(row=r, column=2, value=no if csv_blk else "―")
+        nc.alignment = AL_CTR
+        nc.font = Font(name="Meiryo UI", size=9, bold=True,
+                       color="C00000" if csv_blk else "808080")
+        ic = ws.cell(row=r, column=3, value=item)
+        ic.font = F_BOLD
+        ic.alignment = AL_WRAP
+        hc = ws.cell(row=r, column=4, value=hint)
         hc.font = F_SMALL
         hc.alignment = AL_WRAP
         hc.fill = PatternFill("solid", fgColor=C["gray"])
-        ws.merge_cells(start_row=r, start_column=4, end_row=r, end_column=6)
+        ws.merge_cells(start_row=r, start_column=5, end_row=r, end_column=6)
+        ws.cell(row=r, column=5).alignment = AL_WRAP
+        ws.cell(row=r, column=5).fill = PatternFill("solid", fgColor="FFFDF5" if csv_blk else C["white"])
         for col in range(1, N + 1):
             ws.cell(row=r, column=col).border = BORDER
-        ws.cell(row=r, column=4).alignment = AL_WRAP
         ws.row_dimensions[r].height = h
+        if kind != "text":
+            kind_rows.setdefault(kind, []).append(r)
         r += 1
     for blk, rows in blocks.items():
         if len(rows) > 1:
             ws.merge_cells(start_row=rows[0], start_column=1, end_row=rows[-1], end_column=1)
-    # 温度感のプルダウン
-    for blk, item, hint, h in VISIT_FORM:
-        if item == "温度感":
-            idx = 5 + VISIT_FORM.index([blk, item, hint, h])
-            dv = DataValidation(
-                type="list",
-                formula1='"A：今年度中に動く,B：次年度予算で検討,C：様子見,D：当面なし"',
-                allow_blank=True, showDropDown=False)
-            ws.add_data_validation(dv)
-            dv.add(f"D{idx}")
-            ws.cell(row=idx, column=4).fill = PatternFill("solid", fgColor="FFF2CC")
-            break
-    ws.print_area = f"A1:{get_column_letter(N)}{r - 1}"
-    ws.page_setup.orientation = "landscape"
+    for kind, rows in kind_rows.items():
+        if kind in refs:
+            _dv(ws, refs[kind], " ".join(f"E{x}" for x in rows))
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=N)
+    c = ws.cell(row=r, column=1,
+                value="【CSVへの転記】上段15項目を、シート24「訪問記録CSV_入力シート」の1行に"
+                      "CSV列番号の順（入力者→訪問日→エリア→団体名→テーマ→結果→次回アクション→前回策定→"
+                      "担当者→改定時期→アプローチ時期→状態→契約予定→備考→タイトル）で貼り付ける。"
+                      "本シートは列番号を並べ替えて記入しやすくしてあるため、転記時は「CSV列」欄の番号で照合すること。")
+    c.font = Font(name="Meiryo UI", size=9, bold=True, color="C00000")
+    c.fill = PatternFill("solid", fgColor=C["note"])
+    c.alignment = AL_WRAP
+    c.border = BORDER
+    ws.row_dimensions[r].height = 46
+    ws.print_area = f"A1:{get_column_letter(N)}{r}"
+    ws.page_setup.orientation = "portrait"
     ws.page_setup.fitToWidth = 1
     ws.sheet_properties.pageSetUpPr.fitToPage = True
+    return ws
+
+
+def sheet_csv_input(wb, refs, rows=60):
+    """1行目がCSVヘッダの入力シート。このシートを「CSV UTF-8」で保存すればそのまま提出できる。"""
+    ws = wb.create_sheet("24_訪問記録CSV_入力シート")
+    ws.sheet_properties.tabColor = "C00000"
+    widths = [10, 13, 11, 18, 18, 13, 16, 10, 30, 10, 14, 20, 13, 64, 30]
+    for i, (h, w) in enumerate(zip(CSV_HEADER, widths), start=1):
+        c = ws.cell(row=1, column=i, value=h)
+        c.font = F_HEAD
+        c.fill = PatternFill("solid", fgColor=C["header"])
+        c.alignment = AL_HEAD
+        c.border = BORDER
+        ws.column_dimensions[get_column_letter(i)].width = w
+    ws.row_dimensions[1].height = 24
+    ws.freeze_panes = "A2"
+    last = rows + 1
+    for i, h in enumerate(CSV_HEADER, start=1):
+        col = get_column_letter(i)
+        for rr in range(2, last + 1):
+            cc = ws.cell(row=rr, column=i)
+            cc.font = F_BODY
+            cc.border = BORDER
+            cc.alignment = Alignment(vertical="center", wrap_text=(h == "備考"))
+        if h in refs:
+            _dv(ws, refs[h], f"{col}2:{col}{last}")
+        elif h == "タイトル":
+            _dv(ws, refs["タイトル"], f"{col}2:{col}{last}", warn=True)
+    ws.auto_filter.ref = f"A1:{get_column_letter(len(CSV_HEADER))}{last}"
+    return ws
+
+
+def sheet_csv_rules(wb):
+    ws = wb.create_sheet("25_CSV入力規則")
+    ws.sheet_properties.tabColor = "843C0C"
+    put_title(ws, "訪問記録CSV 入力規則（15列）",
+              "列構成はTeams管理用CSVのまま変更しない。選択肢は実データ141件で実際に使われている値。"
+              "「よくある誤り」は現行データを点検して見つかったもの。", 7)
+    put_header(ws, 4, ["No", "列名", "必須区分", "入力形式", "選択肢", "記入例", "よくある誤り・注意"],
+               [5, 16, 16, 30, 40, 34, 74], fill=C["subhead"])
+    last = put_rows(ws, 5, CSV_RULES, center_cols=(1, 3))
+    for r in range(5, last):
+        if str(ws.cell(row=r, column=3).value or "").startswith("必須"):
+            ws.cell(row=r, column=3).font = Font(name="Meiryo UI", size=9, bold=True, color="C00000")
+        nc = ws.cell(row=r, column=7)
+        nc.fill = PatternFill("solid", fgColor=C["note"])
+        nc.font = Font(name="Meiryo UI", size=9, color="843C0C")
+    add_filter(ws, 4, 7, last - 1)
+
+    r = last + 1
+    r = section(ws, r, "備考の書き方", 7)
+    put_header(ws, r, ["区分", "例文", "講評", "", "", "", ""],
+               [5, 16, 16, 30, 40, 34, 74], fill=C["subhead"])
+    ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=4)
+    ws.merge_cells(start_row=r, start_column=5, end_row=r, end_column=7)
+    rr = r + 1
+    for kind, ex, note in REMARK_GUIDE:
+        ws.cell(row=rr, column=1, value=kind).font = F_BOLD
+        ws.cell(row=rr, column=1).alignment = AL_CTR
+        ws.cell(row=rr, column=2, value=ex).alignment = AL_WRAP
+        ws.cell(row=rr, column=5, value=note).alignment = AL_WRAP
+        ws.merge_cells(start_row=rr, start_column=2, end_row=rr, end_column=4)
+        ws.merge_cells(start_row=rr, start_column=5, end_row=rr, end_column=7)
+        for col in range(1, 8):
+            cc = ws.cell(row=rr, column=col)
+            cc.border = BORDER
+            if not cc.font.bold:
+                cc.font = F_BODY
+        if kind.startswith("◎"):
+            ws.cell(row=rr, column=1).fill = PatternFill("solid", fgColor="E2EFDA")
+        elif kind.startswith("×"):
+            ws.cell(row=rr, column=1).fill = PatternFill("solid", fgColor=C["note"])
+        ws.row_dimensions[rr].height = 34
+        rr += 1
+
+    rr += 1
+    rr = section(ws, rr, "現行データ（141件）の入力状況　── 埋めるべき列の優先順位", 7)
+    put_header(ws, rr, ["列名", "入力", "欠測", "欠測率", "コメント", "", ""],
+               [5, 16, 16, 30, 40, 34, 74], fill=C["subhead"])
+    ws.merge_cells(start_row=rr, start_column=5, end_row=rr, end_column=7)
+    r2 = rr + 1
+    for name, ok, ng, pct, note in DATA_STATUS:
+        vals = [name, ok, ng, f"{pct}%", note]
+        for i, v in enumerate(vals, start=1):
+            cc = ws.cell(row=r2, column=i, value=v)
+            cc.font = F_BODY
+            cc.border = BORDER
+            cc.alignment = AL_CTR if i in (2, 3, 4) else AL_WRAP
+        ws.merge_cells(start_row=r2, start_column=5, end_row=r2, end_column=7)
+        ws.cell(row=r2, column=6).border = BORDER
+        ws.cell(row=r2, column=7).border = BORDER
+        if pct >= 33:
+            for i in (1, 2, 3, 4):
+                ws.cell(row=r2, column=i).fill = PatternFill("solid", fgColor=C["note"])
+            ws.cell(row=r2, column=4).font = Font(name="Meiryo UI", size=9, bold=True, color="C00000")
+        r2 += 1
+    return ws
+
+
+def sheet_theme_titles(wb):
+    ws = wb.create_sheet("26_テーマ・タイトル標準リスト")
+    ws.sheet_properties.tabColor = "70AD47"
+    put_title(ws, "テーマ・タイトル標準リスト",
+              "CSVの「テーマ」8区分と「タイトル」の標準値。カリキュラム上のテーマと、"
+              "訪問前に見るヒアリングシートの対応も併記。タイトルはここから選ぶ（表記ゆれを防ぐ）。", 4)
+    put_header(ws, 4, ["CSVのテーマ", "標準タイトル（タイトル列に入れる値）",
+                       "カリキュラム上のテーマ", "訪問前に見るシート"],
+               [22, 46, 22, 24], fill=C["subhead"])
+    last = put_rows(ws, 5, THEME_TITLES,
+                    band_col=1,
+                    band_colors={"公会計": "1F77B4", "会計支援": "17A2B8", "経営戦略": "17A2B8",
+                                 "経営改善": "17A2B8", "福祉計画": "2CA02C",
+                                 "公共施設マネジメント": "6C757D", "社会生活計画": "8C564B",
+                                 "その他計画": "7F4FBF"})
+    add_filter(ws, 4, 4, last - 1)
+    r = last + 1
+    for txt, color in (
+        ("【区分の当てはめで迷いやすいもの】"
+         "こども計画・子ども子育て支援事業計画・高齢者福祉計画は「福祉計画」（「その他計画」ではない）。"
+         "固定資産台帳精緻化は「公会計」。公営企業の料金改定は「経営改善」、経営戦略の策定・改定は「経営戦略」、"
+         "日常の会計・決算支援は「会計支援」。", C["band"]),
+        ("【要検討：社会生活計画とその他計画の線引き】"
+         "現行データでは環境系が両方に入っている（環境計画＝社会生活計画／環境基本計画＝その他計画）。"
+         "本リストは「住民生活に直結する分野別計画（健康・食育・自殺対策・男女共同参画・環境・交通・文化財）を"
+         "社会生活計画、行政運営に関わる計画（総合計画・財政・農業振興・強靱化）をその他計画」とする案。"
+         "社内で確定したうえで運用を統一してください。", C["note"]),
+    ):
+        ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=4)
+        c = ws.cell(row=r, column=1, value=txt)
+        c.font = Font(name="Meiryo UI", size=9, bold=True, color="1F3864")
+        c.fill = PatternFill("solid", fgColor=color)
+        c.alignment = AL_WRAP
+        c.border = BORDER
+        ws.row_dimensions[r].height = 46
+        r += 1
     return ws
 
 
@@ -1786,7 +1977,12 @@ def main():
     sheet_hearing_common(wb)
     sheet_hearing_theme(wb)
     sheet_talk(wb)
-    sheet_visit_form(wb)
+    refs = sheet_lists(wb)
+    sheet_visit_form(wb, refs)
+    sheet_csv_input(wb, refs)
+    sheet_csv_rules(wb)
+    sheet_theme_titles(wb)
+    wb.move_sheet(LIST_SHEET, offset=len(wb.sheetnames))   # 非表示マスタはタブ順の最後へ
     p1 = os.path.join(OUT_DIR, "10_新人教育カリキュラム_マスター管理表.xlsx")
     wb.save(p1)
 
@@ -1799,7 +1995,10 @@ def main():
     sheet_sales_matrix(wb2)
     sheet_talk(wb2)
     sheet_hearing_common(wb2)
-    sheet_visit_form(wb2)
+    refs2 = sheet_lists(wb2)
+    sheet_visit_form(wb2, refs2)
+    sheet_csv_rules(wb2)
+    wb2.move_sheet(LIST_SHEET, offset=len(wb2.sheetnames))
     p2 = os.path.join(OUT_DIR, "11_個人別_習得度チェックシート.xlsx")
     wb2.save(p2)
 
