@@ -13,6 +13,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
 from curriculum_sales import SALES_LEVELS, SALES_MATRIX, SALES_KIT, SALES_PREP
+from curriculum_talk import HEARING_COMMON, HEARING_THEME, TALK_SCRIPT, VISIT_FORM
 
 OUT_DIR = "/home/user/repository/output"
 os.makedirs(OUT_DIR, exist_ok=True)
@@ -1388,6 +1389,10 @@ def sheet_intro(wb):
             "17_営業提案 深度マトリクス… 提案素材9種 × L1〜L5 の踏み込み範囲",
             "18_テーマ別 提案ネタ台帳… 指針・マニュアル・事例・補助金・起債・関連施策・現行課題の一覧",
             "19_訪問前 準備チェックリスト… レベル別に、訪問前に済ませておくこと",
+            "20_ヒアリング項目_共通… L1〜L3の場面別に、そのまま聞ける質問文",
+            "21_ヒアリング項目_テーマ別… テーマごとに押さえるべき質問（L2／L3）",
+            "22_トークスクリプト… L1〜L3の台詞・意図・NG例",
+            "23_訪問記録シート… 訪問当日に記入する様式（印刷用）",
         ]),
         ("4. 運用サイクル（推奨）", [
             "毎月　　… 上長と本人で30分の面談。当月の学習項目と習得目標の達成状況を確認し、翌月の重点を決める。",
@@ -1659,6 +1664,105 @@ def sheet_sales_prep(wb):
     return ws
 
 
+def sheet_hearing_common(wb):
+    ws = wb.create_sheet("20_ヒアリング項目_共通")
+    ws.sheet_properties.tabColor = "2E75B6"
+    put_title(ws, "ヒアリング項目（共通・L1〜L3）",
+              "そのまま口に出せる形で書いてある。訪問前にこのシートの自分のレベルまでを読み、"
+              "聞く順番を決めてから行く。◯◯・△△は必ず埋めてから使うこと。", 6)
+    put_header(ws, 4, ["Lv", "場面", "質問文（このまま聞ける形）", "聞く目的（何が分かるか）",
+                       "答えから読み取ること・次の一手", "必須\n／任意"],
+               [6, 16, 62, 42, 50, 9], fill=C["subhead"])
+    last = put_rows(ws, 5, HEARING_COMMON, center_cols=(1, 6), level_col=1)
+    for r in range(5, last):
+        if str(ws.cell(row=r, column=6).value) == "必須":
+            ws.cell(row=r, column=6).font = Font(name="Meiryo UI", size=9, bold=True, color="C00000")
+    add_filter(ws, 4, 6, last - 1)
+    return ws
+
+
+def sheet_hearing_theme(wb):
+    ws = wb.create_sheet("21_ヒアリング項目_テーマ別")
+    ws.sheet_properties.tabColor = "1F77B4"
+    put_title(ws, "ヒアリング項目（テーマ別・L2〜L3）",
+              "テーマ列でフィルタして、訪問前に印刷して持参する。L2は現状を押さえる質問、"
+              "L3は課題と発注条件に踏み込む質問。答えは相手の言葉のまま記録する。", 4)
+    put_header(ws, 4, ["テーマ", "Lv", "質問文（このまま聞ける形）", "聞く目的・使いどころ"],
+               [20, 6, 66, 66], fill=C["subhead"])
+    last = put_rows(ws, 5, HEARING_THEME, center_cols=(2,), level_col=2)
+    add_filter(ws, 4, 4, last - 1)
+    return ws
+
+
+def sheet_talk(wb):
+    ws = wb.create_sheet("22_トークスクリプト")
+    ws.sheet_properties.tabColor = "C00000"
+    put_title(ws, "トークスクリプト（L1〜L3）",
+              "「話す内容」は台詞そのもの。暗記するのではなく、意図を理解したうえで自分の言葉に直して使う。"
+              "「これはNG」の列が本体 ── ここに書いてある失敗は、取り返すのに年単位かかる。", 6)
+    put_header(ws, 4, ["Lv", "場面", "ステップ", "話す内容（スクリプト）", "意図", "これはNG"],
+               [6, 22, 26, 74, 42, 46], fill=C["subhead"])
+    last = put_rows(ws, 5, TALK_SCRIPT, center_cols=(1,), level_col=1)
+    for r in range(5, last):
+        sc = ws.cell(row=r, column=4)
+        sc.font = Font(name="Meiryo UI", size=9, color="1F3864")
+        ng = ws.cell(row=r, column=6)
+        ng.fill = PatternFill("solid", fgColor=C["note"])
+        ng.font = Font(name="Meiryo UI", size=9, color="A02020")
+    add_filter(ws, 4, 6, last - 1)
+    return ws
+
+
+def sheet_visit_form(wb):
+    ws = wb.create_sheet("23_訪問記録シート")
+    ws.sheet_properties.tabColor = "FFC000"
+    N = 6
+    put_title(ws, "訪問記録シート（様式）",
+              "訪問当日中に記入する。温度感と次アクションが空欄の記録は、記録として成立していない。", N)
+    put_header(ws, 4, ["ブロック", "項目", "記入の仕方・記入例", "記入欄", "", ""],
+               [12, 26, 46, 30, 26, 26], fill=C["subhead"])
+    ws.merge_cells(start_row=4, start_column=4, end_row=4, end_column=6)
+    r = 5
+    blocks = {}
+    for blk, item, hint, h in VISIT_FORM:
+        blocks.setdefault(blk, []).append(r)
+        ws.cell(row=r, column=1, value=blk).font = F_BOLD
+        ws.cell(row=r, column=1).alignment = AL_CTR
+        ws.cell(row=r, column=1).fill = PatternFill("solid", fgColor=C["band"])
+        ws.cell(row=r, column=2, value=item).font = F_BOLD
+        ws.cell(row=r, column=2).alignment = AL_WRAP
+        hc = ws.cell(row=r, column=3, value=hint)
+        hc.font = F_SMALL
+        hc.alignment = AL_WRAP
+        hc.fill = PatternFill("solid", fgColor=C["gray"])
+        ws.merge_cells(start_row=r, start_column=4, end_row=r, end_column=6)
+        for col in range(1, N + 1):
+            ws.cell(row=r, column=col).border = BORDER
+        ws.cell(row=r, column=4).alignment = AL_WRAP
+        ws.row_dimensions[r].height = h
+        r += 1
+    for blk, rows in blocks.items():
+        if len(rows) > 1:
+            ws.merge_cells(start_row=rows[0], start_column=1, end_row=rows[-1], end_column=1)
+    # 温度感のプルダウン
+    for blk, item, hint, h in VISIT_FORM:
+        if item == "温度感":
+            idx = 5 + VISIT_FORM.index([blk, item, hint, h])
+            dv = DataValidation(
+                type="list",
+                formula1='"A：今年度中に動く,B：次年度予算で検討,C：様子見,D：当面なし"',
+                allow_blank=True, showDropDown=False)
+            ws.add_data_validation(dv)
+            dv.add(f"D{idx}")
+            ws.cell(row=idx, column=4).fill = PatternFill("solid", fgColor="FFF2CC")
+            break
+    ws.print_area = f"A1:{get_column_letter(N)}{r - 1}"
+    ws.page_setup.orientation = "landscape"
+    ws.page_setup.fitToWidth = 1
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    return ws
+
+
 # ============================================================
 # main
 # ============================================================
@@ -1679,6 +1783,10 @@ def main():
     sheet_sales_matrix(wb)
     sheet_sales_kit(wb)
     sheet_sales_prep(wb)
+    sheet_hearing_common(wb)
+    sheet_hearing_theme(wb)
+    sheet_talk(wb)
+    sheet_visit_form(wb)
     p1 = os.path.join(OUT_DIR, "10_新人教育カリキュラム_マスター管理表.xlsx")
     wb.save(p1)
 
@@ -1689,6 +1797,9 @@ def main():
     sheet_rubric(wb2)
     sheet_skillmap(wb2)
     sheet_sales_matrix(wb2)
+    sheet_talk(wb2)
+    sheet_hearing_common(wb2)
+    sheet_visit_form(wb2)
     p2 = os.path.join(OUT_DIR, "11_個人別_習得度チェックシート.xlsx")
     wb2.save(p2)
 
@@ -1697,6 +1808,7 @@ def main():
     print(f"作成: {p2}")
     print(f"　月次ロードマップ: {len(ROADMAP)}ヶ月 / テーマ別学習項目: {total}項目 / スキルマップ: {len(SKILLMAP)}行 / 評価項目: {len(build_checkitems())}項目")
     print(f"　営業: レベル定義{len(SALES_LEVELS)}段階 / 深度マトリクス{len(SALES_MATRIX)}素材 / 提案ネタ台帳{len(SALES_KIT)}件 / 準備チェック{len(SALES_PREP)}項目")
+    print(f"　現場ツール: ヒアリング共通{len(HEARING_COMMON)}問 / テーマ別{len(HEARING_THEME)}問 / トークスクリプト{len(TALK_SCRIPT)}場面 / 訪問記録{len(VISIT_FORM)}欄")
 
 
 if __name__ == "__main__":

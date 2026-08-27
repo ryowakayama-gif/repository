@@ -11,6 +11,7 @@ from build_curriculum import (
     KOKAIKEI, KOEIKIGYO, KOREISHA, SHOGAI, CHIIKIFUKUSHI, KODOMO, SONOTA, KYOTSU,
 )
 from curriculum_sales import SALES_LEVELS, SALES_MATRIX, SALES_KIT, SALES_PREP
+from curriculum_talk import HEARING_COMMON, HEARING_THEME, TALK_SCRIPT
 
 OUT = "/tmp/claude-0/-home-user-repository/9fe4feb1-e025-51cd-8697-f63e2951be22/scratchpad/curriculum.html"
 e = html.escape
@@ -314,6 +315,115 @@ def sec_sales():
     </section>"""
 
 
+HT_THEMES = ["公会計", "公営企業会計", "高齢者・介護保険", "障害者・障害児",
+             "地域福祉", "こども・子育て", "その他計画"]
+HT_SLUG = {t: f"h{i}" for i, t in enumerate(HT_THEMES)}
+
+
+def sec_talk():
+    # --- トークスクリプト（レベルタブ） ---
+    by_lv = {}
+    for lv, scene, step, script, aim, ng in TALK_SCRIPT:
+        by_lv.setdefault(lv, []).append((scene, step, script, aim, ng))
+    tpanels = ""
+    lv_note = {"L1": "同行が中心。話す量は少なく、記録が仕事。",
+               "L2": "単独訪問。国の動きを届け、現状を聞いて帰る。売り込まない。",
+               "L3": "課題を示し、財源を添えて、予算要求に載せるところまで。"}
+    for i, lv in enumerate(("L1", "L2", "L3"), 1):
+        cards = ""
+        cur = None
+        for scene, step, script, aim, ng in by_lv.get(lv, []):
+            if scene != cur:
+                cards += f'<li class="scene-h"><span class="lv lv{lv[1]}">{lv}</span>{e(scene)}</li>'
+                cur = scene
+            speech = script.startswith("「")
+            body = (f'<blockquote class="speech">{e(script)}</blockquote>' if speech
+                    else f'<p class="stage">{e(script)}</p>')
+            cards += f"""
+          <li class="tcard">
+            <p class="tstep">{e(step)}</p>
+            {body}
+            <dl class="tmeta">
+              <div><dt>意図</dt><dd>{e(aim)}</dd></div>
+              <div class="ng"><dt>これはNG</dt><dd>{e(ng)}</dd></div>
+            </dl>
+          </li>"""
+        tpanels += (f'<div class="tpanel" id="t{i}" role="tabpanel" aria-labelledby="ttab{i}"'
+                    f'{"" if i == 1 else " hidden"}>'
+                    f'<p class="ypanel-sub">{e(lv_note[lv])}</p>'
+                    f'<ul class="talks">{cards}</ul></div>')
+    ttabs = "".join(
+        f'<button class="ytab ttab{" is-on" if i == 1 else ""}" id="ttab{i}" role="tab" '
+        f'aria-selected="{"true" if i == 1 else "false"}" aria-controls="t{i}" data-t="{i}">'
+        f'{lv}<span>{len(by_lv.get(lv, []))}場面</span></button>'
+        for i, lv in enumerate(("L1", "L2", "L3"), 1))
+
+    # --- ヒアリング項目（共通） ---
+    hc = ""
+    cur = None
+    for lv, scene, q, aim, nxt, must in HEARING_COMMON:
+        key = (lv, scene)
+        if key != cur:
+            hc += (f'<li class="scene-h"><span class="lv lv{lv[1]}">{lv}</span>{e(scene)}</li>')
+            cur = key
+        tag = '<span class="must">必須</span>' if must == "必須" else (
+            '<span class="opt">推奨</span>' if must == "推奨" else '<span class="opt">任意</span>')
+        qh = (f'<blockquote class="speech q">{e(q)}</blockquote>' if q.startswith("「")
+              else f'<p class="stage">{e(q)}</p>')
+        hc += f"""
+      <li class="hcard">
+        <div class="hq">{qh}{tag}</div>
+        <dl class="tmeta">
+          <div><dt>何が分かるか</dt><dd>{e(aim)}</dd></div>
+          <div><dt>次の一手</dt><dd>{e(nxt)}</dd></div>
+        </dl>
+      </li>"""
+
+    # --- ヒアリング項目（テーマ別） ---
+    hrows = ""
+    for theme, lv, q, aim in HEARING_THEME:
+        hrows += (f'<tr class="hrow" data-h="{HT_SLUG.get(theme, "")}">'
+                  f'<td class="kt">{e(theme)}</td>'
+                  f'<td class="kl"><span class="lv lv{lv[1]}">{e(lv)}</span></td>'
+                  f'<td class="hqt">{e(q)}</td><td>{e(aim)}</td></tr>')
+    hchips = ('<button class="kchip hchip is-on" data-g="all">すべて<span>'
+              + str(len(HEARING_THEME)) + "</span></button>")
+    for t in HT_THEMES:
+        n = sum(1 for r in HEARING_THEME if r[0] == t)
+        hchips += f'<button class="kchip hchip" data-g="{HT_SLUG[t]}">{e(t)}<span>{n}</span></button>'
+
+    return f"""
+    <section id="talk" class="sec">
+      <header class="sec-head">
+        <p class="eyebrow">05　ヒアリングとトークスクリプト</p>
+        <h2>L1〜L3が現場で実際に口に出す言葉</h2>
+        <p class="lead">台詞は暗記するものではなく、意図を理解したうえで自分の言葉に直して使うもの。
+        ただし「これはNG」に挙げた失敗だけは、そのまま避けてほしい ── 取り返すのに年単位かかる。
+        ◯◯・△△は訪問前に必ず埋める。</p>
+      </header>
+
+      <h3 class="sub-h">トークスクリプト</h3>
+      <div class="ytabs ttabs" role="tablist" aria-label="レベル">{ttabs}</div>
+      {tpanels}
+
+      <h3 class="sub-h">ヒアリング項目（共通） <span class="sub-n">{len(HEARING_COMMON)}問</span></h3>
+      <p class="sub-lead">場面ごとに、聞く順番のまま並べてある。L1は相手に質問するより「記録する」ことが仕事。</p>
+      <ul class="hlist">{hc}</ul>
+
+      <h3 class="sub-h">ヒアリング項目（テーマ別） <span class="sub-n">{len(HEARING_THEME)}問</span></h3>
+      <p class="sub-lead">訪問前にテーマで絞り込んで印刷して持参する。答えは相手の言葉のまま記録する ──
+      要約した時点で、次の提案に使える情報ではなくなる。</p>
+      <div class="kfilter">{hchips}</div>
+      <div class="tablewrap">
+        <table class="grid hkit">
+          <thead><tr><th scope="col">テーマ</th><th scope="col">Lv</th>
+          <th scope="col">質問文（このまま聞ける形）</th><th scope="col">聞く目的・使いどころ</th></tr></thead>
+          <tbody>{hrows}</tbody>
+        </table>
+      </div>
+    </section>"""
+
+
 def sec_calendar():
     cells = ""
     peak = {"8月": "営業", "9月": "営業", "10月": "営業", "1月": "営業", "2月": "営業",
@@ -331,7 +441,7 @@ def sec_calendar():
     return f"""
     <section id="calendar" class="sec">
       <header class="sec-head">
-        <p class="eyebrow">05　年間サイクル</p>
+        <p class="eyebrow">06　年間サイクル</p>
         <h2>学習計画は自治体の年度に従属する</h2>
         <p class="lead">新人が「今月なにをやるか」は本人の習熟度だけでは決まらない。顧客の年度が決める。ロードマップの各月はこの表と対応している。</p>
       </header>
@@ -349,7 +459,7 @@ def sec_rubric():
     return f"""
     <section id="rubric" class="sec">
       <header class="sec-head">
-        <p class="eyebrow">06　評価ルーブリック</p>
+        <p class="eyebrow">07　評価ルーブリック</p>
         <h2>テーマ知識に依存しない9つの軸</h2>
         <p class="lead">テーマ別スキルマップと合わせて判定する。自己評価と上長評価に2段階以上の差が出た項目は、必ず面談で認識を合わせる。</p>
       </header>
@@ -376,7 +486,7 @@ def sec_ops():
     return f"""
     <section id="ops" class="sec">
       <header class="sec-head">
-        <p class="eyebrow">07　運用</p>
+        <p class="eyebrow">08　運用</p>
         <h2>回し方と配布物</h2>
       </header>
       <div class="ops-grid">
@@ -678,11 +788,43 @@ html{scroll-behavior:smooth}
 .pd{margin:0; font-size:12px; color:var(--ink-3)}
 @media(max-width:760px){.pgroup{grid-template-columns:1fr; gap:10px}
   .plist li{grid-template-columns:1fr} .pi{grid-row:auto}}
+
+/* ---------- ヒアリング／トークスクリプト ---------- */
+.talks,.hlist{list-style:none; margin:0; padding:0; display:grid; gap:2px}
+.scene-h{display:flex; align-items:baseline; gap:12px; font-family:"Zen Old Mincho",serif;
+  font-size:15px; font-weight:600; padding:18px 2px 7px; border-bottom:1px solid var(--rule-2)}
+.scene-h:first-child{padding-top:4px}
+.tcard,.hcard{background:var(--surface); border:1px solid var(--rule); padding:15px 20px 16px; display:grid; gap:10px}
+.tstep{margin:0; font-size:11px; letter-spacing:.08em; color:var(--ink-3);
+  font-family:"IBM Plex Mono",monospace}
+.speech{margin:0; padding:11px 0 11px 18px; border-left:3px solid var(--accent);
+  font-size:15px; line-height:1.95; color:var(--ink); font-feature-settings:"palt" 1; max-width:78ch}
+.speech.q{font-size:14.5px}
+.stage{margin:0; padding:9px 0 9px 18px; border-left:3px dashed var(--rule-2);
+  font-size:13.5px; color:var(--ink-2); max-width:78ch}
+.tmeta{margin:0; display:grid; gap:5px}
+.tmeta>div{display:grid; grid-template-columns:88px 1fr; gap:14px; align-items:baseline}
+.tmeta dt{margin:0; font-size:10.5px; letter-spacing:.06em; color:var(--ink-3)}
+.tmeta dd{margin:0; font-size:13px; color:var(--ink-2)}
+.tmeta .ng dt{color:#B03A2E}
+.tmeta .ng dd{color:var(--ink)}
+:root[data-theme="dark"] .tmeta .ng dt{color:#E8897C}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tmeta .ng dt{color:#E8897C}}
+.hq{display:flex; align-items:flex-start; gap:14px}
+.hq>*:first-child{flex:1; min-width:0}
+.must,.opt{flex:none; font-size:10px; letter-spacing:.06em; padding:2px 8px; border-radius:2px; margin-top:12px}
+.must{background:#B03A2E; color:#fff}
+.opt{background:var(--surface-2); color:var(--ink-3); border:1px solid var(--rule-2)}
+.ttabs{margin-bottom:0}
+.hkit{min-width:820px}
+.hkit .hqt{width:400px; color:var(--ink)}
+@media(max-width:620px){.tmeta>div{grid-template-columns:1fr; gap:2px}
+  .speech{font-size:14px} .hq{flex-wrap:wrap}}
 """
 
 JS = """
 (function(){
-  var tabs=[].slice.call(document.querySelectorAll('.ytab'));
+  var tabs=[].slice.call(document.querySelectorAll('.ytab[data-y]'));
   tabs.forEach(function(t){
     t.addEventListener('click',function(){
       tabs.forEach(function(o){
@@ -694,13 +836,34 @@ JS = """
     });
   });
 
-  var chips=[].slice.call(document.querySelectorAll('.kchip')),
+  var chips=[].slice.call(document.querySelectorAll('.kchip[data-f]')),
       rows=[].slice.call(document.querySelectorAll('.krow'));
   chips.forEach(function(c){
     c.addEventListener('click',function(){
       chips.forEach(function(o){o.classList.toggle('is-on',o===c);});
       var f=c.dataset.f;
       rows.forEach(function(r){ r.hidden = !(f==='all' || r.dataset.t===f); });
+    });
+  });
+
+  var tt=[].slice.call(document.querySelectorAll('.ytab[data-t]'));
+  tt.forEach(function(t){
+    t.addEventListener('click',function(){
+      tt.forEach(function(o){
+        var on=o===t;
+        o.classList.toggle('is-on',on);
+        o.setAttribute('aria-selected',on?'true':'false');
+        document.getElementById('t'+o.dataset.t).hidden=!on;
+      });
+    });
+  });
+  var hc=[].slice.call(document.querySelectorAll('.kchip[data-g]')),
+      hr=[].slice.call(document.querySelectorAll('.hrow'));
+  hc.forEach(function(c){
+    c.addEventListener('click',function(){
+      hc.forEach(function(o){o.classList.toggle('is-on',o===c);});
+      var g=c.dataset.g;
+      hr.forEach(function(r){ r.hidden = !(g==='all' || r.dataset.h===g); });
     });
   });
 })();
@@ -727,6 +890,7 @@ def build():
       <li><b>{n_items}</b><span>学習項目</span></li>
       <li><b>L0–L5</b><span>階層区分</span></li>
       <li><b>{len(SALES_KIT)}</b><span>営業の提案ネタ</span></li>
+      <li><b>{len(HEARING_COMMON) + len(HEARING_THEME)}</b><span>ヒアリング項目</span></li>
       <li><b>33</b><span>評価項目</span></li>
     </ul>
   </div>
@@ -738,9 +902,10 @@ def build():
     <a href="#roadmap"><span class="n">02</span>月次ロードマップ</a>
     <a href="#themes"><span class="n">03</span>テーマ別到達基準</a>
     <a href="#sales"><span class="n">04</span>営業提案の深度</a>
-    <a href="#calendar"><span class="n">05</span>年間サイクル</a>
-    <a href="#rubric"><span class="n">06</span>評価ルーブリック</a>
-    <a href="#ops"><span class="n">07</span>運用</a>
+    <a href="#talk"><span class="n">05</span>ヒアリング・トーク</a>
+    <a href="#calendar"><span class="n">06</span>年間サイクル</a>
+    <a href="#rubric"><span class="n">07</span>評価ルーブリック</a>
+    <a href="#ops"><span class="n">08</span>運用</a>
   </div>
 </nav>
 
@@ -749,6 +914,7 @@ def build():
   {sec_roadmap()}
   {sec_themes()}
   {sec_sales()}
+  {sec_talk()}
   {sec_calendar()}
   {sec_rubric()}
   {sec_ops()}
