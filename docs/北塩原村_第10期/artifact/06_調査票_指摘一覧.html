@@ -1,0 +1,421 @@
+<title>北塩原村 第10期調査票 指摘一覧</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Old+Mincho:wght@500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+
+<style>
+:root{
+  --ground:#F4F6F9;
+  --sheet:#FFFFFF;
+  --ink:#141C27;
+  --ink-2:#4C5968;
+  --ink-3:#7E8B99;
+  --rule:#D9DFE7;
+  --rule-soft:#EAEEF3;
+  --ai:#1F4E79;
+  --ai-wash:#E7EEF5;
+  --crit:#A3231C;
+  --crit-wash:#FAEAE9;
+  --dec:#8A5000;
+  --dec-wash:#FBF0DE;
+  --ok:#1B6144;
+  --ok-wash:#E5F0EA;
+  --shadow:0 1px 2px rgba(20,28,39,.05), 0 8px 24px -12px rgba(20,28,39,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E1319;
+    --sheet:#171D25;
+    --ink:#E8ECF2;
+    --ink-2:#A9B4C1;
+    --ink-3:#7A8695;
+    --rule:#2C3540;
+    --rule-soft:#212932;
+    --ai:#8FB6D9;
+    --ai-wash:#1B2833;
+    --crit:#E9857E;
+    --crit-wash:#301D1C;
+    --dec:#DDA85A;
+    --dec-wash:#2C2415;
+    --ok:#79C4A2;
+    --ok-wash:#16281F;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 28px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E1319;
+  --sheet:#171D25;
+  --ink:#E8ECF2;
+  --ink-2:#A9B4C1;
+  --ink-3:#7A8695;
+  --rule:#2C3540;
+  --rule-soft:#212932;
+  --ai:#8FB6D9;
+  --ai-wash:#1B2833;
+  --crit:#E9857E;
+  --crit-wash:#301D1C;
+  --dec:#DDA85A;
+  --dec-wash:#2C2415;
+  --ok:#79C4A2;
+  --ok-wash:#16281F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 28px -14px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:"BIZ UDPGothic","Hiragino Sans","Yu Gothic UI",system-ui,sans-serif;
+  font-size:14px;
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+.sheet{
+  max-width:1080px;
+  margin:28px auto 56px;
+  background:var(--sheet);
+  border:1px solid var(--rule);
+  box-shadow:var(--shadow);
+  padding:34px 38px 30px;
+}
+
+/* ---------- header ---------- */
+.masthead{
+  display:flex;flex-wrap:wrap;gap:18px 28px;
+  align-items:flex-end;justify-content:space-between;
+  border-bottom:2.5px solid var(--ai);
+  padding-bottom:14px;
+}
+.eyebrow{
+  font-size:11px;letter-spacing:.14em;color:var(--ai);
+  font-weight:700;margin:0 0 6px;
+}
+h1{
+  font-family:"Zen Old Mincho",serif;
+  font-weight:700;font-size:27px;line-height:1.28;
+  margin:0;letter-spacing:.01em;text-wrap:balance;
+}
+.sub{margin:7px 0 0;font-size:12.5px;color:var(--ink-2);}
+.meta{
+  font-size:11.5px;color:var(--ink-2);text-align:right;
+  line-height:1.75;flex-shrink:0;
+}
+.meta b{color:var(--ink);font-weight:700;}
+
+/* ---------- tally ---------- */
+.tally{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:1px;background:var(--rule);border:1px solid var(--rule);
+  margin:18px 0 22px;
+}
+.tally div{background:var(--sheet);padding:10px 14px;}
+.tally .n{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:23px;font-weight:500;line-height:1.1;font-variant-numeric:tabular-nums;
+}
+.tally .l{font-size:11px;color:var(--ink-2);margin-top:2px;}
+.t-crit .n{color:var(--crit);}
+.t-dec .n{color:var(--dec);}
+.t-ai .n{color:var(--ai);}
+.t-ok .n{color:var(--ok);}
+
+/* ---------- decisions ---------- */
+h2{
+  font-family:"Zen Old Mincho",serif;
+  font-size:16px;font-weight:700;margin:26px 0 10px;
+  padding-bottom:5px;border-bottom:1px solid var(--rule);
+  display:flex;align-items:baseline;gap:10px;
+}
+h2 .tag{
+  font-family:"BIZ UDPGothic",sans-serif;font-size:10.5px;font-weight:700;
+  letter-spacing:.08em;color:var(--ink-3);
+}
+.decisions{display:grid;gap:10px;}
+.dec-card{
+  border:1px solid var(--rule);border-left:3px solid var(--dec);
+  background:var(--dec-wash);padding:11px 14px;
+}
+.dec-card h3{
+  margin:0 0 5px;font-size:13.5px;font-weight:700;
+  display:flex;gap:8px;align-items:baseline;
+}
+.dec-card h3 .no{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--dec);
+}
+.dec-card p{margin:0 0 4px;font-size:12.5px;color:var(--ink-2);}
+.dec-card p:last-child{margin-bottom:0;}
+.dec-card strong{color:var(--ink);}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:12.3px;}
+thead th{
+  text-align:left;font-size:10.5px;letter-spacing:.06em;
+  color:var(--ink-3);font-weight:700;
+  padding:0 8px 5px;border-bottom:1px solid var(--rule);
+  white-space:nowrap;
+}
+tbody td{
+  padding:8px;border-bottom:1px solid var(--rule-soft);
+  vertical-align:top;
+}
+tbody tr:last-child td{border-bottom:1px solid var(--rule);}
+td.item{font-weight:700;width:22%;min-width:150px;}
+td.src{font-size:11px;color:var(--ink-3);width:19%;min-width:130px;}
+td.body{color:var(--ink-2);}
+td.body b{color:var(--ink);}
+
+.chip{
+  display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;
+  padding:2px 7px;border:1px solid;white-space:nowrap;
+}
+.c-crit{color:var(--crit);border-color:var(--crit);background:var(--crit-wash);}
+.c-dec{color:var(--dec);border-color:var(--dec);background:var(--dec-wash);}
+.c-ai{color:var(--ai);border-color:var(--ai);background:var(--ai-wash);}
+.c-ok{color:var(--ink-3);border-color:var(--rule);background:transparent;}
+td.pri{width:76px;}
+
+.note{
+  margin:9px 0 0;padding:8px 12px;background:var(--ok-wash);
+  border-left:3px solid var(--ok);font-size:11.8px;color:var(--ink-2);
+}
+.note b{color:var(--ok);}
+
+/* ---------- footer bands ---------- */
+.bands{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:26px;}
+@media (max-width:760px){.bands{grid-template-columns:1fr;}}
+.band h2{margin-top:0;}
+.band ul{margin:0;padding-left:1.15em;font-size:11.8px;color:var(--ink-2);}
+.band li{margin-bottom:5px;}
+.band li b{color:var(--ink);}
+
+.colophon{
+  margin-top:26px;padding-top:12px;border-top:1px solid var(--rule);
+  font-size:10.8px;color:var(--ink-3);line-height:1.8;
+}
+
+/* ---------- print ---------- */
+@media print{
+  @page{size:A4 portrait;margin:11mm;}
+  body{background:#fff;font-size:8.4pt;line-height:1.5;}
+  .sheet{margin:0;max-width:none;border:0;box-shadow:none;padding:0;}
+  h1{font-size:16pt;}
+  h2{font-size:10.5pt;margin:11pt 0 5pt;}
+  table{font-size:7.6pt;}
+  .tally .n{font-size:14pt;}
+  .dec-card,.note,tr{break-inside:avoid;}
+  .bands{gap:10pt;}
+}
+</style>
+
+<div class="sheet">
+
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">第10期北塩原村高齢者福祉計画・第10期北塩原村介護保険事業計画　策定業務</p>
+      <h1>アンケート調査票　指摘一覧</h1>
+      <p class="sub">介護予防・日常生活圏域ニーズ調査／在宅介護実態調査　調査票（修正案）に対する確認結果</p>
+    </div>
+    <div class="meta">
+      <b>作成</b>　令和8年8月27日<br>
+      <b>照合資料</b>　実施の手引き（令和7年8月版）／標準様式<br>
+      <b>受託者</b>　ビズアップ公共コンサルティング株式会社
+    </div>
+  </header>
+
+  <div class="tally">
+    <div class="t-dec"><div class="n">4</div><div class="l">村にご決定いただきたい事項</div></div>
+    <div class="t-crit"><div class="n">10</div><div class="l">発送前に修正が必要</div></div>
+    <div class="t-ai"><div class="n">8</div><div class="l">運用・任意</div></div>
+    <div class="t-ok"><div class="n">5</div><div class="l">指摘から除外（標準様式どおり）</div></div>
+  </div>
+
+  <h2>村にご決定いただきたい事項<span class="tag">これが決まらないと以降が確定しません</span></h2>
+  <div class="decisions">
+
+    <div class="dec-card">
+      <h3><span class="no">決定 1</span>在宅介護実態調査の調査手法（手法Ⅰ〜Ⅳ）</h3>
+      <p>調査票は<b>手法Ⅲ（郵送・非接続方式）</b>の標準様式に準拠していますが、<b>手法Ⅲには自動集計ソフトがなく</b>、仕様書Ⅰ(5)「認定データ関連付け自動プログラムの活用を可能とした入力」を満たしません。手引きの推奨順は <b>Ⅰ → Ⅳ → Ⅱ／Ⅲ</b> で、手法Ⅲは「他の手法での実施が困難な場合」の位置づけです。</p>
+      <p>第10期新設の<b>手法Ⅳ（居宅介護支援事業所のケアマネジャーが回答）</b>は、第9期の回収率45.8％・対象約150人・村内事業所が少数という本村の条件に適合します。ただし回答者が本人・家族ではないため<b>過去の調査結果と単純比較できない</b>点について、事前の共通認識が必要とされています。</p>
+      <p>この決定により、<b>管理番号欄の要否</b>と<b>認定データ連結の同意文の要否</b>が確定します。</p>
+    </div>
+
+    <div class="dec-card">
+      <h3><span class="no">決定 2</span>在宅介護実態調査の対象者抽出条件</h3>
+      <p>手引きの定義は「在宅で生活をしている<b>要支援・要介護</b>認定を受けている方のうち、<b>更新申請・区分変更申請に伴う認定調査を受ける（受けた）方</b>」で、新規申請者は対象外。サービス付き高齢者向け住宅・住宅型有料老人ホーム・ケアハウスの入居者は「在宅」に<b>含みます</b>。</p>
+      <p>仕様書は「在宅の要介護認定者　約150人」。<b>①要支援を含むか　②更新・区分変更に伴う認定調査を受ける方に限るか　③サ高住等の入居者を含むか</b>——の3点をご確認ください。第9期72人からの増加の背景と考えられます。</p>
+    </div>
+
+    <div class="dec-card">
+      <h3><span class="no">決定 3</span>ニーズ調査「問6 就労について」の採否</h3>
+      <p>第10期で新設された<b>オプション項目</b>（現在の就労状態／いつ引退したか の2問）です。不採用でも仕様書上の問題はありません。追加理由は「高齢期における就労等が要介護状態となるリスクの低減に効果があるとの研究成果」で、<b>中山間・人口減少地域である本村では論点になり、回答者の負担も小さい</b>ため、採用もご検討ください。</p>
+    </div>
+
+    <div class="dec-card">
+      <h3><span class="no">決定 4</span>調査の実施時期</h3>
+      <p>国の想定は<b>令和7年度中</b>の実施で、本村の令和8年9月は令和8年度にあたります。第9期が令和5年9月のため<b>季節は揃います</b>が、見える化システムへの登録時期と他自治体との比較可能性への影響をご確認ください。</p>
+    </div>
+
+  </div>
+
+  <h2>資料B　介護予防・日常生活圏域ニーズ調査<span class="tag">必須項目35問はすべて充足　問1〜問5は標準様式と完全一致</span></h2>
+  <div class="tw">
+  <table>
+    <thead><tr><th class="pri">区分</th><th>指摘事項</th><th>内容</th><th>根拠</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="chip c-crit">発送前</span></td>
+        <td class="item">管理番号の運用</td>
+        <td class="body">管理番号が<b>被保険者番号を含む標本名簿と照合可能な形式</b>になっているか。単なる連番では要件を満たしません。<b>第10期の新規要件</b>です。村のラベルシール作成仕様と一体でご確認ください。</td>
+        <td class="src">実施の手引き 5.／Q1</td>
+      </tr>
+      <tr>
+        <td><span class="chip c-crit">発送前</span></td>
+        <td class="item">ウェブ回答欄</td>
+        <td class="body">QRコードの画像が未挿入。URLが「https://www. 〇〇〇〇…」のプレースホルダのまま。</td>
+        <td class="src">仕様書 Ⅰ(2)</td>
+      </tr>
+      <tr>
+        <td><span class="chip c-crit">発送前</span></td>
+        <td class="item">計画名の語順</td>
+        <td class="body">「第10期計画北塩原村高齢者福祉計画・北塩原村介護保険事業計画」→ <b>「第10期北塩原村高齢者福祉計画・第10期北塩原村介護保険事業計画」</b></td>
+        <td class="src">仕様書／第9期計画</td>
+      </tr>
+      <tr>
+        <td><span class="chip c-crit">発送前</span></td>
+        <td class="item">「市役所」表記（2箇所）</td>
+        <td class="body">管理番号の説明文を<b>「村（役場）」</b>へ。標準様式の原文ママですが、Q12の改変禁止は設問文・選択肢に限られ、地域の実情に合わせた語の置換は別のQ&amp;Aで許容されています。</td>
+        <td class="src">実施の手引き Q12ほか</td>
+      </tr>
+      <tr>
+        <td><span class="chip c-crit">発送前</span></td>
+        <td class="item">回答期限</td>
+        <td class="body">「令和8年9月○○日（○）」「　月　日（　）」が空欄。発送日の確定後に記入。</td>
+        <td class="src">—</td>
+      </tr>
+      <tr>
+        <td><span class="chip c-ai">工程</span></td>
+        <td class="item">設問番号のズレ</td>
+        <td class="body">「問6 就労について」の不採用により、資料Bの問6〜問8が標準様式の問7〜問9とズレます。順番の入替え自体は認められていますが、<b>見える化システムへの登録時に標準様式の項目順へ並べ替える工程</b>が必要です。入力設計に織り込みます。</td>
+        <td class="src">実施の手引き Q12</td>
+      </tr>
+      <tr>
+        <td><span class="chip c-ok">任意</span></td>
+        <td class="item">問7(7) の欠落</td>
+        <td class="body">標準様式の問7(7)「この1か月間、何人の友人・知人と会いましたか」（オプション項目）が欠落し、以降の番号が繰り上がっています。第9期にも設問がなく、方針とは整合します。</td>
+        <td class="src">参考資料2</td>
+      </tr>
+      <tr>
+        <td><span class="chip c-ok">軽微</span></td>
+        <td class="item">全角カンマ</td>
+        <td class="body">個人情報欄「この調査は<b>，</b>効果的な…」1箇所。標準様式の原文ママのため、修正は任意です。</td>
+        <td class="src">—</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>資料C　在宅介護実態調査<span class="tag">手法Ⅲ用標準様式の全24設問（基本15＋オプション9）を充足　最重要3設問も含む</span></h2>
+  <div class="tw">
+  <table>
+    <thead><tr><th class="pri">区分</th><th>指摘事項</th><th>内容</th><th>根拠</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="chip c-crit">発送前</span></td>
+        <td class="item">問7 傷病の選択肢順</td>
+        <td class="body">「13．その他／14．眼科・耳鼻科疾患」→ 標準どおり<b>「13．眼科・耳鼻科疾患／14．その他」</b>へ戻す。現状は「その他」が具体的な疾病項目の中間に置かれています。</td>
+        <td class="src">標準様式（手法Ⅲ用）</td>
+      </tr>
+      <tr>
+        <td><span class="chip c-crit">発送前</span></td>
+        <td class="item">介護療養型医療施設</td>
+        <td class="body">問6の※注から<b>削除</b>。<b>令和6年3月31日で廃止済み</b>で、手引きの「在宅」の定義にも含まれていません。標準様式（令和4年8月版）には残存していますが、第10期の調査票には不適切です。</td>
+        <td class="src">実施の手引き P.10</td>
+      </tr>
+      <tr>
+        <td><span class="chip c-crit">発送前</span></td>
+        <td class="item">個人情報欄の文面</td>
+        <td class="body">「効果的な<b>介護予防政策</b>の立案と効果評価のために行うものです」がニーズ調査からの転記になっており、本調査の目的（在宅生活の継続と仕事と介護の両立）および依頼状の記載と一致しません。</td>
+        <td class="src">—</td>
+      </tr>
+      <tr>
+        <td><span class="chip c-crit">発送前</span></td>
+        <td class="item">基準月</td>
+        <td class="body">問8・問9の「令和●●年●月」を確定（通常は発送月の前月）。</td>
+        <td class="src">—</td>
+      </tr>
+      <tr>
+        <td><span class="chip c-crit">発送前</span></td>
+        <td class="item">ウェブ回答欄・計画名</td>
+        <td class="body">資料Bと同じ（QRコード画像が未挿入、URLがプレースホルダ、計画名の語順）。</td>
+        <td class="src">仕様書 Ⅰ(2)</td>
+      </tr>
+      <tr>
+        <td><span class="chip c-dec">手法依存</span></td>
+        <td class="item">管理番号欄・認定データ連結</td>
+        <td class="body"><b>手法Ⅲなら管理番号欄は不要</b>です（手引き「通し番号等を付する必要もありません」）。<b>手法Ⅱなら</b>管理番号欄に加え、「介護保険の認定・利用状況とデータを連結させる」旨の説明と同意の取得が必要です。第9期は同意者のみの集計でした（回答33人→分析29人）。<b>決定1の結果で確定します。</b></td>
+        <td class="src">実施の手引き P.19</td>
+      </tr>
+      <tr>
+        <td><span class="chip c-ai">運用</span></td>
+        <td class="item">オプション項目の管理</td>
+        <td class="body">標準様式のオプション項目を示す★印を削除しています（回答者向けには妥当）。集計時に<b>基本15項目／オプション9項目</b>を識別できる内部管理表を用意します。</td>
+        <td class="src">実施の手引き P.9</td>
+      </tr>
+      <tr>
+        <td><span class="chip c-ai">運用</span></td>
+        <td class="item">村独自設問の集計</td>
+        <td class="body">問0（地区）・問6-1（村内に施設等があったら）・問11／問12の「除雪」は<b>自動集計ソフトの対象外</b>です。手作業集計の工数を計上します。</td>
+        <td class="src">実施の手引き Q&amp;A</td>
+      </tr>
+      <tr>
+        <td><span class="chip c-ok">軽微</span></td>
+        <td class="item">Ｋ・Ｌの全角統一</td>
+        <td class="body">Ａ〜Ｊは全角、Ｋ・Ｌのみ半角。なお標準様式側が記号Ｈ・Ｉを重複させており、<b>Ｋ・Ｌへの修正と「2日」→「2回」の修正は妥当</b>です。</td>
+        <td class="src">標準様式</td>
+      </tr>
+      <tr>
+        <td><span class="chip c-ok">任意</span></td>
+        <td class="item">記入者の「ケアマネジャー」</td>
+        <td class="body">手法Ⅲ標準様式のＡ票問1に<b>ケアマネジャーの独立選択肢はありません</b>（手法Ⅰ用の様式にのみ存在）。資料Cは標準どおりです。第9期は3.0％あったため村独自に追加も可能ですが、標準様式からの逸脱になります。</td>
+        <td class="src">標準様式</td>
+      </tr>
+      <tr>
+        <td><span class="chip c-ok">任意</span></td>
+        <td class="item">「利用先（無償／有償）」</td>
+        <td class="body">第9期の<b>村独自設問</b>（無償50.0％／有償30.0％）で、標準様式には存在しません。除雪・見守りの担い手が互助か有償かを把握できるため、時系列比較の観点からは復活する価値があります。</td>
+        <td class="src">標準様式</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p class="note"><b>最重要3設問はすべて含まれています。</b>　Ａ票問6 施設等への入所・入居の検討状況／Ｂ票問6 介護者が不安に感じる介護／Ｂ票問10 就労継続の可否に係る意識。</p>
+
+  <div class="bands">
+    <div class="band">
+      <h2>指摘から除外した事項<span class="tag">標準様式の原文ママ</span></h2>
+      <ul>
+        <li><b>問9の記号重複（Ｈ・Ｉ）</b>　標準様式側の誤り。資料CのＫ・Ｌ修正が正しい</li>
+        <li><b>「2日」の誤植</b>　標準様式の原文ママ。資料Cの「2回」修正が正しい</li>
+        <li><b>「１4．」「１6．」の全角半角混在</b>　標準様式の原文ママ</li>
+        <li><b>「８．見守り、声かけ」</b>　標準様式どおり。第9期の「地域・近所の見守り、声かけ」が村独自だった</li>
+        <li><b>介護者関連5問のＢ票配置</b>　手法Ⅲ標準様式が元々その配置</li>
+      </ul>
+    </div>
+    <div class="band">
+      <h2>残る確認事項</h2>
+      <ul>
+        <li><b>令和7年8月版の手法Ⅲ用調査票（別添）での最終確認。</b>　実施の手引きP.4は「第9期からの修正は、概ね回答負担の軽減や、<b>誤回答を減らすための変更</b>です」としており、記号重複・「2日」・介護療養型医療施設が第10期版で修正済みの可能性があります。</li>
+        <li>入手先：実施の手引きP.19が案内する添付資料、または三菱UFJリサーチ＆コンサルティングの公開ページ（手法Ⅳ用の在宅生活改善調査 調査票も同ページ）</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="colophon">
+    照合に用いた一次資料：介護予防・日常生活圏域ニーズ調査 実施の手引き（令和7年8月）／在宅介護実態調査 実施のための手引き（令和7年8月版）／同 活用のための手引き（令和7年8月版）／基本調査項目＋オプション項目 在宅介護実態調査 調査票（手法Ⅰ用・手法Ⅲ用）。<br>
+    全設問の逐条突合結果（資料B 84行・資料C 38行／計122行）は別途ワークシートに収録しています。
+  </p>
+
+</div>
