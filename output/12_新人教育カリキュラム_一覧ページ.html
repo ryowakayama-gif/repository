@@ -1,0 +1,1393 @@
+<title>公共コンサル育成ロードマップ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@400;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --paper:#F1F3F2; --surface:#FBFCFB; --surface-2:#E7ECEB; --ground:#E4E9E8;
+  --ink:#17242A; --ink-2:#455A61; --ink-3:#6F838A;
+  --rule:#D0D8D7; --rule-2:#BCC7C6;
+  --accent:#1E5D6E; --accent-2:#2C7D91; --accent-soft:#DBE9EC;
+  --warm:#8E6318; --warm-soft:#EFE3CE;
+  --l1:#DEEAEC; --l1fg:#1C3A42; --l2:#B7D2D9; --l2fg:#17323A;
+  --l3:#8CB8C3; --l3fg:#122A31; --l4:#4A8598; --l4fg:#F4FAFB; --l5:#1E5D6E; --l5fg:#F1F8F9;
+  --shadow:0 1px 2px rgba(23,36,42,.06), 0 8px 24px -18px rgba(23,36,42,.5);
+  --maxw:1180px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#101719; --surface:#182226; --surface-2:#1F2B30; --ground:#0B1113;
+    --ink:#E2EAEA; --ink-2:#A6B9BE; --ink-3:#7A9198;
+    --rule:#2A383D; --rule-2:#38494F;
+    --accent:#6FB6C7; --accent-2:#8ECBD9; --accent-soft:#1A363E;
+    --warm:#D8AA57; --warm-soft:#2E2617;
+    --l1:#203237; --l1fg:#BCD3D9; --l2:#2A4750; --l2fg:#CFE3E8;
+    --l3:#3A6270; --l3fg:#E0F0F4; --l4:#4E8494; --l4fg:#F0FAFC; --l5:#7FC2D2; --l5fg:#0E1D22;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -20px rgba(0,0,0,.9);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#101719; --surface:#182226; --surface-2:#1F2B30; --ground:#0B1113;
+  --ink:#E2EAEA; --ink-2:#A6B9BE; --ink-3:#7A9198;
+  --rule:#2A383D; --rule-2:#38494F;
+  --accent:#6FB6C7; --accent-2:#8ECBD9; --accent-soft:#1A363E;
+  --warm:#D8AA57; --warm-soft:#2E2617;
+  --l1:#203237; --l1fg:#BCD3D9; --l2:#2A4750; --l2fg:#CFE3E8;
+  --l3:#3A6270; --l3fg:#E0F0F4; --l4:#4E8494; --l4fg:#F0FAFC; --l5:#7FC2D2; --l5fg:#0E1D22;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 30px -20px rgba(0,0,0,.9);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  font-size:15px; line-height:1.85; letter-spacing:.01em;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:"Zen Old Mincho","Hiragino Mincho ProN",serif; font-weight:600; text-wrap:balance; letter-spacing:.02em; margin:0}
+code,.num,.m-no,.theme-count b{font-family:"IBM Plex Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent-2); outline-offset:2px; border-radius:2px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.wrap{max-width:var(--maxw); margin:0 auto; padding:0 clamp(18px,4vw,44px); min-width:0}
+.sec,.sec-head,.ops-grid>*,.tablewrap{min-width:0}
+
+/* ---------- header ---------- */
+.masthead{border-bottom:1px solid var(--rule); background:var(--surface)}
+.mast-in{max-width:var(--maxw); margin:0 auto; padding:clamp(34px,6vw,68px) clamp(18px,4vw,44px) clamp(26px,4vw,44px)}
+.org{font-size:11.5px; letter-spacing:.18em; color:var(--ink-3); text-transform:none; margin:0 0 18px;
+  font-family:"IBM Plex Mono",monospace}
+.org b{color:var(--accent); font-weight:500}
+h1{font-size:clamp(29px,5vw,48px); line-height:1.3; margin:0 0 18px; max-width:17ch}
+.h1-sub{display:block; font-size:.44em; line-height:1.7; letter-spacing:.05em; color:var(--ink-3);
+  margin-top:16px; max-width:46ch; font-family:"Zen Kaku Gothic New","Hiragino Sans",sans-serif; font-weight:500}
+.mast-lead{max-width:60ch; color:var(--ink-2); margin:0 0 30px; font-size:15.5px}
+.facts{display:flex; flex-wrap:wrap; gap:0; border-top:1px solid var(--rule); padding-top:20px; margin:0; list-style:none}
+.facts li{padding-right:clamp(20px,4vw,46px); margin-right:clamp(20px,4vw,46px); border-right:1px solid var(--rule)}
+.facts li:last-child{border-right:0;margin-right:0;padding-right:0}
+.facts b{display:block; font-family:"IBM Plex Mono",monospace; font-size:26px; font-weight:500; color:var(--accent); line-height:1.2}
+.facts span{font-size:11.5px; color:var(--ink-3); letter-spacing:.06em}
+
+/* ---------- nav ---------- */
+.nav{position:sticky; top:0; z-index:20; background:color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter:blur(8px); border-bottom:1px solid var(--rule)}
+.nav-in{max-width:var(--maxw); margin:0 auto; padding:0 clamp(18px,4vw,44px); display:flex; gap:2px; overflow-x:auto}
+.nav a{padding:12px 14px; font-size:12.5px; color:var(--ink-2); text-decoration:none; white-space:nowrap;
+  border-bottom:2px solid transparent}
+.nav a:hover{color:var(--accent); border-bottom-color:var(--accent)}
+.nav a .n{font-family:"IBM Plex Mono",monospace; color:var(--ink-3); margin-right:7px; font-size:11px}
+
+/* ---------- sections ---------- */
+.sec{padding:clamp(48px,7vw,86px) 0; border-bottom:1px solid var(--rule)}
+.sec:last-child{border-bottom:0}
+.sec-head{margin-bottom:clamp(26px,4vw,42px)}
+.eyebrow{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.16em; color:var(--accent);
+  margin:0 0 12px}
+.sec h2{font-size:clamp(22px,3.2vw,32px); line-height:1.4; margin:0 0 14px; max-width:26ch}
+.lead{max-width:64ch; color:var(--ink-2); margin:0; font-size:14.5px}
+h3{font-size:17px; margin:0 0 14px}
+
+/* ---------- ladder ---------- */
+.ladder{list-style:none; margin:0 0 34px; padding:0; display:grid; gap:2px}
+.rung{background:var(--surface); border:1px solid var(--rule); border-left:5px solid var(--rule-2);
+  padding:16px 20px; display:grid; gap:8px}
+.rung-1{border-left-color:var(--l1)} .rung-2{border-left-color:var(--l2)}
+.rung-3{border-left-color:var(--l3)} .rung-4{border-left-color:var(--l4)} .rung-5{border-left-color:var(--l5)}
+.rung-head{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap}
+.rung-code{font-family:"IBM Plex Mono",monospace; font-size:15px; font-weight:500; color:var(--accent); min-width:26px}
+.rung-name{font-family:"Zen Old Mincho",serif; font-size:17px; font-weight:600}
+.rung-when{margin-left:auto; font-size:11.5px; color:var(--ink-3); font-family:"IBM Plex Mono",monospace}
+.rung-def{margin:0; font-size:14px; color:var(--ink-2); max-width:76ch}
+.rung-meta{display:flex; flex-wrap:wrap; gap:8px 26px; margin:2px 0 0}
+.rung-meta div{display:flex; gap:8px; align-items:baseline}
+.rung-meta dt{font-size:10.5px; color:var(--ink-3); letter-spacing:.08em; margin:0}
+.rung-meta dd{margin:0; font-size:12.5px; color:var(--ink-2)}
+.targets{background:var(--surface-2); border:1px solid var(--rule); padding:22px 24px}
+.tg-list{list-style:none; margin:0; padding:0; display:grid; gap:12px}
+.tg-list li{display:grid; grid-template-columns:130px 250px 1fr; gap:16px; align-items:baseline;
+  padding-bottom:12px; border-bottom:1px dashed var(--rule-2)}
+.tg-list li:last-child{border-bottom:0; padding-bottom:0}
+.tg-when{font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--accent)}
+.tg-lv{font-size:13px; font-weight:500}
+.tg-desc{font-size:13px; color:var(--ink-2)}
+@media(max-width:760px){.tg-list li{grid-template-columns:1fr; gap:4px}}
+
+/* ---------- level chips ---------- */
+.lv{font-family:"IBM Plex Mono",monospace; font-size:11px; padding:2px 9px; white-space:nowrap;
+  border-radius:2px; letter-spacing:.04em}
+.lv1{background:var(--l1); color:var(--l1fg)} .lv2{background:var(--l2); color:var(--l2fg)}
+.lv3{background:var(--l3); color:var(--l3fg)} .lv4{background:var(--l4); color:var(--l4fg)}
+.lv5{background:var(--l5); color:var(--l5fg)}
+
+/* ---------- roadmap ---------- */
+.ytabs{display:flex; gap:2px; margin-bottom:0; border-bottom:1px solid var(--rule)}
+.ytab{appearance:none; background:none; border:0; border-bottom:2px solid transparent; cursor:pointer;
+  padding:11px 20px 13px; font-family:"Zen Old Mincho",serif; font-size:16px; color:var(--ink-3);
+  display:flex; align-items:baseline; gap:9px; transition:color .15s}
+.ytab span{font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.04em}
+.ytab:hover{color:var(--ink)}
+.ytab.is-on{color:var(--accent); border-bottom-color:var(--accent)}
+.ypanel-sub{font-size:12.5px; color:var(--ink-3); margin:16px 0 18px; letter-spacing:.04em}
+.months{list-style:none; margin:0; padding:0; display:grid; gap:2px}
+.mrow{display:grid; grid-template-columns:74px 1fr; background:var(--surface); border:1px solid var(--rule)}
+.mrow.is-mile{border-color:var(--warm); background:var(--warm-soft)}
+.m-when{border-right:1px solid var(--rule); padding:16px 0; display:flex; flex-direction:column;
+  align-items:center; gap:2px; background:var(--surface-2)}
+.mrow.is-mile .m-when{background:transparent; border-right-color:var(--warm)}
+.m-no{font-family:"IBM Plex Mono",monospace; font-size:21px; font-weight:500; color:var(--accent); line-height:1.1}
+.mrow.is-mile .m-no{color:var(--warm)}
+.m-mo{font-size:11px; color:var(--ink-3)}
+.m-body{padding:15px 20px 16px; display:grid; gap:9px}
+.m-top{display:flex; align-items:center; gap:11px; flex-wrap:wrap}
+.m-phase{font-size:11px; padding:2px 10px; border-radius:2px; letter-spacing:.04em}
+.p1{background:var(--l1);color:var(--l1fg)} .p2{background:var(--l2);color:var(--l2fg)}
+.p3{background:var(--l3);color:var(--l3fg)} .p4{background:var(--l4);color:var(--l4fg)}
+.p5{background:var(--l5);color:var(--l5fg)} .p6{background:var(--warm);color:var(--paper)}
+.m-focus{font-family:"Zen Old Mincho",serif; font-size:16px; font-weight:600}
+.m-top .lv{margin-left:auto}
+.k{display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.1em;
+  color:var(--ink-3); margin-right:10px; vertical-align:1px}
+.m-learn{margin:0; font-size:13.5px; color:var(--ink-2)}
+.m-goal{margin:0; padding:0; list-style:none; font-size:13.5px}
+.k-block{display:block; margin:2px 0 -5px}
+.m-goal li{padding-left:0; margin-top:2px}
+.m-foot{display:grid; gap:3px; border-top:1px dashed var(--rule-2); padding-top:9px; margin-top:2px}
+.m-foot p{margin:0; font-size:12.5px; color:var(--ink-3)}
+.m-mile{color:var(--ink-2)}
+.mrow.is-mile .m-mile{color:var(--warm); font-weight:500}
+@media(max-width:620px){.mrow{grid-template-columns:1fr}
+  .m-when{flex-direction:row; gap:10px; border-right:0; border-bottom:1px solid var(--rule); padding:7px 16px; justify-content:flex-start}
+  .m-no{font-size:16px} .m-top .lv{margin-left:0}}
+
+/* ---------- themes ---------- */
+.themes{display:grid; gap:2px; min-width:0}
+.theme{background:var(--surface); border:1px solid var(--rule); padding:22px clamp(16px,3vw,26px) 24px; min-width:0}
+.theme-head{display:flex; align-items:flex-start; gap:14px}
+.theme-dot{width:10px; height:10px; background:var(--tc); border-radius:50%; margin-top:9px; flex:none}
+.theme-head h3{font-size:19px; margin:0}
+.theme-tag{margin:2px 0 0; font-size:11.5px; color:var(--ink-3); letter-spacing:.04em}
+.theme-count{margin:0 0 0 auto; text-align:right; display:flex; align-items:baseline; gap:9px}
+.theme-count b{font-size:24px; font-weight:500; color:var(--accent)}
+.theme-count span{font-size:10.5px; color:var(--ink-3); line-height:1.5; text-align:left}
+.theme-sub{margin:12px 0 14px; font-size:13.5px; color:var(--ink-2); max-width:80ch}
+.theme-chips{list-style:none; display:flex; flex-wrap:wrap; gap:5px; margin:0 0 18px; padding:0}
+.theme-chips li{font-size:11.5px; padding:3px 10px; background:var(--surface-2); border:1px solid var(--rule);
+  color:var(--ink-2); border-radius:2px}
+.tablewrap{overflow-x:auto; border:1px solid var(--rule); background:var(--surface)}
+.grid{border-collapse:collapse; width:100%; min-width:900px; font-size:12.5px}
+.grid th,.grid td{border:1px solid var(--rule); padding:9px 12px; text-align:left; vertical-align:top}
+.grid thead th{background:var(--surface-2); font-family:"Zen Kaku Gothic New",sans-serif; font-weight:700;
+  font-size:11.5px; letter-spacing:.05em; white-space:nowrap; color:var(--ink-2)}
+.grid tbody th{background:var(--surface-2); font-weight:700; white-space:nowrap; width:88px; font-size:12.5px}
+.grid td{color:var(--ink-2); line-height:1.7}
+.grid td.g1{background:color-mix(in srgb,var(--l1) 40%,transparent)}
+.grid td.g2{background:color-mix(in srgb,var(--l2) 30%,transparent)}
+.grid td.g3{background:color-mix(in srgb,var(--l3) 26%,transparent)}
+.grid td.g4{background:color-mix(in srgb,var(--l4) 20%,transparent)}
+.grid td.g5{background:color-mix(in srgb,var(--l5) 15%,transparent)}
+.rubric tbody th{width:150px; color:var(--ink)}
+@media(max-width:640px){.theme-count{margin-left:0; width:100%; justify-content:flex-start}
+  .theme-head{flex-wrap:wrap}}
+
+/* ---------- calendar ---------- */
+.cal-wrap{background:var(--surface)}
+.cal{display:grid; grid-template-columns:repeat(12,minmax(168px,1fr)); min-width:900px}
+.cal-col{border-right:1px solid var(--rule); display:grid; grid-template-rows:auto 1fr 1fr 1fr 1fr}
+.cal-col:last-child{border-right:0}
+.cal-col.peak-s{background:color-mix(in srgb,var(--accent-soft) 60%,transparent)}
+.cal-col.peak-w{background:color-mix(in srgb,var(--warm-soft) 60%,transparent)}
+.cal-mo{font-family:"IBM Plex Mono",monospace; font-size:13px; padding:9px 12px; border-bottom:1px solid var(--rule);
+  background:var(--surface-2); display:flex; align-items:baseline; gap:8px; flex-wrap:wrap}
+.cal-peak{font-size:9.5px; letter-spacing:.06em; padding:1px 6px; background:var(--accent); color:var(--paper); border-radius:2px}
+.peak-w .cal-peak{background:var(--warm)}
+.cal-cell{padding:9px 12px; font-size:11.5px; color:var(--ink-2); border-bottom:1px dashed var(--rule)}
+.cal-cell:last-child{border-bottom:0}
+.cal-cell .k{display:block; margin-bottom:3px}
+.cal-cell.rookie{color:var(--ink); background:color-mix(in srgb,var(--surface-2) 55%,transparent)}
+
+/* ---------- ops ---------- */
+.ops-grid{display:grid; grid-template-columns:1fr 1fr; gap:clamp(24px,4vw,52px)}
+@media(max-width:820px){.ops-grid{grid-template-columns:1fr}}
+.ops,.files{list-style:none; margin:0; padding:0; display:grid; gap:2px}
+.ops li{display:grid; grid-template-columns:78px 1fr; gap:14px; background:var(--surface);
+  border:1px solid var(--rule); padding:13px 16px; align-items:baseline}
+.op-when{font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--accent)}
+.ops p,.files p{margin:0; font-size:13px; color:var(--ink-2)}
+.files li{background:var(--surface); border:1px solid var(--rule); padding:13px 16px}
+.files code{display:block; font-size:12px; color:var(--ink); margin-bottom:5px; word-break:break-all}
+.note{margin:18px 0 0; font-size:12px; color:var(--ink-3); border-left:3px solid var(--rule-2); padding-left:14px; line-height:1.9}
+
+footer.foot{padding:34px 0 46px; color:var(--ink-3); font-size:11.5px; letter-spacing:.04em}
+@media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important; scroll-behavior:auto!important}}
+html{scroll-behavior:smooth}
+</style>
+
+<header class="masthead">
+  <div class="mast-in">
+    <p class="org">BIZUP PUBLIC CONSULTING ／ <b>新人教育カリキュラム</b></p>
+    <h1>自治体の年度に、育成の年度を重ねる
+      <span class="h1-sub">公会計・公営企業会計・行政計画　8テーマの階層別 習得度管理</span></h1>
+    <p class="mast-lead">入社してから36ヶ月、各月に何を学び、何ができるようになるべきか。テーマごとに営業と業務を分けて到達基準を定め、レベル判定で管理する。</p>
+    <ul class="facts">
+      <li><b>36</b><span>ヶ月ロードマップ</span></li>
+      <li><b>8</b><span>テーマ</span></li>
+      <li><b>131</b><span>学習項目</span></li>
+      <li><b>L0–L5</b><span>階層区分</span></li>
+      <li><b>24</b><span>評価項目</span></li>
+    </ul>
+  </div>
+</header>
+
+<nav class="nav" aria-label="目次">
+  <div class="nav-in">
+    <a href="#levels"><span class="n">01</span>階層</a>
+    <a href="#roadmap"><span class="n">02</span>月次ロードマップ</a>
+    <a href="#themes"><span class="n">03</span>テーマ別到達基準</a>
+    <a href="#calendar"><span class="n">04</span>年間サイクル</a>
+    <a href="#rubric"><span class="n">05</span>評価ルーブリック</a>
+    <a href="#ops"><span class="n">06</span>運用</a>
+  </div>
+</nav>
+
+<main class="wrap">
+  
+    <section id="levels" class="sec">
+      <header class="sec-head">
+        <p class="eyebrow">01　階層</p>
+        <h2>「知っている」ではなく「できた実績」で判定する</h2>
+        <p class="lead">全テーマ共通の6段階。判定には必ず具体的な案件名・成果物名を紐づける。同種の作業を2案件以上、単独で完遂して初めてL3とする。</p>
+      </header>
+      <ol class="ladder">
+        <li class="rung rung-0">
+          <div class="rung-head">
+            <span class="rung-code">L0</span>
+            <span class="rung-name">未修得</span>
+            <span class="rung-when">入社時</span>
+          </div>
+          <p class="rung-def">対象テーマの用語・制度を知らない状態。</p>
+          <dl class="rung-meta">
+            <div><dt>担える役割</dt><dd>―</dd></div>
+            <div><dt>責任範囲</dt><dd>―</dd></div>
+            <div><dt>確認方法</dt><dd>研修受講・自己学習</dd></div>
+          </dl>
+        </li>
+        <li class="rung rung-1">
+          <div class="rung-head">
+            <span class="rung-code">L1</span>
+            <span class="rung-name">理解する（知っている）</span>
+            <span class="rung-when">1〜3ヶ月</span>
+          </div>
+          <p class="rung-def">制度の目的・根拠法令・全体像・主要用語を、社内の人に自分の言葉で説明できる。上司・先輩の指示内容を正しく理解できる。</p>
+          <dl class="rung-meta">
+            <div><dt>担える役割</dt><dd>指示の理解・作業の受け手</dd></div>
+            <div><dt>責任範囲</dt><dd>成果物責任なし</dd></div>
+            <div><dt>確認方法</dt><dd>座学／制度テスト／口頭説明</dd></div>
+          </dl>
+        </li>
+        <li class="rung rung-2">
+          <div class="rung-head">
+            <span class="rung-code">L2</span>
+            <span class="rung-name">補助する（手伝える）</span>
+            <span class="rung-when">3〜9ヶ月</span>
+          </div>
+          <p class="rung-def">手順書・ひな形・先輩の指示に沿って、部分作業を期限内に正確に実施できる。分からない点を適切なタイミングで質問できる。</p>
+          <dl class="rung-meta">
+            <div><dt>担える役割</dt><dd>部分作業の担当・同行</dd></div>
+            <div><dt>責任範囲</dt><dd>先輩チェック前提</dd></div>
+            <div><dt>確認方法</dt><dd>成果物レビュー／OJT実地確認</dd></div>
+          </dl>
+        </li>
+        <li class="rung rung-3">
+          <div class="rung-head">
+            <span class="rung-code">L3</span>
+            <span class="rung-name">自立する（一人でできる）</span>
+            <span class="rung-when">9〜24ヶ月</span>
+          </div>
+          <p class="rung-def">標準的な難易度の案件を、単独で着手から納品まで完遂できる。顧客の一次窓口を担い、想定内の質問にその場で答えられる。</p>
+          <dl class="rung-meta">
+            <div><dt>担える役割</dt><dd>案件主担当（小〜中規模）</dd></div>
+            <div><dt>責任範囲</dt><dd>工程・品質・採算に責任</dd></div>
+            <div><dt>確認方法</dt><dd>単独遂行＋最終レビュー／顧客評価</dd></div>
+          </dl>
+        </li>
+        <li class="rung rung-4">
+          <div class="rung-head">
+            <span class="rung-code">L4</span>
+            <span class="rung-name">応用・指導する（教えられる）</span>
+            <span class="rung-when">24〜48ヶ月</span>
+          </div>
+          <p class="rung-def">難案件（大規模・広域・複数計画一体・イレギュラー）に対応でき、提案・プレゼンを主導する。後輩のOJT指導とレビューができる。</p>
+          <dl class="rung-meta">
+            <div><dt>担える役割</dt><dd>PM・提案リーダー・OJT担当</dd></div>
+            <div><dt>責任範囲</dt><dd>複数案件の品質と受注に責任</dd></div>
+            <div><dt>確認方法</dt><dd>受注実績／後輩の成長度／レビュー品質</dd></div>
+          </dl>
+        </li>
+        <li class="rung rung-5">
+          <div class="rung-head">
+            <span class="rung-code">L5</span>
+            <span class="rung-name">統括する（仕組みを作れる）</span>
+            <span class="rung-when">48ヶ月〜</span>
+          </div>
+          <p class="rung-def">複数案件・複数メンバーを統括し、業務標準化・新商品開発・単価改善を推進する。セミナー登壇や執筆で対外的に発信できる。</p>
+          <dl class="rung-meta">
+            <div><dt>担える役割</dt><dd>チーム統括・商品開発</dd></div>
+            <div><dt>責任範囲</dt><dd>エリア／テーマの収益に責任</dd></div>
+            <div><dt>確認方法</dt><dd>チーム業績／標準化成果／対外発信</dd></div>
+          </dl>
+        </li></ol>
+      <div class="targets">
+        <h3>年次ごとの到達目標</h3>
+        <ul class="tg-list"><li><span class="tg-when">1年目末（12ヶ月）</span><span class="tg-lv">主担当テーマ＝L2〜L3、副テーマ＝L1、共通スキル＝L2</span><span class="tg-desc">小規模案件で調査〜集計〜現状分析パートを単独で仕上げられる。営業は同行＋議事録＋資料準備。</span></li><li><span class="tg-when">2年目末（24ヶ月）</span><span class="tg-lv">主担当テーマ＝L3、副テーマ＝L2、共通スキル＝L3</span><span class="tg-desc">中規模案件の主担当。委員会事務局を単独運営し、計画書を通しで執筆できる。単独訪問・見積提示ができる。</span></li><li><span class="tg-when">3年目末（36ヶ月）</span><span class="tg-lv">主担当テーマ＝L3〜L4、副テーマ＝L2〜L3、共通スキル＝L3〜L4</span><span class="tg-desc">複数案件を同時に回し、プロポーザルを主導。後輩1名のOJTを担当できる。</span></li></ul>
+      </div>
+    </section>
+  
+    <section id="roadmap" class="sec">
+      <header class="sec-head">
+        <p class="eyebrow">02　月次ロードマップ</p>
+        <h2>入社1ヶ月目から36ヶ月目まで</h2>
+        <p class="lead">4月入社を前提に、自治体の年度サイクル（予算要求期＝8〜10月／公告期＝1〜2月／納品期＝12〜3月）へ学習を重ねている。テーマ固有の詳細は下の到達基準と、配布する管理表を参照。</p>
+      </header>
+      <div class="ytabs" role="tablist" aria-label="育成年次"><button class="ytab is-on" id="tab1" role="tab" aria-selected="true" aria-controls="y1" data-y="1">1年目<span>1–12ヶ月</span></button><button class="ytab" id="tab2" role="tab" aria-selected="false" aria-controls="y2" data-y="2">2年目<span>13–24ヶ月</span></button><button class="ytab" id="tab3" role="tab" aria-selected="false" aria-controls="y3" data-y="3">3年目<span>25–36ヶ月</span></button></div>
+      
+      <div class="ypanel" id="y1" role="tabpanel" aria-labelledby="tab1">
+        <p class="ypanel-sub">基礎導入 → 実務補助 → 部分自立</p>
+        <ol class="months">
+        <li class="mrow" data-phase="1">
+          <div class="m-when">
+            <span class="m-no">1</span>
+            <span class="m-mo">4月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p1">Ⅰ 基礎導入</span>
+              <span class="m-focus">共通（全社）</span>
+              <span class="lv lv1">L1</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>会社・業界理解／自治体の基礎（地方自治法、二元代表制、部局構成、予算・決算・議会サイクル）／ビジネスマナー／コンプライアンス・個人情報保護・情報セキュリティ／Word・Excel・PowerPoint基礎／議事録の書き方</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①自治体の年度サイクル（予算要求8〜10月／議会3・6・9・12月／年度末納品）を図で説明できる</li><li>②公用文と社内文書のルールに沿ってメール・議事録を書ける</li><li>③個人情報を含む資料の受渡・保管ルールを守れる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>先輩の議事録清書／社内資料の体裁修正／訪問同行（見学）</p>
+              <p class="m-mile"><span class="k">確認</span>入社時研修修了テスト（自治体基礎・コンプラ）</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="1">
+          <div class="m-when">
+            <span class="m-no">2</span>
+            <span class="m-mo">5月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p1">Ⅰ 基礎導入</span>
+              <span class="m-focus">共通（全社）</span>
+              <span class="lv lv1">L1</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>当社の商品全体像（公会計／公営企業会計／福祉4計画／その他計画）の一覧整理／各テーマの根拠法令・計画期間・所管省庁・所管課の暗記／契約と調達の基礎（一般競争入札・指名競争・随意契約・プロポーザル）／案件の流れ（引合→提案→受注→着手→納品→検収→請求）</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①7テーマの根拠法令・計画期間・所管省庁を暗唱できる</li><li>②入札とプロポーザルの違い、参加までの手続を説明できる</li><li>③案件の全工程と自分の関与ポイントを言える</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>商品一覧・法令一覧の自作／過去案件の仕様書と成果物の読み込み（各テーマ2件以上）</p>
+              <p class="m-mile"><span class="k">確認</span>商品・法令テスト／過去成果物の読解レポート</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="1">
+          <div class="m-when">
+            <span class="m-no">3</span>
+            <span class="m-mo">6月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p1">Ⅰ 基礎導入</span>
+              <span class="m-focus">主担当テーマ決定</span>
+              <span class="lv lv2">L1→L2</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>統計・データの基礎（e-Stat、国勢調査、住民基本台帳、社人研将来推計、RESAS、KDB、地域包括ケア「見える化」システム）／Excel実務（XLOOKUP、ピボット、Power Query、グラフの原則）／アンケート集計の基礎（単純集計・クロス集計・有効回収率）</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①指定された統計を自力で取得し、経年・他市比較の表とグラフを作れる</li><li>②単純集計表とクロス集計表の違いを説明し、正しく作成できる</li><li>③グラフの誤用（軸の切断、円グラフ多用等）を指摘できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>現行案件のデータ集計補助／統計表の作成／主担当テーマの決定と育成計画の合意</p>
+              <p class="m-mile"><span class="k">確認</span>Excel実技テスト／主担当テーマ確定・個人別育成計画の締結</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="2">
+          <div class="m-when">
+            <span class="m-no">4</span>
+            <span class="m-mo">7月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p2">Ⅱ 実務補助</span>
+              <span class="m-focus">主担当テーマ①</span>
+              <span class="lv lv2">L2</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>主担当テーマの制度深堀り①（根拠法・国の指針・記載必須事項・前回計画の構成）／調査票設計の基本（設問形式、選択肢設計、ワーディング、倫理配慮）／発送・回収管理の実務</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①主担当テーマの計画の目次構成と各章の役割を説明できる</li><li>②調査票のドラフトを既存様式をもとに作成できる</li><li>③発送〜督促〜回収の進捗管理表を運用できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>アンケート発送作業／問合せ一次対応／回収管理表の運用／宛名データの作成</p>
+              <p class="m-mile"><span class="k">確認</span>調査票ドラフトのレビュー通過</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="2">
+          <div class="m-when">
+            <span class="m-no">5</span>
+            <span class="m-mo">8月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p2">Ⅱ 実務補助</span>
+              <span class="m-focus">主担当テーマ①＋営業</span>
+              <span class="lv lv2">L2</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>集計・分析の実務（コード化、エラーチェック、集計表レイアウト、グラフ作成）／現状分析の型（人口・世帯、対象者数、サービス量、給付費、他市比較）／次年度予算要求期の営業（情報提供資料、参考見積の役割）</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①集計表・グラフ一式をひな形どおりに完成できる</li><li>②現状分析パートの図表を自力で組み立てられる</li><li>③国の動向をまとめた1枚の情報提供資料を作成できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>集計作業の主担当／情報提供資料の作成補助／営業同行（予算要求ヒアリング）</p>
+              <p class="m-mile"><span class="k">確認</span>集計成果物レビュー／情報提供資料の初作成</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="2">
+          <div class="m-when">
+            <span class="m-no">6</span>
+            <span class="m-mo">9月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p2">Ⅱ 実務補助</span>
+              <span class="m-focus">主担当テーマ①</span>
+              <span class="lv lv2">L2</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>委員会・審議会の事務局実務（委嘱、諮問、次第、席次、資料構成、当日運営、議事録、公開／非公開、報酬・旅費）／会議資料の作り方（1スライド1メッセージ、要約）</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①第1回委員会の準備物一覧を作成し、抜け漏れなく手配できる</li><li>②当日運営（受付・配布・記録・撤収）を単独で回せる</li><li>③議事録を3営業日以内に発言者付きで仕上げられる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>委員会運営の実地担当（準備〜議事録）／素案の現状分析パートの一部執筆</p>
+              <p class="m-mile"><span class="k">確認</span>委員会運営チェックリスト完了／議事録の一発承認</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="3">
+          <div class="m-when">
+            <span class="m-no">7</span>
+            <span class="m-mo">10月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p3">Ⅲ 部分自立</span>
+              <span class="m-focus">主担当テーマ①</span>
+              <span class="lv lv3">L2→L3</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>施策体系とKPIの考え方（基本理念→基本目標→施策→事業、成果指標と活動指標、EBPM）／他自治体の先進事例調査手法／総合計画との整合</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①既存計画から施策体系図を再構成できる</li><li>②アウトプット指標とアウトカム指標を区別し、測定可能な指標を提案できる</li><li>③事例調査を出典付きで10件収集・要約できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>施策編の下書き執筆／事例集の作成／庁内ヒアリングの記録</p>
+              <p class="m-mile"><span class="k">確認</span>施策編ドラフトのレビュー（修正2巡以内）</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="3">
+          <div class="m-when">
+            <span class="m-no">8</span>
+            <span class="m-mo">11月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p3">Ⅲ 部分自立</span>
+              <span class="m-focus">主担当テーマ①</span>
+              <span class="lv lv3">L3</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>パブリックコメント実務（実施要綱、公表資料、意見の整理・回答案、議会・庁内調整）／概要版の設計／校正・校閲ルール（表記統一、校正記号、二重チェック）</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①パブコメ一式（告示文・概要・意見様式・回答表）を準備できる</li><li>②意見を論点別に整理し回答案の素案を書ける</li><li>③校正で表記ゆれ・数値不整合を検出できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>パブコメ実務の担当／概要版の作成／全体校正の一次担当</p>
+              <p class="m-mile"><span class="k">確認</span>校正精度（後工程での指摘0件）／パブコメ資料の承認</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="3">
+          <div class="m-when">
+            <span class="m-no">9</span>
+            <span class="m-mo">12月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p3">Ⅲ 部分自立</span>
+              <span class="m-focus">主担当テーマ①＋営業</span>
+              <span class="lv lv3">L3</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>納品前工程（印刷仕様、入稿データ、色校正、部数、製本、電子データ・アクセシビリティ対応）／検査・完了報告・請求／次年度案件のリスト化（計画期間終了年度から逆算）</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①印刷会社への入稿仕様書を作成できる</li><li>②検査書類一式を揃え、完了検査に対応できる</li><li>③担当エリアの次年度発注見込みリストを作成できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>入稿・色校の担当／完了検査の同席／次年度発注見込みリストの作成</p>
+              <p class="m-mile"><span class="k">確認</span>納品トラブル0／発注見込みリストの提出</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="4">
+          <div class="m-when">
+            <span class="m-no">10</span>
+            <span class="m-mo">1月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p4">Ⅳ 単独遂行の入口</span>
+              <span class="m-focus">営業＋主担当テーマ①</span>
+              <span class="lv lv3">L3</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>公告情報の収集（自治体HP、入札情報サービス、電子入札システム）／参加手続（参加表明書、実績調書、資格審査）／企画提案書の構成と評価基準の読み方</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①公告から提出書類一式を抽出し、提出スケジュールを組める</li><li>②実績調書・体制図を単独で作成できる</li><li>③評価基準に対応した提案書の骨子を書ける</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>プロポーザル参加手続の主担当／提案書の一部執筆／プレゼン準備</p>
+              <p class="m-mile"><span class="k">確認</span>参加手続の不備0／提案書の担当パート承認</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="4">
+          <div class="m-when">
+            <span class="m-no">11</span>
+            <span class="m-mo">2月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p4">Ⅳ 単独遂行の入口</span>
+              <span class="m-focus">営業＋主担当テーマ①</span>
+              <span class="lv lv3">L3</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>積算・見積の基礎（工数積算、人日単価、印刷費・郵送費・旅費・外注費、粗利率、予定価格の推定）／プレゼンテーション技法</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①標準的な案件の見積書を根拠付きで作成できる</li><li>②案件の粗利を計算し、赤字リスクを説明できる</li><li>③プレゼンで担当パートを説明できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>見積作成（先輩レビュー付き）／プレゼン同席・一部登壇</p>
+              <p class="m-mile"><span class="k">確認</span>見積の妥当性レビュー通過／プレゼン登壇</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow is-mile" data-phase="4">
+          <div class="m-when">
+            <span class="m-no">12</span>
+            <span class="m-mo">3月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p4">Ⅳ 単独遂行の入口</span>
+              <span class="m-focus">総括</span>
+              <span class="lv lv3">L3</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>1年目の振り返り／年度末納品ラッシュの工程管理／引継ぎ書の作成／2年目の育成計画策定</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①担当した案件の工程・品質・採算を自己分析し、改善点を挙げられる</li><li>②複数案件の同時進行を工程表で管理できる</li><li>③次年度の担当案件を引き継げる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>年度末納品の実務／引継ぎ／自己評価シートの作成</p>
+              <p class="m-mile"><span class="k">確認</span>【1年目レベル判定】主担当テーマL2〜L3／共通スキルL2</p>
+            </div>
+          </div>
+        </li></ol>
+      </div>
+      <div class="ypanel" id="y2" role="tabpanel" aria-labelledby="tab2" hidden>
+        <p class="ypanel-sub">単独遂行 ── 案件を一人で回す</p>
+        <ol class="months">
+        <li class="mrow" data-phase="5">
+          <div class="m-when">
+            <span class="m-no">13</span>
+            <span class="m-mo">4月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p5">Ⅴ 単独遂行</span>
+              <span class="m-focus">主担当テーマ①（主担当案件）</span>
+              <span class="lv lv3">L3</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>案件立ち上げの実務（仕様書の読み込み、キックオフ、体制図、工程表、課題管理表、リスク管理）／副担当テーマ②の制度学習を開始</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①キックオフ資料一式を作成し、単独で会議を進行できる</li><li>②WBSと工程表を作成し、議会・委員会日程から逆算できる</li><li>③副テーマの制度概要を説明できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>小規模案件の主担当（PM補佐）／副テーマ案件への部分参画</p>
+              <p class="m-mile"><span class="k">確認</span>主担当案件のキックオフ完遂</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="5">
+          <div class="m-when">
+            <span class="m-no">14</span>
+            <span class="m-mo">5月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p5">Ⅴ 単独遂行</span>
+              <span class="m-focus">主担当テーマ①</span>
+              <span class="lv lv3">L3</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>顧客折衝（仕様変更の合意、追加要望の切り分け、議事録による証跡化）／庁内関係課との調整</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①仕様外の要望を切り分け、代替案を提示して合意できる</li><li>②合意事項を議事録で証跡化し、認識齟齬を防げる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>顧客窓口の単独担当／庁内ヒアリングの単独実施</p>
+              <p class="m-mile"><span class="k">確認</span>顧客折衝の記録レビュー／クレーム0</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="5">
+          <div class="m-when">
+            <span class="m-no">15</span>
+            <span class="m-mo">6月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p5">Ⅴ 単独遂行</span>
+              <span class="m-focus">主担当テーマ①＋②</span>
+              <span class="lv lv3">L3</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>調査設計の応用（標本設計、層化抽出、回収率向上策、Web併用調査、自由記述の分類・テキストマイニング）</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①母集団と目的から標本サイズ・抽出方法を設計し、根拠を説明できる</li><li>②自由記述を分類し、計画の課題として要約できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>調査設計の単独立案／副テーマ案件の集計担当</p>
+              <p class="m-mile"><span class="k">確認</span>調査設計書の承認</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="5">
+          <div class="m-when">
+            <span class="m-no">16</span>
+            <span class="m-mo">7月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p5">Ⅴ 単独遂行</span>
+              <span class="m-focus">主担当テーマ①（推計）</span>
+              <span class="lv lv3">L3</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>推計の実務（コーホート要因法・コーホート変化率法、社人研推計との整合、時系列モデル、シナリオ設定、感度分析）／テーマ固有の推計（給付費・保険料／サービス見込量／量の見込み／投資・財政計画）</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①人口推計を自力で組み、社人研推計との差異を説明できる</li><li>②テーマ固有の推計を単独で実施し、前提条件を明示できる</li><li>③複数シナリオの比較表を作れる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>推計作業の単独担当／推計結果の顧客説明</p>
+              <p class="m-mile"><span class="k">確認</span>推計結果の検算一致／前提条件の説明可否</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="5">
+          <div class="m-when">
+            <span class="m-no">17</span>
+            <span class="m-mo">8月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p5">Ⅴ 単独遂行</span>
+              <span class="m-focus">営業（単独訪問開始）</span>
+              <span class="lv lv3">L3</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>単独訪問営業（アポ取り、ヒアリング設計、課題仮説、次アクション設計）／予算要求期の情報提供と参考見積／CRM・訪問記録の運用</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①初回訪問で課題をヒアリングし、次回提案につなげられる</li><li>②参考見積を単独で提示できる</li><li>③訪問記録を当日中に登録し、次アクションを設定できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>担当エリアの単独訪問（月8件以上）／参考見積の提示</p>
+              <p class="m-mile"><span class="k">確認</span>訪問件数・見積提示件数／次年度予算化の獲得</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="5">
+          <div class="m-when">
+            <span class="m-no">18</span>
+            <span class="m-mo">9月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p5">Ⅴ 単独遂行</span>
+              <span class="m-focus">主担当テーマ①</span>
+              <span class="lv lv3">L3</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>委員会事務局の単独運営（諮問・答申の設計、論点整理、委員意見の計画への反映、意見が割れた場合の合意形成）</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①委員会の年間論点設計（何回目で何を決めるか）を組める</li><li>②委員意見を計画本文に反映し、反映表を作成できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>委員会の単独運営／論点整理メモの作成</p>
+              <p class="m-mile"><span class="k">確認</span>委員会運営の顧客評価／答申までの工程遵守</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="5">
+          <div class="m-when">
+            <span class="m-no">19</span>
+            <span class="m-mo">10月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p5">Ⅴ 単独遂行</span>
+              <span class="m-focus">主担当テーマ①（執筆）</span>
+              <span class="lv lv3">L3</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>計画書の通し執筆（序章・現状・課題・理念・体系・施策・推進体制・資料編）／公用文の作法／図表・レイアウト設計／UD配慮（UDフォント、カラーUD、やさしい日本語、ルビ）</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①計画書1冊を通しで執筆できる</li><li>②章間の論理（現状→課題→施策→指標）を一貫させられる</li><li>③UD配慮を成果物に反映できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>計画書の主執筆／図表設計</p>
+              <p class="m-mile"><span class="k">確認</span>素案の顧客提出（大幅修正なし）</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="5">
+          <div class="m-when">
+            <span class="m-no">20</span>
+            <span class="m-mo">11月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p5">Ⅴ 単独遂行</span>
+              <span class="m-focus">主担当テーマ①＋営業</span>
+              <span class="lv lv3">L3</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>プロポーザル企画書の主担当（評価基準の分解、差別化提案、実施体制、スケジュール、見積）／競合分析</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①評価基準に紐付けた提案書を単独で構成できる</li><li>②他社との差別化ポイントを言語化できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>プロポーザル企画書の主担当（先輩レビュー）／プレゼンの主説明</p>
+              <p class="m-mile"><span class="k">確認</span>提案書の完成度／プレゼン評価</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="5">
+          <div class="m-when">
+            <span class="m-no">21</span>
+            <span class="m-mo">12月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p5">Ⅴ 単独遂行</span>
+              <span class="m-focus">副担当テーマ②</span>
+              <span class="lv lv3">L2→L3</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>副担当テーマの実務投入（当該テーマの調査・分析・執筆の一連）／テーマ横断の知識連携（例：公会計台帳→公共施設等総合管理計画、地域福祉→高齢・障害・こども）</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①副テーマで補助〜部分自立レベルの作業ができる</li><li>②テーマ間のデータ・論点の連携を提案できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>副テーマ案件の部分担当／一体策定案件への参画</p>
+              <p class="m-mile"><span class="k">確認</span>副テーマの成果物レビュー</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="5">
+          <div class="m-when">
+            <span class="m-no">22</span>
+            <span class="m-mo">1月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p5">Ⅴ 単独遂行</span>
+              <span class="m-focus">営業</span>
+              <span class="lv lv3">L3</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>受注活動の実践（公告対応、参加手続、提案、プレゼン）／複数案件の同時対応／失注分析</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①提案から受注までを単独で回せる</li><li>②失注要因を分析し、次に活かす改善案を出せる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>プロポーザル2件以上の主担当</p>
+              <p class="m-mile"><span class="k">確認</span>受注実績／失注分析レポート</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="5">
+          <div class="m-when">
+            <span class="m-no">23</span>
+            <span class="m-mo">2月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p5">Ⅴ 単独遂行</span>
+              <span class="m-focus">採算管理</span>
+              <span class="lv lv3">L3</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>案件採算の管理（工数実績の把握、原価管理、追加作業の扱い、外注管理）／次年度の受注計画</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①担当案件の工数実績と粗利を月次で把握できる</li><li>②採算悪化の兆候を早期に上司へ報告できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>担当案件の採算表運用／外注（DTP・印刷・集計）の発注管理</p>
+              <p class="m-mile"><span class="k">確認</span>採算表の運用／粗利率の目標達成</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow is-mile" data-phase="5">
+          <div class="m-when">
+            <span class="m-no">24</span>
+            <span class="m-mo">3月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p5">Ⅴ 単独遂行</span>
+              <span class="m-focus">総括</span>
+              <span class="lv lv3">L3</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>2年目の振り返り／後輩指導の準備（教え方、レビューの視点、チェックリスト化）</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①案件を単独で完遂した実績を整理し、再現可能な手順として言語化できる</li><li>②後輩に教える単元を1つ準備できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>年度末納品／新人受け入れ準備／手順書の整備</p>
+              <p class="m-mile"><span class="k">確認</span>【2年目レベル判定】主担当L3／副担当L2／共通L3</p>
+            </div>
+          </div>
+        </li></ol>
+      </div>
+      <div class="ypanel" id="y3" role="tabpanel" aria-labelledby="tab3" hidden>
+        <p class="ypanel-sub">応用・指導 ── 複数案件と後輩育成</p>
+        <ol class="months">
+        <li class="mrow" data-phase="6">
+          <div class="m-when">
+            <span class="m-no">25</span>
+            <span class="m-mo">4月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p6">Ⅵ 応用・指導</span>
+              <span class="m-focus">複数案件PM</span>
+              <span class="lv lv4">L3→L4</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>複数案件の同時進行管理（優先順位、リソース配分、ボトルネック管理、繁忙期の平準化）／難案件の類型（大規模市、広域連合、県、複数計画一体、中間見直し）</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①3件以上を同時に管理し、遅延を事前に検知・回避できる</li><li>②難案件の特有リスクを事前に洗い出し、対策を組める</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>複数案件のPM／難案件への参画</p>
+              <p class="m-mile"><span class="k">確認</span>全担当案件の納期遵守</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="6">
+          <div class="m-when">
+            <span class="m-no">26</span>
+            <span class="m-mo">5月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p6">Ⅵ 応用・指導</span>
+              <span class="m-focus">後輩OJT</span>
+              <span class="lv lv4">L4</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>OJT指導（育成計画、課題設定、レビューの与え方、フィードバック面談）／成果物レビューの視点（制度適合・論理・数値・表記）</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①後輩1名の月次育成計画を作り、実行できる</li><li>②成果物レビューで重大な誤りを検出し、理由を説明して修正させられる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>新人1名のOJT担当／レビュー担当</p>
+              <p class="m-mile"><span class="k">確認</span>後輩のレベル到達度／レビュー品質</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="6">
+          <div class="m-when">
+            <span class="m-no">27</span>
+            <span class="m-mo">6月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p6">Ⅵ 応用・指導</span>
+              <span class="m-focus">難案件対応</span>
+              <span class="lv lv4">L4</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>イレギュラー対応（仕様変更、回収率不足、委員会の紛糾、議会指摘、データ不備、災害等による延期）／リカバリ設計</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①想定外事象を上司と共有し、代替案と工程再設計を提示できる</li><li>②顧客の信頼を落とさずに合意形成できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>難案件の主担当／トラブル案件のリカバリ</p>
+              <p class="m-mile"><span class="k">確認</span>トラブル収束の実績</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="6">
+          <div class="m-when">
+            <span class="m-no">28</span>
+            <span class="m-mo">7月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p6">Ⅵ 応用・指導</span>
+              <span class="m-focus">標準化</span>
+              <span class="lv lv4">L4</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>業務標準化（ひな形・チェックリスト・積算モデル・調査票マスタの整備、ナレッジ共有）／生成AI等ツールの活用ルール</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①担当テーマの標準ひな形を整備し、社内展開できる</li><li>②標準化による工数削減効果を数値で示せる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>社内標準ひな形の整備／勉強会の講師</p>
+              <p class="m-mile"><span class="k">確認</span>標準化成果物の社内採用</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="6">
+          <div class="m-when">
+            <span class="m-no">29</span>
+            <span class="m-mo">8月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p6">Ⅵ 応用・指導</span>
+              <span class="m-focus">営業戦略</span>
+              <span class="lv lv4">L4</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>エリア戦略の立案（自治体カルテ、計画期間データベース、優先順位付け、接触計画）／既存客の深耕とクロスセル（1課→他課紹介、複数計画一体提案）</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①担当エリアの3年分の発注見込みをDB化し、優先順位を付けられる</li><li>②既存客から新規テーマの受注を作れる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>エリア戦略の立案・実行／クロスセル提案</p>
+              <p class="m-mile"><span class="k">確認</span>エリア別の受注計画と進捗</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="6">
+          <div class="m-when">
+            <span class="m-no">30</span>
+            <span class="m-mo">9月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p6">Ⅵ 応用・指導</span>
+              <span class="m-focus">提案設計</span>
+              <span class="lv lv4">L4</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>提案の企画（顧客課題からの逆算、他社にない切り口、複数年契約・包括契約、成果連動の設計）／価格戦略</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①課題起点の提案書を自ら企画できる</li><li>②単価と受注確度のバランスを設計できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>プロポーザルの主導（企画〜プレゼン）</p>
+              <p class="m-mile"><span class="k">確認</span>受注率・平均単価の改善</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="6">
+          <div class="m-when">
+            <span class="m-no">31</span>
+            <span class="m-mo">10月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p6">Ⅵ 応用・指導</span>
+              <span class="m-focus">テーマ③展開</span>
+              <span class="lv lv3">L2→L3</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>第3テーマの習得（主担当テーマと親和性の高い領域へ横展開）／テーマ横断の統合提案</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①第3テーマでL2相当の実務ができる</li><li>②2テーマ以上を束ねた統合提案ができる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>第3テーマ案件への参画</p>
+              <p class="m-mile"><span class="k">確認</span>第3テーマの成果物レビュー</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="6">
+          <div class="m-when">
+            <span class="m-no">32</span>
+            <span class="m-mo">11月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p6">Ⅵ 応用・指導</span>
+              <span class="m-focus">品質保証</span>
+              <span class="lv lv4">L4</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>品質保証の仕組み（レビュー体制、チェックリスト、数値検算ルール、校正の二重化、事故防止）／個人情報事故・情報漏えいの予防と対応</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①案件の品質保証計画を設計できる</li><li>②ヒヤリハットを収集し再発防止策に落とせる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>品質レビューの実施／再発防止策の整備</p>
+              <p class="m-mile"><span class="k">確認</span>重大品質事故0／レビュー記録</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="6">
+          <div class="m-when">
+            <span class="m-no">33</span>
+            <span class="m-mo">12月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p6">Ⅵ 応用・指導</span>
+              <span class="m-focus">対外発信</span>
+              <span class="lv lv4">L4</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>対外発信（セミナー登壇、自治体向け研修講師、記事・事例集の執筆、展示会）／講師としての資料設計</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①自治体職員向けに60分の研修を単独で実施できる</li><li>②事例記事を執筆できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>セミナー・研修の講師／記事執筆</p>
+              <p class="m-mile"><span class="k">確認</span>受講者アンケート評価／登壇実績</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="6">
+          <div class="m-when">
+            <span class="m-no">34</span>
+            <span class="m-mo">1月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p6">Ⅵ 応用・指導</span>
+              <span class="m-focus">受注活動</span>
+              <span class="lv lv4">L4</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>年間受注計画の遂行（公告ピーク期の同時対応、優先順位、体制確保）／受注後の体制設計</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①同時期の複数プロポーザルを体制込みで捌ける</li><li>②受注後の実施体制を事前設計できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>プロポーザル複数件の主導</p>
+              <p class="m-mile"><span class="k">確認</span>受注件数・受注金額</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow" data-phase="6">
+          <div class="m-when">
+            <span class="m-no">35</span>
+            <span class="m-mo">2月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p6">Ⅵ 応用・指導</span>
+              <span class="m-focus">収益管理</span>
+              <span class="lv lv4">L4</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>テーマ別・エリア別の収益管理／工数原単位の改善／外注戦略</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①担当テーマの収益構造を分解し、改善余地を示せる</li><li>②原単位改善の施策を実行できる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>収益分析／改善施策の実行</p>
+              <p class="m-mile"><span class="k">確認</span>粗利率・原単位の改善</p>
+            </div>
+          </div>
+        </li>
+        <li class="mrow is-mile" data-phase="6">
+          <div class="m-when">
+            <span class="m-no">36</span>
+            <span class="m-mo">3月</span>
+          </div>
+          <div class="m-body">
+            <div class="m-top">
+              <span class="m-phase p6">Ⅵ 応用・指導</span>
+              <span class="m-focus">総括</span>
+              <span class="lv lv4">L4</span>
+            </div>
+            <p class="m-learn"><span class="k">学ぶ</span>3年目の振り返り／次期（4年目以降）のキャリア設計（テーマ専門特化／PM／マネジメント／商品開発）</p>
+            <p class="k k-block">できるようになる</p>
+            <ul class="m-goal"><li>①3年間の実績を体系化し、自らの強みと次の課題を説明できる</li><li>②チームへの貢献計画を示せる</li></ul>
+            <div class="m-foot">
+              <p><span class="k">OJT</span>年度末納品／後輩の育成引継ぎ／キャリア面談</p>
+              <p class="m-mile"><span class="k">確認</span>【3年目レベル判定】主担当L3〜L4／副担当L2〜L3／共通L3〜L4</p>
+            </div>
+          </div>
+        </li></ol>
+      </div>
+    </section>
+  
+    <section id="themes" class="sec">
+      <header class="sec-head">
+        <p class="eyebrow">03　テーマ別 到達基準</p>
+        <h2>8テーマ × 領域 × 階層</h2>
+        <p class="lead">主担当テーマは入社3ヶ月目に決定し、2年目に副担当、3年目に第3テーマへ広げる。営業と業務は別々に判定する ── 業務がL3でも営業がL1なら、案件は取れても回せない、あるいはその逆になる。</p>
+      </header>
+      <div class="themes">
+      <article class="theme" id="kokaikei" style="--tc:#1F77B4">
+        <header class="theme-head">
+          <span class="theme-dot" aria-hidden="true"></span>
+          <div>
+            <h3>公会計</h3>
+            <p class="theme-tag">財務書類・台帳精緻化・所有外管理資産</p>
+          </div>
+          <p class="theme-count"><b>23</b><span>学習項目<br>うち営業 3</span></p>
+        </header>
+        <p class="theme-sub">総務省「統一的な基準」に基づく財務書類の作成支援、固定資産台帳の整備・精緻化、所有外／管理資産の整理、財務書類の活用支援まで。</p>
+        <ul class="theme-chips"><li>地方公会計の全体像</li><li>財務書類4表</li><li>会計区分と連結範囲</li><li>仕訳方式とデータの流れ</li><li>関連する財政制度</li><li>財務書類作成の準備</li><li>固定資産台帳の構造</li><li>減価償却の計算</li><li>商品と提案の型</li></ul>
+        <div class="tablewrap">
+          <table class="grid">
+            <caption class="vh">公会計の階層別到達基準</caption>
+            <thead><tr><th scope="col">領域</th><th scope="col">L1 理解する</th><th scope="col">L2 補助する</th><th scope="col">L3 自立する</th><th scope="col">L4 応用・指導</th><th scope="col">L5 統括する</th></tr></thead>
+            <tbody><tr><th scope="row">業務</th><td class="g1">財務書類4表と3区分（一般会計等／全体／連結）、固定資産台帳の意味を説明できる</td><td class="g2">台帳項目のチェック、減価償却の検算、仕訳変換の一次作業を手順書どおりに実施できる</td><td class="g3">一般会計等〜連結の財務書類を単独で作成・検算し、台帳突合・所有外資産の整理表を作成できる</td><td class="g4">精緻化ロードマップの設計、財務指標・セグメント分析による活用提案、後輩レビューができる</td><td class="g5">公会計を軸にした行政経営改革の商品設計・標準化・対外発信ができる</td></tr><tr><th scope="row">営業</th><td class="g1">商品ラインナップと自治体の決算スケジュールを説明できる</td><td class="g2">情報提供資料の作成、同行訪問、参考見積の作成補助ができる</td><td class="g3">単独訪問し、課題ヒアリングから見積提示・予算化まで持ち込める</td><td class="g4">プロポーザルを主導し、複数年契約・クロスセル（公営企業・公共施設）を設計できる</td><td class="g5">エリア戦略を設計し、テーマの受注・単価目標に責任を持てる</td></tr></tbody>
+          </table>
+        </div>
+      </article>
+      <article class="theme" id="koei" style="--tc:#17A2B8">
+        <header class="theme-head">
+          <span class="theme-dot" aria-hidden="true"></span>
+          <div>
+            <h3>公営企業会計</h3>
+            <p class="theme-tag">会計支援・経営戦略・料金改定・経営分析</p>
+          </div>
+          <p class="theme-count"><b>21</b><span>学習項目<br>うち営業 2</span></p>
+        </header>
+        <p class="theme-sub">法適用／非適用の枠組みから、日常会計・決算支援、法適化（新規適用）、経営戦略の策定・改定、料金・使用料改定、経営分析まで。</p>
+        <ul class="theme-chips"><li>公営企業の枠組み</li><li>官公庁会計との違い</li><li>財務諸表と会計基準</li><li>国の政策動向</li><li>会計支援（日常業務）</li><li>決算業務</li><li>決算統計・各種調査</li><li>固定資産・消費税</li><li>法適化（新規適用）支援</li></ul>
+        <div class="tablewrap">
+          <table class="grid">
+            <caption class="vh">公営企業会計の階層別到達基準</caption>
+            <thead><tr><th scope="col">領域</th><th scope="col">L1 理解する</th><th scope="col">L2 補助する</th><th scope="col">L3 自立する</th><th scope="col">L4 応用・指導</th><th scope="col">L5 統括する</th></tr></thead>
+            <tbody><tr><th scope="row">業務</th><td class="g1">3条・4条予算、財務諸表、H26会計基準改正の要点を説明できる</td><td class="g2">日常仕訳・決算整理・決算統計の作成を補助でき、経営指標を算定できる</td><td class="g3">法適化支援、経営戦略（投資・財源試算）、料金改定（原価計算・体系設計・合意形成）を単独で遂行できる</td><td class="g4">病院・交通等の特殊会計、広域化・官民連携案件のPMができる</td><td class="g5">都道府県・複数団体を巻き込む大型案件を設計し、商品化・登壇ができる</td></tr><tr><th scope="row">営業</th><td class="g1">対象部署と国の要請事項（法適化・経営戦略・広域化）を説明できる</td><td class="g2">経営比較分析表から課題仮説を立て、情報提供資料を作れる</td><td class="g3">経営指標から次の受注テーマを提案し、予算化まで持ち込める</td><td class="g4">会計→戦略→料金→広域化の複数年提案を主導できる</td><td class="g5">都道府県案件・広域案件の受注設計ができる</td></tr></tbody>
+          </table>
+        </div>
+      </article>
+      <article class="theme" id="korei" style="--tc:#2CA02C">
+        <header class="theme-head">
+          <span class="theme-dot" aria-hidden="true"></span>
+          <div>
+            <h3>高齢者福祉・介護保険事業計画</h3>
+            <p class="theme-tag">3年1期／保険料算定まで</p>
+          </div>
+          <p class="theme-count"><b>15</b><span>学習項目<br>うち営業 2</span></p>
+        </header>
+        <p class="theme-sub">3年1期のサイクル。ニーズ調査 → 現状分析 → 施策体系 → サービス見込量推計 → 第1号保険料算定 → 計画書納品までの一連。</p>
+        <ul class="theme-chips"><li>計画の位置づけとサイクル</li><li>介護保険制度の基礎</li><li>計画の記載事項</li><li>調査実務①：設計</li><li>調査実務②：実施・集計</li><li>統計・給付データの収集</li><li>現状分析</li><li>委員会・協議体の運営</li><li>施策体系の理解と執筆</li></ul>
+        <div class="tablewrap">
+          <table class="grid">
+            <caption class="vh">高齢者福祉・介護保険事業計画の階層別到達基準</caption>
+            <thead><tr><th scope="col">領域</th><th scope="col">L1 理解する</th><th scope="col">L2 補助する</th><th scope="col">L3 自立する</th><th scope="col">L4 応用・指導</th><th scope="col">L5 統括する</th></tr></thead>
+            <tbody><tr><th scope="row">業務</th><td class="g1">介護保険制度と計画の記載事項、3年1期のサイクルを説明できる</td><td class="g2">ニーズ調査・在宅介護実態調査の実施と集計、統計収集ができる</td><td class="g3">現状分析・施策編の執筆、委員会の単独運営、サービス見込量推計と第1号保険料算定ができる</td><td class="g4">広域連合・大規模市案件のPM、総合事業や地域包括支援センターの体制提案ができる</td><td class="g5">テーマの標準化・商品開発、研修講師・登壇ができる</td></tr><tr><th scope="row">営業</th><td class="g1">計画期間から発注時期を逆算できる</td><td class="g2">国の動向をまとめた情報提供資料を作成し、同行できる</td><td class="g3">単独訪問で予算化を獲得し、提案書・見積を作成できる</td><td class="g4">調査＋策定の複数年提案、他計画との一体策定提案を主導できる</td><td class="g5">エリア内の保険者を面で押さえる戦略を設計できる</td></tr></tbody>
+          </table>
+        </div>
+      </article>
+      <article class="theme" id="shogai" style="--tc:#FF7F0E">
+        <header class="theme-head">
+          <span class="theme-dot" aria-hidden="true"></span>
+          <div>
+            <h3>障害者・障害児計画</h3>
+            <p class="theme-tag">3計画一体／成果目標と見込量</p>
+          </div>
+          <p class="theme-count"><b>15</b><span>学習項目<br>うち営業 2</span></p>
+        </header>
+        <p class="theme-sub">理念計画（障害者計画）と実施計画（障害福祉計画・障害児福祉計画）の一体策定。成果目標・活動指標・見込量の設定が中核。</p>
+        <ul class="theme-chips"><li>3計画の位置づけとサイクル</li><li>障害福祉サービスの体系</li><li>障害児支援の体系</li><li>権利擁護・関連法</li><li>調査実務</li><li>統計・給付データの収集</li><li>現状分析と成果目標の進捗評価</li><li>協議会・委員会の運営</li><li>成果目標の設定</li></ul>
+        <div class="tablewrap">
+          <table class="grid">
+            <caption class="vh">障害者・障害児計画の階層別到達基準</caption>
+            <thead><tr><th scope="col">領域</th><th scope="col">L1 理解する</th><th scope="col">L2 補助する</th><th scope="col">L3 自立する</th><th scope="col">L4 応用・指導</th><th scope="col">L5 統括する</th></tr></thead>
+            <tbody><tr><th scope="row">業務</th><td class="g1">3計画の位置づけとサービス体系、権利擁護関連法を説明できる</td><td class="g2">手帳所持者調査・事業所調査の実施と集計、情報保障に配慮した会議準備ができる</td><td class="g3">成果目標の設定、活動指標・見込量の推計、障害者計画の体系設計、わかりやすい版の作成ができる</td><td class="g4">地域生活支援拠点・基幹相談支援センター等の体制設計支援、県計画・大規模市案件のPMができる</td><td class="g5">当事者参画型の計画づくりを商品化し、標準化・発信ができる</td></tr><tr><th scope="row">営業</th><td class="g1">3計画の期間と所管課を説明できる</td><td class="g2">基本指針・報酬改定の動向を資料化し、同行できる</td><td class="g3">協議会を活用した策定体制を提案し、予算化できる</td><td class="g4">3計画一体＋他分野との統合提案を主導できる</td><td class="g5">県・圏域単位の案件を設計できる</td></tr></tbody>
+          </table>
+        </div>
+      </article>
+      <article class="theme" id="chiiki" style="--tc:#8C564B">
+        <header class="theme-head">
+          <span class="theme-dot" aria-hidden="true"></span>
+          <div>
+            <h3>地域福祉計画</h3>
+            <p class="theme-tag">上位計画／重層的支援体制</p>
+          </div>
+          <p class="theme-count"><b>15</b><span>学習項目<br>うち営業 2</span></p>
+        </header>
+        <p class="theme-sub">福祉分野の上位計画。重層的支援体制整備事業、社協の地域福祉活動計画との一体策定、併載計画（成年後見・再犯防止・自殺対策等）が論点。</p>
+        <ul class="theme-chips"><li>計画の位置づけ</li><li>地域共生社会と包括的支援体制</li><li>地域の担い手と資源</li><li>併載されやすい個別計画</li><li>調査実務</li><li>住民参加の場づくり</li><li>現状分析</li><li>圏域設定と体制整理</li><li>計画体系の設計</li></ul>
+        <div class="tablewrap">
+          <table class="grid">
+            <caption class="vh">地域福祉計画の階層別到達基準</caption>
+            <thead><tr><th scope="col">領域</th><th scope="col">L1 理解する</th><th scope="col">L2 補助する</th><th scope="col">L3 自立する</th><th scope="col">L4 応用・指導</th><th scope="col">L5 統括する</th></tr></thead>
+            <tbody><tr><th scope="row">業務</th><td class="g1">社福法上の位置づけ、重層的支援体制整備事業、地域の担い手を説明できる</td><td class="g2">住民アンケート・団体調査の実施、ワークショップの運営補助ができる</td><td class="g3">上位計画としての体系設計、重層事業の体制記載、併載計画（成年後見・再犯防止・自殺対策）の執筆、住民WSの単独運営ができる</td><td class="g4">重層事業の移行〜本格実施の伴走支援、庁内横断体制の設計ができる</td><td class="g5">地域福祉を軸にした複数計画一体策定を商品化できる</td></tr><tr><th scope="row">営業</th><td class="g1">自治体と社協の役割分担を説明できる</td><td class="g2">併載計画の一覧を作り、提案材料にできる</td><td class="g3">自治体・社協双方に接触し、一体策定を提案・予算化できる</td><td class="g4">5計画以上の大型一体案件を企画・受注できる</td><td class="g5">社協との協働モデルを設計し、全社展開できる</td></tr></tbody>
+          </table>
+        </div>
+      </article>
+      <article class="theme" id="kodomo" style="--tc:#D6336C">
+        <header class="theme-head">
+          <span class="theme-dot" aria-hidden="true"></span>
+          <div>
+            <h3>こども計画・子育て支援事業計画</h3>
+            <p class="theme-tag">5年1期／量の見込みと確保方策</p>
+          </div>
+          <p class="theme-count"><b>15</b><span>学習項目<br>うち営業 2</span></p>
+        </header>
+        <p class="theme-sub">こども基本法に基づくこども計画と、子ども・子育て支援法に基づく事業計画（5年1期・中間年見直し）。量の見込みと確保方策が中核。</p>
+        <ul class="theme-chips"><li>計画の位置づけとサイクル</li><li>こども計画に統合される計画</li><li>子ども・子育て支援新制度</li><li>地域子ども・子育て支援事業</li><li>児童福祉・母子保健の動向</li><li>ニーズ調査の実務</li><li>こども・若者の意見聴取</li><li>現状分析と実績評価</li><li>量の見込みの算出</li></ul>
+        <div class="tablewrap">
+          <table class="grid">
+            <caption class="vh">こども計画・子育て支援事業計画の階層別到達基準</caption>
+            <thead><tr><th scope="col">領域</th><th scope="col">L1 理解する</th><th scope="col">L2 補助する</th><th scope="col">L3 自立する</th><th scope="col">L4 応用・指導</th><th scope="col">L5 統括する</th></tr></thead>
+            <tbody><tr><th scope="row">業務</th><td class="g1">新制度・13事業・こども基本法の枠組みを説明できる</td><td class="g2">ニーズ調査の実施と集計、こどもの意見聴取の実施補助ができる</td><td class="g3">量の見込みの算出、確保方策の設計、こども計画としての体系設計、子ども・子育て会議の運営ができる</td><td class="g4">少子化下の定員適正化・幼保再編の検討支援、こども家庭センターの体制設計支援ができる</td><td class="g5">こども分野の商品開発・標準化・発信ができる</td></tr><tr><th scope="row">営業</th><td class="g1">計画サイクル（5年1期・中間年見直し）と所管課を説明できる</td><td class="g2">国の動向を資料化し、庁内横断の関係課を把握できる</td><td class="g3">中間見直し・こども計画策定の需要を先読みし、予算化できる</td><td class="g4">調査＋策定＋体制構築支援を束ねた提案を主導できる</td><td class="g5">新制度の変更を先取りした商品を企画できる</td></tr></tbody>
+          </table>
+        </div>
+      </article>
+      <article class="theme" id="sonota" style="--tc:#6C757D">
+        <header class="theme-head">
+          <span class="theme-dot" aria-hidden="true"></span>
+          <div>
+            <h3>その他の行政計画</h3>
+            <p class="theme-tag">食育・健康・農業・男女・財政・公共施設</p>
+          </div>
+          <p class="theme-count"><b>14</b><span>学習項目<br>うち営業 2</span></p>
+        </header>
+        <p class="theme-sub">単価は小さいが本数が多く、束ね受注と既存客深耕の主戦場。テンプレート活用による採算確保が鍵。</p>
+        <ul class="theme-chips"><li>食育推進計画</li><li>健康増進計画</li><li>農業振興計画</li><li>男女共同参画計画</li><li>財政計画</li><li>公共施設等総合管理計画</li><li>個別施設計画</li><li>その他計画（共通）</li></ul>
+        <div class="tablewrap">
+          <table class="grid">
+            <caption class="vh">その他の行政計画の階層別到達基準</caption>
+            <thead><tr><th scope="col">領域</th><th scope="col">L1 理解する</th><th scope="col">L2 補助する</th><th scope="col">L3 自立する</th><th scope="col">L4 応用・指導</th><th scope="col">L5 統括する</th></tr></thead>
+            <tbody><tr><th scope="row">業務</th><td class="g1">各計画の根拠法・期間・必須記載事項を一覧化できる</td><td class="g2">既存テンプレートを用いて調査・分析・執筆の一部を担える</td><td class="g3">担当する2〜3計画について単独で策定業務を完遂できる（更新費用試算・財政推計を含む）</td><td class="g4">新規テーマを自ら立ち上げ、初受注案件を完遂できる</td><td class="g5">隣接領域（総合計画・強靱化・立地適正化・脱炭素等）へ商品を拡張できる</td></tr><tr><th scope="row">営業</th><td class="g1">自治体HPから計画一覧を抽出できる</td><td class="g2">計画期間終了年度から発注見込みリストを作れる</td><td class="g3">担当自治体の3年先までの発注見込みをDB化し、束ね提案ができる</td><td class="g4">総合計画・分野横断の大型束ね受注を設計できる</td><td class="g5">新規テーマの市場性を評価し、商品化を判断できる</td></tr></tbody>
+          </table>
+        </div>
+      </article>
+      <article class="theme" id="kyotsu" style="--tc:#7F4FBF">
+        <header class="theme-head">
+          <span class="theme-dot" aria-hidden="true"></span>
+          <div>
+            <h3>共通スキル</h3>
+            <p class="theme-tag">調査・執筆・会議・PM・調達・積算</p>
+          </div>
+          <p class="theme-count"><b>13</b><span>学習項目<br>うち営業 3</span></p>
+        </header>
+        <p class="theme-sub">全テーマに共通する土台。ここが弱いとテーマ知識があっても案件を回せない。</p>
+        <ul class="theme-chips"><li>自治体の基礎知識</li><li>コンプライアンス・情報管理</li><li>ビジネス基礎・文書</li><li>調査・統計の実務</li><li>データ処理（Excel）</li><li>推計・シミュレーション</li><li>計画書の執筆・編集</li><li>会議・ワークショップ運営</li><li>プロジェクトマネジメント</li></ul>
+        <div class="tablewrap">
+          <table class="grid">
+            <caption class="vh">共通スキルの階層別到達基準</caption>
+            <thead><tr><th scope="col">領域</th><th scope="col">L1 理解する</th><th scope="col">L2 補助する</th><th scope="col">L3 自立する</th><th scope="col">L4 応用・指導</th><th scope="col">L5 統括する</th></tr></thead>
+            <tbody><tr><th scope="row">全般</th><td class="g1">自治体の意思決定プロセスと守るべきルールを説明できる</td><td class="g2">調査・集計・議事録・資料作成を手順どおり正確に実施できる</td><td class="g3">調査設計から計画書執筆・委員会運営・工程/採算管理まで単独で回せる</td><td class="g4">複数案件のPM、品質保証の設計、後輩指導、提案主導ができる</td><td class="g5">業務標準・商品・育成の仕組みを構築し、組織の生産性を上げられる</td></tr></tbody>
+          </table>
+        </div>
+      </article></div>
+    </section>
+  
+    <section id="calendar" class="sec">
+      <header class="sec-head">
+        <p class="eyebrow">04　年間サイクル</p>
+        <h2>学習計画は自治体の年度に従属する</h2>
+        <p class="lead">新人が「今月なにをやるか」は本人の習熟度だけでは決まらない。顧客の年度が決める。ロードマップの各月はこの表と対応している。</p>
+      </header>
+      <div class="tablewrap cal-wrap">
+        <div class="cal">
+        <div class="cal-col">
+          <div class="cal-mo">4月</div>
+          <div class="cal-cell"><span class="k">自治体</span>新年度開始／人事異動／新規業務の起案・発注準備／当初予算の執行開始</div>
+          <div class="cal-cell"><span class="k">営業</span>異動後の挨拶回り（キーパーソン確認）／年度当初の公告情報の収集／新規案件の提案</div>
+          <div class="cal-cell"><span class="k">業務</span>受託案件のキックオフ／仕様確認／工程表・体制の確定／前年度案件の精算</div>
+          <div class="cal-cell rookie"><span class="k">新人の関与</span>キックオフ資料の作成／挨拶回りの同行／工程表の作成補助</div>
+        </div>
+        <div class="cal-col">
+          <div class="cal-mo">5月</div>
+          <div class="cal-cell"><span class="k">自治体</span>出納整理期間終了（5月末）／前年度決算の整理／6月議会の準備</div>
+          <div class="cal-cell"><span class="k">営業</span>プロポーザル公告のピーク／参加表明・提案書作成</div>
+          <div class="cal-cell"><span class="k">業務</span>調査票の設計／委員会の日程調整／基礎データの収集</div>
+          <div class="cal-cell rookie"><span class="k">新人の関与</span>提案書の資料作成／調査票のドラフト／統計データの収集</div>
+        </div>
+        <div class="cal-col">
+          <div class="cal-mo">6月</div>
+          <div class="cal-cell"><span class="k">自治体</span>6月定例会／前年度決算の作業</div>
+          <div class="cal-cell"><span class="k">営業</span>提案・プレゼンの実施／受注確定</div>
+          <div class="cal-cell"><span class="k">業務</span>調査票の確定／発送準備／第1回委員会の準備</div>
+          <div class="cal-cell rookie"><span class="k">新人の関与</span>発送作業／宛名データ作成／委員会準備</div>
+        </div>
+        <div class="cal-col peak-w">
+          <div class="cal-mo">7月<span class="cal-peak">業務の山</span></div>
+          <div class="cal-cell"><span class="k">自治体</span>決算調製／公営企業の決算作業／概算要求の準備開始</div>
+          <div class="cal-cell"><span class="k">営業</span>予算要求に向けた情報提供の開始／課題ヒアリング</div>
+          <div class="cal-cell"><span class="k">業務</span>アンケートの発送・回収・督促／集計の開始／公会計・公営企業の決算支援</div>
+          <div class="cal-cell rookie"><span class="k">新人の関与</span>回収管理／問合せ対応／集計作業</div>
+        </div>
+        <div class="cal-col peak-s">
+          <div class="cal-mo">8月<span class="cal-peak">営業の山</span></div>
+          <div class="cal-cell"><span class="k">自治体</span>概算要求／次年度予算の事業構築／夏季休暇</div>
+          <div class="cal-cell"><span class="k">営業</span>【予算要求期の山場】情報提供資料・参考見積の提示</div>
+          <div class="cal-cell"><span class="k">業務</span>集計・単純集計／現状分析／決算統計の作成支援</div>
+          <div class="cal-cell rookie"><span class="k">新人の関与</span>情報提供資料の作成／集計表・グラフの作成</div>
+        </div>
+        <div class="cal-col peak-s">
+          <div class="cal-mo">9月<span class="cal-peak">営業の山</span></div>
+          <div class="cal-cell"><span class="k">自治体</span>9月定例会（前年度決算の認定）／予算要求書の提出</div>
+          <div class="cal-cell"><span class="k">営業</span>参考見積の提示継続／次年度の発注意向の確認</div>
+          <div class="cal-cell"><span class="k">業務</span>第1回委員会の開催／調査報告書の作成／現状分析の確定</div>
+          <div class="cal-cell rookie"><span class="k">新人の関与</span>委員会の運営／議事録／報告書の作成</div>
+        </div>
+        <div class="cal-col peak-s">
+          <div class="cal-mo">10月<span class="cal-peak">営業の山</span></div>
+          <div class="cal-cell"><span class="k">自治体</span>予算査定の開始／実施計画の調整</div>
+          <div class="cal-cell"><span class="k">営業</span>予算計上状況の確認／仕様書案の提供</div>
+          <div class="cal-cell"><span class="k">業務</span>課題整理／施策体系の検討／素案の骨子作成</div>
+          <div class="cal-cell rookie"><span class="k">新人の関与</span>事例調査／施策編の下書き</div>
+        </div>
+        <div class="cal-col">
+          <div class="cal-mo">11月</div>
+          <div class="cal-cell"><span class="k">自治体</span>予算査定／12月議会の準備</div>
+          <div class="cal-cell"><span class="k">営業</span>仕様（業務範囲・履行期間）の擦り合わせ</div>
+          <div class="cal-cell"><span class="k">業務</span>素案の作成／第2回委員会</div>
+          <div class="cal-cell rookie"><span class="k">新人の関与</span>素案の執筆／委員会運営</div>
+        </div>
+        <div class="cal-col peak-w">
+          <div class="cal-mo">12月<span class="cal-peak">業務の山</span></div>
+          <div class="cal-cell"><span class="k">自治体</span>12月定例会／予算内示</div>
+          <div class="cal-cell"><span class="k">営業</span>次年度の発注見込みリストの確定</div>
+          <div class="cal-cell"><span class="k">業務</span>パブリックコメントの準備・実施／概要版の作成</div>
+          <div class="cal-cell rookie"><span class="k">新人の関与</span>パブコメ資料の作成／校正</div>
+        </div>
+        <div class="cal-col peak-s">
+          <div class="cal-mo">1月<span class="cal-peak">営業の山</span></div>
+          <div class="cal-cell"><span class="k">自治体</span>予算案の確定／新年度の発注準備／公告の開始</div>
+          <div class="cal-cell"><span class="k">営業</span>【公告期の山場】公告情報の収集／参加手続／提案書作成</div>
+          <div class="cal-cell"><span class="k">業務</span>パブコメ意見の整理／計画書の確定作業／入稿</div>
+          <div class="cal-cell rookie"><span class="k">新人の関与</span>参加手続／意見整理表の作成／入稿データの確認</div>
+        </div>
+        <div class="cal-col peak-s">
+          <div class="cal-mo">2月<span class="cal-peak">営業の山</span></div>
+          <div class="cal-cell"><span class="k">自治体</span>2〜3月定例会（当初予算の審議）／入札・プロポーザルの実施</div>
+          <div class="cal-cell"><span class="k">営業</span>プレゼンテーション／見積提出／受注確定</div>
+          <div class="cal-cell"><span class="k">業務</span>色校正／印刷／第3回委員会（答申・最終確認）</div>
+          <div class="cal-cell rookie"><span class="k">新人の関与</span>色校正／プレゼン同席／委員会運営</div>
+        </div>
+        <div class="cal-col peak-w">
+          <div class="cal-mo">3月<span class="cal-peak">業務の山</span></div>
+          <div class="cal-cell"><span class="k">自治体</span>年度末（当初予算の議決）／契約の締結／年度末の検査</div>
+          <div class="cal-cell"><span class="k">営業</span>受注案件の契約手続／年度の受注実績の総括</div>
+          <div class="cal-cell"><span class="k">業務</span>【納品ラッシュ】納品・完了検査・請求／引継ぎ</div>
+          <div class="cal-cell rookie"><span class="k">新人の関与</span>納品対応／検査書類の作成／自己評価・レベル判定</div>
+        </div></div>
+      </div>
+    </section>
+  
+    <section id="rubric" class="sec">
+      <header class="sec-head">
+        <p class="eyebrow">05　評価ルーブリック</p>
+        <h2>テーマ知識に依存しない9つの軸</h2>
+        <p class="lead">テーマ別スキルマップと合わせて判定する。自己評価と上長評価に2段階以上の差が出た項目は、必ず面談で認識を合わせる。</p>
+      </header>
+      <div class="tablewrap">
+        <table class="grid rubric">
+          <thead><tr><th scope="col">評価軸</th><th scope="col">L1 理解する</th><th scope="col">L2 補助する</th><th scope="col">L3 自立する</th><th scope="col">L4 応用・指導</th><th scope="col">L5 統括する</th></tr></thead>
+          <tbody><tr><th scope="row">制度・専門知識</th><td class="g1">用語と制度の全体像を説明できる</td><td class="g2">根拠法・指針の該当箇所を自力で調べられる</td><td class="g3">制度改正の内容を業務に落とし込み、顧客に説明できる</td><td class="g4">制度改正の影響を先読みし、提案に変えられる</td><td class="g5">制度動向を踏まえた商品設計・対外発信ができる</td></tr><tr><th scope="row">調査・分析</th><td class="g1">集計表とグラフの種類・目的を説明できる</td><td class="g2">指示された集計・作図を正確に実施できる</td><td class="g3">調査設計から分析・課題抽出まで単独で実施できる</td><td class="g4">自治体固有の課題に応じた独自分析を設計できる</td><td class="g5">分析手法を標準化し、社内へ展開できる</td></tr><tr><th scope="row">推計・シミュレーション</th><td class="g1">推計手法の名称と考え方を説明できる</td><td class="g2">前提を与えられれば推計作業を実施できる</td><td class="g3">前提設定から推計・検算・説明まで単独で実施できる</td><td class="g4">複数シナリオを設計し、政策判断を支援できる</td><td class="g5">推計モデルを整備し、精度と工数を改善できる</td></tr><tr><th scope="row">執筆・成果物品質</th><td class="g1">計画書の構成と各章の役割を説明できる</td><td class="g2">指定パートを下書きでき、表記ルールを守れる</td><td class="g3">計画書1冊を通しで執筆・編集し、納品できる</td><td class="g4">他者の成果物をレビューし、品質を担保できる</td><td class="g5">品質保証の仕組み（基準・チェックリスト）を設計できる</td></tr><tr><th scope="row">会議運営・ファシリテーション</th><td class="g1">会議の準備物と流れを説明できる</td><td class="g2">準備・当日運営・議事録を補助として担える</td><td class="g3">論点設計から単独運営・ファシリテートまでできる</td><td class="g4">紛糾した会議を収束させ、合意形成を導ける</td><td class="g5">会議設計の型を標準化し、指導できる</td></tr><tr><th scope="row">顧客対応・折衝</th><td class="g1">報連相と敬語・訪問マナーを守れる</td><td class="g2">顧客からの依頼を正確に受け止め、上司に繋げられる</td><td class="g3">一次窓口として想定内の質問に即答し、仕様変更を合意できる</td><td class="g4">難しい要求・トラブルを収束させ、信頼を維持できる</td><td class="g5">顧客の組織全体との関係を設計・維持できる</td></tr><tr><th scope="row">営業・提案</th><td class="g1">商品と受注プロセスを説明できる</td><td class="g2">情報提供資料・見積書の作成補助、同行ができる</td><td class="g3">単独訪問〜予算化〜提案〜受注まで回せる</td><td class="g4">プロポーザルを主導し、単価と受注率を改善できる</td><td class="g5">エリア／テーマの受注戦略を設計し、目標に責任を持てる</td></tr><tr><th scope="row">プロジェクト管理・採算</th><td class="g1">工程表と体制図の意味を説明できる</td><td class="g2">自分の担当作業を期限内に完了できる</td><td class="g3">案件の工程・品質・採算を単独で管理できる</td><td class="g4">複数案件を同時に管理し、リスクを事前に回避できる</td><td class="g5">チーム全体のリソース配分と収益を管理できる</td></tr><tr><th scope="row">指導・組織貢献</th><td class="g1">自ら学び、質問できる</td><td class="g2">自分の作業手順をメモ化できる</td><td class="g3">手順書・ひな形を整備し、後輩の質問に答えられる</td><td class="g4">後輩のOJTを担当し、レビューで品質を担保できる</td><td class="g5">育成体系・業務標準を構築し、組織の生産性を上げられる</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  
+    <section id="ops" class="sec">
+      <header class="sec-head">
+        <p class="eyebrow">06　運用</p>
+        <h2>回し方と配布物</h2>
+      </header>
+      <div class="ops-grid">
+        <div>
+          <h3>運用サイクル</h3>
+          <ul class="ops"><li><span class="op-when">毎月</span><p>上長と本人で30分の面談。当月の学習項目と習得目標の達成状況を確認し、翌月の重点を決める。</p></li><li><span class="op-when">四半期</span><p>成果物レビューを1件必ず実施し、各項目の「確認方法」欄の方法で到達度を確認する。</p></li><li><span class="op-when">半期</span><p>個人別チェックシートで自己評価と上長評価を突き合わせ、差異の原因を対話する。</p></li><li><span class="op-when">年次</span><p>レベル判定を確定し、次年度の主担当・副担当テーマと育成計画を決定する。</p></li></ul>
+        </div>
+        <div>
+          <h3>配布する管理表</h3>
+          <ul class="files"><li><code>10_新人教育カリキュラム_マスター管理表.xlsx</code><p>16シート。階層定義・36ヶ月ロードマップ・テーマ別カリキュラム130項目・スキルマップ・個人別チェックシート・ルーブリック・教材リスト・年間カレンダー。</p></li><li><code>11_個人別_習得度チェックシート.xlsx</code><p>配布用の単票。24の評価項目に自己評価／上長評価／判定日／根拠となる実績を記入する。新人1名につき1ファイル。</p></li></ul>
+          <p class="note">前提：4月入社／育成期間36ヶ月／営業と業務の双方を担う総合職。中途入社は先にレベル判定を行い、該当レベルの月から開始する。制度改正（基本指針・報酬改定・会計基準・各省ガイドライン）が生じた際は、該当テーマの学習内容を年1回見直す。</p>
+        </div>
+      </div>
+    </section>
+  <footer class="foot">
+    <p>本カリキュラムは4月入社・育成期間36ヶ月・営業／業務の双方を担う総合職を前提としたモデルです。計画の「期」や制度の細目は年度により進行するため、案件着手時に必ず最新の法令・指針を確認してください。</p>
+  </footer>
+</main>
+<script>
+(function(){
+  var tabs=[].slice.call(document.querySelectorAll('.ytab'));
+  tabs.forEach(function(t){
+    t.addEventListener('click',function(){
+      tabs.forEach(function(o){
+        var on=o===t;
+        o.classList.toggle('is-on',on);
+        o.setAttribute('aria-selected',on?'true':'false');
+        document.getElementById('y'+o.dataset.y).hidden=!on;
+      });
+    });
+  });
+})();
+</script>
