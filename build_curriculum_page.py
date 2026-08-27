@@ -10,6 +10,7 @@ from build_curriculum import (
     LEVELS, LEVEL_TARGET, ROADMAP, SKILLMAP, RUBRIC, CALENDAR, THEMES,
     KOKAIKEI, KOEIKIGYO, KOREISHA, SHOGAI, CHIIKIFUKUSHI, KODOMO, SONOTA, KYOTSU,
 )
+from curriculum_sales import SALES_LEVELS, SALES_MATRIX, SALES_KIT, SALES_PREP
 
 OUT = "/tmp/claude-0/-home-user-repository/9fe4feb1-e025-51cd-8697-f63e2951be22/scratchpad/curriculum.html"
 e = html.escape
@@ -193,6 +194,126 @@ def sec_themes():
     </section>"""
 
 
+KIT_THEMES = ["公会計", "公営企業会計", "高齢者・介護保険", "障害者・障害児",
+              "地域福祉", "こども・子育て", "その他計画", "共通"]
+KIT_SLUG = {t: f"k{i}" for i, t in enumerate(KIT_THEMES)}
+
+
+def lv_from(text):
+    t = (text or "").strip()
+    for n in "12345":
+        if t.startswith("L" + n):
+            return n
+    return "0"
+
+
+def sec_sales():
+    # レベル定義
+    rungs = ""
+    for code, kata, konkyo, out, aite, seika, ng, when in SALES_LEVELS:
+        rungs += f"""
+        <li class="srung rung-{code[1:]}">
+          <div class="srung-head">
+            <span class="rung-code">{e(code)}</span>
+            <span class="rung-name">{e(kata)}</span>
+            <span class="rung-when">{e(when)}</span>
+          </div>
+          <dl class="srung-grid">
+            <div><dt>根拠にするもの</dt><dd>{e(konkyo)}</dd></div>
+            <div><dt>出してよい提案物</dt><dd>{e(out)}</dd></div>
+            <div><dt>会う相手</dt><dd>{e(aite)}</dd></div>
+            <div><dt>成果の目安</dt><dd>{e(seika)}</dd></div>
+            <div class="ng"><dt>やってはいけない</dt><dd>{e(ng)}</dd></div>
+          </dl>
+        </li>"""
+
+    # 深度マトリクス
+    mrows = ""
+    for axis, l1, l2, l3, l4, l5, note in SALES_MATRIX:
+        cells = "".join(f'<td class="g{i}">{e(t)}</td>' for i, t in enumerate((l1, l2, l3, l4, l5), 1))
+        mrows += (f'<tr><th scope="row">{e(axis)}</th>{cells}'
+                  f'<td class="cav">{e(note)}</td></tr>')
+
+    # 提案ネタ台帳
+    krows = ""
+    for theme, cat, name, use, lv, src in SALES_KIT:
+        fin = " is-fin" if cat == "財源" else ""
+        krows += (f'<tr class="krow{fin}" data-t="{KIT_SLUG.get(theme, "")}">'
+                  f'<td class="kt">{e(theme)}</td>'
+                  f'<td><span class="cat" data-c="{e(cat)}">{e(cat)}</span></td>'
+                  f'<td class="kn">{e(name)}</td>'
+                  f'<td>{e(use)}</td>'
+                  f'<td class="kl"><span class="lv lv{lv_from(lv)}">{e(lv)}</span></td>'
+                  f'<td class="ks">{e(src)}</td></tr>')
+    chips = '<button class="kchip is-on" data-f="all">すべて<span>' + str(len(SALES_KIT)) + '</span></button>'
+    for t in KIT_THEMES:
+        n = sum(1 for r in SALES_KIT if r[0] == t)
+        chips += f'<button class="kchip" data-f="{KIT_SLUG[t]}">{e(t)}<span>{n}</span></button>'
+
+    # 訪問前準備
+    prep = {}
+    for lv, item, todo, done in SALES_PREP:
+        prep.setdefault(lv, []).append((item, todo, done))
+    pblocks = ""
+    for lv in ("L1", "L2", "L3", "L4", "L5"):
+        if lv not in prep:
+            continue
+        lis = "".join(
+            f'<li><span class="pi">{e(a)}</span><p class="pt">{e(b)}</p>'
+            f'<p class="pd"><span class="k">完了の基準</span>{e(c)}</p></li>'
+            for a, b, c in prep[lv])
+        pblocks += (f'<div class="pgroup"><span class="lv lv{lv[1]}">{lv}</span>'
+                    f'<ul class="plist">{lis}</ul></div>')
+
+    fin_n = sum(1 for r in SALES_KIT if r[1] == "財源")
+    return f"""
+    <section id="sales" class="sec">
+      <header class="sec-head">
+        <p class="eyebrow">04　営業提案の深度</p>
+        <h2>同じテーマでも、レベルによって話してよい深さが違う</h2>
+        <p class="lead">背伸びした提案は、失注より重い事故を招く ── 財源の誤案内、他社を排除する仕様書案、未公表情報の持ち込み。
+        提案の材料を9つに分解し、レベルごとに「どこまで使うか」を定めた。</p>
+      </header>
+
+      <h3 class="sub-h">提案の型（L1〜L5）</h3>
+      <ol class="ladder srungs">{rungs}</ol>
+
+      <div class="warn">
+        <p><b>財源に関する原則</b>　補助金・地方債・交付税措置は、対象経費・補助率・充当率・措置率・適用期限が年度ごとに変わる。
+        本カリキュラムは「どの制度を、どのレベルで、どう使うか」を整理したものであり、
+        数値と期限は必ず当年度の要綱・通知・地方債同意等基準で確認してから顧客に提示すること。
+        L3未満は口頭でも数値を出さない。</p>
+      </div>
+
+      <h3 class="sub-h">提案素材 × レベル</h3>
+      <div class="tablewrap">
+        <table class="grid smatrix">
+          <thead><tr><th scope="col">提案素材</th><th scope="col">L1 説明する</th><th scope="col">L2 伝える</th>
+          <th scope="col">L3 当てはめる</th><th scope="col">L4 組み立てる</th><th scope="col">L5 創る</th>
+          <th scope="col">共通の注意</th></tr></thead>
+          <tbody>{mrows}</tbody>
+        </table>
+      </div>
+
+      <h3 class="sub-h">提案ネタ台帳 <span class="sub-n">{len(SALES_KIT)}件（うち財源 {fin_n}件）</span></h3>
+      <p class="sub-lead">国の指針、作成マニュアル、他自治体事例、補助金、起債などの財源、関連施策、現行計画の課題 ──
+      提案の材料を実名で並べたもの。赤い行が財源で、「計画に位置付けられていることが起債・補助の要件」という順序が、
+      計画策定業務の必要性を説明する最も強いロジックになる。</p>
+      <div class="kfilter">{chips}</div>
+      <div class="tablewrap">
+        <table class="grid kit">
+          <thead><tr><th scope="col">テーマ</th><th scope="col">区分</th><th scope="col">具体名（正式名称）</th>
+          <th scope="col">提案での使い方</th><th scope="col">使える<br>レベル</th><th scope="col">確認先・更新タイミング</th></tr></thead>
+          <tbody>{krows}</tbody>
+        </table>
+      </div>
+
+      <h3 class="sub-h">訪問前 準備チェックリスト</h3>
+      <p class="sub-lead">自分のレベルまでの項目をすべて満たしてから訪問する。準備が足りないまま訪問した回数だけ、その顧客での次の機会が遠のく。</p>
+      <div class="preps">{pblocks}</div>
+    </section>"""
+
+
 def sec_calendar():
     cells = ""
     peak = {"8月": "営業", "9月": "営業", "10月": "営業", "1月": "営業", "2月": "営業",
@@ -210,7 +331,7 @@ def sec_calendar():
     return f"""
     <section id="calendar" class="sec">
       <header class="sec-head">
-        <p class="eyebrow">04　年間サイクル</p>
+        <p class="eyebrow">05　年間サイクル</p>
         <h2>学習計画は自治体の年度に従属する</h2>
         <p class="lead">新人が「今月なにをやるか」は本人の習熟度だけでは決まらない。顧客の年度が決める。ロードマップの各月はこの表と対応している。</p>
       </header>
@@ -228,7 +349,7 @@ def sec_rubric():
     return f"""
     <section id="rubric" class="sec">
       <header class="sec-head">
-        <p class="eyebrow">05　評価ルーブリック</p>
+        <p class="eyebrow">06　評価ルーブリック</p>
         <h2>テーマ知識に依存しない9つの軸</h2>
         <p class="lead">テーマ別スキルマップと合わせて判定する。自己評価と上長評価に2段階以上の差が出た項目は、必ず面談で認識を合わせる。</p>
       </header>
@@ -255,7 +376,7 @@ def sec_ops():
     return f"""
     <section id="ops" class="sec">
       <header class="sec-head">
-        <p class="eyebrow">06　運用</p>
+        <p class="eyebrow">07　運用</p>
         <h2>回し方と配布物</h2>
       </header>
       <div class="ops-grid">
@@ -354,7 +475,7 @@ h1{font-size:clamp(29px,5vw,48px); line-height:1.3; margin:0 0 18px; max-width:1
 .sec-head{margin-bottom:clamp(26px,4vw,42px)}
 .eyebrow{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.16em; color:var(--accent);
   margin:0 0 12px}
-.sec h2{font-size:clamp(22px,3.2vw,32px); line-height:1.4; margin:0 0 14px; max-width:26ch}
+.sec h2{font-size:clamp(22px,3.2vw,32px); line-height:1.4; margin:0 0 14px; max-width:31ch}
 .lead{max-width:64ch; color:var(--ink-2); margin:0; font-size:14.5px}
 h3{font-size:17px; margin:0 0 14px}
 
@@ -491,6 +612,72 @@ h3{font-size:17px; margin:0 0 14px}
 footer.foot{padding:34px 0 46px; color:var(--ink-3); font-size:11.5px; letter-spacing:.04em}
 @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important; scroll-behavior:auto!important}}
 html{scroll-behavior:smooth}
+
+/* ---------- 営業提案セクション ---------- */
+.sub-h{font-size:17px; margin:38px 0 12px; padding-bottom:8px; border-bottom:1px solid var(--rule);
+  display:flex; align-items:baseline; gap:12px; flex-wrap:wrap}
+.sub-n{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--ink-3); font-weight:400}
+.sub-lead{margin:0 0 16px; font-size:13.5px; color:var(--ink-2); max-width:72ch}
+.srungs{gap:2px}
+.srung{background:var(--surface); border:1px solid var(--rule); border-left:5px solid var(--rule-2); padding:16px 20px}
+.srung.rung-1{border-left-color:var(--l1)} .srung.rung-2{border-left-color:var(--l2)}
+.srung.rung-3{border-left-color:var(--l3)} .srung.rung-4{border-left-color:var(--l4)} .srung.rung-5{border-left-color:var(--l5)}
+.srung-head{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:10px}
+.srung-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px 30px; margin:0}
+.srung-grid>div{display:grid; grid-template-columns:112px 1fr; gap:12px; align-items:baseline;
+  padding-bottom:6px; border-bottom:1px dashed var(--rule)}
+.srung-grid>div:nth-last-child(-n+1){border-bottom:0}
+.srung-grid dt{margin:0; font-size:10.5px; letter-spacing:.06em; color:var(--ink-3)}
+.srung-grid dd{margin:0; font-size:13px; color:var(--ink-2)}
+.srung-grid .ng{grid-column:1/-1; border-bottom:0}
+.srung-grid .ng dt{color:#B03A2E} .srung-grid .ng dd{color:var(--ink)}
+:root[data-theme="dark"] .srung-grid .ng dt{color:#E8897C}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .srung-grid .ng dt{color:#E8897C}}
+@media(max-width:820px){.srung-grid{grid-template-columns:1fr}}
+
+.warn{margin:26px 0 4px; border:1px solid var(--warm); border-left-width:5px;
+  background:var(--warm-soft); padding:15px 20px}
+.warn p{margin:0; font-size:13px; color:var(--ink); max-width:88ch}
+.warn b{color:var(--warm)}
+
+.smatrix tbody th{width:180px; color:var(--ink)}
+.smatrix .cav{background:var(--warm-soft); color:var(--ink-2); min-width:230px}
+
+.kfilter{display:flex; flex-wrap:wrap; gap:4px; margin:0 0 12px}
+.kchip{appearance:none; cursor:pointer; font-family:inherit; font-size:12px; padding:5px 12px;
+  border:1px solid var(--rule-2); background:var(--surface); color:var(--ink-2); border-radius:2px;
+  display:inline-flex; align-items:baseline; gap:7px}
+.kchip span{font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:var(--ink-3)}
+.kchip:hover{border-color:var(--accent); color:var(--ink)}
+.kchip.is-on{background:var(--accent); border-color:var(--accent); color:var(--paper)}
+.kchip.is-on span{color:var(--paper); opacity:.75}
+.kit{min-width:1080px; font-size:12.5px}
+.kit .kt{white-space:nowrap; width:120px; color:var(--ink); font-weight:500}
+.kit .kn{width:280px; color:var(--ink)}
+.kit .kl{width:78px; text-align:center; white-space:nowrap}
+.kit .ks{width:190px; font-size:11.5px; color:var(--ink-3)}
+.kit tr.is-fin .kn{color:#B03A2E; font-weight:700}
+.kit tr.is-fin .ks{color:#B03A2E}
+:root[data-theme="dark"] .kit tr.is-fin .kn,:root[data-theme="dark"] .kit tr.is-fin .ks{color:#EE9C90}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .kit tr.is-fin .kn,
+  :root:not([data-theme="light"]) .kit tr.is-fin .ks{color:#EE9C90}}
+.cat{display:inline-block; font-size:10.5px; padding:2px 8px; border-radius:2px; white-space:nowrap;
+  background:var(--surface-2); color:var(--ink-2); border:1px solid var(--rule-2)}
+.cat[data-c="財源"]{background:#B03A2E; color:#fff; border-color:#B03A2E}
+.cat[data-c="現行課題"]{background:var(--warm); color:var(--paper); border-color:var(--warm)}
+.cat[data-c="指針"],.cat[data-c="マニュアル"],.cat[data-c="ガイドライン"]{background:var(--accent); color:var(--paper); border-color:var(--accent)}
+.cat[data-c="注意"]{background:#7C2D22; color:#fff; border-color:#7C2D22}
+
+.preps{display:grid; gap:2px}
+.pgroup{background:var(--surface); border:1px solid var(--rule); padding:16px 20px;
+  display:grid; grid-template-columns:44px 1fr; gap:18px; align-items:start}
+.plist{list-style:none; margin:0; padding:0; display:grid; gap:12px}
+.plist li{display:grid; grid-template-columns:170px 1fr; gap:6px 18px}
+.pi{font-weight:700; font-size:13px; grid-row:span 2}
+.pt{margin:0; font-size:13px; color:var(--ink-2)}
+.pd{margin:0; font-size:12px; color:var(--ink-3)}
+@media(max-width:760px){.pgroup{grid-template-columns:1fr; gap:10px}
+  .plist li{grid-template-columns:1fr} .pi{grid-row:auto}}
 """
 
 JS = """
@@ -504,6 +691,16 @@ JS = """
         o.setAttribute('aria-selected',on?'true':'false');
         document.getElementById('y'+o.dataset.y).hidden=!on;
       });
+    });
+  });
+
+  var chips=[].slice.call(document.querySelectorAll('.kchip')),
+      rows=[].slice.call(document.querySelectorAll('.krow'));
+  chips.forEach(function(c){
+    c.addEventListener('click',function(){
+      chips.forEach(function(o){o.classList.toggle('is-on',o===c);});
+      var f=c.dataset.f;
+      rows.forEach(function(r){ r.hidden = !(f==='all' || r.dataset.t===f); });
     });
   });
 })();
@@ -529,7 +726,8 @@ def build():
       <li><b>8</b><span>テーマ</span></li>
       <li><b>{n_items}</b><span>学習項目</span></li>
       <li><b>L0–L5</b><span>階層区分</span></li>
-      <li><b>24</b><span>評価項目</span></li>
+      <li><b>{len(SALES_KIT)}</b><span>営業の提案ネタ</span></li>
+      <li><b>33</b><span>評価項目</span></li>
     </ul>
   </div>
 </header>
@@ -539,9 +737,10 @@ def build():
     <a href="#levels"><span class="n">01</span>階層</a>
     <a href="#roadmap"><span class="n">02</span>月次ロードマップ</a>
     <a href="#themes"><span class="n">03</span>テーマ別到達基準</a>
-    <a href="#calendar"><span class="n">04</span>年間サイクル</a>
-    <a href="#rubric"><span class="n">05</span>評価ルーブリック</a>
-    <a href="#ops"><span class="n">06</span>運用</a>
+    <a href="#sales"><span class="n">04</span>営業提案の深度</a>
+    <a href="#calendar"><span class="n">05</span>年間サイクル</a>
+    <a href="#rubric"><span class="n">06</span>評価ルーブリック</a>
+    <a href="#ops"><span class="n">07</span>運用</a>
   </div>
 </nav>
 
@@ -549,6 +748,7 @@ def build():
   {sec_levels()}
   {sec_roadmap()}
   {sec_themes()}
+  {sec_sales()}
   {sec_calendar()}
   {sec_rubric()}
   {sec_ops()}

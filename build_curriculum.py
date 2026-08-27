@@ -12,6 +12,8 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
+from curriculum_sales import SALES_LEVELS, SALES_MATRIX, SALES_KIT, SALES_PREP
+
 OUT_DIR = "/home/user/repository/output"
 os.makedirs(OUT_DIR, exist_ok=True)
 
@@ -1272,6 +1274,19 @@ MATERIALS = [
 # ============================================================
 # 8. 個人別 習得度チェックシートの評価項目
 # ============================================================
+SALES_CHECK = [
+    ("① 国の指針・基本方針", ("L2", "L3", "L4")),
+    ("② 作成マニュアル・手引き・ツール", ("L2", "L3", "L4")),
+    ("③ 他自治体事例", ("L2", "L3", "L4")),
+    ("④ 補助金・交付金", ("L1〜L2", "L3", "L4")),
+    ("⑤ 起債・交付税措置・その他財源", ("L1", "L3", "L4")),
+    ("⑥ 関連施策・関連計画", ("L2", "L3", "L4")),
+    ("⑦ 現行計画の課題（進捗評価）", ("L2", "L3", "L4")),
+    ("⑧ 都道府県の動き", ("L1〜L2", "L3", "L4")),
+    ("⑨ 見積・契約条件", ("L1〜L2", "L3", "L3〜L4")),
+]
+
+
 def build_checkitems():
     items = []
     n = 0
@@ -1284,6 +1299,9 @@ def build_checkitems():
         else:
             exp = ("L2", "L3", "L3〜L4")
         items.append([n, "テーマ別", f"{theme}／{area}", exp[0], exp[1], exp[2], "", "", "", "", ""])
+    for axis, exp in SALES_CHECK:
+        n += 1
+        items.append([n, "営業提案", axis, exp[0], exp[1], exp[2], "", "", "", "", ""])
     for axis, *_ in RUBRIC:
         n += 1
         exp = {
@@ -1366,6 +1384,10 @@ def sheet_intro(wb):
             "13_評価ルーブリック　… レベル判定の共通基準（9つの評価軸）",
             "14_教材・参考資料　　… 法令・指針・統計・社内資料のリスト",
             "15_年間業務カレンダー… 自治体の年度サイクルと当社の営業／業務の繁閑",
+            "16_営業提案レベル定義… 営業提案をどこまで踏み込んでよいか（レベル別）",
+            "17_営業提案 深度マトリクス… 提案素材9種 × L1〜L5 の踏み込み範囲",
+            "18_テーマ別 提案ネタ台帳… 指針・マニュアル・事例・補助金・起債・関連施策・現行課題の一覧",
+            "19_訪問前 準備チェックリスト… レベル別に、訪問前に済ませておくこと",
         ]),
         ("4. 運用サイクル（推奨）", [
             "毎月　　… 上長と本人で30分の面談。当月の学習項目と習得目標の達成状況を確認し、翌月の重点を決める。",
@@ -1549,6 +1571,94 @@ def sheet_calendar(wb):
     return ws
 
 
+def sheet_sales_levels(wb):
+    ws = wb.create_sheet("16_営業提案レベル定義")
+    ws.sheet_properties.tabColor = "ED7D31"
+    put_title(ws, "営業提案レベル定義（どこまで踏み込むか）",
+              "同じテーマでも、レベルによって「話してよい深さ」と「出してよい提案物」が変わる。背伸びした提案は失注より重い事故（財源の誤案内・官製談合の疑い）を招く。",
+              8)
+    put_header(ws, 4, ["Lv", "提案の型", "何を根拠に話すか", "提案物（アウトプット）",
+                       "会う相手", "成果の目安", "やってはいけないこと", "目安\n時期"],
+               [6, 26, 44, 38, 20, 30, 44, 12], fill=C["障がい"])
+    last = put_rows(ws, 5, SALES_LEVELS, center_cols=(1, 8), level_col=1)
+    r = last + 1
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=8)
+    c = ws.cell(row=r, column=1,
+                value="【原則】ひとつ上のレベルの提案物を出すときは、必ず上長のレビューを通すこと。"
+                      "特に財源（補助金・地方債・交付税措置）に関する数値と期限は、当年度の要綱・通知・"
+                      "地方債同意等基準で確認してからでなければ、口頭でも提示しない。")
+    c.font = Font(name="Meiryo UI", size=9, bold=True, color="C00000")
+    c.fill = PatternFill("solid", fgColor=C["note"])
+    c.alignment = AL_WRAP
+    c.border = BORDER
+    ws.row_dimensions[r].height = 34
+    return ws
+
+
+def sheet_sales_matrix(wb):
+    ws = wb.create_sheet("17_営業提案 深度マトリクス")
+    ws.sheet_properties.tabColor = "C55A11"
+    put_title(ws, "営業提案 深度マトリクス（提案素材 × レベル）",
+              "提案の材料を9つに分解し、レベルごとに「どこまで使うか」を定めたもの。訪問前に自分のレベルの列を読み、超えている材料は上長に同行を依頼する。",
+              7)
+    put_header(ws, 4, ["提案素材", "L1 説明する", "L2 伝える", "L3 当てはめる",
+                       "L4 組み立てる", "L5 創る", "共通の注意"],
+               [26, 30, 36, 44, 40, 36, 40], fill=C["障がい"])
+    last = put_rows(ws, 5, SALES_MATRIX)
+    for r in range(5, last):
+        for col, key in ((2, "L1"), (3, "L2"), (4, "L3"), (5, "L4"), (6, "L5")):
+            ws.cell(row=r, column=col).fill = PatternFill("solid", fgColor=C[key])
+        ws.cell(row=r, column=1).font = F_BOLD
+        cc = ws.cell(row=r, column=7)
+        cc.fill = PatternFill("solid", fgColor=C["note"])
+        cc.font = Font(name="Meiryo UI", size=9, color="843C0C")
+    return ws
+
+
+def sheet_sales_kit(wb):
+    ws = wb.create_sheet("18_テーマ別 提案ネタ台帳")
+    ws.sheet_properties.tabColor = "843C0C"
+    put_title(ws, "テーマ別 提案ネタ台帳（指針・マニュアル・事例・財源・関連施策・現行課題）",
+              "テーマ列でフィルタして使う。財源（補助金・地方債・交付税措置）は対象経費・率・期限が年度で変わるため、"
+              "顧客に提示する前に必ず「確認先」欄の当年度資料で裏を取ること。", 6)
+    put_header(ws, 4, ["テーマ", "素材区分", "具体名（正式名称）", "提案での使い方（何を言うか）",
+                       "使える\nレベル", "確認先・更新タイミング"],
+               [20, 12, 52, 66, 11, 34], fill=C["障がい"])
+    last = put_rows(ws, 5, SALES_KIT, center_cols=(2, 5),
+                    band_col=2,
+                    band_colors={"指針": "5B9BD5", "マニュアル": "5B9BD5", "ガイドライン": "5B9BD5",
+                                 "ツール": "7F7F7F", "調査": "7F7F7F",
+                                 "財源": "C00000", "制度": "7030A0",
+                                 "関連施策": "70AD47", "現行課題": "ED7D31",
+                                 "事例": "4472C4", "県の動き": "2E75B6",
+                                 "発注情報": "808000", "注意": "C00000"})
+    # 財源行を目立たせる
+    for r in range(5, last):
+        if str(ws.cell(row=r, column=2).value or "").startswith("財源"):
+            ws.cell(row=r, column=6).font = Font(name="Meiryo UI", size=9, bold=True, color="C00000")
+    add_filter(ws, 4, 6, last - 1)
+    return ws
+
+
+def sheet_sales_prep(wb):
+    ws = wb.create_sheet("19_訪問前 準備チェックリスト")
+    ws.sheet_properties.tabColor = "FFC000"
+    put_title(ws, "訪問前 準備チェックリスト（レベル別）",
+              "自分のレベルまでの項目をすべて満たしてから訪問する。準備が足りないまま訪問した回数だけ、"
+              "そのお客様での次の機会が遠のく。", 6)
+    put_header(ws, 4, ["Lv", "準備項目", "具体的にやること", "完了の基準", "実施\n✓", "備考"],
+               [6, 22, 62, 42, 7, 26], fill=C["障がい"])
+    rows = [list(r) + ["", ""] for r in SALES_PREP]
+    last = put_rows(ws, 5, rows, center_cols=(1, 5), level_col=1)
+    dv = DataValidation(type="list", formula1='"✓,―"', allow_blank=True, showDropDown=False)
+    ws.add_data_validation(dv)
+    dv.add(f"E5:E{last - 1}")
+    for r in range(5, last):
+        ws.cell(row=r, column=5).fill = PatternFill("solid", fgColor="FFF2CC")
+    add_filter(ws, 4, 6, last - 1)
+    return ws
+
+
 # ============================================================
 # main
 # ============================================================
@@ -1565,6 +1675,10 @@ def main():
     sheet_rubric(wb)
     sheet_materials(wb)
     sheet_calendar(wb)
+    sheet_sales_levels(wb)
+    sheet_sales_matrix(wb)
+    sheet_sales_kit(wb)
+    sheet_sales_prep(wb)
     p1 = os.path.join(OUT_DIR, "10_新人教育カリキュラム_マスター管理表.xlsx")
     wb.save(p1)
 
@@ -1574,6 +1688,7 @@ def main():
     sheet_check(wb2, standalone=True)
     sheet_rubric(wb2)
     sheet_skillmap(wb2)
+    sheet_sales_matrix(wb2)
     p2 = os.path.join(OUT_DIR, "11_個人別_習得度チェックシート.xlsx")
     wb2.save(p2)
 
@@ -1581,6 +1696,7 @@ def main():
     print(f"作成: {p1}")
     print(f"作成: {p2}")
     print(f"　月次ロードマップ: {len(ROADMAP)}ヶ月 / テーマ別学習項目: {total}項目 / スキルマップ: {len(SKILLMAP)}行 / 評価項目: {len(build_checkitems())}項目")
+    print(f"　営業: レベル定義{len(SALES_LEVELS)}段階 / 深度マトリクス{len(SALES_MATRIX)}素材 / 提案ネタ台帳{len(SALES_KIT)}件 / 準備チェック{len(SALES_PREP)}項目")
 
 
 if __name__ == "__main__":

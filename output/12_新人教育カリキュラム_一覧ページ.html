@@ -84,7 +84,7 @@ h1{font-size:clamp(29px,5vw,48px); line-height:1.3; margin:0 0 18px; max-width:1
 .sec-head{margin-bottom:clamp(26px,4vw,42px)}
 .eyebrow{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.16em; color:var(--accent);
   margin:0 0 12px}
-.sec h2{font-size:clamp(22px,3.2vw,32px); line-height:1.4; margin:0 0 14px; max-width:26ch}
+.sec h2{font-size:clamp(22px,3.2vw,32px); line-height:1.4; margin:0 0 14px; max-width:31ch}
 .lead{max-width:64ch; color:var(--ink-2); margin:0; font-size:14.5px}
 h3{font-size:17px; margin:0 0 14px}
 
@@ -221,6 +221,72 @@ h3{font-size:17px; margin:0 0 14px}
 footer.foot{padding:34px 0 46px; color:var(--ink-3); font-size:11.5px; letter-spacing:.04em}
 @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important; scroll-behavior:auto!important}}
 html{scroll-behavior:smooth}
+
+/* ---------- 営業提案セクション ---------- */
+.sub-h{font-size:17px; margin:38px 0 12px; padding-bottom:8px; border-bottom:1px solid var(--rule);
+  display:flex; align-items:baseline; gap:12px; flex-wrap:wrap}
+.sub-n{font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--ink-3); font-weight:400}
+.sub-lead{margin:0 0 16px; font-size:13.5px; color:var(--ink-2); max-width:72ch}
+.srungs{gap:2px}
+.srung{background:var(--surface); border:1px solid var(--rule); border-left:5px solid var(--rule-2); padding:16px 20px}
+.srung.rung-1{border-left-color:var(--l1)} .srung.rung-2{border-left-color:var(--l2)}
+.srung.rung-3{border-left-color:var(--l3)} .srung.rung-4{border-left-color:var(--l4)} .srung.rung-5{border-left-color:var(--l5)}
+.srung-head{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; margin-bottom:10px}
+.srung-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px 30px; margin:0}
+.srung-grid>div{display:grid; grid-template-columns:112px 1fr; gap:12px; align-items:baseline;
+  padding-bottom:6px; border-bottom:1px dashed var(--rule)}
+.srung-grid>div:nth-last-child(-n+1){border-bottom:0}
+.srung-grid dt{margin:0; font-size:10.5px; letter-spacing:.06em; color:var(--ink-3)}
+.srung-grid dd{margin:0; font-size:13px; color:var(--ink-2)}
+.srung-grid .ng{grid-column:1/-1; border-bottom:0}
+.srung-grid .ng dt{color:#B03A2E} .srung-grid .ng dd{color:var(--ink)}
+:root[data-theme="dark"] .srung-grid .ng dt{color:#E8897C}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .srung-grid .ng dt{color:#E8897C}}
+@media(max-width:820px){.srung-grid{grid-template-columns:1fr}}
+
+.warn{margin:26px 0 4px; border:1px solid var(--warm); border-left-width:5px;
+  background:var(--warm-soft); padding:15px 20px}
+.warn p{margin:0; font-size:13px; color:var(--ink); max-width:88ch}
+.warn b{color:var(--warm)}
+
+.smatrix tbody th{width:180px; color:var(--ink)}
+.smatrix .cav{background:var(--warm-soft); color:var(--ink-2); min-width:230px}
+
+.kfilter{display:flex; flex-wrap:wrap; gap:4px; margin:0 0 12px}
+.kchip{appearance:none; cursor:pointer; font-family:inherit; font-size:12px; padding:5px 12px;
+  border:1px solid var(--rule-2); background:var(--surface); color:var(--ink-2); border-radius:2px;
+  display:inline-flex; align-items:baseline; gap:7px}
+.kchip span{font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:var(--ink-3)}
+.kchip:hover{border-color:var(--accent); color:var(--ink)}
+.kchip.is-on{background:var(--accent); border-color:var(--accent); color:var(--paper)}
+.kchip.is-on span{color:var(--paper); opacity:.75}
+.kit{min-width:1080px; font-size:12.5px}
+.kit .kt{white-space:nowrap; width:120px; color:var(--ink); font-weight:500}
+.kit .kn{width:280px; color:var(--ink)}
+.kit .kl{width:78px; text-align:center; white-space:nowrap}
+.kit .ks{width:190px; font-size:11.5px; color:var(--ink-3)}
+.kit tr.is-fin .kn{color:#B03A2E; font-weight:700}
+.kit tr.is-fin .ks{color:#B03A2E}
+:root[data-theme="dark"] .kit tr.is-fin .kn,:root[data-theme="dark"] .kit tr.is-fin .ks{color:#EE9C90}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .kit tr.is-fin .kn,
+  :root:not([data-theme="light"]) .kit tr.is-fin .ks{color:#EE9C90}}
+.cat{display:inline-block; font-size:10.5px; padding:2px 8px; border-radius:2px; white-space:nowrap;
+  background:var(--surface-2); color:var(--ink-2); border:1px solid var(--rule-2)}
+.cat[data-c="財源"]{background:#B03A2E; color:#fff; border-color:#B03A2E}
+.cat[data-c="現行課題"]{background:var(--warm); color:var(--paper); border-color:var(--warm)}
+.cat[data-c="指針"],.cat[data-c="マニュアル"],.cat[data-c="ガイドライン"]{background:var(--accent); color:var(--paper); border-color:var(--accent)}
+.cat[data-c="注意"]{background:#7C2D22; color:#fff; border-color:#7C2D22}
+
+.preps{display:grid; gap:2px}
+.pgroup{background:var(--surface); border:1px solid var(--rule); padding:16px 20px;
+  display:grid; grid-template-columns:44px 1fr; gap:18px; align-items:start}
+.plist{list-style:none; margin:0; padding:0; display:grid; gap:12px}
+.plist li{display:grid; grid-template-columns:170px 1fr; gap:6px 18px}
+.pi{font-weight:700; font-size:13px; grid-row:span 2}
+.pt{margin:0; font-size:13px; color:var(--ink-2)}
+.pd{margin:0; font-size:12px; color:var(--ink-3)}
+@media(max-width:760px){.pgroup{grid-template-columns:1fr; gap:10px}
+  .plist li{grid-template-columns:1fr} .pi{grid-row:auto}}
 </style>
 
 <header class="masthead">
@@ -234,7 +300,8 @@ html{scroll-behavior:smooth}
       <li><b>8</b><span>テーマ</span></li>
       <li><b>131</b><span>学習項目</span></li>
       <li><b>L0–L5</b><span>階層区分</span></li>
-      <li><b>24</b><span>評価項目</span></li>
+      <li><b>107</b><span>営業の提案ネタ</span></li>
+      <li><b>33</b><span>評価項目</span></li>
     </ul>
   </div>
 </header>
@@ -244,9 +311,10 @@ html{scroll-behavior:smooth}
     <a href="#levels"><span class="n">01</span>階層</a>
     <a href="#roadmap"><span class="n">02</span>月次ロードマップ</a>
     <a href="#themes"><span class="n">03</span>テーマ別到達基準</a>
-    <a href="#calendar"><span class="n">04</span>年間サイクル</a>
-    <a href="#rubric"><span class="n">05</span>評価ルーブリック</a>
-    <a href="#ops"><span class="n">06</span>運用</a>
+    <a href="#sales"><span class="n">04</span>営業提案の深度</a>
+    <a href="#calendar"><span class="n">05</span>年間サイクル</a>
+    <a href="#rubric"><span class="n">06</span>評価ルーブリック</a>
+    <a href="#ops"><span class="n">07</span>運用</a>
   </div>
 </nav>
 
@@ -1246,9 +1314,125 @@ html{scroll-behavior:smooth}
       </article></div>
     </section>
   
+    <section id="sales" class="sec">
+      <header class="sec-head">
+        <p class="eyebrow">04　営業提案の深度</p>
+        <h2>同じテーマでも、レベルによって話してよい深さが違う</h2>
+        <p class="lead">背伸びした提案は、失注より重い事故を招く ── 財源の誤案内、他社を排除する仕様書案、未公表情報の持ち込み。
+        提案の材料を9つに分解し、レベルごとに「どこまで使うか」を定めた。</p>
+      </header>
+
+      <h3 class="sub-h">提案の型（L1〜L5）</h3>
+      <ol class="ladder srungs">
+        <li class="srung rung-1">
+          <div class="srung-head">
+            <span class="rung-code">L1</span>
+            <span class="rung-name">説明する（商品を知ってもらう）</span>
+            <span class="rung-when">1〜6ヶ月</span>
+          </div>
+          <dl class="srung-grid">
+            <div><dt>根拠にするもの</dt><dd>自社の商品説明資料／その計画の根拠法・計画期間・所管省庁という一般知識</dd></div>
+            <div><dt>出してよい提案物</dt><dd>会社案内、商品一覧、実績一覧</dd></div>
+            <div><dt>会う相手</dt><dd>担当者（先輩に同行）</dd></div>
+            <div><dt>成果の目安</dt><dd>顔と社名を覚えてもらう／次回訪問のアポイントが取れる</dd></div>
+            <div class="ng"><dt>やってはいけない</dt><dd>制度をうろ覚えのまま語る／単価・納期をその場で答える（必ず「持ち帰って確認します」）</dd></div>
+          </dl>
+        </li>
+        <li class="srung rung-2">
+          <div class="srung-head">
+            <span class="rung-code">L2</span>
+            <span class="rung-name">伝える（国の動きを届ける）</span>
+            <span class="rung-when">6〜12ヶ月</span>
+          </div>
+          <dl class="srung-grid">
+            <div><dt>根拠にするもの</dt><dd>国の指針・通知・審議会資料／作成マニュアル・手引き／公表済みの他自治体事例</dd></div>
+            <div><dt>出してよい提案物</dt><dd>国の動向まとめ1枚、策定年度を逆算したスケジュール表、事例集（出典付き）</dd></div>
+            <div><dt>会う相手</dt><dd>担当者（単独可）、係長</dd></div>
+            <div><dt>成果の目安</dt><dd>「そろそろ考えないと」と言わせる／次年度の検討テーブルに載る</dd></div>
+            <div class="ng"><dt>やってはいけない</dt><dd>未確定の制度改正を断定する／事例を出典なしで語る／他団体から聞いた未公表情報を持ち込む</dd></div>
+          </dl>
+        </li>
+        <li class="srung rung-3">
+          <div class="srung-head">
+            <span class="rung-code">L3</span>
+            <span class="rung-name">当てはめる（その団体の課題として示す）</span>
+            <span class="rung-when">12〜24ヶ月</span>
+          </div>
+          <dl class="srung-grid">
+            <div><dt>根拠にするもの</dt><dd>L2＋その団体の現行計画・実績データ・決算・経営指標・議会議事録を読み込んだ課題仮説／該当しうる財源（補助金・起債）を最低1つ</dd></div>
+            <div><dt>出してよい提案物</dt><dd>課題整理メモ1枚、業務内容案、工程表、参考見積、（求められれば）仕様書案</dd></div>
+            <div><dt>会う相手</dt><dd>係長・課長補佐</dd></div>
+            <div><dt>成果の目安</dt><dd>予算要求に載る（＝翌年度の発注が固まる）</dd></div>
+            <div class="ng"><dt>やってはいけない</dt><dd>財源の要件・補助率・期限を確認せずに「使えます」と断定する／仕様書案に自社しか対応できない条件を書く（官製談合を疑われる）</dd></div>
+          </dl>
+        </li>
+        <li class="srung rung-4">
+          <div class="srung-head">
+            <span class="rung-code">L4</span>
+            <span class="rung-name">組み立てる（実行案にする）</span>
+            <span class="rung-when">24〜36ヶ月</span>
+          </div>
+          <dl class="srung-grid">
+            <div><dt>根拠にするもの</dt><dd>L3＋関連施策・関連計画との連動／複数年の財源スキーム／庁内体制／議会・住民への説明の段取り</dd></div>
+            <div><dt>出してよい提案物</dt><dd>複数年ロードマップ、財源スキーム表（補助／起債／交付税措置／基金／使用料）、庁内体制案、企画提案書、プレゼン</dd></div>
+            <div><dt>会う相手</dt><dd>課長・部長／所管の異なる複数課へ同時に</dd></div>
+            <div><dt>成果の目安</dt><dd>複数年・複数計画の一括受注／単価の維持・改善</dd></div>
+            <div class="ng"><dt>やってはいけない</dt><dd>実現できない体制・工程を約束する／他部署の予算獲得を前提に話を進める</dd></div>
+          </dl>
+        </li>
+        <li class="srung rung-5">
+          <div class="srung-head">
+            <span class="rung-code">L5</span>
+            <span class="rung-name">創る（制度の先を読んでスキームにする）</span>
+            <span class="rung-when">48ヶ月〜</span>
+          </div>
+          <dl class="srung-grid">
+            <div><dt>根拠にするもの</dt><dd>審議会・検討会の議論段階からの先読み／国・都道府県の政策動向／広域・共同のスキーム設計</dd></div>
+            <div><dt>出してよい提案物</dt><dd>政策提言、広域・共同スキーム案、新商品、都道府県への提案、セミナー・研修</dd></div>
+            <div><dt>会う相手</dt><dd>部長・副市長／都道府県／複数団体の合同</dd></div>
+            <div><dt>成果の目安</dt><dd>県単位・圏域単位の案件組成／新市場の立ち上げ</dd></div>
+            <div class="ng"><dt>やってはいけない</dt><dd>自社の受注ありきの提言と受け取られる／ある団体から得た情報を他団体の提案に流用する</dd></div>
+          </dl>
+        </li></ol>
+
+      <div class="warn">
+        <p><b>財源に関する原則</b>　補助金・地方債・交付税措置は、対象経費・補助率・充当率・措置率・適用期限が年度ごとに変わる。
+        本カリキュラムは「どの制度を、どのレベルで、どう使うか」を整理したものであり、
+        数値と期限は必ず当年度の要綱・通知・地方債同意等基準で確認してから顧客に提示すること。
+        L3未満は口頭でも数値を出さない。</p>
+      </div>
+
+      <h3 class="sub-h">提案素材 × レベル</h3>
+      <div class="tablewrap">
+        <table class="grid smatrix">
+          <thead><tr><th scope="col">提案素材</th><th scope="col">L1 説明する</th><th scope="col">L2 伝える</th>
+          <th scope="col">L3 当てはめる</th><th scope="col">L4 組み立てる</th><th scope="col">L5 創る</th>
+          <th scope="col">共通の注意</th></tr></thead>
+          <tbody><tr><th scope="row">① 国の指針・基本方針</th><td class="g1">根拠法と所管省庁の名前を挙げ、「国の指針に基づく計画です」と言える。</td><td class="g2">現行指針の重点事項を3つに絞って説明し、次期指針の改正スケジュール（審議会→告示→国の説明会→県の説明会）を示せる。</td><td class="g3">指針の必須記載事項と相手の現行計画を突合し、「この項目が薄い／未記載」と具体的に指摘できる。</td><td class="g4">次期指針の方向性を先読みし、改正を前提とした業務設計（骨子は告示後に確定、それまでは調査・分析を先行）と工程を提案できる。</td><td class="g5">審議会・検討会の議論段階から論点を読み、指針改正が自治体運営に与える影響を政策提言として整理できる。</td><td class="cav">指針は期ごとに改正される。必ず最新版の告示・通知を確認し、「改正見込み」と「確定事項」を区別して話す。</td></tr><tr><th scope="row">② 作成マニュアル・手引き・ツール</th><td class="g1">該当するマニュアル・手引きの名称を挙げられる。</td><td class="g2">マニュアルが定める作業手順を説明し、自治体が自前でできる範囲／外注が必要な範囲を仕分けられる。</td><td class="g3">国のツール（見える化システム、保険料算定ワークシート、量の見込み算出手引き、更新費用試算ソフト等）の使用を前提に業務範囲を切り分け、工数と見積の根拠として示せる。</td><td class="g4">標準手順に自治体固有の事情（データ不備、体制不足、既存計画との整合）を織り込んだ実施方針を提案できる。</td><td class="g5">マニュアルが実務で使いにくい部分を補う独自手法・ツールを商品として提示できる。</td><td class="cav">「国のツールを使う」＝推計根拠が議会説明に耐えるということ。品質の裏付けとして使う。</td></tr><tr><th scope="row">③ 他自治体事例</th><td class="g1">自社の受注実績（団体名・業務名）を挙げられる。</td><td class="g2">近隣・同規模・同課題の団体の公表事例を、出典付きで3件示せる。</td><td class="g3">相手の課題に対応する事例を選び、「なぜその団体で機能したか（前提条件）」と自団体との差を説明できる。</td><td class="g4">複数の事例を組み合わせて自団体向けのモデル案（体制・工程・成果物イメージ）に翻案し、視察・ヒアリングの段取りまで提案できる。</td><td class="g5">自社が支援した事例を先進事例として発信し（セミナー・記事・県の研修）、事例そのものを引き合いの入口にできる。</td><td class="cav">事例は公表資料のみを使う。ある団体で得た未公表情報を他団体に持ち込まない（信用を一度で失う）。</td></tr><tr><th scope="row">④ 補助金・交付金</th><td class="g1">「補助が使える場合があります」と伝え、担当者に確認を促せる。</td><td class="g2">該当しうる補助金・交付金の名称と所管を挙げ、例年の要望調査・内示の時期を伝えられる。</td><td class="g3">補助対象経費・補助率・要望ルート（国直か県経由か）を当年度の要綱で確認した上で、「この業務のこの部分が対象になり得る」と切り分けて提案できる。</td><td class="g4">要望時期から逆算した複数年の実施計画を組み、補助非対象部分を一般財源・起債と組み合わせた財源スキームとして提示できる。</td><td class="g5">補助メニューの新設・拡充を先読みし、要望の前年度から自治体と一緒に仕込む提案ができる。</td><td class="cav">可否の判断は所管課と県。「使えます」と断定せず「対象になり得るので要綱で確認を」と伝える。要綱は毎年度変わる。</td></tr><tr><th scope="row">⑤ 起債・交付税措置・その他財源</th><td class="g1">地方債・交付税措置という財源の枠組みがあることを説明できる。</td><td class="g2">該当する地方債メニュー（公営企業債、公営企業会計適用債、公共施設等適正管理推進事業債等）の名称を挙げられる。</td><td class="g3">充当率・交付税措置率と、何より【計画への位置付けが起債の要件であること】を確認し、「計画に書かないと起債できない」という順序で業務の必要性を説明できる。</td><td class="g4">起債・補助・基金・繰入金・使用料改定を組み合わせた財源スキーム表を作り、財政課・企業局を巻き込んだ提案ができる。</td><td class="g5">措置の延長・拡充の動向を踏まえ、適用期限を跨ぐ複数年の投資・財政計画として設計できる。</td><td class="cav">【最重要】充当率・措置率・対象事業・適用期限は年度で変わる。必ず当年度の地方債計画・地方債同意等基準・総務省通知で確認してから数値を出す。</td></tr><tr><th scope="row">⑥ 関連施策・関連計画</th><td class="g1">隣接する計画の名前を挙げられる。</td><td class="g2">計画間の上下・並列関係（総合計画→分野別計画、地域福祉計画＝福祉分野の共通事項）を図で説明できる。</td><td class="g3">相手団体の計画期間一覧を作り、同時改定・一体策定が可能な組み合わせと、その効率化（調査の共通化、委員会の合同開催、資料編の共用）を示せる。</td><td class="g4">庁内の複数課に同時提案し、所管が分かれる計画をひとつの業務として束ねる体制・分担案を提示できる。</td><td class="g5">分野を跨ぐ政策課題（人口減少、担い手不足、公共施設）を軸に、計画体系そのものの再編を提案できる。</td><td class="cav">束ねる提案は自治体側の事務負担軽減が主目的。「安くなる」ではなく「整合が取れ、庁内調整が減る」で語る。</td></tr><tr><th scope="row">⑦ 現行計画の課題（進捗評価）</th><td class="g1">現行計画を入手し、計画期間・構成・数値目標の有無を確認できる。</td><td class="g2">数値目標の達成状況を実績データと突合し、未達項目を一覧化できる。</td><td class="g3">未達の原因を構造的に整理し（体制／財源／需要変化／指標設計の問題）、次期計画で手当てすべき論点として提示できる。</td><td class="g4">課題の解決を業務内容に落とし込み（指標の再設計、実態調査の追加、策定後の体制構築支援）、標準的な策定業務より高い価値の提案ができる。</td><td class="g5">「計画を作る業務」から「課題を解決する業務」へ提案を転換し、策定後の伴走支援・運用支援を商品化できる。</td><td class="cav">課題の指摘は担当者個人の否定にならないよう、制度・環境要因から入る。前任者批判に聞こえた時点で失注する。</td></tr><tr><th scope="row">⑧ 都道府県の動き</th><td class="g1">都道府県にも対応する計画（支援計画）があることを知っている。</td><td class="g2">県の支援計画・広域方針の内容と、県の説明会・研修の時期を伝えられる。</td><td class="g3">県の方針が市町村計画に課す制約（圏域設定、施設整備の調整、広域化の枠組み、目標値の考え方）を踏まえた提案ができる。</td><td class="g4">県と市町村の双方に提案し、県主導の枠組み（広域化推進プラン、圏域単位の協議）に自社の業務を接続できる。</td><td class="g5">県の政策形成に関与し（委員・研究会・研修講師）、県単位・圏域単位の案件を組成できる。</td><td class="cav">県の説明会の直後は市町村の関心が最も高い。県のスケジュールを押さえて訪問時期を合わせる。</td></tr><tr><th scope="row">⑨ 見積・契約条件</th><td class="g1">見積は持ち帰り、上長が作成する。</td><td class="g2">過去実績をもとに概算のレンジを伝えられる（確定額は必ず持ち帰る）。</td><td class="g3">業務範囲を明示した参考見積を作り、積算根拠（工数・調査規模・印刷部数・委員会回数）を説明できる。分離発注（調査年度／策定年度）と一括発注の得失を示せる。</td><td class="g4">複数年契約・複数計画一括の見積を設計し、値引きではなく業務範囲の設計で単価を守れる。</td><td class="g5">テーマ・エリアの価格戦略を設計し、採算ラインと受注確度のバランスを判断できる。</td><td class="cav">参考見積は複数社から取られる前提。範囲を曖昧にしたまま安い額を出すと、受注後に追加作業を飲まされる。</td></tr></tbody>
+        </table>
+      </div>
+
+      <h3 class="sub-h">提案ネタ台帳 <span class="sub-n">107件（うち財源 27件）</span></h3>
+      <p class="sub-lead">国の指針、作成マニュアル、他自治体事例、補助金、起債などの財源、関連施策、現行計画の課題 ──
+      提案の材料を実名で並べたもの。赤い行が財源で、「計画に位置付けられていることが起債・補助の要件」という順序が、
+      計画策定業務の必要性を説明する最も強いロジックになる。</p>
+      <div class="kfilter"><button class="kchip is-on" data-f="all">すべて<span>107</span></button><button class="kchip" data-f="k0">公会計<span>12</span></button><button class="kchip" data-f="k1">公営企業会計<span>18</span></button><button class="kchip" data-f="k2">高齢者・介護保険<span>15</span></button><button class="kchip" data-f="k3">障害者・障害児<span>14</span></button><button class="kchip" data-f="k4">地域福祉<span>14</span></button><button class="kchip" data-f="k5">こども・子育て<span>15</span></button><button class="kchip" data-f="k6">その他計画<span>16</span></button><button class="kchip" data-f="k7">共通<span>3</span></button></div>
+      <div class="tablewrap">
+        <table class="grid kit">
+          <thead><tr><th scope="col">テーマ</th><th scope="col">区分</th><th scope="col">具体名（正式名称）</th>
+          <th scope="col">提案での使い方</th><th scope="col">使える<br>レベル</th><th scope="col">確認先・更新タイミング</th></tr></thead>
+          <tbody><tr class="krow" data-t="k0"><td class="kt">公会計</td><td><span class="cat" data-c="指針">指針</span></td><td class="kn">総務省「統一的な基準による地方公会計マニュアル」（H27策定・H31.3改訂）</td><td>「作成が要請されている」ことを出発点に、作成の遅れ・活用の遅れを論点化する。台帳整備の手引きは精緻化業務の根拠になる。</td><td class="kl"><span class="lv lv2">L2〜</span></td><td class="ks">総務省HP／改訂時に差分を確認</td></tr><tr class="krow" data-t="k0"><td class="kt">公会計</td><td><span class="cat" data-c="調査">調査</span></td><td class="kn">総務省「地方公会計の整備状況等に関する調査」（毎年度公表）</td><td>自団体の作成・公表・活用の状況が全国・県内でどの位置かを示す。「県内で活用まで進んでいるのは○団体」は担当者に効く。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">総務省HP／毎年度公表</td></tr><tr class="krow" data-t="k0"><td class="kt">公会計</td><td><span class="cat" data-c="マニュアル">マニュアル</span></td><td class="kn">「資産評価及び固定資産台帳整備の手引き」（マニュアル所収）</td><td>取得価額不明資産・再調達価額・備忘価額1円の扱いを根拠に、精緻化業務の必要性を具体的に説明する。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">マニュアル本編</td></tr><tr class="krow is-fin" data-t="k0"><td class="kt">公会計</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">計画策定・台帳整備は原則として一般財源（総務費）</td><td>補助がない前提で、「単年度で完璧を目指さず、優先順位を付けて複数年で段階整備する」現実的な提案が刺さる。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">自団体の予算書・決算書</td></tr><tr class="krow" data-t="k0"><td class="kt">公会計</td><td><span class="cat" data-c="財源（連動）">財源（連動）</span></td><td class="kn">公共施設等適正管理推進事業債（総務省）</td><td>固定資産台帳は更新費用試算の基礎データ。台帳が粗いと総合管理計画の試算が甘くなり、起債の裏付けが弱くなる、と連動させて台帳精緻化の必要性を語る。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">当年度の地方債計画・地方債同意等基準／数値は必ず確認</td></tr><tr class="krow" data-t="k0"><td class="kt">公会計</td><td><span class="cat" data-c="関連施策">関連施策</span></td><td class="kn">公共施設等総合管理計画・個別施設計画</td><td>台帳データの提供・連携を入口に、施設マネジメント業務へ展開する（社内の他テーマへのクロスセル）。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">自団体の管理計画</td></tr><tr class="krow" data-t="k0"><td class="kt">公会計</td><td><span class="cat" data-c="関連施策">関連施策</span></td><td class="kn">公営企業会計の適用（下水道・簡易水道）</td><td>資産調査の成果を公会計と公営企業会計の双方で使い回す提案。二重投資の回避は財政課に響く。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">総務省「公営企業会計の適用に関するマニュアル」</td></tr><tr class="krow" data-t="k0"><td class="kt">公会計</td><td><span class="cat" data-c="関連施策">関連施策</span></td><td class="kn">使用料・手数料の見直し／受益者負担の適正化</td><td>施設別行政コスト計算書を受益者負担見直しの根拠として提示し、活用支援業務につなげる。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">他団体の受益者負担適正化基準</td></tr><tr class="krow" data-t="k0"><td class="kt">公会計</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">固定資産台帳が毎年度更新されていない（決算後の異動反映が滞る）</td><td>更新作業の受託だけでなく、所管課からの異動報告様式・年間フローを整備する提案にする。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">担当者ヒアリング</td></tr><tr class="krow" data-t="k0"><td class="kt">公会計</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">取得価額不明資産・備忘価額1円が大量に残っている</td><td>資産額が過少計上となり、更新費用試算・有形固定資産減価償却率が実態とずれる。他計画への波及で語る。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">台帳の実物・公表資料</td></tr><tr class="krow" data-t="k0"><td class="kt">公会計</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">財務書類の公表が決算から1年以上遅れている／作成しっぱなしで活用されていない</td><td>早期化の工程改善と、指標分析・住民向け公表資料を業務に含める。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">自団体HP</td></tr><tr class="krow" data-t="k0"><td class="kt">公会計</td><td><span class="cat" data-c="県の動き">県の動き</span></td><td class="kn">県市町村課の説明会・県内統一様式・職員研修</td><td>県の指導内容に沿った提案。県の研修講師を務めると県内全域への波及効果が大きい。</td><td class="kl"><span class="lv lv2">L2〜</span></td><td class="ks">県HP／年度当初</td></tr><tr class="krow" data-t="k1"><td class="kt">公営企業会計</td><td><span class="cat" data-c="指針">指針</span></td><td class="kn">総務省「公営企業の経営に当たっての留意事項について」（毎年度・公営企業課長通知）</td><td>その年に国が何を求めているか（経営戦略の改定、広域化、officials化、料金水準の適正化）が凝縮されている。年度初の必読資料で、提案の柱に据える。</td><td class="kl"><span class="lv lv2">L2〜</span></td><td class="ks">総務省HP／毎年度発出</td></tr><tr class="krow" data-t="k1"><td class="kt">公営企業会計</td><td><span class="cat" data-c="マニュアル">マニュアル</span></td><td class="kn">総務省「公営企業会計の適用に関するマニュアル」</td><td>法適化の作業項目と工程を示し、庁内で発生する作業量を可視化する。「職員だけでは回らない」を数字で見せる。</td><td class="kl"><span class="lv lv2">L2〜</span></td><td class="ks">総務省HP</td></tr><tr class="krow" data-t="k1"><td class="kt">公営企業会計</td><td><span class="cat" data-c="指針">指針</span></td><td class="kn">総務省「経営戦略策定・改定ガイドライン」</td><td>「策定して終わりではなく、3〜5年ごとに改定」を根拠に、改定業務を継続受注の柱にする。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">総務省HP</td></tr><tr class="krow" data-t="k1"><td class="kt">公営企業会計</td><td><span class="cat" data-c="ツール">ツール</span></td><td class="kn">総務省「経営比較分析表」（全団体分が公表）</td><td>訪問前に必ず作る。経常収支比率・料金回収率・経費回収率・有収率・有形固定資産減価償却率・企業債残高対給水収益比率を類似団体と比較し、課題を一枚で示す。最も費用対効果の高い準備。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">総務省HP／毎年度更新</td></tr><tr class="krow" data-t="k1"><td class="kt">公営企業会計</td><td><span class="cat" data-c="マニュアル">マニュアル</span></td><td class="kn">日本水道協会「水道料金算定要領」／「下水道使用料算定の基本的考え方」</td><td>総括原価・資産維持費・汚水私費雨水公費の原則を根拠に、改定の必要性を数値で示す。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">各協会／改訂時に確認</td></tr><tr class="krow" data-t="k1"><td class="kt">公営企業会計</td><td><span class="cat" data-c="マニュアル">マニュアル</span></td><td class="kn">水道事業のアセットマネジメント手引き／下水道ストックマネジメント実施に関する手引き</td><td>更新需要試算と経営戦略の投資試算の整合を論点化する。「別々に作られていて数字が合わない」は頻出。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">国交省HP（水道は令和6年4月に厚労省から移管）</td></tr><tr class="krow is-fin" data-t="k1"><td class="kt">公営企業会計</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">公営企業会計適用債（資産調査・システム導入等の経費に充当。元利償還金に特別交付税措置）</td><td>法適化の初期費用に財源があることを示し、「予算がないから先送り」を崩す。対象経費・充当率・措置率は当年度の同意等基準で確認する。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">当年度の地方債計画・地方債同意等基準／数値は必ず確認</td></tr><tr class="krow is-fin" data-t="k1"><td class="kt">公営企業会計</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">経営戦略の策定・改定に要する経費への特別交付税措置</td><td>「策定費に措置がある」は予算要求の後押しになる。対象範囲・措置率は当年度通知で確認する。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">総務省 公営企業課通知（毎年度）</td></tr><tr class="krow is-fin" data-t="k1"><td class="kt">公営企業会計</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">広域化等の検討・計画策定に要する経費への財政措置</td><td>県の広域化推進プラン／下水道広域化・共同化計画に位置付けられた検討を財源付きで提案できる。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">総務省・国交省通知（毎年度）</td></tr><tr class="krow is-fin" data-t="k1"><td class="kt">公営企業会計</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">企業債（建設改良）／資本費平準化債（下水道）／借換債</td><td>投資・財政計画の財源試算に組み込む。発行可能額と償還負担のシミュレーションが提案の中身になる。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">地方債同意等基準／当年度版</td></tr><tr class="krow is-fin" data-t="k1"><td class="kt">公営企業会計</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">生活基盤施設耐震化等交付金（水道）／社会資本整備総合交付金・防災安全交付金（下水道）</td><td>投資計画の財源として位置付ける。交付金の採択要件と計画への記載を結び付ける。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">国交省HP／毎年度</td></tr><tr class="krow is-fin" data-t="k1"><td class="kt">公営企業会計</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">一般会計繰出金（総務省の繰出基準）</td><td>基準外繰入が常態化していないかを論点にする。財政課を巻き込む入口になる。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">総務省 繰出基準通知（毎年度）</td></tr><tr class="krow" data-t="k1"><td class="kt">公営企業会計</td><td><span class="cat" data-c="関連施策">関連施策</span></td><td class="kn">ウォーターPPP／PPP-PFI推進アクションプラン</td><td>官民連携の導入可能性調査へ展開する。国が導入目標を掲げている点が後押しになる。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">内閣府PPP/PFI推進室</td></tr><tr class="krow" data-t="k1"><td class="kt">公営企業会計</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">経営戦略の投資試算が法定耐用年数の機械的計算のまま（実使用年数を反映していない）</td><td>更新需要が過大に出て計画が非現実的になっている。精緻化＝改定業務の必要性として提案する。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">現行の経営戦略</td></tr><tr class="krow" data-t="k1"><td class="kt">公営企業会計</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">収支ギャップの解消策が「料金改定を検討」で止まり実行されていない</td><td>計画に書いてあるが着手できていない、が最も多いパターン。改定業務そのものを提案する。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">現行の経営戦略・議会議事録</td></tr><tr class="krow" data-t="k1"><td class="kt">公営企業会計</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">料金回収率・経費回収率が100%を下回る／有収率が低い</td><td>独立採算が成立していないことを数値で示す。改定・漏水対策・管路更新の各業務につながる。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">経営比較分析表</td></tr><tr class="krow" data-t="k1"><td class="kt">公営企業会計</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">技術職員・事務職員が不足し、庁内で作業できない</td><td>単発の委託ではなく、年間を通じた包括的な会計支援（月次・決算・統計・予算）を提案する。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">担当者ヒアリング</td></tr><tr class="krow" data-t="k1"><td class="kt">公営企業会計</td><td><span class="cat" data-c="県の動き">県の動き</span></td><td class="kn">都道府県の水道広域化推進プラン／下水道広域化・共同化計画</td><td>県の枠組みに市町村の検討を接続する。県主導の案件は複数団体の同時受注につながる。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">県HP</td></tr><tr class="krow" data-t="k2"><td class="kt">高齢者・介護保険</td><td><span class="cat" data-c="指針">指針</span></td><td class="kn">厚労省「介護保険事業に係る保険給付の円滑な実施を確保するための基本的な指針」（期ごとに告示）</td><td>現行指針の重点事項を整理し、次期指針の改正論点（社会保障審議会介護保険部会）を先読みして提示する。</td><td class="kl"><span class="lv lv2">L2〜（先読みはL4〜）</span></td><td class="ks">厚労省HP・審議会資料／期ごと改正</td></tr><tr class="krow" data-t="k2"><td class="kt">高齢者・介護保険</td><td><span class="cat" data-c="マニュアル">マニュアル</span></td><td class="kn">「介護予防・日常生活圏域ニーズ調査」「在宅介護実態調査」実施の手引き</td><td>国の標準調査を使う＝全国・県内との比較可能性がある、という品質論点で語る。</td><td class="kl"><span class="lv lv2">L2〜</span></td><td class="ks">厚労省HP</td></tr><tr class="krow" data-t="k2"><td class="kt">高齢者・介護保険</td><td><span class="cat" data-c="ツール">ツール</span></td><td class="kn">地域包括ケア「見える化」システム／第1号保険料算定ワークシート</td><td>推計の根拠を国のツールに置くことで議会説明に耐える、という説明をする。操作研修の受講実績も提案材料になる。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">厚労省／期ごとに更新</td></tr><tr class="krow is-fin" data-t="k2"><td class="kt">高齢者・介護保険</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">保険者機能強化推進交付金／介護保険保険者努力支援交付金（インセンティブ交付金）</td><td>評価指標に「計画の策定・進捗管理」「見える化システムの活用」「地域ケア会議」等が含まれる。計画の作り込みが交付金額に直結する、という他にない切り口。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">厚労省 評価指標（毎年度公表）／指標の変更を必ず確認</td></tr><tr class="krow is-fin" data-t="k2"><td class="kt">高齢者・介護保険</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">地域医療介護総合確保基金（介護分）</td><td>施設整備・介護人材確保の財源。県経由で、計画への位置付けが前提になる。整備計画の提案と結び付ける。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">県の基金事業計画／毎年度</td></tr><tr class="krow is-fin" data-t="k2"><td class="kt">高齢者・介護保険</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">地域支援事業交付金（総合事業・包括的支援事業・任意事業）</td><td>調査や体制整備の一部が対象になる場合がある。対象可否は保険者・県に確認する前提で示す。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">厚労省 実施要綱／毎年度</td></tr><tr class="krow" data-t="k2"><td class="kt">高齢者・介護保険</td><td><span class="cat" data-c="関連施策">関連施策</span></td><td class="kn">認知症基本法／認知症施策推進基本計画 → 市町村認知症施策推進計画（努力義務）</td><td>介護保険事業計画に包含するか別冊にするかの選択肢を示す。新たな計画需要として営業機会になる。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">内閣府・厚労省</td></tr><tr class="krow" data-t="k2"><td class="kt">高齢者・介護保険</td><td><span class="cat" data-c="関連施策">関連施策</span></td><td class="kn">高齢者の保健事業と介護予防の一体的実施／データヘルス計画・特定健診等実施計画</td><td>KDBデータの活用を共通化し、国保部門と介護部門の同時提案につなげる。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">厚労省</td></tr><tr class="krow" data-t="k2"><td class="kt">高齢者・介護保険</td><td><span class="cat" data-c="関連施策">関連施策</span></td><td class="kn">地域福祉計画（上位）、成年後見制度利用促進計画、地域公共交通計画、住生活基本計画</td><td>同時改定・一体策定の組み合わせを提示する。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">自団体の計画一覧</td></tr><tr class="krow" data-t="k2"><td class="kt">高齢者・介護保険</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">サービス見込量と実績の乖離（特に総合事業・地域密着型）</td><td>推計手法の見直しを業務の付加価値として提案する。乖離率を一覧にして持参すると説得力が出る。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">現行計画＋介護保険事業状況報告</td></tr><tr class="krow" data-t="k2"><td class="kt">高齢者・介護保険</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">整備計画（特養・地域密着型）が公募しても応募がなく未整備のまま</td><td>事業者アンケート・意向調査を業務に追加する提案にする。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">現行計画・公募結果</td></tr><tr class="krow" data-t="k2"><td class="kt">高齢者・介護保険</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">保険料上昇への住民説明が弱い／評価指標が「実施の有無」だけでPDCAが回らない</td><td>わかりやすい説明資料、指標の再設計を付帯提案する。</td><td class="kl"><span class="lv lv3">L3〜L4</span></td><td class="ks">現行計画・議会議事録</td></tr><tr class="krow" data-t="k2"><td class="kt">高齢者・介護保険</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">第2層協議体・生活支援コーディネーターが形骸化している</td><td>計画策定に留まらない体制支援・研修へ展開する。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">担当者ヒアリング</td></tr><tr class="krow" data-t="k2"><td class="kt">高齢者・介護保険</td><td><span class="cat" data-c="県の動き">県の動き</span></td><td class="kn">都道府県介護保険事業支援計画（圏域設定・施設整備の調整）／県の説明会・ワークシート研修</td><td>県の説明会直後は市町村の関心が最も高い。訪問時期を県の日程に合わせる。</td><td class="kl"><span class="lv lv2">L2〜</span></td><td class="ks">県HP</td></tr><tr class="krow" data-t="k2"><td class="kt">高齢者・介護保険</td><td><span class="cat" data-c="発注情報">発注情報</span></td><td class="kn">広域連合・一部事務組合が保険者の場合</td><td>介護保険事業計画は広域、高齢者福祉計画は構成市町村、と発注が分かれることがある。両方に提案する。</td><td class="kl"><span class="lv lv2">L2〜</span></td><td class="ks">自団体・広域連合HP</td></tr><tr class="krow" data-t="k3"><td class="kt">障害者・障害児</td><td><span class="cat" data-c="指針">指針</span></td><td class="kn">厚労省「障害福祉サービス等及び障害児通所支援等の円滑な実施を確保するための基本的な指針」（期ごと告示）</td><td>成果目標7項目の考え方が次期にどう変わるかを提示する。目標設定は計画の中核であり、ここを語れると強い。</td><td class="kl"><span class="lv lv2">L2〜</span></td><td class="ks">厚労省HP・障害者部会／期ごと改正</td></tr><tr class="krow" data-t="k3"><td class="kt">障害者・障害児</td><td><span class="cat" data-c="指針">指針</span></td><td class="kn">国「障害者基本計画（第5次）」</td><td>障害者計画（理念計画）の分野別体系の根拠として使う。</td><td class="kl"><span class="lv lv2">L2〜</span></td><td class="ks">内閣府HP</td></tr><tr class="krow" data-t="k3"><td class="kt">障害者・障害児</td><td><span class="cat" data-c="マニュアル">マニュアル</span></td><td class="kn">地域生活支援拠点等の整備に関する手引き・事例集</td><td>成果目標の具体化支援（拠点の機能検証・体制設計）へ展開する。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">厚労省HP</td></tr><tr class="krow is-fin" data-t="k3"><td class="kt">障害者・障害児</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">地域生活支援事業費等補助金（国1/2以内・県1/4以内）</td><td>相談支援、意思疎通支援、日常生活用具、地域生活支援拠点等の財源。計画への位置付けが前提であることを説明する。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">厚労省 実施要綱／毎年度</td></tr><tr class="krow is-fin" data-t="k3"><td class="kt">障害者・障害児</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">地域生活支援促進事業（発達障害者支援体制整備、医療的ケア児等総合支援、精神障害にも対応した地域包括ケア構築支援、強度行動障害支援者養成 等の個別メニュー）</td><td>「このメニューを使うには計画への位置付けが要る」という順序で、計画の記載充実の必要性を説明する。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">厚労省 実施要綱／毎年度メニュー改廃あり</td></tr><tr class="krow is-fin" data-t="k3"><td class="kt">障害者・障害児</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">障害福祉サービス等給付費負担金（義務的経費・国1/2）</td><td>見込量＝給付費＝予算。推計の精度が翌年度の財政に直結する、という品質論点で単価を守る。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">厚労省</td></tr><tr class="krow is-fin" data-t="k3"><td class="kt">障害者・障害児</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">社会福祉施設等施設整備費国庫補助金（グループホーム・日中活動系）</td><td>整備見込との連動。事業所調査の結果を整備計画に反映する提案にする。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">厚労省／県経由</td></tr><tr class="krow" data-t="k3"><td class="kt">障害者・障害児</td><td><span class="cat" data-c="関連施策">関連施策</span></td><td class="kn">障害者差別解消法（令和6年4月から民間事業者の合理的配慮の提供が法的義務）／情報アクセシビリティ・コミュニケーション施策推進法</td><td>計画への反映に加え、職員研修・事業者向け説明会を付帯提案する。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">内閣府「基本方針」</td></tr><tr class="krow" data-t="k3"><td class="kt">障害者・障害児</td><td><span class="cat" data-c="関連施策">関連施策</span></td><td class="kn">こども計画（障害児のインクルージョン）、地域福祉計画、バリアフリー基本構想、避難行動要支援者・個別避難計画、特別支援教育推進計画</td><td>所管が福祉課・こども課・都市計画課・防災課・教育委員会に分かれる。庁内横断の同時提案が効く。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">自団体の計画一覧</td></tr><tr class="krow" data-t="k3"><td class="kt">障害者・障害児</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">成果目標が国の数値の引き写しで、自団体の実績と乖離している</td><td>実績に基づく目標設定への転換を提案する。前期の未達要因分析を業務に含める。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">現行計画＋実績</td></tr><tr class="krow" data-t="k3"><td class="kt">障害者・障害児</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">地域生活支援拠点が登録型・面的整備の形だけで機能していない／基幹相談支援センターが未設置</td><td>機能検証と体制設計支援へ。計画策定の枠を超えた業務として単価を上げられる。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">現行計画・協議会資料</td></tr><tr class="krow" data-t="k3"><td class="kt">障害者・障害児</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">事業所の偏在（放課後等デイは充足、生活介護・グループホームが不足）</td><td>事業所調査を業務に追加し、見込量の確保方策の実効性を高める。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">国保連データ・事業所一覧</td></tr><tr class="krow" data-t="k3"><td class="kt">障害者・障害児</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">医療的ケア児・強度行動障害の実態が把握できていない</td><td>実態調査を単独業務として切り出して提案できる（計画策定年度以外の受注機会）。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">担当者ヒアリング</td></tr><tr class="krow" data-t="k3"><td class="kt">障害者・障害児</td><td><span class="cat" data-c="県の動き">県の動き</span></td><td class="kn">都道府県障害福祉計画（圏域調整）／圏域自立支援協議会／県の説明会</td><td>圏域単位での提案は複数市町村の同時受注につながる。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">県HP</td></tr><tr class="krow" data-t="k4"><td class="kt">地域福祉</td><td><span class="cat" data-c="指針">指針</span></td><td class="kn">厚労省「市町村地域福祉計画策定ガイドライン」（地域共生社会の実現に向けた地域福祉の推進について）</td><td>「福祉分野の共通事項を定める上位計画」という位置づけを根拠に、他計画との一体策定を提案する。</td><td class="kl"><span class="lv lv2">L2〜</span></td><td class="ks">厚労省HP</td></tr><tr class="krow" data-t="k4"><td class="kt">地域福祉</td><td><span class="cat" data-c="マニュアル">マニュアル</span></td><td class="kn">厚労省「重層的支援体制整備事業」実施ガイドライン・事例集</td><td>5事業（包括的相談支援・参加支援・地域づくり・アウトリーチ・多機関協働）の体制設計支援へ展開する。</td><td class="kl"><span class="lv lv2">L2〜</span></td><td class="ks">厚労省HP</td></tr><tr class="krow is-fin" data-t="k4"><td class="kt">地域福祉</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">重層的支援体制整備事業交付金／同 移行準備事業</td><td>移行すると介護・障害・こども・困窮の相談支援等の補助が一体的に交付される。移行前に使える移行準備事業とセットで提案するのが定石。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">厚労省 実施要綱／毎年度</td></tr><tr class="krow is-fin" data-t="k4"><td class="kt">地域福祉</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">地域自殺対策強化交付金</td><td>自殺対策計画の策定・改定に充当できる。地域福祉計画に併載する場合、併載編の財源として予算化を後押しできる。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">厚労省・JSCP／県経由・毎年度</td></tr><tr class="krow is-fin" data-t="k4"><td class="kt">地域福祉</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">生活困窮者自立相談支援事業費等負担金・補助金／成年後見制度利用促進の体制整備（中核機関）</td><td>併載する分野の記載と財源を結び付ける。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">厚労省／毎年度</td></tr><tr class="krow" data-t="k4"><td class="kt">地域福祉</td><td><span class="cat" data-c="ツール">ツール</span></td><td class="kn">いのち支える自殺対策推進センター（JSCP）「地域自殺実態プロファイル」</td><td>自殺対策計画の重点施策を客観データで決められる。無料で入手でき、提案の具体性が一気に上がる。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">JSCP／定期更新</td></tr><tr class="krow" data-t="k4"><td class="kt">地域福祉</td><td><span class="cat" data-c="事例">事例</span></td><td class="kn">社会福祉協議会の地域福祉活動計画との一体策定（自治体＋社協の共同・連名発注）</td><td>発注元が2つになり予算を合算できる。社協への同時アプローチが受注確度を上げる。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">他団体の一体策定事例</td></tr><tr class="krow" data-t="k4"><td class="kt">地域福祉</td><td><span class="cat" data-c="関連施策">関連施策</span></td><td class="kn">成年後見制度利用促進基本計画、再犯防止推進計画、自殺対策計画、孤独・孤立対策、避難行動要支援者・個別避難計画、居住支援（住宅セーフティネット）</td><td>併載編として束ねる。1本あたりの単価は小さいが、まとめると中規模案件になる。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">各根拠法・各省ガイドライン</td></tr><tr class="krow" data-t="k4"><td class="kt">地域福祉</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">理念のみで実行計画がない／担当課が動けていない</td><td>実行工程・役割分担・年次計画まで書き込む提案にして差別化する。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">現行計画</td></tr><tr class="krow" data-t="k4"><td class="kt">地域福祉</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">社協の地域福祉活動計画と内容が重複・分断している</td><td>一体策定または対応表の作成を提案する。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">両計画</td></tr><tr class="krow" data-t="k4"><td class="kt">地域福祉</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">圏域が計画ごとにバラバラ（日常生活圏域／小学校区／地区社協）</td><td>圏域の整理そのものを業務に含める。他計画にも波及するため単価を上げやすい。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">各分野別計画</td></tr><tr class="krow" data-t="k4"><td class="kt">地域福祉</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">重層事業に移行したいが庁内合意が取れない</td><td>庁内勉強会・業務フロー整理の伴走支援を提案する（計画策定の前段の業務）。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">担当者ヒアリング</td></tr><tr class="krow" data-t="k4"><td class="kt">地域福祉</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">住民座談会が固定メンバーのみ／意見が計画に反映されていない</td><td>参加設計の見直しとファシリテーションを業務に含める。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">現行計画・過去の座談会記録</td></tr><tr class="krow" data-t="k4"><td class="kt">地域福祉</td><td><span class="cat" data-c="県の動き">県の動き</span></td><td class="kn">都道府県地域福祉支援計画／県社協の支援／県の重層事業説明会</td><td>県の方針と説明会の時期を押さえる。</td><td class="kl"><span class="lv lv2">L2〜</span></td><td class="ks">県HP・県社協</td></tr><tr class="krow" data-t="k5"><td class="kt">こども・子育て</td><td><span class="cat" data-c="指針">指針</span></td><td class="kn">こども家庭庁「こども大綱」／「市町村こども計画の策定等に関する助言について」</td><td>こども計画が努力義務であること、統合対象計画（次世代育成支援行動計画、子ども・若者計画、こどもの貧困対策計画、母子保健計画）の整理を提案の柱にする。</td><td class="kl"><span class="lv lv2">L2〜</span></td><td class="ks">こども家庭庁HP</td></tr><tr class="krow" data-t="k5"><td class="kt">こども・子育て</td><td><span class="cat" data-c="マニュアル">マニュアル</span></td><td class="kn">こども家庭庁「市町村子ども・子育て支援事業計画における『量の見込み』の算出等のための手引き」</td><td>家庭類型・潜在ニーズの算定根拠。中間年見直しの必要性を手引きの記載から説明する。</td><td class="kl"><span class="lv lv2">L2〜</span></td><td class="ks">こども家庭庁HP／改訂を確認</td></tr><tr class="krow" data-t="k5"><td class="kt">こども・子育て</td><td><span class="cat" data-c="ガイドライン">ガイドライン</span></td><td class="kn">「こども・若者の意見の反映に関するガイドライン」／「こどもの居場所づくりに関する指針」</td><td>意見聴取の設計・運営、居場所の実態調査を独立した業務として切り出す。計画策定年度以外の受注機会になる。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">こども家庭庁HP</td></tr><tr class="krow is-fin" data-t="k5"><td class="kt">こども・子育て</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">子ども・子育て支援交付金（地域子ども・子育て支援事業）</td><td>量の見込み＝交付金の積算根拠。推計の精度が翌年度の財源に直結する、という品質論点で語る。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">こども家庭庁 実施要綱／毎年度</td></tr><tr class="krow is-fin" data-t="k5"><td class="kt">こども・子育て</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">地域子供の未来応援交付金</td><td>こどもの貧困の実態調査・計画策定・支援体制整備に充当できる。調査業務の予算化に直結する最も強いネタのひとつ。要望時期を必ず確認する。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">こども家庭庁／毎年度の要綱・要望調査時期</td></tr><tr class="krow is-fin" data-t="k5"><td class="kt">こども・子育て</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">児童虐待防止対策等総合支援事業費補助金</td><td>こども家庭センター、子育て世帯訪問支援事業、児童育成支援拠点事業、親子関係形成支援事業の財源。体制構築支援と結び付ける。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">こども家庭庁／毎年度</td></tr><tr class="krow is-fin" data-t="k5"><td class="kt">こども・子育て</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">ヤングケアラー支援体制強化事業／母子保健関係の国庫補助（産後ケア等）</td><td>実態調査・研修の財源として提示する。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">こども家庭庁／毎年度</td></tr><tr class="krow is-fin" data-t="k5"><td class="kt">こども・子育て</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">保育所等整備交付金／子ども・子育て支援施設整備交付金</td><td>確保方策の裏付けとして、整備計画と財源を結び付ける。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">こども家庭庁</td></tr><tr class="krow" data-t="k5"><td class="kt">こども・子育て</td><td><span class="cat" data-c="制度">制度</span></td><td class="kn">乳児等通園支援事業（こども誰でも通園制度）の給付制度化</td><td>地域子ども・子育て支援事業に新たに位置付けられるため、量の見込みへの反映が必要になる。中間年見直しを提案する明確な理由になる。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">こども家庭庁／施行スケジュールを必ず確認</td></tr><tr class="krow" data-t="k5"><td class="kt">こども・子育て</td><td><span class="cat" data-c="関連施策">関連施策</span></td><td class="kn">教育振興基本計画（教育委員会）、障害児福祉計画、地域福祉計画、母子保健、子ども・若者計画、公共施設等総合管理計画（幼保再編）</td><td>所管がこども未来課・保育課・母子保健・教育委員会に分かれる。庁内横断の調整力そのものが提案価値になる。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">自団体の計画一覧</td></tr><tr class="krow" data-t="k5"><td class="kt">こども・子育て</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">量の見込みと実績が乖離している（少子化の加速、利用率の変化）</td><td>中間年見直しの必要性を乖離率で示す。区域別・年齢別の乖離表を作って持参する。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">現行計画＋実績値</td></tr><tr class="krow" data-t="k5"><td class="kt">こども・子育て</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">待機児童は解消したが定員割れが始まっている</td><td>「増やす計画」から「適正化・再編の計画」への転換を提案する。公共施設マネジメントとのクロスセルになる。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">保育所等関連状況取りまとめ・自団体データ</td></tr><tr class="krow" data-t="k5"><td class="kt">こども・子育て</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">こども計画が既存計画の合冊にとどまっている／こどもの意見反映が形式的</td><td>体系の再設計、こども会議の設計・運営受託を提案する。</td><td class="kl"><span class="lv lv3">L3〜L4</span></td><td class="ks">現行計画</td></tr><tr class="krow" data-t="k5"><td class="kt">こども・子育て</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">こども家庭センターが兼務体制で機能していない</td><td>体制設計支援・業務フロー整理へ展開する。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">担当者ヒアリング</td></tr><tr class="krow" data-t="k5"><td class="kt">こども・子育て</td><td><span class="cat" data-c="県の動き">県の動き</span></td><td class="kn">都道府県子ども・子育て支援事業支援計画／社会的養育推進計画</td><td>県の枠組みと市町村計画の整合を押さえる。</td><td class="kl"><span class="lv lv2">L2〜</span></td><td class="ks">県HP</td></tr><tr class="krow" data-t="k6"><td class="kt">その他計画</td><td><span class="cat" data-c="指針">指針</span></td><td class="kn">総務省「公共施設等総合管理計画の策定にあたっての指針」（H26／H30改訂／R3見直し要請）</td><td>見直し要請事項（個別施設計画の反映、保有量に関する数値目標、脱炭素化、ユニバーサルデザイン化）の充足状況を点検して示す。</td><td class="kl"><span class="lv lv2">L2〜</span></td><td class="ks">総務省HP</td></tr><tr class="krow is-fin" data-t="k6"><td class="kt">その他計画</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">公共施設等適正管理推進事業債（集約化・複合化、長寿命化、転用、立地適正化、脱炭素化、UD化、除却）</td><td>【最強のロジック】総合管理計画および個別施設計画に位置付けられていることが起債の要件。「計画に書いていないと起債できない」という順序で計画策定・改定の必要性を説明する。充当率・交付税措置率・対象事業・適用期限は年度で変わるため、必ず当年度の地方債計画で確認してから提示する。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">当年度の地方債計画・地方債同意等基準／数値と期限は必ず確認</td></tr><tr class="krow is-fin" data-t="k6"><td class="kt">その他計画</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">学校施設環境改善交付金（文科省）／社会資本整備総合交付金・公営住宅等ストック総合改善（国交省）／道路メンテナンス事業補助・防災安全交付金（国交省）</td><td>いずれも個別施設計画（学校施設長寿命化計画、公営住宅等長寿命化計画、橋梁長寿命化修繕計画）が採択の前提。教育委員会・建築課・土木課への横展開の入口になる。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">各省HP／毎年度</td></tr><tr class="krow" data-t="k6"><td class="kt">その他計画</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">更新費用試算が総務省ソフトの単価法のままで、固定資産台帳と連動していない</td><td>台帳連動の再試算を提案する。公会計テーマとのクロスセルが成立する典型例。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">現行の総合管理計画</td></tr><tr class="krow" data-t="k6"><td class="kt">その他計画</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">削減目標だけがあり、個別の再編工程・年次計画がない</td><td>個別施設計画・再編計画の策定へつなげる。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">現行の総合管理計画</td></tr><tr class="krow" data-t="k6"><td class="kt">その他計画</td><td><span class="cat" data-c="指針">指針</span></td><td class="kn">健康日本21（第三次）／食育推進基本計画／歯科口腔保健の推進に関する基本的事項</td><td>計画期間が長期化した分、中間評価業務が発生する。改定年度以外の受注機会として押さえる。</td><td class="kl"><span class="lv lv2">L2〜</span></td><td class="ks">厚労省・農水省HP</td></tr><tr class="krow is-fin" data-t="k6"><td class="kt">その他計画</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">地域自殺対策強化交付金／健康増進事業費補助／保険者努力支援制度（国保・データヘルス）</td><td>健康増進計画に併載する自殺対策計画・データヘルス計画の財源として示す。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">厚労省／毎年度</td></tr><tr class="krow" data-t="k6"><td class="kt">その他計画</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">健康増進・食育・自殺対策・歯科口腔保健・データヘルスが別々に策定され、指標も体系も整合していない</td><td>一体策定による整合確保と庁内事務負担の軽減を提案する。複数計画の束ね受注になる。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">自団体の計画一覧</td></tr><tr class="krow" data-t="k6"><td class="kt">その他計画</td><td><span class="cat" data-c="指針">指針</span></td><td class="kn">農業振興地域の整備に関する法律（農振整備計画）／農業経営基盤強化促進法「地域計画」（目標地図）</td><td>地域計画は策定して終わりではなく、随時の変更・更新が継続的に発生する。継続業務として提案する。</td><td class="kl"><span class="lv lv2">L2〜</span></td><td class="ks">農水省HP・農業委員会</td></tr><tr class="krow is-fin" data-t="k6"><td class="kt">その他計画</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">農山漁村振興交付金／多面的機能支払交付金／中山間地域等直接支払交付金／強い農業づくり総合支援交付金</td><td>施策の裏付けとして計画に位置付ける。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">農水省／毎年度</td></tr><tr class="krow" data-t="k6"><td class="kt">その他計画</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">地域計画の目標地図が実態と合っていない／話合いが一度きりで終わっている</td><td>更新業務と話合いの運営を継続受託する提案にする。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">自団体・農業委員会</td></tr><tr class="krow" data-t="k6"><td class="kt">その他計画</td><td><span class="cat" data-c="指針">指針</span></td><td class="kn">男女共同参画基本計画／女性活躍推進法／配偶者暴力防止法／困難な問題を抱える女性への支援に関する法律</td><td>3〜4計画の一体策定が主流。法改正に伴う必須記載事項の追加を提案の理由にする。</td><td class="kl"><span class="lv lv2">L2〜</span></td><td class="ks">内閣府HP</td></tr><tr class="krow is-fin" data-t="k6"><td class="kt">その他計画</td><td><span class="cat" data-c="財源">財源</span></td><td class="kn">地域女性活躍推進交付金（内閣府）</td><td>計画策定・実態調査に充当できる場合がある。要望時期を確認した上で提示する。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">内閣府／毎年度の要綱・要望時期</td></tr><tr class="krow" data-t="k6"><td class="kt">その他計画</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">指標が審議会の女性委員比率のみ／DV・困難女性支援の記載が薄い</td><td>法改正への対応を業務内容に含めて提案する。</td><td class="kl"><span class="lv lv3">L3〜</span></td><td class="ks">現行計画</td></tr><tr class="krow" data-t="k6"><td class="kt">その他計画</td><td><span class="cat" data-c="関連施策">関連施策</span></td><td class="kn">中期財政計画・財政推計</td><td>公会計・公共施設・公営企業の試算を統合する上流の業務。単価が高く、他業務の入口にもなる。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">決算カード・財政状況資料集</td></tr><tr class="krow" data-t="k6"><td class="kt">その他計画</td><td><span class="cat" data-c="現行課題">現行課題</span></td><td class="kn">施設更新費・公営企業繰出金が財政推計に反映されていない</td><td>統合推計を提案する。財政課との関係構築は全テーマへの波及効果が大きい。</td><td class="kl"><span class="lv lv4">L4〜</span></td><td class="ks">現行の財政推計</td></tr><tr class="krow" data-t="k7"><td class="kt">共通</td><td><span class="cat" data-c="発注情報">発注情報</span></td><td class="kn">自治体HPの計画一覧／総合計画の実施計画／当初予算の主要事業／議会議事録（一般質問での計画への言及）</td><td>計画期間の終了年度の前年度＝発注年度。担当エリア全団体の全計画を3年先までDB化して優先順位を付ける。</td><td class="kl"><span class="lv lv2">L2〜</span></td><td class="ks">各自治体HP／年1回更新</td></tr><tr class="krow" data-t="k7"><td class="kt">共通</td><td><span class="cat" data-c="注意">注意</span></td><td class="kn">官製談合防止法／公正な調達の確保</td><td>仕様書案の提供は一般的な業務範囲にとどめ、自社しか対応できない条件は書かない。参考見積は複数社から取られる前提で作る。逸脱は会社と自治体の双方を傷つける。</td><td class="kl"><span class="lv lv0">全レベル</span></td><td class="ks">官製談合防止法・各自治体の契約規則</td></tr><tr class="krow" data-t="k7"><td class="kt">共通</td><td><span class="cat" data-c="注意">注意</span></td><td class="kn">守秘義務と情報の扱い</td><td>ある団体から得た未公表情報を他団体への提案に使わない。公表資料・出典のあるものだけで提案を組む。</td><td class="kl"><span class="lv lv0">全レベル</span></td><td class="ks">契約書の守秘条項・個人情報取扱特記事項</td></tr></tbody>
+        </table>
+      </div>
+
+      <h3 class="sub-h">訪問前 準備チェックリスト</h3>
+      <p class="sub-lead">自分のレベルまでの項目をすべて満たしてから訪問する。準備が足りないまま訪問した回数だけ、その顧客での次の機会が遠のく。</p>
+      <div class="preps"><div class="pgroup"><span class="lv lv1">L1</span><ul class="plist"><li><span class="pi">訪問先の基本情報</span><p class="pt">所管課名・担当者名・役職・過去の取引履歴を社内CRMと名刺で確認する。</p><p class="pd"><span class="k">完了の基準</span>誰に会うのか、当社と過去にどんな取引があったかを言える。</p></li><li><span class="pi">商品の言語化</span><p class="pt">その計画の根拠法・計画期間・所管省庁を暗記し、商品説明を3分で話せるようにする。</p><p class="pd"><span class="k">完了の基準</span>資料を見ずに商品説明ができる。</p></li><li><span class="pi">持ち物</span><p class="pt">会社案内、商品一覧、実績一覧、名刺を揃える。</p><p class="pd"><span class="k">完了の基準</span>同行の先輩から持ち物の確認を受けている。</p></li></ul></div><div class="pgroup"><span class="lv lv2">L2</span><ul class="plist"><li><span class="pi">現行計画の入手と通読</span><p class="pt">自治体HPから現行計画をダウンロードし、目次・計画期間・数値目標の有無・策定体制（委員会名）を確認する。</p><p class="pd"><span class="k">完了の基準</span>計画の構成と、次の改定がいつかを言える。</p></li><li><span class="pi">国の動向の整理</span><p class="pt">最新の指針・通知・審議会資料を確認し、重点事項を3つに絞った1枚資料を作る。</p><p class="pd"><span class="k">完了の基準</span>1枚資料が上長のレビューを通っている。</p></li><li><span class="pi">事例の準備</span><p class="pt">近隣・同規模・同課題の団体の公表事例を、出典付きで3件用意する。</p><p class="pd"><span class="k">完了の基準</span>各事例の出典URLを示せる。</p></li><li><span class="pi">スケジュールの逆算</span><p class="pt">計画期間の終了年度から、調査年度・策定年度・予算要求時期・公告時期を逆算した表を作る。</p><p class="pd"><span class="k">完了の基準</span>「いつ予算要求すべきか」を相手に示せる。</p></li></ul></div><div class="pgroup"><span class="lv lv3">L3</span><ul class="plist"><li><span class="pi">実績との突合</span><p class="pt">現行計画の数値目標と実績データを突合し、未達項目・乖離率を一覧化する。</p><p class="pd"><span class="k">完了の基準</span>乖離の一覧表を持参できる。</p></li><li><span class="pi">データの下ごしらえ</span><p class="pt">テーマ別の必須データを作る（公営企業＝経営比較分析表の比較、介護＝見込量と給付実績、こども＝量の見込みと実績、公会計＝財務指標の類似団体比較、公共施設＝更新費用試算の前提）。</p><p class="pd"><span class="k">完了の基準</span>図表1〜2枚で相手の状況を説明できる。</p></li><li><span class="pi">財源の確認</span><p class="pt">該当しうる補助金・交付金・地方債について、当年度の要綱・通知・地方債同意等基準で対象経費・率・期限・要望時期を確認する。</p><p class="pd"><span class="k">完了の基準</span>「対象になり得る／要確認」の線引きを正確に説明できる。</p></li><li><span class="pi">議会の確認</span><p class="pt">議会議事録を計画名・施策名で検索し、議員からどんな指摘が出ているかを把握する。</p><p class="pd"><span class="k">完了の基準</span>議会での指摘事項を1つ以上挙げられる。</p></li><li><span class="pi">提案物の準備</span><p class="pt">課題整理メモ1枚、業務内容案、工程表、参考見積を用意する。</p><p class="pd"><span class="k">完了の基準</span>上長のレビューを通っている。</p></li></ul></div><div class="pgroup"><span class="lv lv4">L4</span><ul class="plist"><li><span class="pi">庁内マップの作成</span><p class="pt">関連する計画とその所管課・計画期間の一覧を作り、同時提案できる組み合わせを特定する。</p><p class="pd"><span class="k">完了の基準</span>誰と誰に会うべきかを設計できている。</p></li><li><span class="pi">財源スキームの設計</span><p class="pt">補助・起債・交付税措置・基金・使用料を組み合わせた複数年の財源スキーム表を作る。</p><p class="pd"><span class="k">完了の基準</span>財政課に説明できる粒度になっている。</p></li><li><span class="pi">実行案の作成</span><p class="pt">複数年ロードマップ、実施体制案、議会・住民への説明の段取りを含む提案書を作る。</p><p class="pd"><span class="k">完了の基準</span>課長・部長に提示できる完成度になっている。</p></li><li><span class="pi">県の方針の確認</span><p class="pt">都道府県の支援計画・広域方針・説明会日程を確認し、市町村への制約と後押しを整理する。</p><p class="pd"><span class="k">完了の基準</span>県の方針と矛盾しない提案になっている。</p></li></ul></div><div class="pgroup"><span class="lv lv5">L5</span><ul class="plist"><li><span class="pi">制度の先読み</span><p class="pt">国の審議会・検討会の議事録と資料を継続的に確認し、改正の方向と時期を予測するメモを作る。</p><p class="pd"><span class="k">完了の基準</span>改正前に提案を仕込める状態になっている。</p></li><li><span class="pi">スキームの設計</span><p class="pt">広域・共同・県主導の枠組みに自社の業務を接続するスキーム案を作る。</p><p class="pd"><span class="k">完了の基準</span>複数団体・県に提示できる案になっている。</p></li></ul></div></div>
+    </section>
+  
     <section id="calendar" class="sec">
       <header class="sec-head">
-        <p class="eyebrow">04　年間サイクル</p>
+        <p class="eyebrow">05　年間サイクル</p>
         <h2>学習計画は自治体の年度に従属する</h2>
         <p class="lead">新人が「今月なにをやるか」は本人の習熟度だけでは決まらない。顧客の年度が決める。ロードマップの各月はこの表と対応している。</p>
       </header>
@@ -1343,7 +1527,7 @@ html{scroll-behavior:smooth}
   
     <section id="rubric" class="sec">
       <header class="sec-head">
-        <p class="eyebrow">05　評価ルーブリック</p>
+        <p class="eyebrow">06　評価ルーブリック</p>
         <h2>テーマ知識に依存しない9つの軸</h2>
         <p class="lead">テーマ別スキルマップと合わせて判定する。自己評価と上長評価に2段階以上の差が出た項目は、必ず面談で認識を合わせる。</p>
       </header>
@@ -1357,7 +1541,7 @@ html{scroll-behavior:smooth}
   
     <section id="ops" class="sec">
       <header class="sec-head">
-        <p class="eyebrow">06　運用</p>
+        <p class="eyebrow">07　運用</p>
         <h2>回し方と配布物</h2>
       </header>
       <div class="ops-grid">
@@ -1387,6 +1571,16 @@ html{scroll-behavior:smooth}
         o.setAttribute('aria-selected',on?'true':'false');
         document.getElementById('y'+o.dataset.y).hidden=!on;
       });
+    });
+  });
+
+  var chips=[].slice.call(document.querySelectorAll('.kchip')),
+      rows=[].slice.call(document.querySelectorAll('.krow'));
+  chips.forEach(function(c){
+    c.addEventListener('click',function(){
+      chips.forEach(function(o){o.classList.toggle('is-on',o===c);});
+      var f=c.dataset.f;
+      rows.forEach(function(r){ r.hidden = !(f==='all' || r.dataset.t===f); });
     });
   });
 })();
