@@ -73,7 +73,7 @@ h1{font-size:clamp(29px,5vw,48px); line-height:1.3; margin:0 0 18px; max-width:1
 .nav{position:sticky; top:0; z-index:20; background:color-mix(in srgb, var(--paper) 92%, transparent);
   backdrop-filter:blur(8px); border-bottom:1px solid var(--rule)}
 .nav-in{max-width:var(--maxw); margin:0 auto; padding:0 clamp(18px,4vw,44px); display:flex; gap:2px; overflow-x:auto}
-.nav a{padding:12px 14px; font-size:12.5px; color:var(--ink-2); text-decoration:none; white-space:nowrap;
+.nav a{padding:12px 12px; font-size:12.5px; color:var(--ink-2); text-decoration:none; white-space:nowrap;
   border-bottom:2px solid transparent}
 .nav a:hover{color:var(--accent); border-bottom-color:var(--accent)}
 .nav a .n{font-family:"IBM Plex Mono",monospace; color:var(--ink-3); margin-right:7px; font-size:11px}
@@ -448,6 +448,41 @@ html{scroll-behavior:smooth}
 .axis-g{margin:11px 0 0; font-size:12.5px; color:var(--ink-2); padding-top:10px;
   border-top:1px dashed var(--rule-2)}
 
+.mini-h{font-size:14px; margin:0 0 14px; font-family:"Zen Old Mincho",serif; font-weight:600}
+.weekly{min-width:980px}
+.weekly .wno{width:56px; text-align:center; font-family:"IBM Plex Mono",monospace;
+  color:var(--accent); font-weight:500; white-space:nowrap}
+.weekly .wth{width:130px; color:var(--ink); font-weight:700}
+.weekly .wmsg{width:300px; color:var(--ink)}
+.weekly .wmat{width:200px; font-size:11.5px; color:var(--ink-3)}
+.weekly .wex{width:250px; background:color-mix(in srgb,var(--accent-soft) 55%,transparent)}
+.rules{list-style:none; margin:0; padding:0; display:grid; gap:2px}
+.rule{background:var(--surface); border:1px solid var(--rule); border-left:5px solid var(--accent);
+  padding:13px 18px; display:grid; grid-template-columns:96px 1fr; gap:16px; align-items:baseline}
+.rule.is-no{border-left-color:#B03A2E}
+
+.axis.is-hot{background:color-mix(in srgb,#B03A2E 12%,var(--surface)); border-color:#B03A2E}
+.axis.is-hot .axis-t{color:#B03A2E}
+:root[data-theme="dark"] .axis.is-hot .axis-t{color:#EE9C90}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .axis.is-hot .axis-t{color:#EE9C90}}
+.ctab.is-hot span::after{content:"　補正"; color:#B03A2E; font-weight:700}
+:root[data-theme="dark"] .ctab.is-hot span::after{color:#EE9C90}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .ctab.is-hot span::after{color:#EE9C90}}
+.psub{margin:-6px 0 12px; font-size:12px; color:var(--ink-3); letter-spacing:.03em}
+.pgrp{font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.08em; color:var(--ink-3);
+  padding:10px 0 4px; border-bottom:1px solid var(--rule); margin-bottom:2px}
+.pgrp:first-child{padding-top:0}
+.weekly .wax{width:64px; text-align:center; font-size:10.5px; white-space:nowrap; font-weight:700}
+.weekly tr.ax-a .wax{background:#2CA02C; color:#fff}
+.weekly tr.ax-b .wax{background:#D6336C; color:#fff}
+
+.rk{font-size:11px; letter-spacing:.06em; color:var(--ink-3)}
+.rule.is-no .rk{color:#B03A2E}
+.rule h5{margin:0 0 3px; font-size:13.5px; font-weight:700; color:var(--ink)}
+.rule p{margin:0; font-size:12.5px; color:var(--ink-2); line-height:1.85}
+@media(max-width:620px){.rule{grid-template-columns:1fr; gap:3px}}
+
+
 
 
 @media(max-width:620px){.tmeta>div{grid-template-columns:1fr; gap:2px}
@@ -481,9 +516,9 @@ html{scroll-behavior:smooth}
     <a href="#talk"><span class="n">05</span>ヒアリング</a>
     <a href="#csv"><span class="n">06</span>記録・CSV</a>
     <a href="#case"><span class="n">07</span>ケース別</a>
-    <a href="#calendar"><span class="n">08</span>年間サイクル</a>
+    <a href="#calendar"><span class="n">08</span>年間の動き</a>
     <a href="#rubric"><span class="n">09</span>ルーブリック</a>
-    <a href="#ops"><span class="n">10</span>運用</a>
+    <a href="#ops"><span class="n">10</span>運用・研修</a>
   </div>
 </nav>
 
@@ -2232,12 +2267,12 @@ html{scroll-behavior:smooth}
         型を持っていないと、その場で引くか、言ってはいけないことを言うかのどちらかになる。</p>
       </header>
 
-      <h3 class="sub-h">5分トーク集 <span class="sub-n">5ケース／25場面</span></h3>
-      <div class="ytabs ctabs" role="tablist" aria-label="ケース"><button class="ytab ctab is-on" id="ctab1" role="tab" aria-selected="true" aria-controls="cs1" data-c="1">A<span>高齢者・介護保険</span></button><button class="ytab ctab" id="ctab2" role="tab" aria-selected="false" aria-controls="cs2" data-c="2">B<span>公会計</span></button><button class="ytab ctab" id="ctab3" role="tab" aria-selected="false" aria-controls="cs3" data-c="3">C<span>公共施設マネジメント</span></button><button class="ytab ctab" id="ctab4" role="tab" aria-selected="false" aria-controls="cs4" data-c="4">D<span>会計支援・経営戦略ほか</span></button><button class="ytab ctab" id="ctab5" role="tab" aria-selected="false" aria-controls="cs5" data-c="5">E<span>全テーマ共通</span></button></div>
+      <h3 class="sub-h">5分トーク集 <span class="sub-n">6ケース／30場面</span></h3>
+      <div class="ytabs ctabs" role="tablist" aria-label="ケース"><button class="ytab ctab is-on is-hot" id="ctab1" role="tab" aria-selected="true" aria-controls="cs1" data-c="1">A<span>高齢者・介護保険</span></button><button class="ytab ctab is-hot" id="ctab2" role="tab" aria-selected="false" aria-controls="cs2" data-c="2">F<span>障害者・障害児</span></button><button class="ytab ctab" id="ctab3" role="tab" aria-selected="false" aria-controls="cs3" data-c="3">B<span>公会計</span></button><button class="ytab ctab" id="ctab4" role="tab" aria-selected="false" aria-controls="cs4" data-c="4">C<span>公共施設マネジメント</span></button><button class="ytab ctab" id="ctab5" role="tab" aria-selected="false" aria-controls="cs5" data-c="5">D<span>会計支援・経営戦略ほか</span></button><button class="ytab ctab" id="ctab6" role="tab" aria-selected="false" aria-controls="cs6" data-c="6">E<span>全テーマ共通</span></button></div>
       
       <div class="cpanel" id="cs1" role="tabpanel" aria-labelledby="ctab1">
-        <div class="axis">
-          <p class="axis-t">この5分で伝えることは1つだけ</p>
+        <div class="axis is-hot">
+          <p class="axis-t">今期の補正 ── 期限が迫っている</p>
           <p class="axis-b">R9年4月から保険料を賦課するにはR9年3月議会での条例改正が必要。逆算すると10月末までに分析が終わっていないとパブリックコメントの期間が取れない。自治体側が動かせない制約なので、こちらの都合ではなく相手の制約として話せる。</p>
           <p class="axis-g"><span class="k">対象</span>第10期（R9〜11年度）介護保険事業計画を自前で作っている自治体</p>
         </div>
@@ -2291,6 +2326,61 @@ html{scroll-behavior:smooth}
         <ul class="nglist"><li>「このままでは間に合いませんよ」と脅す ── 担当者の面目を潰した時点で、以後どの案件にも入れなくなる。</li><li>保険料の上昇率を推測で口に出す ── 推計前の数字は、外れたときに議会・住民への説明を壊す。</li><li>「補正で必ず取れます」と断定する ── 予算の可否は財政課と議会が決める。こちらは資料を用意する側。</li><li>5分と言って10分話す ── 次のアポが取れなくなる。話し切れなければ「続きは資料でお持ちします」で切る。</li><li>他団体の進捗を引き合いに出す ── 「△△町さんはもう委託されています」は未公表情報の持ち込みになる。</li></ul>
       </div>
       <div class="cpanel" id="cs2" role="tabpanel" aria-labelledby="ctab2" hidden>
+        <div class="axis is-hot">
+          <p class="axis-t">今期の補正 ── 期限が迫っている</p>
+          <p class="axis-b">障害福祉計画には保険料のような議決の期限がないため、高齢者が優先されて後回しになりやすい。ただし県の障害福祉計画が市町村の見込量を集約するため、県への提出時期が実質の期限になる。「期限がない」と思われているものに、実質の期限を示すのが障がい特有の切り口。</p>
+          <p class="axis-g"><span class="k">対象</span>第8期障害福祉計画・第4期障害児福祉計画（R9〜11年度）を自前で作っている自治体。高齢者の第10期と策定年度が重なり、小規模団体では同じ課・同じ担当者が両方を持っている。</p>
+        </div>
+        <div class="timeline"><div class="tseg g1" style="flex:30"><span class="tsl">0:00</span><span class="tsh">高齢者と重なっていることから入る</span></div><div class="tseg g2" style="flex:60"><span class="tsl">0:30</span><span class="tsh">残っているものを3問だけ聞く</span></div><div class="tseg g3" style="flex:90"><span class="tsl">1:30</span><span class="tsh">期限の構造を示す（本題）</span></div><div class="tseg g4" style="flex:60"><span class="tsl">3:00</span><span class="tsh">負担の大きいところだけ切り出す</span></div><div class="tseg g5" style="flex:60"><span class="tsl">4:00</span><span class="tsh">高齢者と分けて見積を出す約束をする</span></div></div>
+        <ol class="ccards">
+        <li class="ccard">
+          <p class="ctime">0:00–0:30</p>
+          <div class="cbody">
+            <h4>高齢者と重なっていることから入る</h4>
+            <blockquote class="speech">「第8期の障害福祉計画と第4期の障害児福祉計画の件で伺いました。今年度は高齢者の第10期と重なる年ですので、ご負担が集中されているのではないかと思いまして。5分だけお時間をいただけますでしょうか。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>「大変ですね」と同情から入らない。「重なっている」という事実から入る。担当者が自分からは言いにくいことを、こちらから先に言う。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">0:30–1:30</p>
+          <div class="cbody">
+            <h4>残っているものを3問だけ聞く</h4>
+            <blockquote class="speech">「①手帳をお持ちの方へのアンケートは、もう実施されましたでしょうか。」
+「②前期の成果目標の達成状況の評価は、お済みでしょうか。」
+「③県への見込量のご提出は、いつ頃までとご案内が来ていますでしょうか。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>③が実質の期限。ここを押さえている担当者は多くなく、答えられなければ、それ自体がこちらの持ち込む課題になる。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">1:30–3:00</p>
+          <div class="cbody">
+            <h4>期限の構造を示す（本題）</h4>
+            <blockquote class="speech">「障害福祉計画には保険料のような議決の期限がございませんので、高齢者が優先されて後回しになりやすいところかと思います。ただ、県の障害福祉計画が市町村の見込量を集約しますので、県へのご提出が実質の期限になります。そこから逆算しますと、年内に成果目標と見込量が固まっている必要があります。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>「期限がない」と思われているものに、実質の期限を示す。県の提出時期は団体・県により違うため、断定せず「ご案内が来ていますか」と確認する形で扱う。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">3:00–4:00</p>
+          <div class="cbody">
+            <h4>負担の大きいところだけ切り出す</h4>
+            <blockquote class="speech">「全部をお預けいただく必要はありません。時間がかかるのは成果目標の設定と見込量の推計で、前期の実績と国保連のデータを使った作業です。ここだけをお預かりして、障害者計画の理念の部分は御市で書いていただく形にできます。高齢者と重なる年ですので、負担の大きいところだけ外に出すという考え方です。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>3計画一体だと分量が大きく、全部委託は査定に耐えない。「重なっているから一部だけ」は、庁内で説明しやすい理由になる。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">4:00–5:00</p>
+          <div class="cbody">
+            <h4>高齢者と分けて見積を出す約束をする</h4>
+            <blockquote class="speech">「12月補正でしたら、財政課へのご要求は11月上旬かと思います。10月中に、高齢者と障がいを分けた切り分け案と参考のお見積をお持ちします。いつ頃までにあるとよろしいでしょうか。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>高齢者と障がいを1本にまとめると金額が膨らみ、査定で落ちる。分けて出し、通しやすい方から通す。</p>
+          </div>
+        </li></ol>
+        <h4 class="sub-h2">想定問答</h4>
+        <ul class="qalist"><li class="qa"><p class="qq">「高齢者を先にやっているので、障がいは後で」</p><blockquote class="speech q">「その順番で差し支えないかと思います。ただ、調査だけは先に走らせておきませんと、年明けに集計が間に合わなくなります。調査部分だけ先にご検討いただけますでしょうか。」</blockquote><p class="qn"><span class="k">補足</span>順番を否定しない。調査だけ先行させれば、本体の受注につながる。</p></li><li class="qa"><p class="qq">「県からまだ何も来ていません」</p><blockquote class="speech q">「例年ですと◯月頃かと存じます。ご案内が来てから動きますと時間が足りませんので、先に進められる部分だけ整理しておきませんか。」</blockquote><p class="qn"><span class="k">補足</span>県の提出時期は県により違う。断定せず「例年ですと」で止め、必ず県の資料で確認する。</p></li><li class="qa"><p class="qq">「3計画とも自前でやります」</p><blockquote class="speech q">「承知しました。でしたら、成果目標の設定だけ、こちらでレビューさせていただく形もございます。国の目標をそのまま置かれている団体が多いのですが、実績と離れていると次の期に評価が難しくなりますので。」</blockquote><p class="qn"><span class="k">補足</span>自前を否定しない。成果目標のレビューという小さな入口を残す。</p></li><li class="qa"><p class="qq">「予算がありません」</p><blockquote class="speech q">「高齢者と障がいを分けてお出ししますので、金額の小さい方からご要求いただく形でも結構です。」</blockquote><p class="qn"><span class="k">補足</span>分けて出すこと自体が、予算が取れない団体への回答になる。</p></li></ul>
+        <h4 class="sub-h2">やってはいけないこと</h4>
+        <ul class="nglist"><li>高齢者と障がいをまとめて1本の見積にする ── 金額が膨らみ、査定で両方とも落ちる。</li><li>「障がいは後回しにされていますね」と言う ── 事実でも、担当者への批判に聞こえる。</li><li>県への提出期限を推測で断定する ── 県により違う。必ず県の資料か担当者への確認で押さえる。</li><li>成果目標を国の数値のまま提案する ── 実績と離れた目標は、次の期の評価で必ず問題になる。</li></ul>
+      </div>
+      <div class="cpanel" id="cs3" role="tabpanel" aria-labelledby="ctab3" hidden>
         <div class="axis">
           <p class="axis-t">この5分で伝えることは1つだけ</p>
           <p class="axis-b">台帳の資産額が実態より少ないと、有形固定資産減価償却率がずれ、総合管理計画の更新費用試算の前提が崩れ、起債・交付金の裏付けも弱くなる。台帳は公会計だけの話ではなく、施設と財源の話につながっている。</p>
@@ -2345,7 +2435,7 @@ html{scroll-behavior:smooth}
         <h4 class="sub-h2">やってはいけないこと</h4>
         <ul class="nglist"><li>「台帳が間違っています」と言う ── 精緻化されていないことと誤りは違う。担当者の否定になる。</li><li>精緻化の効果を金額で断定する ── 資産額がいくら増えるかは調べてみないと分からない。</li><li>セミナーに来なかったことを責める・確認する ── 案内が担当者まで届いていないことも多い。</li><li>公会計の話だけで終える ── 財政課・管財課につながる話に広げないと、単発の小さな受注で終わる。</li></ul>
       </div>
-      <div class="cpanel" id="cs3" role="tabpanel" aria-labelledby="ctab3" hidden>
+      <div class="cpanel" id="cs4" role="tabpanel" aria-labelledby="ctab4" hidden>
         <div class="axis">
           <p class="axis-t">この5分で伝えることは1つだけ</p>
           <p class="axis-b">公共施設等適正管理推進事業債は、総合管理計画に基づく事業であることが要件。裏を返せば、計画に書かれていない事業は起債の対象にならない。計画改定は「作り直し」ではなく「財源を使えるようにする作業」。</p>
@@ -2400,7 +2490,7 @@ html{scroll-behavior:smooth}
         <h4 class="sub-h2">やってはいけないこと</h4>
         <ul class="nglist"><li>起債の充当率・措置率・適用期限を、当年度資料で確認せずに口に出す ── 数値の誤りはそのまま事故になる。</li><li>「この計画は要件を満たしていません」と断定する ── 判断するのは総務省と県であって、当社ではない。</li><li>他社が作った計画を批判する ── その計画を選んだのは目の前の担当者。</li><li>「起債が使えなくなります」と脅す ── 事実に基づかない不安の煽りは、後で必ず信用を失う。</li></ul>
       </div>
-      <div class="cpanel" id="cs4" role="tabpanel" aria-labelledby="ctab4" hidden>
+      <div class="cpanel" id="cs5" role="tabpanel" aria-labelledby="ctab5" hidden>
         <div class="axis">
           <p class="axis-t">この5分で伝えることは1つだけ</p>
           <p class="axis-b">随意契約は「変える理由がない」から続いている。変えさせようとするのではなく、契約範囲に入っていない隣の業務を取る。そして改定年度の前年度に必ず戻る。随契が切れる機会は、担当者の交代と改定年度しかない。</p>
@@ -2455,7 +2545,7 @@ html{scroll-behavior:smooth}
         <h4 class="sub-h2">やってはいけないこと</h4>
         <ul class="nglist"><li>現受託者の成果物を批判する ── その会社を選んだのは目の前の担当者。否定は担当者への否定になる。</li><li>「随意契約は競争性がない」と制度論を持ち出す ── 契約方式は自治体が決めること。</li><li>訪問記録に「再訪不要」と書いて切る ── 改定時期が先なら「再アプローチ」とし、備考に再訪年度を書く。</li><li>現受託者の契約金額を聞き出そうとする ── 聞き方によっては相手を困らせる。公表資料で調べる。</li></ul>
       </div>
-      <div class="cpanel" id="cs5" role="tabpanel" aria-labelledby="ctab5" hidden>
+      <div class="cpanel" id="cs6" role="tabpanel" aria-labelledby="ctab6" hidden>
         <div class="axis">
           <p class="axis-t">この5分で伝えることは1つだけ</p>
           <p class="axis-b">不在は失敗ではなく、次を作る機会。受付で3つ確認し、1枚置いて帰る。何も置かずに帰ると、訪問した事実が相手側に何も残らない。</p>
@@ -2511,20 +2601,23 @@ html{scroll-behavior:smooth}
         <ul class="nglist"><li>何も置かずに帰る ── 訪問した事実が相手側に何も残らず、その日の移動時間がすべて無駄になる。</li><li>備考に「担当不在」とだけ書く ── 次に何をするかが読めない記録は、記録として成立していない。</li><li>次回アクションを空欄にする ── 空欄は「決めていない」と同義で、そのままフォローが漏れる。</li><li>在席時間を確認せず、同じ曜日・時間帯に繰り返し訪問する ── 不在が続く原因はたいていこれ。</li><li>受付で担当者の携帯番号や不在の理由を聞き出そうとする ── 相手を困らせる。</li></ul>
       </div>
 
-      <h3 class="sub-h">来期（R9年度）営業方針</h3>
+      <h3 class="sub-h">営業方針 <span class="sub-n">A 今期の補正／B 来期案件獲得</span></h3>
       <div class="plans">
-        <div class="plan" style="--pc:#D6336C">
-          <h4>こども計画・子ども子育て支援事業計画</h4>
-          <p class="pintro">訪問記録では「国や県の温度感を見ながら判断」「中間見直しは自前」という回答が並ぶ。
-          努力義務なので、待っていても発注にならない。<b>制度が変わったので直さざるを得ない</b>という
-          外から与えられた理由を持ち込むのが崩し方。</p>
-          <ul class="pllist"><li class="pl"><span class="plk" data-k="現状認識">現状認識</span><div><h5>「国や道の強制力しだい」で様子見が多数派</h5><p>訪問記録を見ると、こども計画について「子ども・子育て支援事業計画の改定タイミングで、国や県の温度感を見ながら判断する」「中間見直しは自前」という回答が複数の団体で並んでいる。努力義務であるため、待っていても発注は生まれない。待ちの姿勢を崩す材料を持ち込むのが来期の仕事。</p></div></li><li class="pl"><span class="plk" data-k="狙い目①">狙い目①</span><div><h5>第3期事業計画（R7〜11年度）の中間年の見直し</h5><p>5年計画の中間年に、量の見込みと実績の乖離を踏まえて見直す。少子化の加速と利用率の変化で、第3期策定時の見込みから外れている団体が多い。区域別・年齢別の乖離率を一覧にして持参すると、見直しの必要性が数字で伝わる。</p></div></li><li class="pl"><span class="plk" data-k="狙い目②">狙い目②</span><div><h5>こども誰でも通園制度（乳児等通園支援事業）の反映</h5><p>地域子ども・子育て支援事業に新たに位置付けられたため、量の見込みへの反映が必要になる。「制度が変わったので計画を直さなければならない」は、担当者が庁内を説得しやすい理由になる。中間見直しを提案する最も明確な入口。</p></div></li><li class="pl"><span class="plk" data-k="狙い目③">狙い目③</span><div><h5>こども計画の新規策定（未策定団体）</h5><p>こども基本法に基づく努力義務。子ども・若者計画、こどもの貧困対策計画、母子保健計画を統合できる。「別々に作っている計画を1本にまとめれば、次からの改定の手間が減る」という、事務負担の軽減を軸に話す。安くなるからではない。</p></div></li><li class="pl"><span class="plk" data-k="財源">財源</span><div><h5>地域子供の未来応援交付金／ヤングケアラー支援体制強化事業</h5><p>こどもの貧困の実態調査・計画策定・支援体制整備に充当できる。調査業務の予算化に直結する。要綱と要望時期は毎年度変わるため、当年度資料で確認してから提示すること。「対象になり得るので要綱で確認を」で止め、断定しない。</p></div></li><li class="pl"><span class="plk" data-k="提案の型">提案の型</span><div><h5>調査と計画を分けて、二段で取る</h5><p>実態調査（貧困・ヤングケアラー・こどもの意見聴取）を単独業務として先に受け、その結果を持って計画本体につなげる。調査は交付金が使え、金額も抑えられるため通りやすい。こども会議の設計・運営は策定年度以外でも受注できる。</p></div></li><li class="pl"><span class="plk" data-k="接触先">接触先</span><div><h5>こども未来課・子育て支援課だけでは足りない</h5><p>保育、母子保健（健康推進課）、教育委員会（放課後児童クラブ）に所管が分かれている。庁内横断の調整そのものが担当者の最大の負担なので、「関係課をまとめた進め方の案」を持っていくと提案価値になる。</p></div></li><li class="pl"><span class="plk" data-k="タイムライン">タイムライン</span><div><h5>R8年度中に予算化まで持ち込む</h5><p>R9年度当初予算での発注を狙うなら、R8年8〜10月に情報提供と参考見積、11〜12月に査定対応、1〜3月に公告。中間見直しを補正で狙う場合は、9月補正はすでに間に合わないため12月補正（要求は11月上旬）を目標にする。</p></div></li></ul>
+        <div class="plan" style="--pc:#2CA02C">
+          <h4>A　今期の補正に向けた提案営業</h4>
+          <p class="psub">高齢者介護（第10期）／障がい3計画（第8期・第4期）</p>
+          <p class="pintro">どちらもR8年度が策定年度で、小規模団体では同じ課が両方を持っている。
+          <b>狙う枠は12月補正</b>（財政課への要求は11月上旬）、逆算して10月中に見積を出す。
+          9月補正はすでに間に合わない。</p>
+          <ul class="pllist"><li class="pgrp">共通</li><li class="pl"><span class="plk" data-k="現状認識">現状認識</span><div><h5>R8年度は高齢者と障がいの策定年度が重なっている</h5><p>高齢者は第10期（R9〜11年度）、障がいは第8期障害福祉計画・第4期障害児福祉計画（同R9〜11年度）。どちらもR8年度が策定年度で、小規模団体では同じ課・同じ担当者が両方を持っている。自前で始めたものの、秋口で手が止まる団体が出るのがこの時期。</p></div></li><li class="pl"><span class="plk" data-k="枠">枠</span><div><h5>狙うのは12月補正。9月補正はすでに間に合わない</h5><p>9月議会に上程する議案は8月中に固まっている。今から狙えるのは12月補正で、財政課への要求はおおむね11月上旬。逆算すると10月中に見積を出しておく必要がある。ここを外すと、残るのは次年度当初だけになる。</p></div></li><li class="pl"><span class="plk" data-k="型">型</span><div><h5>全部委託ではなく部分委託で出す</h5><p>補正は金額が大きいと査定に耐えない。時間がかかる工程だけを切り出して出す。金額を下げることが目的ではなく、庁内で説明しやすくすることが目的だと伝える。切り出しの例：推計・算定だけ／調査集計だけ／計画書の編集・印刷だけ／パブコメ実務だけ。</p></div></li><li class="pl"><span class="plk" data-k="型">型</span><div><h5>高齢者と障がいは必ず分けて見積を出す</h5><p>同じ課が両方を持っていても、1本にまとめると金額が膨らみ、査定で両方とも落ちる。分けて出し、通しやすい方から通す。片方が通れば、翌年度にもう片方が通りやすくなる。</p></div></li><li class="pgrp">高齢者・介護保険</li><li class="pl"><span class="plk" data-k="期限">期限</span><div><h5>R9年3月議会での保険料条例改正が動かせない期限</h5><p>R9年4月から保険料を賦課するにはR9年3月議会での条例改正が必要。2月下旬の議案上程 ← 1〜2月のパブリックコメント（30日程度）← 12〜1月の保険料確定と素案 ←11月の給付費推計とサービス見込量 ← 10月末までの現状分析。つまり10月末までに分析が終わっていないと、パブコメの期間が取れない。</p></div></li><li class="pl"><span class="plk" data-k="見極め">見極め</span><div><h5>残っているものを3問で判定する</h5><p>①ニーズ調査・在宅介護実態調査の集計は済んだか ②保険料の算定は誰が担当する予定か ③パブリックコメントはいつ頃を想定しているか。①が未了、②が未定、③が「これから」なら、自前完遂は高い確率で間に合わない。</p></div></li><li class="pl"><span class="plk" data-k="切り出し">切り出し</span><div><h5>保険料算定と給付費推計だけを預かる</h5><p>見える化システムと厚労省ワークシートを使う工程で、最も時間がかかり、かつ3年間の保険料に直結するため誤りが許されない。計画本文は庁内で書いてもらう前提にすると、金額も説明もまとまる。</p></div></li><li class="pgrp">障害者・障害児</li><li class="pl"><span class="plk" data-k="期限">期限</span><div><h5>議決の期限がない分、県への提出時期が実質の期限</h5><p>障害福祉計画には保険料のような議決期限がないため、高齢者が優先されて後回しになりやすい。ただし県の障害福祉計画が市町村の見込量を集約するため、県への提出時期が実質の期限になる。そこから逆算すると、年内に成果目標と見込量が固まっている必要がある。提出時期は県により異なるため、断定せず「ご案内が来ていますか」と確認する形で扱う。</p></div></li><li class="pl"><span class="plk" data-k="見極め">見極め</span><div><h5>残っているものを3問で判定する</h5><p>①手帳所持者アンケートは実施済みか ②前期の成果目標の達成状況の評価は済んでいるか ③県への見込量の提出はいつまでと案内が来ているか。③を押さえている担当者は多くなく、答えられなければ、それ自体が持ち込む課題になる。</p></div></li><li class="pl"><span class="plk" data-k="切り出し">切り出し</span><div><h5>成果目標の設定と見込量の推計だけを預かる</h5><p>前期の実績と国保連データを使う工程で、3計画一体だと分量が大きい。障害者計画（理念計画）の部分は庁内で書いてもらう。「高齢者と重なる年だから、負担の大きいところだけ外に出す」は庁内で説明しやすい理由になる。</p></div></li><li class="pgrp">共通</li><li class="pl"><span class="plk" data-k="逃げ道">逃げ道</span><div><h5>補正が通らなかった場合の二段構え</h5><p>既定予算の範囲（少額随意契約の限度額は自治体の契約規則による）で調査・集計だけ先行させ、本体は次年度当初に回す。分析が先に終わっていれば、年度をまたいでも間に合う。金額の線引きは必ず当該自治体の契約規則で確認してから話す。</p></div></li><li class="pl"><span class="plk" data-k="やらないこと">やらないこと</span><div><h5>脅さない・断定しない・まとめない</h5><p>「このままでは間に合いません」と脅すと担当者の面目を潰す。保険料の上昇率や補正の可否を断定しない。高齢者と障がいをまとめて1本の見積にしない。</p></div></li></ul>
         </div>
-        <div class="plan" style="--pc:#8C564B">
-          <h4>地域福祉計画</h4>
-          <p class="pintro">単発では金額が小さく採算に乗らない。併載計画と社協の活動計画を束ねて初めて中規模案件になる。
-          <b>バラバラに作れば毎年どれかの改定が来るが、束ねれば数年に一度で済む</b>が最も効く言い方。</p>
-          <ul class="pllist"><li class="pl"><span class="plk" data-k="現状認識">現状認識</span><div><h5>単発で取ると小さい。束ねて初めて中規模案件になる</h5><p>地域福祉計画そのものは金額が大きくない。併載できる計画と、社協の地域福祉活動計画を合わせて初めて採算に乗る。訪問記録にも「複数計画を地域福祉計画で一本化したい」という団体が実在しており、需要側の要望とも一致する。</p></div></li><li class="pl"><span class="plk" data-k="狙い目①">狙い目①</span><div><h5>成年後見制度利用促進基本計画の改定期</h5><p>国の第二期基本計画が令和8年度で終期を迎え、第三期に移る。これに合わせて市町村計画を改定する団体が出るため、来期の有力な入口になる。中核機関が未設置の団体では、計画策定と体制整備をあわせて提案できる。</p></div></li><li class="pl"><span class="plk" data-k="狙い目②">狙い目②</span><div><h5>重層的支援体制整備事業</h5><p>未実施の団体には移行準備事業、実施済みの団体には実施計画の策定と体制強化。移行すると介護・障害・こども・困窮の相談支援等の補助が一体的に交付される点が説得材料になる。ただし最大の壁は庁内合意なので、計画の前段として庁内勉強会・業務フロー整理の伴走を提案する。</p></div></li><li class="pl"><span class="plk" data-k="狙い目③">狙い目③</span><div><h5>自殺対策計画（地域自殺対策強化交付金）</h5><p>策定が義務であり、交付金を計画の策定・改定に充当できる。地域福祉計画に併載する形にすれば、財源のある計画が本体を引っ張る構図が作れる。JSCPの地域自殺実態プロファイルを使えば、重点施策を客観データで組める。</p></div></li><li class="pl"><span class="plk" data-k="提案の型">提案の型</span><div><h5>自治体と社会福祉協議会の両方に当たる</h5><p>地域福祉計画（自治体）と地域福祉活動計画（社協）を一体で策定すると、発注元が2つになり予算を合算できる。社協は自治体より意思決定が早いことが多く、社協側から自治体を動かせる場合もある。どちらか一方だけを訪問している状態は、機会を半分捨てている。</p></div></li><li class="pl"><span class="plk" data-k="提案の型">提案の型</span><div><h5>併載計画の一覧を作って持参する</h5><p>成年後見・再犯防止・自殺対策・孤独孤立・生活困窮・避難行動要支援者・居住支援。担当自治体それぞれについて、どの計画がいつ切れるかを一覧にして見せる。「バラバラに作ると毎年どれかの改定が来るが、束ねれば数年に一度で済む」が最も効く言い方。</p></div></li><li class="pl"><span class="plk" data-k="注意">注意</span><div><h5>圏域と進捗評価が実務の争点になる</h5><p>圏域が計画ごとにバラバラ（日常生活圏域／小学校区／地区社協）な団体が多く、整理そのものを業務に含められる。また前計画の進捗評価の仕組みが無い団体が大半なので、指標設計と年次評価の仕組みづくりを提案に入れると、他社の標準的な策定業務と差がつく。</p></div></li><li class="pl"><span class="plk" data-k="タイムライン">タイムライン</span><div><h5>R8年8〜10月が勝負</h5><p>地域福祉計画は複数課・社協との調整が要るため、予算要求の準備に時間がかかる。R8年8〜10月に併載計画の一覧と一体策定案を提示し、11〜12月の査定を越える。社協への接触は自治体と同時期に始める。</p></div></li></ul>
+        <div class="plan" style="--pc:#D6336C">
+          <h4>B　来期案件獲得のための営業</h4>
+          <p class="psub">地域福祉計画／こども計画（R9年度当初予算）</p>
+          <p class="pintro">どちらも努力義務で、待っていても発注は生まれない。
+          <b>動くのは8〜10月</b>、11〜12月が査定、1〜3月が公告。
+          予算要求書が固まってから訪問しても、その年度には載らない。</p>
+          <ul class="pllist"><li class="pgrp">共通</li><li class="pl"><span class="plk" data-k="時期">時期</span><div><h5>R8年8〜10月が勝負。ここを外すと1年待つ</h5><p>R9年度当初予算での発注を狙うなら、8〜10月に情報提供と参考見積、11〜12月に査定対応、1〜3月に公告という流れになる。予算要求書が固まってから訪問しても、その年度には載らない。</p></div></li><li class="pl"><span class="plk" data-k="型">型</span><div><h5>参考見積は「要求のための資料」として渡す</h5><p>受注の判断材料としてではなく、担当者が庁内で要求を起こすための資料として位置づける。この言い方であれば、発注を約束できない段階でも受け取ってもらえる。</p></div></li><li class="pgrp">地域福祉</li><li class="pl"><span class="plk" data-k="現状認識">現状認識</span><div><h5>単発では小さい。束ねて初めて中規模案件になる</h5><p>地域福祉計画そのものは金額が大きくない。併載できる計画と社協の地域福祉活動計画を合わせて初めて採算に乗る。訪問記録にも「複数計画を地域福祉計画で一本化したい」という団体が実在しており、需要側の要望とも一致する。</p></div></li><li class="pl"><span class="plk" data-k="狙い目">狙い目</span><div><h5>成年後見制度利用促進基本計画の改定期</h5><p>国の第二期基本計画が令和8年度で終期を迎え、第三期に移る。これに合わせて市町村計画を改定する団体が出るため、来期の有力な入口になる。中核機関が未設置の団体では、計画策定と体制整備をあわせて提案できる。</p></div></li><li class="pl"><span class="plk" data-k="狙い目">狙い目</span><div><h5>重層的支援体制整備事業</h5><p>未実施の団体には移行準備事業、実施済みの団体には実施計画の策定と体制強化。移行すると介護・障害・こども・困窮の相談支援等の補助が一体的に交付される点が説得材料になる。最大の壁は庁内合意なので、計画の前段として庁内勉強会・業務フロー整理の伴走を提案する。</p></div></li><li class="pl"><span class="plk" data-k="狙い目">狙い目</span><div><h5>自殺対策計画（地域自殺対策強化交付金）</h5><p>策定が義務であり、交付金を計画の策定・改定に充当できる。地域福祉計画に併載すれば、財源のある計画が本体を引っ張る構図が作れる。JSCPの地域自殺実態プロファイルを使えば、重点施策を客観データで組める。</p></div></li><li class="pl"><span class="plk" data-k="型">型</span><div><h5>自治体と社会福祉協議会の両方に当たる</h5><p>一体で策定すると発注元が2つになり予算を合算できる。社協は自治体より意思決定が早いことが多く、社協側から自治体を動かせる場合もある。どちらか一方だけを訪問している状態は、機会を半分捨てている。</p></div></li><li class="pl"><span class="plk" data-k="持参物">持参物</span><div><h5>併載計画がいつ切れるかの一覧</h5><p>成年後見・再犯防止・自殺対策・孤独孤立・生活困窮・避難行動要支援者・居住支援。担当自治体ごとに一覧を作って見せる。「バラバラに作ると毎年どれかの改定が来るが、束ねれば数年に一度で済む」が最も効く言い方。</p></div></li><li class="pgrp">こども</li><li class="pl"><span class="plk" data-k="現状認識">現状認識</span><div><h5>「国や県の強制力しだい」で様子見が多数派</h5><p>訪問記録では「子ども・子育て支援事業計画の改定タイミングで、国や県の温度感を見ながら判断する」「中間見直しは自前」という回答が複数の団体で並んでいる。努力義務であるため、待っていても発注は生まれない。</p></div></li><li class="pl"><span class="plk" data-k="狙い目">狙い目</span><div><h5>こども誰でも通園制度の量の見込みへの反映</h5><p>地域子ども・子育て支援事業に新たに位置付けられたため、量の見込みへの反映が必要になる。「制度が変わったので計画を直さなければならない」は、担当者が庁内を説得しやすい理由になる。中間見直しを提案する最も明確な入口。</p></div></li><li class="pl"><span class="plk" data-k="狙い目">狙い目</span><div><h5>第3期事業計画（R7〜11年度）の中間年の見直し</h5><p>少子化の加速と利用率の変化で、第3期策定時の見込みから外れている団体が多い。区域別・年齢別の乖離率を一覧にして持参すると、見直しの必要性が数字で伝わる。</p></div></li><li class="pl"><span class="plk" data-k="狙い目">狙い目</span><div><h5>こども計画の新規策定（未策定団体）</h5><p>子ども・若者計画、こどもの貧困対策計画、母子保健計画を統合できる。「別々に作っている計画を1本にまとめれば、次からの改定の手間が減る」という事務負担の軽減を軸に話す。安くなるからではない。</p></div></li><li class="pl"><span class="plk" data-k="接触先">接触先</span><div><h5>こども未来課だけでは足りない</h5><p>保育、母子保健（健康推進課）、教育委員会（放課後児童クラブ）に所管が分かれている。庁内横断の調整そのものが担当者の最大の負担なので、「関係課をまとめた進め方の案」を持っていくと提案価値になる。</p></div></li><li class="pgrp">共通</li><li class="pl"><span class="plk" data-k="財源">財源</span><div><h5>調査を先に、交付金とセットで取る</h5><p>こども＝地域子供の未来応援交付金（こどもの貧困の実態調査）、ヤングケアラー支援体制強化事業。地域福祉＝重層事業交付金・移行準備事業、地域自殺対策強化交付金。調査は交付金が使え金額も抑えられるため、計画本体より先に通りやすい。要綱と要望時期は毎年度変わるため、当年度資料で確認してから提示し、断定しない。</p></div></li><li class="pl"><span class="plk" data-k="やらないこと">やらないこと</span><div><h5>努力義務を理由に引かない</h5><p>「努力義務なので」と相手に言わせる前に、直さざるを得ない理由（制度変更・財源・改定期）を先に出す。交付金を「使えます」と断定しない。社協に当たらずに自治体だけで完結させない。庁内横断が要る計画で、1つの課だけに話して終わらせない。</p></div></li></ul>
         </div>
       </div>
     </section>
@@ -2640,18 +2733,154 @@ html{scroll-behavior:smooth}
   
     <section id="ops" class="sec">
       <header class="sec-head">
-        <p class="eyebrow">10　運用</p>
-        <h2>回し方と配布物</h2>
+        <p class="eyebrow">10　運用と社内展開</p>
+        <h2>配って終わりにしないための段取り</h2>
+        <p class="lead">研修の中身は、いま動かすもの（今期の補正）と、これから仕込むもの（来期の獲得）に分けた。
+        5分は<b>説明3分＋演習2分</b>で組み、毎回「今週やること」を1つだけ指定して締める ──
+        行動を指定しない研修は、聞いて終わる。</p>
       </header>
+
+      <h3 class="sub-h">A　補正編 5分台本 <span class="sub-n">高齢者介護／障がい計画・今期の12月補正</span></h3>
+      <div class="axis is-hot">
+        <p class="axis-t">今期の補正 ── 期限が迫っている</p>
+        <p class="axis-b">R8年度は高齢者の第10期と障がいの第8期・第4期が重なる策定年度。
+        狙う枠は12月補正だけで、財政課への要求は11月上旬。逆算して10月中に見積を出す。
+        そして<b>高齢者と障がいは必ず分けて見積を出す</b> ── 1本にまとめると金額が膨らみ、査定で両方とも落ちる。</p>
+        <p class="axis-g"><span class="k">対象</span>営業メンバー全員（8〜9月に実施）</p>
+      </div>
+      <div class="timeline" id="trA"><div class="tseg g1" style="flex:30"><span class="tsl">0:00</span><span class="tsh">いま何が起きているか</span></div><div class="tseg g2" style="flex:60"><span class="tsl">0:30</span><span class="tsh">狙う枠は12月補正。ひとつだけ</span></div><div class="tseg g3" style="flex:60"><span class="tsl">1:30</span><span class="tsh">期限の構造を、テーマごとに1文で言えるようにする</span></div><div class="tseg g4" style="flex:60"><span class="tsl">2:30</span><span class="tsh">全部委託では通らない。切り出して出す</span></div><div class="tseg g5" style="flex:60"><span class="tsl">3:30</span><span class="tsh">断られたときの逃げ道を先に持っておく</span></div><div class="tseg g5" style="flex:30"><span class="tsl">4:30</span><span class="tsh">今週やること</span></div></div><ol class="ccards">
+        <li class="ccard">
+          <p class="ctime">0:00–0:30</p>
+          <div class="cbody">
+            <h4>いま何が起きているか</h4>
+            <blockquote class="speech">「今年度は、高齢者の第10期と、障がいの第8期・第4期の策定年度が重なっています。小さい団体ほど、同じ課の同じ担当者が両方を持っています。自前で始めたものの、秋口で手が止まる先が必ず出ます。そこが今日の話です。」</blockquote>
+            <p class="caim"><span class="k">押さえどころ</span>「計画を売る」ではなく「重なっている年」という事実から入る。この認識を全員が持つだけで、訪問先の選び方が変わる。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">0:30–1:30</p>
+          <div class="cbody">
+            <h4>狙う枠は12月補正。ひとつだけ</h4>
+            <blockquote class="speech">「9月補正はもう間に合いません。議案は8月中に固まっています。いま狙えるのは12月補正で、財政課への要求は11月上旬です。逆算すると、10月中に見積を出しておく必要があります。あと1か月です。」</blockquote>
+            <p class="caim"><span class="k">押さえどころ</span>枠を1つに絞る。複数の可能性を並べると、動く時期が曖昧になる。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">1:30–2:30</p>
+          <div class="cbody">
+            <h4>期限の構造を、テーマごとに1文で言えるようにする</h4>
+            <blockquote class="speech">「高齢者は、R9年4月から保険料を賦課するのにR9年3月議会での条例改正が要る。逆算して10月末までに分析が終わっていないとパブコメの期間が取れない。障がいは議決の期限がないぶん後回しにされますが、県が市町村の見込量を集約するので、県への提出時期が実質の期限になります。」</blockquote>
+            <p class="caim"><span class="k">押さえどころ</span>この2文を全員が言えるようにする。これが相手の制約であり、こちらの都合ではないから話せる唯一の材料。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">2:30–3:30</p>
+          <div class="cbody">
+            <h4>全部委託では通らない。切り出して出す</h4>
+            <blockquote class="speech">「補正は金額が大きいと査定に耐えません。時間がかかる工程だけ切り出します。高齢者なら保険料算定と給付費推計、障がいなら成果目標の設定と見込量の推計。そして高齢者と障がいは必ず分けて見積を出してください。1本にまとめると金額が膨らんで、査定で両方とも落ちます。」</blockquote>
+            <p class="caim"><span class="k">押さえどころ</span>「分けて出す」は今日いちばん持ち帰ってほしい実務。同じ課だからまとめたくなるが、そこで落ちる。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">3:30–4:30</p>
+          <div class="cbody">
+            <h4>断られたときの逃げ道を先に持っておく</h4>
+            <blockquote class="speech">「予算がないと言われたら、調査・集計だけ既定予算の範囲で先行させて、本体は次年度当初に回す形を出してください。分析が先に終わっていれば間に合います。金額の線引きは自治体の契約規則によりますので、必ず確認してから話すこと。」</blockquote>
+            <p class="caim"><span class="k">押さえどころ</span>断られてから考えると引くだけになる。逃げ道を先に用意しておくと、その場で切り返せる。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">4:30–5:00</p>
+          <div class="cbody">
+            <h4>今週やること</h4>
+            <blockquote class="speech">「担当エリアで、高齢者と障がいを自前で作っている先を洗い出してください。そのうち9月中に訪問できる先に印を付けて、来週の朝礼で共有します。」</blockquote>
+            <p class="caim"><span class="k">押さえどころ</span>研修を「聞いて終わり」にしない。今週の行動を1つだけ指定して締める。</p>
+          </div>
+        </li></ol>
+
+      <h3 class="sub-h">B　来期編 5分台本 <span class="sub-n">地域福祉計画／こども計画・R9年度当初予算</span></h3>
+      <div class="axis">
+        <p class="axis-t">この5分で伝えることは1つだけ</p>
+        <p class="axis-b">どちらも努力義務で、待っていても発注は生まれない。動くのは8〜10月。
+        地域福祉は<b>束ねる</b>、こどもは<b>制度変更を理由にする</b>。
+        計画本体より、交付金の使える実態調査を先に取る。</p>
+        <p class="axis-g"><span class="k">対象</span>営業メンバー全員（10〜11月に実施）</p>
+      </div>
+      <div class="timeline" id="trB"><div class="tseg g1" style="flex:30"><span class="tsl">0:00</span><span class="tsh">いつまでに何をするか</span></div><div class="tseg g2" style="flex:60"><span class="tsl">0:30</span><span class="tsh">この2つは待っていても発注が生まれない</span></div><div class="tseg g3" style="flex:60"><span class="tsl">1:30</span><span class="tsh">地域福祉は束ねる</span></div><div class="tseg g4" style="flex:60"><span class="tsl">2:30</span><span class="tsh">こどもは制度変更を理由にする</span></div><div class="tseg g5" style="flex:60"><span class="tsl">3:30</span><span class="tsh">調査を先に、交付金とセットで取る</span></div><div class="tseg g5" style="flex:30"><span class="tsl">4:30</span><span class="tsh">今週やること</span></div></div><ol class="ccards">
+        <li class="ccard">
+          <p class="ctime">0:00–0:30</p>
+          <div class="cbody">
+            <h4>いつまでに何をするか</h4>
+            <blockquote class="speech">「来期の案件、地域福祉計画とこども計画の話です。R9年度の当初予算で取るなら、動くのは8月から10月です。11月から12月が査定、1月から3月が公告。予算要求書が固まってから訪問しても、その年度には載りません。」</blockquote>
+            <p class="caim"><span class="k">押さえどころ</span>先に期限を言う。「来期」と言った瞬間に先延ばしになるので、実際の作業は今月からだと最初に示す。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">0:30–1:30</p>
+          <div class="cbody">
+            <h4>この2つは待っていても発注が生まれない</h4>
+            <blockquote class="speech">「どちらも努力義務の計画です。訪問記録を見ると、こども計画は『国や県の温度感を見ながら判断する』という回答が並んでいます。待ちの姿勢を崩す材料をこちらから持ち込まないと、来期も同じ回答が返ってきます。」</blockquote>
+            <p class="caim"><span class="k">押さえどころ</span>「努力義務だからやらない」と相手に言わせる前に、直さざるを得ない理由を先に出す、という順番を共有する。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">1:30–2:30</p>
+          <div class="cbody">
+            <h4>地域福祉は束ねる</h4>
+            <blockquote class="speech">「地域福祉計画は単発では金額が小さく、採算に乗りません。併載できる計画──成年後見、再犯防止、自殺対策、孤独孤立──と、社協の地域福祉活動計画を束ねて初めて中規模になります。とくに成年後見は国の第二期が令和8年度で終期を迎えるので、来期の入口になります。持っていくのは、担当自治体の併載計画がいつ切れるかの一覧です。」</blockquote>
+            <p class="caim"><span class="k">押さえどころ</span>束ねる理由は「安くなる」ではなく「毎年どれかの改定が来る状態を、数年に一度にできる」。言い方を全員でそろえる。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">2:30–3:30</p>
+          <div class="cbody">
+            <h4>こどもは制度変更を理由にする</h4>
+            <blockquote class="speech">「こどもは、こども誰でも通園制度が地域子ども・子育て支援事業に位置付けられたことで、量の見込みへの反映が要ります。これが『制度が変わったので直さざるを得ない』という、担当者が庁内を説得できる唯一の理由です。持っていくのは、区域別・年齢別の量の見込みと実績の乖離率の一覧です。」</blockquote>
+            <p class="caim"><span class="k">押さえどころ</span>こども側の切り口は制度変更ひとつに絞る。複数並べると、どれも動かす力を持たなくなる。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">3:30–4:30</p>
+          <div class="cbody">
+            <h4>調査を先に、交付金とセットで取る</h4>
+            <blockquote class="speech">「計画本体は金額が大きく、来期の当初でも通らないことがあります。実態調査を先に単独で受けてください。こどもの貧困やヤングケアラーの調査は交付金が使える場合があり、金額も抑えられるので通りやすい。ただし要綱は毎年度変わりますので、『対象になり得るので確認を』で止めて、断定しないこと。」</blockquote>
+            <p class="caim"><span class="k">押さえどころ</span>二段で取る型を共有する。断定禁止はここでも繰り返す。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">4:30–5:00</p>
+          <div class="cbody">
+            <h4>今週やること</h4>
+            <blockquote class="speech">「担当エリアの地域福祉計画とこども計画について、計画期間の終期と併載計画を一覧にしてください。10月までに訪問する先を、来週の朝礼で共有します。」</blockquote>
+            <p class="caim"><span class="k">押さえどころ</span>こちらも行動を1つだけ指定する。一覧が作れていない状態で訪問しても、L2止まりの話しかできない。</p>
+          </div>
+        </li></ol>
+
+      <h3 class="sub-h">週次5分研修シリーズ <span class="sub-n">A編4回 → B編4回・約2か月で一巡</span></h3>
+      <div class="tablewrap">
+        <table class="grid weekly">
+          <thead><tr><th scope="col">軸</th><th scope="col">回</th><th scope="col">テーマ</th>
+          <th scope="col">伝えること（1回に1つだけ）</th><th scope="col">使う教材</th>
+          <th scope="col">その場の演習（2分）</th></tr></thead>
+          <tbody><tr class="ax-a"><td class="wax">A 補正</td><td class="wno">第1回</td><td class="wth">重なっている年を理解する</td><td class="wmsg">R8年度は高齢者・第10期と障がい・第8期／第4期の策定年度が重なる。同じ課が両方を持っている。</td><td class="wmat">29_営業方針（A）／27_5分トーク集 A・F</td><td class="wex">担当エリアで高齢者・障がいを自前で作っている先を、その場で3件挙げる。</td></tr><tr class="ax-a"><td class="wax">A 補正</td><td class="wno">第2回</td><td class="wth">期限の構造を言えるようにする</td><td class="wmsg">高齢者＝R9年3月議会の条例改正から逆算して10月末。障がい＝県への見込量提出が実質の期限。</td><td class="wmat">29_営業方針（A・期限）／27_5分トーク集 A・F の1:30–3:00</td><td class="wex">2人1組で、高齢者と障がいの期限を1文ずつ、相手役に説明する。</td></tr><tr class="ax-a"><td class="wax">A 補正</td><td class="wno">第3回</td><td class="wth">部分委託の切り分けを作る</td><td class="wmsg">全部委託は査定に耐えない。高齢者は保険料算定と給付費推計、障がいは成果目標と見込量だけを切り出す。</td><td class="wmat">29_営業方針（A・切り出し）／16・17_営業提案の深度</td><td class="wex">訪問予定の1件について、切り出す工程と切り出さない工程をその場で書き分ける。</td></tr><tr class="ax-a"><td class="wax">A 補正</td><td class="wno">第4回</td><td class="wth">12月補正の段取りと断られ方</td><td class="wmsg">要求は11月上旬、逆算して10月中に見積。高齢者と障がいは必ず分けて出す。</td><td class="wmat">28_想定問答とNG（A・F）／19_訪問前 準備チェックリスト</td><td class="wex">「予算がない」「自前でやれる」への切り返しを、1人ずつ声に出す。</td></tr><tr class="ax-b"><td class="wax">B 来期</td><td class="wno">第5回</td><td class="wth">来期は8〜10月が勝負</td><td class="wmsg">R9年度当初での発注は、8〜10月に情報提供と参考見積、11〜12月が査定、1〜3月が公告。</td><td class="wmat">29_営業方針（B・時期）／15_年間業務カレンダー</td><td class="wex">担当エリアの地域福祉・こどもについて、計画期間の終期を3件挙げる。</td></tr><tr class="ax-b"><td class="wax">B 来期</td><td class="wno">第6回</td><td class="wth">地域福祉は束ねる</td><td class="wmsg">単発では採算に乗らない。併載計画と社協の活動計画を束ねて初めて中規模案件になる。</td><td class="wmat">29_営業方針（B・地域福祉）／18_提案ネタ台帳（地域福祉）</td><td class="wex">担当自治体を1件選び、併載できる計画を思いつく限り挙げる（成年後見・再犯防止・自殺対策ほか）。</td></tr><tr class="ax-b"><td class="wax">B 来期</td><td class="wno">第7回</td><td class="wth">こどもは制度変更を理由にする</td><td class="wmsg">こども誰でも通園制度の反映が「直さざるを得ない理由」になる。中間見直しの最も明確な入口。</td><td class="wmat">29_営業方針（B・こども）／21_ヒアリング項目（こども・子育て）</td><td class="wex">こどもの担当課に何を聞くか、L3の質問を3つ選んで読み上げる。</td></tr><tr class="ax-b"><td class="wax">B 来期</td><td class="wno">第8回</td><td class="wth">調査を先に、交付金とセットで</td><td class="wmsg">計画本体より調査のほうが通りやすい。ただし交付金は「対象になり得る」で止め、断定しない。</td><td class="wmat">29_営業方針（B・財源）／17_深度マトリクス④⑤／18_提案ネタ台帳（財源）</td><td class="wex">担当自治体1件について、該当しうる交付金を1つ挙げ、その確認先を言う。</td></tr></tbody>
+        </table>
+      </div>
+
+      <h3 class="sub-h">運営のしかた</h3>
+      <ul class="rules"><li class="rule"><span class="rk">時間配分</span><div><h5>説明3分＋演習2分</h5><p>説明だけの5分は翌週には残らない。手や口を動かす2分を必ず入れる。</p></div></li><li class="rule"><span class="rk">順番</span><div><h5>A編（補正）を先に、B編（来期）を後に</h5><p>A編は今期の期限が迫っており、10月を過ぎると使えなくなる。8〜9月にA編4回、10〜11月にB編4回を目安にする。</p></div></li><li class="rule"><span class="rk">講師</span><div><h5>持ち回りにする</h5><p>教える側がいちばん学ぶ。各回のテーマに近い担当者が講師を務める。L4の「指導・組織貢献」の評価項目にそのまま紐づく。</p></div></li><li class="rule"><span class="rk">締め方</span><div><h5>毎回、今週やることを1つだけ指定する</h5><p>行動を指定しない研修は聞いて終わる。翌週の冒頭で、前回指定した行動の結果を共有する。</p></div></li><li class="rule"><span class="rk">記録</span><div><h5>個人別チェックシートに紐づける</h5><p>各回の演習で挙がった内容を、12_個人別チェックシートの「根拠となる実績」欄に書き足す。研修が評価と切れていると続かない。</p></div></li><li class="rule is-no"><span class="rk">やらないこと</span><div><h5>資料を読み上げるだけの回にしない</h5><p>読み上げなら配布で足りる。5分の場を取る以上、その場でしか起きないこと（実演・申告・点検）を必ず入れる。</p></div></li></ul>
+
+      <h3 class="sub-h">育成の運用サイクルと配布物</h3>
       <div class="ops-grid">
         <div>
-          <h3>運用サイクル</h3>
+          <h4 class="mini-h">運用サイクル</h4>
           <ul class="ops"><li><span class="op-when">毎月</span><p>上長と本人で30分の面談。当月の学習項目と習得目標の達成状況を確認し、翌月の重点を決める。</p></li><li><span class="op-when">四半期</span><p>成果物レビューを1件必ず実施し、各項目の「確認方法」欄の方法で到達度を確認する。</p></li><li><span class="op-when">半期</span><p>個人別チェックシートで自己評価と上長評価を突き合わせ、差異の原因を対話する。</p></li><li><span class="op-when">年次</span><p>レベル判定を確定し、次年度の主担当・副担当テーマと育成計画を決定する。</p></li></ul>
         </div>
         <div>
-          <h3>配布する管理表</h3>
-          <ul class="files"><li><code>10_新人教育カリキュラム_マスター管理表.xlsx</code><p>16シート。階層定義・36ヶ月ロードマップ・テーマ別カリキュラム130項目・スキルマップ・個人別チェックシート・ルーブリック・教材リスト・年間カレンダー。</p></li><li><code>11_個人別_習得度チェックシート.xlsx</code><p>配布用の単票。24の評価項目に自己評価／上長評価／判定日／根拠となる実績を記入する。新人1名につき1ファイル。</p></li></ul>
-          <p class="note">前提：4月入社／育成期間36ヶ月／営業と業務の双方を担う総合職。中途入社は先にレベル判定を行い、該当レベルの月から開始する。制度改正（基本指針・報酬改定・会計基準・各省ガイドライン）が生じた際は、該当テーマの学習内容を年1回見直す。</p>
+          <h4 class="mini-h">配布する管理表</h4>
+          <ul class="files"><li><code>10_新人教育カリキュラム_マスター管理表.xlsx</code><p>30シート。階層定義、36ヶ月ロードマップ、テーマ別カリキュラム、営業提案の深度と提案ネタ台帳、ヒアリング項目とトークスクリプト、訪問記録とCSV、5分トーク集、来期営業方針、社内研修。</p></li><li><code>11_個人別_習得度チェックシート.xlsx</code><p>配布用の単票。33の評価項目に自己評価／上長評価／判定日／根拠となる実績を記入する。新人1名につき1ファイル。</p></li><li><code>13_訪問記録_CSVテンプレート.csv</code><p>Teams提出用のヘッダ行。BOM付きUTF-8・CRLF・全項目クォート（現行ファイルと同形式）。</p></li></ul>
+          <p class="note">前提：4月入社／育成期間36ヶ月／営業と業務の双方を担う総合職。中途入社は先にレベル判定を行い、
+          該当レベルの月から開始する。制度改正（基本指針・報酬改定・会計基準・各省ガイドライン）が生じた際は、
+          該当テーマの学習内容を年1回見直す。</p>
         </div>
       </div>
     </section>

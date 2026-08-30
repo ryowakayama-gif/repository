@@ -16,7 +16,8 @@ from curriculum_sales import SALES_LEVELS, SALES_MATRIX, SALES_KIT, SALES_PREP
 from curriculum_talk import HEARING_COMMON, HEARING_THEME, TALK_SCRIPT
 from curriculum_csv import (CSV_HEADER, CHOICES, CSV_RULES, REMARK_GUIDE,
                             THEME_TITLES, VISIT_FORM, DATA_STATUS)
-from curriculum_case import CASES, NEXT_KODOMO, NEXT_CHIIKI
+from curriculum_case import CASES, PLAN_HOSEI, PLAN_NEXT
+from curriculum_train import TRAIN_A, TRAIN_B, TRAIN_SERIES, TRAIN_RULES
 
 OUT_DIR = "/home/user/repository/output"
 os.makedirs(OUT_DIR, exist_ok=True)
@@ -1401,7 +1402,8 @@ def sheet_intro(wb):
             "26_テーマ・タイトル標準リスト… テーマ8区分と標準タイトル、カリキュラムとの対応",
             "27_5分トーク集… 5ケースの台本（高齢者の補正予算／所有外／公共施設／他社随契／不在時）",
             "28_5分トーク_想定問答とNG… 断られ方の型と切り返し、言ってはいけないこと",
-            "29_来期営業方針_こども・地域福祉… R9年度に向けた2テーマの攻め方",
+            "29_営業方針_今期補正と来期獲得… A 高齢者介護・障がいの補正／B 地域福祉・こどもの来期獲得",
+            "30_5分社内研修… A補正編・B来期編の5分台本と、週次5分シリーズ8回",
         ]),
         ("4. 運用サイクル（推奨）", [
             "毎月　　… 上長と本人で30分の面談。当月の学習項目と習得目標の達成状況を確認し、翌月の重点を決める。",
@@ -1967,11 +1969,12 @@ def sheet_talk5(wb):
               "意図を理解したうえで自分の言葉に直して使う。◯◯・△△は訪問前に必ず埋める。", 5)
     r = 4
     r = section(ws, r, "ケース一覧 ── この5分で伝えることは1ケースにつき1つだけ", 5, C["高齢者"])
-    put_header(ws, r, ["", "テーマ", "ケース", "対象", "この5分の軸（伝えることは1つ）"],
-               [5, 20, 34, 46, 76], fill=C["subhead"])
+    put_header(ws, r, ["", "軸", "テーマ／ケース", "対象", "この5分の軸（伝えることは1つ）"],
+               [5, 12, 42, 46, 76], fill=C["subhead"])
     rr = r + 1
     for c in CASES:
-        vals = [c["label"], c["theme"], c["title"], c["target"], c["axis"]]
+        grp = "A 補正" if c.get("axisgrp") == "A" else "共通"
+        vals = [c["label"], grp, f'{c["theme"]}／{c["title"]}', c["target"], c["axis"]]
         for i, v in enumerate(vals, start=1):
             cc = ws.cell(row=rr, column=i, value=v)
             cc.border = BORDER
@@ -1986,7 +1989,7 @@ def sheet_talk5(wb):
     rr += 1
     rr = section(ws, rr, "スクリプト", 5, C["高齢者"])
     put_header(ws, rr, ["", "時間", "見出し", "話す内容（スクリプト）", "ねらい"],
-               [5, 20, 34, 46, 76], fill=C["subhead"])
+               [5, 12, 42, 46, 76], fill=C["subhead"])
     head_row = rr
     rr += 1
     for c in CASES:
@@ -2064,26 +2067,115 @@ def sheet_talk5_qa(wb):
 
 
 def sheet_next_plan(wb):
-    ws = wb.create_sheet("29_来期営業方針_こども・地域福祉")
+    ws = wb.create_sheet("29_営業方針_今期補正と来期獲得")
     ws.sheet_properties.tabColor = "D6336C"
-    put_title(ws, "来期（R9年度）営業方針｜こども計画／地域福祉計画",
-              "どちらも努力義務の計画で、待っていても発注は生まれない。"
-              "こどもは「制度が変わったので直さざるを得ない」、地域福祉は「束ねれば手間が減る」が崩し方。", 3)
+    put_title(ws, "営業方針｜A 今期の補正に向けた提案営業／B 来期案件獲得のための営業",
+              "Aは高齢者介護と障がい計画。どちらもR8年度が策定年度で、狙う枠は12月補正（要求は11月上旬）。"
+              "Bは地域福祉計画とこども計画。R9年度当初での発注を狙うなら動くのは8〜10月。", 4)
     r = 4
-    for title, rows, color in (("こども計画・子ども子育て支援事業計画", NEXT_KODOMO, C["こども"]),
-                               ("地域福祉計画", NEXT_CHIIKI, C["地域福祉"])):
-        r = section(ws, r, title, 3, color)
-        put_header(ws, r, ["区分", "見出し", "内容"], [16, 40, 108], fill=color)
-        last = put_rows(ws, r + 1, rows, center_cols=(1,),
-                        band_col=1,
-                        band_colors={"現状認識": "7F7F7F", "狙い目": "C00000",
-                                     "提案の型": "2E75B6", "財源": "C55A11",
-                                     "接触先": "70AD47", "タイムライン": "7030A0",
-                                     "注意": "A02020"})
+    for title, rows, color in (
+        ("A　今期の補正に向けた提案営業　── 高齢者介護（第10期）／障がい3計画（第8期・第4期）",
+         PLAN_HOSEI, C["高齢者"]),
+        ("B　来期案件獲得のための営業　── 地域福祉計画／こども計画（R9年度当初予算）",
+         PLAN_NEXT, C["こども"])):
+        r = section(ws, r, title, 4, color)
+        put_header(ws, r, ["テーマ", "区分", "見出し", "内容"],
+                   [20, 14, 40, 104], fill=color)
+        last = put_rows(ws, r + 1, rows, center_cols=(2,),
+                        band_col=2,
+                        band_colors={"現状認識": "7F7F7F", "期限": "C00000", "狙い目": "C00000",
+                                     "枠": "C55A11", "時期": "C55A11", "型": "2E75B6",
+                                     "見極め": "70AD47", "切り出し": "70AD47",
+                                     "財源": "C55A11", "持参物": "7030A0", "接触先": "70AD47",
+                                     "逃げ道": "7030A0", "やらないこと": "A02020"})
         for rw in range(r + 1, last):
-            ws.cell(row=rw, column=2).font = F_BOLD
+            ws.cell(row=rw, column=1).font = F_BOLD
+            ws.cell(row=rw, column=3).font = F_BOLD
+            if str(ws.cell(row=rw, column=2).value) == "やらないこと":
+                for col in range(1, 5):
+                    ws.cell(row=rw, column=col).fill = PatternFill("solid", fgColor=C["note"])
         r = last + 2
     ws.freeze_panes = "A5"
+    return ws
+
+
+def sheet_training(wb):
+    ws = wb.create_sheet("30_5分社内研修")
+    ws.sheet_properties.tabColor = "7F4FBF"
+    put_title(ws, "社内研修（5分）｜A 補正編／B 来期編",
+              "5分は「説明3分＋演習2分」で組む。A編（補正）は今期の期限が迫っているため先に、"
+              "B編（来期）は後に回す。講師は持ち回りにして、教える側の学習機会にする。", 6)
+    r = 4
+    for title, rows, color in (
+        ("① A 補正編 5分台本　── 高齢者介護／障がい計画（今期・12月補正）", TRAIN_A, C["高齢者"]),
+        ("② B 来期編 5分台本　── 地域福祉計画／こども計画（R9年度当初予算）", TRAIN_B, C["こども"])):
+        r = section(ws, r, title, 6, color)
+        put_header(ws, r, ["時間", "見出し", "話す内容（台本）", "押さえどころ", "", ""],
+                   [12, 28, 86, 54, 20, 20], fill=C["subhead"])
+        ws.merge_cells(start_row=r, start_column=4, end_row=r, end_column=6)
+        rr = r + 1
+        for t, head, script, note in rows:
+            for i, v in enumerate([t, head, script, note], start=1):
+                cc = ws.cell(row=rr, column=i, value=v)
+                cc.border = BORDER
+                cc.alignment = AL_CTR if i == 1 else AL_WRAP
+                cc.font = F_BODY
+            ws.cell(row=rr, column=1).font = Font(name="Meiryo UI", size=10, bold=True, color="1F3864")
+            ws.cell(row=rr, column=2).font = F_BOLD
+            ws.cell(row=rr, column=3).font = Font(name="Meiryo UI", size=9, color="1F3864")
+            ws.merge_cells(start_row=rr, start_column=4, end_row=rr, end_column=6)
+            for col in (5, 6):
+                ws.cell(row=rr, column=col).border = BORDER
+            rr += 1
+        r = rr + 1
+
+    r = section(ws, r, "③ 週次5分研修シリーズ（A編4回 → B編4回・約2か月で一巡）", 6, C["共通"])
+    put_header(ws, r, ["軸", "回", "テーマ", "伝えること（1回に1つだけ）", "使う教材", "その場の演習（2分）"],
+               [12, 8, 26, 76, 46, 52], fill=C["subhead"])
+    rr = r + 1
+    for ax, n, theme, msg, mat, ex in TRAIN_SERIES:
+        for i, v in enumerate([ax, f"第{n}回", theme, msg, mat, ex], start=1):
+            cc = ws.cell(row=rr, column=i, value=v)
+            cc.border = BORDER
+            cc.alignment = AL_CTR if i in (1, 2) else AL_WRAP
+            cc.font = F_BODY
+        col = C["高齢者"] if ax.startswith("A") else C["こども"]
+        ws.cell(row=rr, column=1).fill = PatternFill("solid", fgColor=col)
+        ws.cell(row=rr, column=1).font = Font(name="Meiryo UI", size=9, bold=True, color="FFFFFF")
+        ws.cell(row=rr, column=3).font = F_BOLD
+        ws.cell(row=rr, column=5).font = F_SMALL
+        ws.cell(row=rr, column=6).fill = PatternFill("solid", fgColor=C["band"])
+        ws.row_dimensions[rr].height = 42
+        rr += 1
+
+    rr += 1
+    rr = section(ws, rr, "④ 運営のしかた", 6, C["共通"])
+    put_header(ws, rr, ["区分", "方針", "理由・補足", "", "", ""],
+               [12, 28, 86, 54, 20, 20], fill=C["subhead"])
+    ws.merge_cells(start_row=rr, start_column=3, end_row=rr, end_column=6)
+    r3 = rr + 1
+    for kind, how, why in TRAIN_RULES:
+        ws.cell(row=r3, column=1, value=kind)
+        ws.cell(row=r3, column=2, value=how)
+        ws.cell(row=r3, column=3, value=why)
+        ws.merge_cells(start_row=r3, start_column=3, end_row=r3, end_column=6)
+        for col in range(1, 7):
+            cc = ws.cell(row=r3, column=col)
+            cc.border = BORDER
+            cc.alignment = AL_CTR if col == 1 else AL_WRAP
+            cc.font = F_BODY
+        ws.cell(row=r3, column=1).font = F_BOLD
+        ws.cell(row=r3, column=2).font = F_BOLD
+        if kind == "やらないこと":
+            for col in range(1, 7):
+                ws.cell(row=r3, column=col).fill = PatternFill("solid", fgColor=C["note"])
+        ws.row_dimensions[r3].height = 32
+        r3 += 1
+    ws.freeze_panes = "A5"
+    ws.print_area = f"A1:F{r3 - 1}"
+    ws.page_setup.orientation = "landscape"
+    ws.page_setup.fitToWidth = 1
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
     return ws
 
 
@@ -2118,6 +2210,7 @@ def main():
     sheet_talk5(wb)
     sheet_talk5_qa(wb)
     sheet_next_plan(wb)
+    sheet_training(wb)
     wb.move_sheet(LIST_SHEET, offset=len(wb.sheetnames))   # 非表示マスタはタブ順の最後へ
     p1 = os.path.join(OUT_DIR, "10_新人教育カリキュラム_マスター管理表.xlsx")
     wb.save(p1)
@@ -2143,7 +2236,8 @@ def main():
     print(f"作成: {p2}")
     print(f"　月次ロードマップ: {len(ROADMAP)}ヶ月 / テーマ別学習項目: {total}項目 / スキルマップ: {len(SKILLMAP)}行 / 評価項目: {len(build_checkitems())}項目")
     print(f"　営業: レベル定義{len(SALES_LEVELS)}段階 / 深度マトリクス{len(SALES_MATRIX)}素材 / 提案ネタ台帳{len(SALES_KIT)}件 / 準備チェック{len(SALES_PREP)}項目")
-    print(f"　ケース別: 5分トーク{len(CASES)}ケース／{sum(len(c['steps']) for c in CASES)}場面 ＋想定問答{sum(len(c['qa']) for c in CASES)}件＋NG{sum(len(c['ng']) for c in CASES)}件 / 来期方針 こども{len(NEXT_KODOMO)}項目・地域福祉{len(NEXT_CHIIKI)}項目")
+    print(f"　ケース別: 5分トーク{len(CASES)}ケース／{sum(len(c['steps']) for c in CASES)}場面 ＋想定問答{sum(len(c['qa']) for c in CASES)}件＋NG{sum(len(c['ng']) for c in CASES)}件 / 営業方針 A補正{len(PLAN_HOSEI)}項目・B来期{len(PLAN_NEXT)}項目")
+    print(f"　社内研修: A補正編{len(TRAIN_A)}区間・B来期編{len(TRAIN_B)}区間 / 週次シリーズ{len(TRAIN_SERIES)}回 / 運営{len(TRAIN_RULES)}項目")
     print(f"　現場ツール: ヒアリング共通{len(HEARING_COMMON)}問 / テーマ別{len(HEARING_THEME)}問 / トークスクリプト{len(TALK_SCRIPT)}場面 / 訪問記録{len(VISIT_FORM)}欄")
 
 

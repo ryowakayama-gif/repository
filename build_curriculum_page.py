@@ -14,7 +14,8 @@ from curriculum_sales import SALES_LEVELS, SALES_MATRIX, SALES_KIT, SALES_PREP
 from curriculum_talk import HEARING_COMMON, HEARING_THEME, TALK_SCRIPT
 from curriculum_csv import (CSV_HEADER, CSV_RULES, REMARK_GUIDE, THEME_TITLES,
                             VISIT_FORM, DATA_STATUS)
-from curriculum_case import CASES, NEXT_KODOMO, NEXT_CHIIKI
+from curriculum_case import CASES, PLAN_HOSEI, PLAN_NEXT
+from curriculum_train import TRAIN_A, TRAIN_B, TRAIN_SERIES, TRAIN_RULES
 
 OUT = "/tmp/claude-0/-home-user-repository/9fe4feb1-e025-51cd-8697-f63e2951be22/scratchpad/curriculum.html"
 e = html.escape
@@ -564,7 +565,9 @@ def sec_case():
     tabs, panels = "", ""
     for n, c in enumerate(CASES, 1):
         on = n == 1
-        tabs += (f'<button class="ytab ctab{" is-on" if on else ""}" id="ctab{n}" role="tab" '
+        hot = c.get("axisgrp") == "A"
+        tabs += (f'<button class="ytab ctab{" is-on" if on else ""}{" is-hot" if hot else ""}" '
+                 f'id="ctab{n}" role="tab" '
                  f'aria-selected="{"true" if on else "false"}" aria-controls="cs{n}" data-c="{n}">'
                  f'{e(c["label"])}<span>{e(c["theme"])}</span></button>')
 
@@ -597,8 +600,8 @@ def sec_case():
 
         panels += f"""
       <div class="cpanel" id="cs{n}" role="tabpanel" aria-labelledby="ctab{n}"{"" if on else " hidden"}>
-        <div class="axis">
-          <p class="axis-t">この5分で伝えることは1つだけ</p>
+        <div class="axis{" is-hot" if c.get("axisgrp") == "A" else ""}">
+          <p class="axis-t">{"今期の補正 ── 期限が迫っている" if c.get("axisgrp") == "A" else "この5分で伝えることは1つだけ"}</p>
           <p class="axis-b">{e(c["axis"])}</p>
           <p class="axis-g"><span class="k">対象</span>{e(c["target"])}</p>
         </div>
@@ -610,10 +613,17 @@ def sec_case():
         <ul class="nglist">{ng}</ul>
       </div>"""
 
-    def plan(rows):
-        return "".join(
-            f'<li class="pl"><span class="plk" data-k="{e(k)}">{e(k)}</span>'
-            f'<div><h5>{e(h)}</h5><p>{e(b)}</p></div></li>' for k, h, b in rows)
+    def plan(rows, themed=False):
+        out = ""
+        prev = None
+        for row in rows:
+            th, k, h, b = row if themed else (None, *row)
+            if themed and th != prev:
+                out += f'<li class="pgrp">{e(th)}</li>'
+                prev = th
+            out += (f'<li class="pl"><span class="plk" data-k="{e(k)}">{e(k)}</span>'
+                    f'<div><h5>{e(h)}</h5><p>{e(b)}</p></div></li>')
+        return out
 
     n_steps = sum(len(c["steps"]) for c in CASES)
     return f"""
@@ -631,20 +641,23 @@ def sec_case():
       <div class="ytabs ctabs" role="tablist" aria-label="ケース">{tabs}</div>
       {panels}
 
-      <h3 class="sub-h">来期（R9年度）営業方針</h3>
+      <h3 class="sub-h">営業方針 <span class="sub-n">A 今期の補正／B 来期案件獲得</span></h3>
       <div class="plans">
-        <div class="plan" style="--pc:#D6336C">
-          <h4>こども計画・子ども子育て支援事業計画</h4>
-          <p class="pintro">訪問記録では「国や県の温度感を見ながら判断」「中間見直しは自前」という回答が並ぶ。
-          努力義務なので、待っていても発注にならない。<b>制度が変わったので直さざるを得ない</b>という
-          外から与えられた理由を持ち込むのが崩し方。</p>
-          <ul class="pllist">{plan(NEXT_KODOMO)}</ul>
+        <div class="plan" style="--pc:#2CA02C">
+          <h4>A　今期の補正に向けた提案営業</h4>
+          <p class="psub">高齢者介護（第10期）／障がい3計画（第8期・第4期）</p>
+          <p class="pintro">どちらもR8年度が策定年度で、小規模団体では同じ課が両方を持っている。
+          <b>狙う枠は12月補正</b>（財政課への要求は11月上旬）、逆算して10月中に見積を出す。
+          9月補正はすでに間に合わない。</p>
+          <ul class="pllist">{plan(PLAN_HOSEI, True)}</ul>
         </div>
-        <div class="plan" style="--pc:#8C564B">
-          <h4>地域福祉計画</h4>
-          <p class="pintro">単発では金額が小さく採算に乗らない。併載計画と社協の活動計画を束ねて初めて中規模案件になる。
-          <b>バラバラに作れば毎年どれかの改定が来るが、束ねれば数年に一度で済む</b>が最も効く言い方。</p>
-          <ul class="pllist">{plan(NEXT_CHIIKI)}</ul>
+        <div class="plan" style="--pc:#D6336C">
+          <h4>B　来期案件獲得のための営業</h4>
+          <p class="psub">地域福祉計画／こども計画（R9年度当初予算）</p>
+          <p class="pintro">どちらも努力義務で、待っていても発注は生まれない。
+          <b>動くのは8〜10月</b>、11〜12月が査定、1〜3月が公告。
+          予算要求書が固まってから訪問しても、その年度には載らない。</p>
+          <ul class="pllist">{plan(PLAN_NEXT, True)}</ul>
         </div>
       </div>
     </section>"""
@@ -699,34 +712,108 @@ def sec_rubric():
 
 
 def sec_ops():
+    def script_block(rows, gid):
+        segs = "".join(
+            f'<div class="tseg g{min(i,5)}" style="flex:{_mins(t)}">'
+            f'<span class="tsl">{e(t.split("–")[0])}</span>'
+            f'<span class="tsh">{e(h)}</span></div>'
+            for i, (t, h, *_r) in enumerate(rows, 1))
+        cards = "".join(f"""
+        <li class="ccard">
+          <p class="ctime">{e(t)}</p>
+          <div class="cbody">
+            <h4>{e(head)}</h4>
+            <blockquote class="speech">{e(script)}</blockquote>
+            <p class="caim"><span class="k">押さえどころ</span>{e(note)}</p>
+          </div>
+        </li>""" for t, head, script, note in rows)
+        return f'<div class="timeline" id="{gid}">{segs}</div><ol class="ccards">{cards}</ol>'
+
+    srows = "".join(
+        f'<tr class="{"ax-a" if ax.startswith("A") else "ax-b"}">'
+        f'<td class="wax">{e(ax)}</td><td class="wno">第{n}回</td><td class="wth">{e(th)}</td>'
+        f'<td class="wmsg">{e(msg)}</td><td class="wmat">{e(mat)}</td>'
+        f'<td class="wex">{e(ex)}</td></tr>'
+        for ax, n, th, msg, mat, ex in TRAIN_SERIES)
+
+    rules = "".join(
+        f'<li class="rule{" is-no" if k == "やらないこと" else ""}">'
+        f'<span class="rk">{e(k)}</span><div><h5>{e(h)}</h5><p>{e(w)}</p></div></li>'
+        for k, h, w in TRAIN_RULES)
+
     ops = [("毎月", "上長と本人で30分の面談。当月の学習項目と習得目標の達成状況を確認し、翌月の重点を決める。"),
            ("四半期", "成果物レビューを1件必ず実施し、各項目の「確認方法」欄の方法で到達度を確認する。"),
            ("半期", "個人別チェックシートで自己評価と上長評価を突き合わせ、差異の原因を対話する。"),
            ("年次", "レベル判定を確定し、次年度の主担当・副担当テーマと育成計画を決定する。")]
     o = "".join(f'<li><span class="op-when">{e(a)}</span><p>{e(b)}</p></li>' for a, b in ops)
     files = [("10_新人教育カリキュラム_マスター管理表.xlsx",
-              "16シート。階層定義・36ヶ月ロードマップ・テーマ別カリキュラム130項目・スキルマップ・個人別チェックシート・ルーブリック・教材リスト・年間カレンダー。"),
+              "30シート。階層定義、36ヶ月ロードマップ、テーマ別カリキュラム、営業提案の深度と提案ネタ台帳、"
+              "ヒアリング項目とトークスクリプト、訪問記録とCSV、5分トーク集、来期営業方針、社内研修。"),
              ("11_個人別_習得度チェックシート.xlsx",
-              "配布用の単票。24の評価項目に自己評価／上長評価／判定日／根拠となる実績を記入する。新人1名につき1ファイル。")]
+              "配布用の単票。33の評価項目に自己評価／上長評価／判定日／根拠となる実績を記入する。新人1名につき1ファイル。"),
+             ("13_訪問記録_CSVテンプレート.csv",
+              "Teams提出用のヘッダ行。BOM付きUTF-8・CRLF・全項目クォート（現行ファイルと同形式）。")]
     f = "".join(f'<li><code>{e(a)}</code><p>{e(b)}</p></li>' for a, b in files)
+
     return f"""
     <section id="ops" class="sec">
       <header class="sec-head">
-        <p class="eyebrow">10　運用</p>
-        <h2>回し方と配布物</h2>
+        <p class="eyebrow">10　運用と社内展開</p>
+        <h2>配って終わりにしないための段取り</h2>
+        <p class="lead">研修の中身は、いま動かすもの（今期の補正）と、これから仕込むもの（来期の獲得）に分けた。
+        5分は<b>説明3分＋演習2分</b>で組み、毎回「今週やること」を1つだけ指定して締める ──
+        行動を指定しない研修は、聞いて終わる。</p>
       </header>
+
+      <h3 class="sub-h">A　補正編 5分台本 <span class="sub-n">高齢者介護／障がい計画・今期の12月補正</span></h3>
+      <div class="axis is-hot">
+        <p class="axis-t">今期の補正 ── 期限が迫っている</p>
+        <p class="axis-b">R8年度は高齢者の第10期と障がいの第8期・第4期が重なる策定年度。
+        狙う枠は12月補正だけで、財政課への要求は11月上旬。逆算して10月中に見積を出す。
+        そして<b>高齢者と障がいは必ず分けて見積を出す</b> ── 1本にまとめると金額が膨らみ、査定で両方とも落ちる。</p>
+        <p class="axis-g"><span class="k">対象</span>営業メンバー全員（8〜9月に実施）</p>
+      </div>
+      {script_block(TRAIN_A, "trA")}
+
+      <h3 class="sub-h">B　来期編 5分台本 <span class="sub-n">地域福祉計画／こども計画・R9年度当初予算</span></h3>
+      <div class="axis">
+        <p class="axis-t">この5分で伝えることは1つだけ</p>
+        <p class="axis-b">どちらも努力義務で、待っていても発注は生まれない。動くのは8〜10月。
+        地域福祉は<b>束ねる</b>、こどもは<b>制度変更を理由にする</b>。
+        計画本体より、交付金の使える実態調査を先に取る。</p>
+        <p class="axis-g"><span class="k">対象</span>営業メンバー全員（10〜11月に実施）</p>
+      </div>
+      {script_block(TRAIN_B, "trB")}
+
+      <h3 class="sub-h">週次5分研修シリーズ <span class="sub-n">A編4回 → B編4回・約2か月で一巡</span></h3>
+      <div class="tablewrap">
+        <table class="grid weekly">
+          <thead><tr><th scope="col">軸</th><th scope="col">回</th><th scope="col">テーマ</th>
+          <th scope="col">伝えること（1回に1つだけ）</th><th scope="col">使う教材</th>
+          <th scope="col">その場の演習（2分）</th></tr></thead>
+          <tbody>{srows}</tbody>
+        </table>
+      </div>
+
+      <h3 class="sub-h">運営のしかた</h3>
+      <ul class="rules">{rules}</ul>
+
+      <h3 class="sub-h">育成の運用サイクルと配布物</h3>
       <div class="ops-grid">
         <div>
-          <h3>運用サイクル</h3>
+          <h4 class="mini-h">運用サイクル</h4>
           <ul class="ops">{o}</ul>
         </div>
         <div>
-          <h3>配布する管理表</h3>
+          <h4 class="mini-h">配布する管理表</h4>
           <ul class="files">{f}</ul>
-          <p class="note">前提：4月入社／育成期間36ヶ月／営業と業務の双方を担う総合職。中途入社は先にレベル判定を行い、該当レベルの月から開始する。制度改正（基本指針・報酬改定・会計基準・各省ガイドライン）が生じた際は、該当テーマの学習内容を年1回見直す。</p>
+          <p class="note">前提：4月入社／育成期間36ヶ月／営業と業務の双方を担う総合職。中途入社は先にレベル判定を行い、
+          該当レベルの月から開始する。制度改正（基本指針・報酬改定・会計基準・各省ガイドライン）が生じた際は、
+          該当テーマの学習内容を年1回見直す。</p>
         </div>
       </div>
     </section>"""
+
 
 
 CSS = """
@@ -800,7 +887,7 @@ h1{font-size:clamp(29px,5vw,48px); line-height:1.3; margin:0 0 18px; max-width:1
 .nav{position:sticky; top:0; z-index:20; background:color-mix(in srgb, var(--paper) 92%, transparent);
   backdrop-filter:blur(8px); border-bottom:1px solid var(--rule)}
 .nav-in{max-width:var(--maxw); margin:0 auto; padding:0 clamp(18px,4vw,44px); display:flex; gap:2px; overflow-x:auto}
-.nav a{padding:12px 14px; font-size:12.5px; color:var(--ink-2); text-decoration:none; white-space:nowrap;
+.nav a{padding:12px 12px; font-size:12.5px; color:var(--ink-2); text-decoration:none; white-space:nowrap;
   border-bottom:2px solid transparent}
 .nav a:hover{color:var(--accent); border-bottom-color:var(--accent)}
 .nav a .n{font-family:"IBM Plex Mono",monospace; color:var(--ink-3); margin-right:7px; font-size:11px}
@@ -1175,6 +1262,41 @@ html{scroll-behavior:smooth}
 .axis-g{margin:11px 0 0; font-size:12.5px; color:var(--ink-2); padding-top:10px;
   border-top:1px dashed var(--rule-2)}
 
+.mini-h{font-size:14px; margin:0 0 14px; font-family:"Zen Old Mincho",serif; font-weight:600}
+.weekly{min-width:980px}
+.weekly .wno{width:56px; text-align:center; font-family:"IBM Plex Mono",monospace;
+  color:var(--accent); font-weight:500; white-space:nowrap}
+.weekly .wth{width:130px; color:var(--ink); font-weight:700}
+.weekly .wmsg{width:300px; color:var(--ink)}
+.weekly .wmat{width:200px; font-size:11.5px; color:var(--ink-3)}
+.weekly .wex{width:250px; background:color-mix(in srgb,var(--accent-soft) 55%,transparent)}
+.rules{list-style:none; margin:0; padding:0; display:grid; gap:2px}
+.rule{background:var(--surface); border:1px solid var(--rule); border-left:5px solid var(--accent);
+  padding:13px 18px; display:grid; grid-template-columns:96px 1fr; gap:16px; align-items:baseline}
+.rule.is-no{border-left-color:#B03A2E}
+
+.axis.is-hot{background:color-mix(in srgb,#B03A2E 12%,var(--surface)); border-color:#B03A2E}
+.axis.is-hot .axis-t{color:#B03A2E}
+:root[data-theme="dark"] .axis.is-hot .axis-t{color:#EE9C90}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .axis.is-hot .axis-t{color:#EE9C90}}
+.ctab.is-hot span::after{content:"　補正"; color:#B03A2E; font-weight:700}
+:root[data-theme="dark"] .ctab.is-hot span::after{color:#EE9C90}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .ctab.is-hot span::after{color:#EE9C90}}
+.psub{margin:-6px 0 12px; font-size:12px; color:var(--ink-3); letter-spacing:.03em}
+.pgrp{font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.08em; color:var(--ink-3);
+  padding:10px 0 4px; border-bottom:1px solid var(--rule); margin-bottom:2px}
+.pgrp:first-child{padding-top:0}
+.weekly .wax{width:64px; text-align:center; font-size:10.5px; white-space:nowrap; font-weight:700}
+.weekly tr.ax-a .wax{background:#2CA02C; color:#fff}
+.weekly tr.ax-b .wax{background:#D6336C; color:#fff}
+
+.rk{font-size:11px; letter-spacing:.06em; color:var(--ink-3)}
+.rule.is-no .rk{color:#B03A2E}
+.rule h5{margin:0 0 3px; font-size:13.5px; font-weight:700; color:var(--ink)}
+.rule p{margin:0; font-size:12.5px; color:var(--ink-2); line-height:1.85}
+@media(max-width:620px){.rule{grid-template-columns:1fr; gap:3px}}
+
+
 
 
 @media(max-width:620px){.tmeta>div{grid-template-columns:1fr; gap:2px}
@@ -1276,9 +1398,9 @@ def build():
     <a href="#talk"><span class="n">05</span>ヒアリング</a>
     <a href="#csv"><span class="n">06</span>記録・CSV</a>
     <a href="#case"><span class="n">07</span>ケース別</a>
-    <a href="#calendar"><span class="n">08</span>年間サイクル</a>
+    <a href="#calendar"><span class="n">08</span>年間の動き</a>
     <a href="#rubric"><span class="n">09</span>ルーブリック</a>
-    <a href="#ops"><span class="n">10</span>運用</a>
+    <a href="#ops"><span class="n">10</span>運用・研修</a>
   </div>
 </nav>
 
