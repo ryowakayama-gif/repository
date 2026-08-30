@@ -14,6 +14,8 @@ from curriculum_sales import SALES_LEVELS, SALES_MATRIX, SALES_KIT, SALES_PREP
 from curriculum_talk import HEARING_COMMON, HEARING_THEME, TALK_SCRIPT
 from curriculum_csv import (CSV_HEADER, CSV_RULES, REMARK_GUIDE, THEME_TITLES,
                             VISIT_FORM, DATA_STATUS)
+from curriculum_case import (TALK_5MIN, TALK_5MIN_QA, TALK_5MIN_NG,
+                             NEXT_KODOMO, NEXT_CHIIKI)
 
 OUT = "/tmp/claude-0/-home-user-repository/9fe4feb1-e025-51cd-8697-f63e2951be22/scratchpad/curriculum.html"
 e = html.escape
@@ -544,6 +546,92 @@ def sec_csv():
     </section>"""
 
 
+def sec_case():
+    # 5分の時間配分（順序のある区間。既存のレベル階調をそのまま使う）
+    mins = []
+    for i, (t, head, *_rest) in enumerate(TALK_5MIN, 1):
+        a, b = t.replace("–", "-").split("-")
+        def sec(x):
+            m, s2 = x.split(":")
+            return int(m) * 60 + int(s2)
+        mins.append((sec(b) - sec(a), head, i, t))
+    total = sum(m[0] for m in mins)
+    tl = "".join(
+        f'<div class="tseg g{i}" style="flex:{d}" title="{e(t)}">'
+        f'<span class="tsl">{e(t.split("–")[0])}</span>'
+        f'<span class="tsh">{e(h)}</span></div>'
+        for d, h, i, t in mins)
+
+    cards = ""
+    for t, head, script, aim in TALK_5MIN:
+        cards += f"""
+      <li class="ccard">
+        <p class="ctime">{e(t)}</p>
+        <div class="cbody">
+          <h4>{e(head)}</h4>
+          <blockquote class="speech">{e(script)}</blockquote>
+          <p class="caim"><span class="k">ねらい</span>{e(aim)}</p>
+        </div>
+      </li>"""
+
+    qa = "".join(
+        f'<li class="qa"><p class="qq">{e(q)}</p>'
+        f'<blockquote class="speech q">{e(a)}</blockquote>'
+        f'<p class="qn"><span class="k">補足</span>{e(n)}</p></li>'
+        for q, a, n in TALK_5MIN_QA)
+    ng = "".join(f"<li>{e(x)}</li>" for x in TALK_5MIN_NG)
+
+    def plan(rows):
+        out = ""
+        for kind, head, body in rows:
+            out += (f'<li class="pl"><span class="plk" data-k="{e(kind)}">{e(kind)}</span>'
+                    f'<div><h5>{e(head)}</h5><p>{e(body)}</p></div></li>')
+        return out
+
+    return f"""
+    <section id="case" class="sec">
+      <header class="sec-head">
+        <p class="eyebrow">07　ケース別の営業</p>
+        <h2>いま現場で起きている2つの局面</h2>
+        <p class="lead">ひとつは待ったなしの補正予算獲得、もうひとつは来期に向けた仕込み。
+        どちらも「待っていても発注は生まれない」計画が相手になる。</p>
+      </header>
+
+      <h3 class="sub-h">5分トーク｜高齢者・自前作成先からの補正予算獲得</h3>
+      <div class="warn">
+        <p><b>この5分で伝えることは1つだけ</b>　第10期（R9〜11年度）の保険料をR9年4月から賦課するには、
+        R9年3月議会での条例改正が要る。そこから逆算すると、10月末までに分析が終わっていないと
+        パブリックコメントの期間が取れない。これは自治体側が動かせない制約であり、
+        こちらの都合ではなく相手の制約として話せる唯一の材料。</p>
+      </div>
+      <div class="timeline">{tl}</div>
+      <ol class="ccards">{cards}</ol>
+
+      <h4 class="sub-h2">想定問答</h4>
+      <ul class="qalist">{qa}</ul>
+
+      <h4 class="sub-h2">この5分でやってはいけないこと</h4>
+      <ul class="nglist">{ng}</ul>
+
+      <h3 class="sub-h">来期（R9年度）営業方針</h3>
+      <div class="plans">
+        <div class="plan" style="--pc:#D6336C">
+          <h4>こども計画・子ども子育て支援事業計画</h4>
+          <p class="pintro">訪問記録では「国や県の温度感を見ながら判断」「中間見直しは自前」という回答が並ぶ。
+          努力義務なので、待っていても発注にならない。<b>制度が変わったので直さざるを得ない</b>という
+          外から与えられた理由を持ち込むのが崩し方。</p>
+          <ul class="pllist">{plan(NEXT_KODOMO)}</ul>
+        </div>
+        <div class="plan" style="--pc:#8C564B">
+          <h4>地域福祉計画</h4>
+          <p class="pintro">単発では金額が小さく採算に乗らない。併載計画と社協の活動計画を束ねて初めて中規模案件になる。
+          <b>バラバラに作れば毎年どれかの改定が来るが、束ねれば数年に一度で済む</b>が最も効く言い方。</p>
+          <ul class="pllist">{plan(NEXT_CHIIKI)}</ul>
+        </div>
+      </div>
+    </section>"""
+
+
 def sec_calendar():
     cells = ""
     peak = {"8月": "営業", "9月": "営業", "10月": "営業", "1月": "営業", "2月": "営業",
@@ -561,7 +649,7 @@ def sec_calendar():
     return f"""
     <section id="calendar" class="sec">
       <header class="sec-head">
-        <p class="eyebrow">07　年間サイクル</p>
+        <p class="eyebrow">08　年間サイクル</p>
         <h2>学習計画は自治体の年度に従属する</h2>
         <p class="lead">新人が「今月なにをやるか」は本人の習熟度だけでは決まらない。顧客の年度が決める。ロードマップの各月はこの表と対応している。</p>
       </header>
@@ -579,7 +667,7 @@ def sec_rubric():
     return f"""
     <section id="rubric" class="sec">
       <header class="sec-head">
-        <p class="eyebrow">08　評価ルーブリック</p>
+        <p class="eyebrow">09　評価ルーブリック</p>
         <h2>テーマ知識に依存しない9つの軸</h2>
         <p class="lead">テーマ別スキルマップと合わせて判定する。自己評価と上長評価に2段階以上の差が出た項目は、必ず面談で認識を合わせる。</p>
       </header>
@@ -606,7 +694,7 @@ def sec_ops():
     return f"""
     <section id="ops" class="sec">
       <header class="sec-head">
-        <p class="eyebrow">09　運用</p>
+        <p class="eyebrow">10　運用</p>
         <h2>回し方と配布物</h2>
       </header>
       <div class="ops-grid">
@@ -917,7 +1005,7 @@ html{scroll-behavior:smooth}
 .tcard,.hcard{background:var(--surface); border:1px solid var(--rule); padding:15px 20px 16px; display:grid; gap:10px}
 .tstep{margin:0; font-size:11px; letter-spacing:.08em; color:var(--ink-3);
   font-family:"IBM Plex Mono",monospace}
-.speech{margin:0; padding:11px 0 11px 18px; border-left:3px solid var(--accent);
+.speech{margin:0; padding:11px 0 11px 18px; border-left:3px solid var(--accent); white-space:pre-line;
   font-size:15px; line-height:1.95; color:var(--ink); font-feature-settings:"palt" 1; max-width:78ch}
 .speech.q{font-size:14.5px}
 .stage{margin:0; padding:9px 0 9px 18px; border-left:3px dashed var(--rule-2);
@@ -1009,6 +1097,57 @@ html{scroll-behavior:smooth}
 .ttl .tsep td{border-top:2px solid var(--rule-2)}
 .ttl .kn{width:300px}
 
+/* ---------- ケース別の営業 ---------- */
+.sub-h2{font-size:14px; margin:30px 0 12px; font-family:"Zen Old Mincho",serif; font-weight:600;
+  color:var(--ink); display:flex; align-items:baseline; gap:10px}
+.sub-h2::after{content:""; flex:1; height:1px; background:var(--rule)}
+.timeline{display:flex; gap:2px; margin:22px 0 18px; min-height:56px}
+.tseg{padding:9px 12px; display:flex; flex-direction:column; gap:3px; justify-content:center; min-width:0}
+.tseg.g1{background:var(--l1); color:var(--l1fg)} .tseg.g2{background:var(--l2); color:var(--l2fg)}
+.tseg.g3{background:var(--l3); color:var(--l3fg)} .tseg.g4{background:var(--l4); color:var(--l4fg)}
+.tseg.g5{background:var(--l5); color:var(--l5fg)}
+.tsl{font-family:"IBM Plex Mono",monospace; font-size:10.5px; opacity:.8}
+.tsh{font-size:12px; font-weight:700; line-height:1.4}
+@media(max-width:760px){.timeline{flex-direction:column} .tseg{flex:none!important}}
+
+.ccards{list-style:none; margin:0; padding:0; display:grid; gap:2px}
+.ccard{background:var(--surface); border:1px solid var(--rule); padding:16px 20px;
+  display:grid; grid-template-columns:82px 1fr; gap:18px}
+.ctime{margin:0; font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--accent); font-weight:500}
+.cbody{display:grid; gap:9px; min-width:0}
+.cbody h4{margin:0; font-family:"Zen Old Mincho",serif; font-size:16px; font-weight:600}
+.caim{margin:0; font-size:12.5px; color:var(--ink-2)}
+@media(max-width:620px){.ccard{grid-template-columns:1fr; gap:8px}}
+
+.qalist{list-style:none; margin:0; padding:0; display:grid; gap:2px}
+.qa{background:var(--surface); border:1px solid var(--rule); border-left:5px solid var(--rule-2);
+  padding:14px 20px; display:grid; gap:8px}
+.qq{margin:0; font-size:13.5px; font-weight:700; color:var(--ink)}
+.qn{margin:0; font-size:12.5px; color:var(--ink-3)}
+.nglist{list-style:none; margin:0; padding:0; display:grid; gap:2px}
+.nglist li{background:var(--surface); border:1px solid var(--rule); border-left:5px solid #B03A2E;
+  padding:11px 18px; font-size:13px; color:var(--ink-2)}
+
+.plans{display:grid; grid-template-columns:1fr 1fr; gap:2px}
+@media(max-width:900px){.plans{grid-template-columns:1fr}}
+.plan{background:var(--surface); border:1px solid var(--rule); border-top:4px solid var(--pc);
+  padding:20px 22px 22px; min-width:0}
+.plan h4{margin:0 0 10px; font-family:"Zen Old Mincho",serif; font-size:18px; font-weight:600}
+.pintro{margin:0 0 18px; font-size:13px; color:var(--ink-2); padding-bottom:16px;
+  border-bottom:1px solid var(--rule)}
+.pintro b{color:var(--ink)}
+.pllist{list-style:none; margin:0; padding:0; display:grid; gap:14px}
+.pl{display:grid; grid-template-columns:78px 1fr; gap:14px; align-items:start}
+.plk{font-size:10.5px; padding:3px 0; text-align:center; border-radius:2px; white-space:nowrap;
+  background:var(--surface-2); color:var(--ink-2); border:1px solid var(--rule-2)}
+.plk[data-k^="狙い目"]{background:#B03A2E; color:#fff; border-color:#B03A2E}
+.plk[data-k="財源"]{background:var(--warm); color:var(--paper); border-color:var(--warm)}
+.plk[data-k="タイムライン"]{background:var(--accent); color:var(--paper); border-color:var(--accent)}
+.pl h5{margin:0 0 3px; font-size:13.5px; font-weight:700; color:var(--ink)}
+.pl p{margin:0; font-size:12.5px; color:var(--ink-2); line-height:1.85}
+@media(max-width:560px){.pl{grid-template-columns:1fr; gap:4px} .plk{justify-self:start; padding:3px 10px}}
+
+
 @media(max-width:620px){.tmeta>div{grid-template-columns:1fr; gap:2px}
   .speech{font-size:14px} .hq{flex-wrap:wrap}}
 """
@@ -1094,10 +1233,11 @@ def build():
     <a href="#themes"><span class="n">03</span>到達基準</a>
     <a href="#sales"><span class="n">04</span>提案の深度</a>
     <a href="#talk"><span class="n">05</span>ヒアリング</a>
-    <a href="#csv"><span class="n">06</span>訪問記録・CSV</a>
-    <a href="#calendar"><span class="n">07</span>年間サイクル</a>
-    <a href="#rubric"><span class="n">08</span>ルーブリック</a>
-    <a href="#ops"><span class="n">09</span>運用</a>
+    <a href="#csv"><span class="n">06</span>記録・CSV</a>
+    <a href="#case"><span class="n">07</span>ケース別</a>
+    <a href="#calendar"><span class="n">08</span>年間サイクル</a>
+    <a href="#rubric"><span class="n">09</span>ルーブリック</a>
+    <a href="#ops"><span class="n">10</span>運用</a>
   </div>
 </nav>
 
@@ -1108,6 +1248,7 @@ def build():
   {sec_sales()}
   {sec_talk()}
   {sec_csv()}
+  {sec_case()}
   {sec_calendar()}
   {sec_rubric()}
   {sec_ops()}

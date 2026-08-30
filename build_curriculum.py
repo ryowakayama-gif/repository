@@ -16,6 +16,8 @@ from curriculum_sales import SALES_LEVELS, SALES_MATRIX, SALES_KIT, SALES_PREP
 from curriculum_talk import HEARING_COMMON, HEARING_THEME, TALK_SCRIPT
 from curriculum_csv import (CSV_HEADER, CHOICES, CSV_RULES, REMARK_GUIDE,
                             THEME_TITLES, VISIT_FORM, DATA_STATUS)
+from curriculum_case import (TALK_5MIN, TALK_5MIN_QA, TALK_5MIN_NG,
+                             NEXT_KODOMO, NEXT_CHIIKI)
 
 OUT_DIR = "/home/user/repository/output"
 os.makedirs(OUT_DIR, exist_ok=True)
@@ -1398,6 +1400,8 @@ def sheet_intro(wb):
             "24_訪問記録CSV_入力シート… Teams提出用。このシートをCSVで保存する",
             "25_CSV入力規則… 15列の必須区分・選択肢・記入例・よくある誤り／備考の書き方",
             "26_テーマ・タイトル標準リスト… テーマ8区分と標準タイトル、カリキュラムとの対応",
+            "27_5分トーク_高齢者(自前先)… 自前作成先から補正予算を取る5分の台本と想定問答",
+            "28_来期営業方針_こども・地域福祉… R9年度に向けた2テーマの攻め方",
         ]),
         ("4. 運用サイクル（推奨）", [
             "毎月　　… 上長と本人で30分の面談。当月の学習項目と習得目標の達成状況を確認し、翌月の重点を決める。",
@@ -1954,6 +1958,84 @@ def sheet_theme_titles(wb):
     return ws
 
 
+def sheet_talk5(wb):
+    ws = wb.create_sheet("27_5分トーク_高齢者(自前先)")
+    ws.sheet_properties.tabColor = "2CA02C"
+    put_title(ws, "5分トーク｜高齢者・自前作成先からの補正予算獲得",
+              "対象は第10期（R9〜11年度）介護保険事業計画を自前で作っている自治体。"
+              "R9年4月からの保険料賦課にはR9年3月議会での条例改正が必要で、そこから逆算すると"
+              "10月末までに分析が終わっていないとパブリックコメントの期間が取れない。その一点だけを伝える5分。", 4)
+    put_header(ws, 4, ["時間", "見出し", "話す内容（スクリプト）", "ねらい"],
+               [12, 26, 84, 56], fill=C["高齢者"])
+    last = put_rows(ws, 5, TALK_5MIN, center_cols=(1,))
+    for r in range(5, last):
+        ws.cell(row=r, column=1).font = Font(name="Meiryo UI", size=10, bold=True, color="1F3864")
+        ws.cell(row=r, column=2).font = F_BOLD
+        ws.cell(row=r, column=3).font = Font(name="Meiryo UI", size=9, color="1F3864")
+
+    r = last + 1
+    r = section(ws, r, "想定問答", 4, C["高齢者"])
+    put_header(ws, r, ["想定される反応", "切り返し", "補足・注意", ""],
+               [12, 26, 84, 56], fill=C["subhead"])
+    ws.merge_cells(start_row=r, start_column=3, end_row=r, end_column=4)
+    rr = r + 1
+    for q, a, note in TALK_5MIN_QA:
+        ws.cell(row=rr, column=1, value=q).font = F_BOLD
+        ws.cell(row=rr, column=2, value=a).font = Font(name="Meiryo UI", size=9, color="1F3864")
+        ws.cell(row=rr, column=3, value=note).font = F_BODY
+        ws.merge_cells(start_row=rr, start_column=3, end_row=rr, end_column=4)
+        for col in range(1, 5):
+            cc = ws.cell(row=rr, column=col)
+            cc.border = BORDER
+            cc.alignment = AL_WRAP
+        ws.cell(row=rr, column=3).fill = PatternFill("solid", fgColor=C["note"])
+        ws.cell(row=rr, column=4).fill = PatternFill("solid", fgColor=C["note"])
+        ws.row_dimensions[rr].height = 42
+        rr += 1
+
+    rr += 1
+    rr = section(ws, rr, "この5分でやってはいけないこと", 4, "C00000")
+    for t in TALK_5MIN_NG:
+        ws.merge_cells(start_row=rr, start_column=1, end_row=rr, end_column=4)
+        c = ws.cell(row=rr, column=1, value="・" + t)
+        c.font = Font(name="Meiryo UI", size=9, color="A02020")
+        c.fill = PatternFill("solid", fgColor=C["note"])
+        c.alignment = AL_WRAP
+        for col in range(1, 5):
+            ws.cell(row=rr, column=col).border = BORDER
+        ws.row_dimensions[rr].height = 26
+        rr += 1
+    ws.print_area = f"A1:D{rr - 1}"
+    ws.page_setup.orientation = "landscape"
+    ws.page_setup.fitToWidth = 1
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    return ws
+
+
+def sheet_next_plan(wb):
+    ws = wb.create_sheet("28_来期営業方針_こども・地域福祉")
+    ws.sheet_properties.tabColor = "D6336C"
+    put_title(ws, "来期（R9年度）営業方針｜こども計画／地域福祉計画",
+              "どちらも努力義務の計画で、待っていても発注は生まれない。"
+              "こどもは「制度が変わったので直さざるを得ない」、地域福祉は「束ねれば手間が減る」が崩し方。", 3)
+    r = 4
+    for title, rows, color in (("こども計画・子ども子育て支援事業計画", NEXT_KODOMO, C["こども"]),
+                               ("地域福祉計画", NEXT_CHIIKI, C["地域福祉"])):
+        r = section(ws, r, title, 3, color)
+        put_header(ws, r, ["区分", "見出し", "内容"], [16, 40, 108], fill=color)
+        last = put_rows(ws, r + 1, rows, center_cols=(1,),
+                        band_col=1,
+                        band_colors={"現状認識": "7F7F7F", "狙い目": "C00000",
+                                     "提案の型": "2E75B6", "財源": "C55A11",
+                                     "接触先": "70AD47", "タイムライン": "7030A0",
+                                     "注意": "A02020"})
+        for rw in range(r + 1, last):
+            ws.cell(row=rw, column=2).font = F_BOLD
+        r = last + 2
+    ws.freeze_panes = "A5"
+    return ws
+
+
 # ============================================================
 # main
 # ============================================================
@@ -1982,6 +2064,8 @@ def main():
     sheet_csv_input(wb, refs)
     sheet_csv_rules(wb)
     sheet_theme_titles(wb)
+    sheet_talk5(wb)
+    sheet_next_plan(wb)
     wb.move_sheet(LIST_SHEET, offset=len(wb.sheetnames))   # 非表示マスタはタブ順の最後へ
     p1 = os.path.join(OUT_DIR, "10_新人教育カリキュラム_マスター管理表.xlsx")
     wb.save(p1)
@@ -2007,6 +2091,7 @@ def main():
     print(f"作成: {p2}")
     print(f"　月次ロードマップ: {len(ROADMAP)}ヶ月 / テーマ別学習項目: {total}項目 / スキルマップ: {len(SKILLMAP)}行 / 評価項目: {len(build_checkitems())}項目")
     print(f"　営業: レベル定義{len(SALES_LEVELS)}段階 / 深度マトリクス{len(SALES_MATRIX)}素材 / 提案ネタ台帳{len(SALES_KIT)}件 / 準備チェック{len(SALES_PREP)}項目")
+    print(f"　ケース別: 5分トーク{len(TALK_5MIN)}場面＋想定問答{len(TALK_5MIN_QA)}件 / 来期方針 こども{len(NEXT_KODOMO)}項目・地域福祉{len(NEXT_CHIIKI)}項目")
     print(f"　現場ツール: ヒアリング共通{len(HEARING_COMMON)}問 / テーマ別{len(HEARING_THEME)}問 / トークスクリプト{len(TALK_SCRIPT)}場面 / 訪問記録{len(VISIT_FORM)}欄")
 
 
