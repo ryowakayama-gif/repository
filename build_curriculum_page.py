@@ -14,8 +14,7 @@ from curriculum_sales import SALES_LEVELS, SALES_MATRIX, SALES_KIT, SALES_PREP
 from curriculum_talk import HEARING_COMMON, HEARING_THEME, TALK_SCRIPT
 from curriculum_csv import (CSV_HEADER, CSV_RULES, REMARK_GUIDE, THEME_TITLES,
                             VISIT_FORM, DATA_STATUS)
-from curriculum_case import (TALK_5MIN, TALK_5MIN_QA, TALK_5MIN_NG,
-                             NEXT_KODOMO, NEXT_CHIIKI)
+from curriculum_case import CASES, NEXT_KODOMO, NEXT_CHIIKI
 
 OUT = "/tmp/claude-0/-home-user-repository/9fe4feb1-e025-51cd-8697-f63e2951be22/scratchpad/curriculum.html"
 e = html.escape
@@ -546,72 +545,91 @@ def sec_csv():
     </section>"""
 
 
+def _mins(t):
+    """'0:30–1:30' → 秒数。時間表記でない見出し（帰社後など）は 0 を返す。"""
+    t = t.replace("–", "-")
+    if "-" not in t or ":" not in t:
+        return 0
+    a, b = t.split("-")
+    def sec(x):
+        m, s2 = x.split(":")
+        return int(m) * 60 + int(s2)
+    try:
+        return sec(b) - sec(a)
+    except ValueError:
+        return 0
+
+
 def sec_case():
-    # 5分の時間配分（順序のある区間。既存のレベル階調をそのまま使う）
-    mins = []
-    for i, (t, head, *_rest) in enumerate(TALK_5MIN, 1):
-        a, b = t.replace("–", "-").split("-")
-        def sec(x):
-            m, s2 = x.split(":")
-            return int(m) * 60 + int(s2)
-        mins.append((sec(b) - sec(a), head, i, t))
-    total = sum(m[0] for m in mins)
-    tl = "".join(
-        f'<div class="tseg g{i}" style="flex:{d}" title="{e(t)}">'
-        f'<span class="tsl">{e(t.split("–")[0])}</span>'
-        f'<span class="tsh">{e(h)}</span></div>'
-        for d, h, i, t in mins)
+    tabs, panels = "", ""
+    for n, c in enumerate(CASES, 1):
+        on = n == 1
+        tabs += (f'<button class="ytab ctab{" is-on" if on else ""}" id="ctab{n}" role="tab" '
+                 f'aria-selected="{"true" if on else "false"}" aria-controls="cs{n}" data-c="{n}">'
+                 f'{e(c["label"])}<span>{e(c["theme"])}</span></button>')
 
-    cards = ""
-    for t, head, script, aim in TALK_5MIN:
-        cards += f"""
-      <li class="ccard">
-        <p class="ctime">{e(t)}</p>
-        <div class="cbody">
-          <h4>{e(head)}</h4>
-          <blockquote class="speech">{e(script)}</blockquote>
-          <p class="caim"><span class="k">ねらい</span>{e(aim)}</p>
+        segs = [(_mins(t), t, h) for t, h, *_ in c["steps"]]
+        tl = ""
+        for i, (d, t, h) in enumerate(segs, 1):
+            g = min(i, 5)
+            flexed = f"flex:{d}" if d else "flex:0 0 auto"
+            tl += (f'<div class="tseg g{g}" style="{flexed}">'
+                   f'<span class="tsl">{e(t.split("–")[0])}</span>'
+                   f'<span class="tsh">{e(h)}</span></div>')
+
+        cards = "".join(f"""
+        <li class="ccard">
+          <p class="ctime">{e(t)}</p>
+          <div class="cbody">
+            <h4>{e(head)}</h4>
+            <blockquote class="speech">{e(script)}</blockquote>
+            <p class="caim"><span class="k">ねらい</span>{e(aim)}</p>
+          </div>
+        </li>""" for t, head, script, aim in c["steps"])
+
+        qa = "".join(
+            f'<li class="qa"><p class="qq">{e(q)}</p>'
+            + (f'<blockquote class="speech q">{e(a)}</blockquote>' if a.startswith("「")
+               else f'<p class="stage">{e(a)}</p>')
+            + f'<p class="qn"><span class="k">補足</span>{e(nt)}</p></li>'
+            for q, a, nt in c["qa"])
+        ng = "".join(f"<li>{e(x)}</li>" for x in c["ng"])
+
+        panels += f"""
+      <div class="cpanel" id="cs{n}" role="tabpanel" aria-labelledby="ctab{n}"{"" if on else " hidden"}>
+        <div class="axis">
+          <p class="axis-t">この5分で伝えることは1つだけ</p>
+          <p class="axis-b">{e(c["axis"])}</p>
+          <p class="axis-g"><span class="k">対象</span>{e(c["target"])}</p>
         </div>
-      </li>"""
-
-    qa = "".join(
-        f'<li class="qa"><p class="qq">{e(q)}</p>'
-        f'<blockquote class="speech q">{e(a)}</blockquote>'
-        f'<p class="qn"><span class="k">補足</span>{e(n)}</p></li>'
-        for q, a, n in TALK_5MIN_QA)
-    ng = "".join(f"<li>{e(x)}</li>" for x in TALK_5MIN_NG)
+        <div class="timeline">{tl}</div>
+        <ol class="ccards">{cards}</ol>
+        <h4 class="sub-h2">想定問答</h4>
+        <ul class="qalist">{qa}</ul>
+        <h4 class="sub-h2">やってはいけないこと</h4>
+        <ul class="nglist">{ng}</ul>
+      </div>"""
 
     def plan(rows):
-        out = ""
-        for kind, head, body in rows:
-            out += (f'<li class="pl"><span class="plk" data-k="{e(kind)}">{e(kind)}</span>'
-                    f'<div><h5>{e(head)}</h5><p>{e(body)}</p></div></li>')
-        return out
+        return "".join(
+            f'<li class="pl"><span class="plk" data-k="{e(k)}">{e(k)}</span>'
+            f'<div><h5>{e(h)}</h5><p>{e(b)}</p></div></li>' for k, h, b in rows)
 
+    n_steps = sum(len(c["steps"]) for c in CASES)
     return f"""
     <section id="case" class="sec">
       <header class="sec-head">
         <p class="eyebrow">07　ケース別の営業</p>
-        <h2>いま現場で起きている2つの局面</h2>
-        <p class="lead">ひとつは待ったなしの補正予算獲得、もうひとつは来期に向けた仕込み。
-        どちらも「待っていても発注は生まれない」計画が相手になる。</p>
+        <h2>断られ方には型がある</h2>
+        <p class="lead">訪問記録141件の分布に合わせて5ケース。公会計が44件で最多、
+        結果では「他社随契」20件・「不在」15件。うち他社随契の7件が「再訪不要」で打ち切られているが、
+        その多くは改定時期がR9〜R14と先で、本来は改定前年度に戻るべき先だった。
+        型を持っていないと、その場で引くか、言ってはいけないことを言うかのどちらかになる。</p>
       </header>
 
-      <h3 class="sub-h">5分トーク｜高齢者・自前作成先からの補正予算獲得</h3>
-      <div class="warn">
-        <p><b>この5分で伝えることは1つだけ</b>　第10期（R9〜11年度）の保険料をR9年4月から賦課するには、
-        R9年3月議会での条例改正が要る。そこから逆算すると、10月末までに分析が終わっていないと
-        パブリックコメントの期間が取れない。これは自治体側が動かせない制約であり、
-        こちらの都合ではなく相手の制約として話せる唯一の材料。</p>
-      </div>
-      <div class="timeline">{tl}</div>
-      <ol class="ccards">{cards}</ol>
-
-      <h4 class="sub-h2">想定問答</h4>
-      <ul class="qalist">{qa}</ul>
-
-      <h4 class="sub-h2">この5分でやってはいけないこと</h4>
-      <ul class="nglist">{ng}</ul>
+      <h3 class="sub-h">5分トーク集 <span class="sub-n">{len(CASES)}ケース／{n_steps}場面</span></h3>
+      <div class="ytabs ctabs" role="tablist" aria-label="ケース">{tabs}</div>
+      {panels}
 
       <h3 class="sub-h">来期（R9年度）営業方針</h3>
       <div class="plans">
@@ -1147,6 +1165,17 @@ html{scroll-behavior:smooth}
 .pl p{margin:0; font-size:12.5px; color:var(--ink-2); line-height:1.85}
 @media(max-width:560px){.pl{grid-template-columns:1fr; gap:4px} .plk{justify-self:start; padding:3px 10px}}
 
+.ctabs{flex-wrap:wrap}
+.ctab{padding:10px 16px 12px}
+.ctab span{max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.axis{background:var(--warm-soft); border:1px solid var(--warm); border-left-width:5px;
+  padding:16px 20px; margin:18px 0 0}
+.axis-t{margin:0 0 7px; font-size:11px; letter-spacing:.08em; color:var(--warm); font-weight:700}
+.axis-b{margin:0; font-size:13.5px; color:var(--ink); max-width:88ch}
+.axis-g{margin:11px 0 0; font-size:12.5px; color:var(--ink-2); padding-top:10px;
+  border-top:1px dashed var(--rule-2)}
+
+
 
 @media(max-width:620px){.tmeta>div{grid-template-columns:1fr; gap:2px}
   .speech{font-size:14px} .hq{flex-wrap:wrap}}
@@ -1194,6 +1223,18 @@ JS = """
       hc.forEach(function(o){o.classList.toggle('is-on',o===c);});
       var g=c.dataset.g;
       hr.forEach(function(r){ r.hidden = !(g==='all' || r.dataset.h===g); });
+    });
+  });
+
+  var ct=[].slice.call(document.querySelectorAll('.ytab[data-c]'));
+  ct.forEach(function(t){
+    t.addEventListener('click',function(){
+      ct.forEach(function(o){
+        var on=o===t;
+        o.classList.toggle('is-on',on);
+        o.setAttribute('aria-selected',on?'true':'false');
+        document.getElementById('cs'+o.dataset.c).hidden=!on;
+      });
     });
   });
 })();

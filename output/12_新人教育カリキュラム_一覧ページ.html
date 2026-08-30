@@ -438,6 +438,17 @@ html{scroll-behavior:smooth}
 .pl p{margin:0; font-size:12.5px; color:var(--ink-2); line-height:1.85}
 @media(max-width:560px){.pl{grid-template-columns:1fr; gap:4px} .plk{justify-self:start; padding:3px 10px}}
 
+.ctabs{flex-wrap:wrap}
+.ctab{padding:10px 16px 12px}
+.ctab span{max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.axis{background:var(--warm-soft); border:1px solid var(--warm); border-left-width:5px;
+  padding:16px 20px; margin:18px 0 0}
+.axis-t{margin:0 0 7px; font-size:11px; letter-spacing:.08em; color:var(--warm); font-weight:700}
+.axis-b{margin:0; font-size:13.5px; color:var(--ink); max-width:88ch}
+.axis-g{margin:11px 0 0; font-size:12.5px; color:var(--ink-2); padding-top:10px;
+  border-top:1px dashed var(--rule-2)}
+
+
 
 @media(max-width:620px){.tmeta>div{grid-template-columns:1fr; gap:2px}
   .speech{font-size:14px} .hq{flex-wrap:wrap}}
@@ -2214,68 +2225,291 @@ html{scroll-behavior:smooth}
     <section id="case" class="sec">
       <header class="sec-head">
         <p class="eyebrow">07　ケース別の営業</p>
-        <h2>いま現場で起きている2つの局面</h2>
-        <p class="lead">ひとつは待ったなしの補正予算獲得、もうひとつは来期に向けた仕込み。
-        どちらも「待っていても発注は生まれない」計画が相手になる。</p>
+        <h2>断られ方には型がある</h2>
+        <p class="lead">訪問記録141件の分布に合わせて5ケース。公会計が44件で最多、
+        結果では「他社随契」20件・「不在」15件。うち他社随契の7件が「再訪不要」で打ち切られているが、
+        その多くは改定時期がR9〜R14と先で、本来は改定前年度に戻るべき先だった。
+        型を持っていないと、その場で引くか、言ってはいけないことを言うかのどちらかになる。</p>
       </header>
 
-      <h3 class="sub-h">5分トーク｜高齢者・自前作成先からの補正予算獲得</h3>
-      <div class="warn">
-        <p><b>この5分で伝えることは1つだけ</b>　第10期（R9〜11年度）の保険料をR9年4月から賦課するには、
-        R9年3月議会での条例改正が要る。そこから逆算すると、10月末までに分析が終わっていないと
-        パブリックコメントの期間が取れない。これは自治体側が動かせない制約であり、
-        こちらの都合ではなく相手の制約として話せる唯一の材料。</p>
-      </div>
-      <div class="timeline"><div class="tseg g1" style="flex:30" title="0:00–0:30"><span class="tsl">0:00</span><span class="tsh">用件を告げ、5分だけもらう</span></div><div class="tseg g2" style="flex:60" title="0:30–1:30"><span class="tsl">0:30</span><span class="tsh">進捗を3問だけ聞く</span></div><div class="tseg g3" style="flex:90" title="1:30–3:00"><span class="tsl">1:30</span><span class="tsh">逆算して見せる（本題）</span></div><div class="tseg g4" style="flex:60" title="3:00–4:00"><span class="tsl">3:00</span><span class="tsh">部分委託という逃げ道を示す</span></div><div class="tseg g5" style="flex:60" title="4:00–5:00"><span class="tsl">4:00</span><span class="tsh">次を決めて帰る</span></div></div>
-      <ol class="ccards">
-      <li class="ccard">
-        <p class="ctime">0:00–0:30</p>
-        <div class="cbody">
-          <h4>用件を告げ、5分だけもらう</h4>
-          <blockquote class="speech">「◯◯町の高齢福祉課様でいらっしゃいますね。◯◯株式会社の△△と申します。第10期の介護保険事業計画の件で、5分だけお時間をいただけますでしょうか。御町ではご自身で作られていると伺っておりまして、この時期にお伝えしておいたほうがよいことが2点ございます。」</blockquote>
-          <p class="caim"><span class="k">ねらい</span>「自前で作っている」ことを知っている＝下調べ済みだと最初に伝える。売り込みではなく「時期の話」として入る。5分と明示すると断られにくい。</p>
+      <h3 class="sub-h">5分トーク集 <span class="sub-n">5ケース／25場面</span></h3>
+      <div class="ytabs ctabs" role="tablist" aria-label="ケース"><button class="ytab ctab is-on" id="ctab1" role="tab" aria-selected="true" aria-controls="cs1" data-c="1">A<span>高齢者・介護保険</span></button><button class="ytab ctab" id="ctab2" role="tab" aria-selected="false" aria-controls="cs2" data-c="2">B<span>公会計</span></button><button class="ytab ctab" id="ctab3" role="tab" aria-selected="false" aria-controls="cs3" data-c="3">C<span>公共施設マネジメント</span></button><button class="ytab ctab" id="ctab4" role="tab" aria-selected="false" aria-controls="cs4" data-c="4">D<span>会計支援・経営戦略ほか</span></button><button class="ytab ctab" id="ctab5" role="tab" aria-selected="false" aria-controls="cs5" data-c="5">E<span>全テーマ共通</span></button></div>
+      
+      <div class="cpanel" id="cs1" role="tabpanel" aria-labelledby="ctab1">
+        <div class="axis">
+          <p class="axis-t">この5分で伝えることは1つだけ</p>
+          <p class="axis-b">R9年4月から保険料を賦課するにはR9年3月議会での条例改正が必要。逆算すると10月末までに分析が終わっていないとパブリックコメントの期間が取れない。自治体側が動かせない制約なので、こちらの都合ではなく相手の制約として話せる。</p>
+          <p class="axis-g"><span class="k">対象</span>第10期（R9〜11年度）介護保険事業計画を自前で作っている自治体</p>
         </div>
-      </li>
-      <li class="ccard">
-        <p class="ctime">0:30–1:30</p>
-        <div class="cbody">
-          <h4>進捗を3問だけ聞く</h4>
-          <blockquote class="speech">「①ニーズ調査と在宅介護実態調査の集計は、もうお済みでしょうか。」
+        <div class="timeline"><div class="tseg g1" style="flex:30"><span class="tsl">0:00</span><span class="tsh">用件を告げ、5分だけもらう</span></div><div class="tseg g2" style="flex:60"><span class="tsl">0:30</span><span class="tsh">進捗を3問だけ聞く</span></div><div class="tseg g3" style="flex:90"><span class="tsl">1:30</span><span class="tsh">逆算して見せる（本題）</span></div><div class="tseg g4" style="flex:60"><span class="tsl">3:00</span><span class="tsh">部分委託という逃げ道を示す</span></div><div class="tseg g5" style="flex:60"><span class="tsl">4:00</span><span class="tsh">次を決めて帰る</span></div></div>
+        <ol class="ccards">
+        <li class="ccard">
+          <p class="ctime">0:00–0:30</p>
+          <div class="cbody">
+            <h4>用件を告げ、5分だけもらう</h4>
+            <blockquote class="speech">「◯◯町の高齢福祉課様でいらっしゃいますね。◯◯株式会社の△△と申します。第10期の介護保険事業計画の件で、5分だけお時間をいただけますでしょうか。御町ではご自身で作られていると伺っておりまして、この時期にお伝えしておいたほうがよいことが2点ございます。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>「自前で作っている」ことを知っている＝下調べ済みだと最初に伝える。売り込みではなく「時期の話」として入る。5分と明示すると断られにくい。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">0:30–1:30</p>
+          <div class="cbody">
+            <h4>進捗を3問だけ聞く</h4>
+            <blockquote class="speech">「①ニーズ調査と在宅介護実態調査の集計は、もうお済みでしょうか。」
 「②保険料の算定は、どなたがご担当される予定でしょうか。」
 「③3月議会での条例改正に向けて、パブリックコメントはいつ頃を想定されていますか。」</blockquote>
-          <p class="caim"><span class="k">ねらい</span>この3問で自前完遂の可否がほぼ判定できる。①が未了、②が未定、③が「これから考える」なら高い確率で間に合わない。詰問にならないよう、3問で止めて次へ進む。</p>
+            <p class="caim"><span class="k">ねらい</span>この3問で自前完遂の可否がほぼ判定できる。①が未了、②が未定、③が「これから考える」なら高い確率で間に合わない。詰問にならないよう3問で止める。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">1:30–3:00</p>
+          <div class="cbody">
+            <h4>逆算して見せる（本題）</h4>
+            <blockquote class="speech">「第10期の保険料は、R9年4月から賦課するためにR9年3月議会での条例改正が要ります。そこから逆算しますと──2月下旬に議案上程、その前に1〜2月でパブリックコメント（30日程度）、その前の12〜1月で保険料の確定と計画素案、11月に給付費推計とサービス見込量、10月までに現状分析。つまり10月末までに分析が終わっていないと、パブコメの期間が取れなくなります。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>計画策定業務ではなく「条例改正の期限」から話す。自治体側が動かせない制約なので、こちらの都合ではなく相手の制約として受け取ってもらえる。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">3:00–4:00</p>
+          <div class="cbody">
+            <h4>部分委託という逃げ道を示す</h4>
+            <blockquote class="speech">「全部をお預けいただく必要はありません。いちばん時間がかかるのは保険料の算定と給付費推計で、ここは見える化システムと厚労省のワークシートを使った作業です。ここだけをお預かりして、計画本文は御町で書いていただく、という切り分けができます。この形なら金額も抑えられますので、12月補正で十分間に合います。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>全部委託は補正で通りにくい（金額が大きく査定に耐えない）。「作れない」ではなく「時間がかかる工程だけ外に出す」と提示すると、担当者の面目も立つ。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">4:00–5:00</p>
+          <div class="cbody">
+            <h4>次を決めて帰る</h4>
+            <blockquote class="speech">「12月補正ですと、財政課へのご要求はおおむね11月上旬かと思います。10月中に、業務の切り分け案と参考のお見積をお持ちします。いつ頃までにあるとよろしいでしょうか。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>提出期限を相手に言わせる。相手の庁内スケジュールが分かり、次回訪問の理由も確定する。</p>
+          </div>
+        </li></ol>
+        <h4 class="sub-h2">想定問答</h4>
+        <ul class="qalist"><li class="qa"><p class="qq">「予算がないので今年度は無理です」</p><blockquote class="speech q">「補正でも難しいようでしたら、まず調査・集計の部分だけ、既定予算の範囲でお受けする形もあります。本体は次年度当初でも、分析が先に終わっていれば間に合います。」</blockquote><p class="qn"><span class="k">補足</span>少額随意契約の範囲（金額は自治体の契約規則による）で先行着手し、本体を補正または当初に回す二段構え。金額の線引きは必ず当該自治体の契約規則で確認してから話す。</p></li><li class="qa"><p class="qq">「自前でやれます」</p><blockquote class="speech q">「承知しました。無理にお預けいただく話ではありません。ただ保険料の算定だけは、算定後の検算をセカンドオピニオンとしてお使いいただく形もございます。3年間の保険料に直結しますので、二重にご確認いただく価値はあるかと思います。」</blockquote><p class="qn"><span class="k">補足</span>自前を否定しない。否定した瞬間に担当者の面目を潰し、次年度以降も入れなくなる。検算・レビューという小さな入口を残す。</p></li><li class="qa"><p class="qq">「もう他社にお願いしています」</p><blockquote class="speech q">「失礼しました。差し支えなければ、業務の範囲はどこまででしょうか。調査だけのご契約でしたら、保険料の算定と計画本文が残っているかもしれません。」</blockquote><p class="qn"><span class="k">補足</span>調査のみ・アンケートのみの分離発注は多い。範囲を確認せずに引き下がらない。ただし1往復で判断する。</p></li><li class="qa"><p class="qq">「国の基本指針がまだ固まっていない」</p><blockquote class="speech q">「おっしゃるとおりです。ですので、指針を待つ部分（骨子・成果目標）と、待たなくてよい部分（アンケート集計・現状分析・人口推計）を分けて、待たなくてよい部分から先に進めておくご提案です。」</blockquote><p class="qn"><span class="k">補足</span>指針待ちは着手しない理由として最も多い。工程を二分して見せることが唯一の崩し方。</p></li><li class="qa"><p class="qq">「議会を通るか分かりません」</p><blockquote class="speech q">「見積は要求のための資料としてお使いください。通らなければ次年度当初でご検討いただければ結構です。資料が無いと要求そのものができませんので、まずお持ちします。」</blockquote><p class="qn"><span class="k">補足</span>補正の可否を断定しない。「見積＝要求資料」と位置づけると、断る理由がなくなる。</p></li><li class="qa"><p class="qq">「担当が異動したばかりで分からない」</p><blockquote class="speech q">「でしたら、前期の計画と実績の突合だけ、こちらで整理してお持ちしましょうか。次期に何を直すべきかが1枚で分かる形にします。」</blockquote><p class="qn"><span class="k">補足</span>異動直後は最大の機会。資料を作って持参するだけで、以後の相談相手になれる。</p></li></ul>
+        <h4 class="sub-h2">やってはいけないこと</h4>
+        <ul class="nglist"><li>「このままでは間に合いませんよ」と脅す ── 担当者の面目を潰した時点で、以後どの案件にも入れなくなる。</li><li>保険料の上昇率を推測で口に出す ── 推計前の数字は、外れたときに議会・住民への説明を壊す。</li><li>「補正で必ず取れます」と断定する ── 予算の可否は財政課と議会が決める。こちらは資料を用意する側。</li><li>5分と言って10分話す ── 次のアポが取れなくなる。話し切れなければ「続きは資料でお持ちします」で切る。</li><li>他団体の進捗を引き合いに出す ── 「△△町さんはもう委託されています」は未公表情報の持ち込みになる。</li></ul>
+      </div>
+      <div class="cpanel" id="cs2" role="tabpanel" aria-labelledby="ctab2" hidden>
+        <div class="axis">
+          <p class="axis-t">この5分で伝えることは1つだけ</p>
+          <p class="axis-b">台帳の資産額が実態より少ないと、有形固定資産減価償却率がずれ、総合管理計画の更新費用試算の前提が崩れ、起債・交付金の裏付けも弱くなる。台帳は公会計だけの話ではなく、施設と財源の話につながっている。</p>
+          <p class="axis-g"><span class="k">対象</span>財務書類は作成済みで、固定資産台帳の精緻化が手つかずの自治体。セミナーを案内した先。</p>
         </div>
-      </li>
-      <li class="ccard">
-        <p class="ctime">1:30–3:00</p>
-        <div class="cbody">
-          <h4>逆算して見せる（本題）</h4>
-          <blockquote class="speech">「第10期の保険料は、R9年4月から賦課するためにR9年3月議会での条例改正が要ります。そこから逆算しますと──2月下旬に議案上程、その前に1〜2月でパブリックコメント（30日程度）、その前の12〜1月で保険料の確定と計画素案、11月に給付費推計とサービス見込量、10月までに現状分析。つまり10月末までに分析が終わっていないと、パブコメの期間が取れなくなります。」</blockquote>
-          <p class="caim"><span class="k">ねらい</span>計画策定業務ではなく「条例改正の期限」から話す。ここは自治体側が動かせない制約なので、こちらの都合ではなく相手の制約として受け取ってもらえる。</p>
+        <div class="timeline"><div class="tseg g1" style="flex:30"><span class="tsl">0:00</span><span class="tsh">セミナーを口実に入る</span></div><div class="tseg g2" style="flex:60"><span class="tsl">0:30</span><span class="tsh">台帳の実態を3問だけ聞く</span></div><div class="tseg g3" style="flex:90"><span class="tsl">1:30</span><span class="tsh">論点を具体名で並べる</span></div><div class="tseg g4" style="flex:60"><span class="tsl">3:00</span><span class="tsh">影響の連鎖を見せる</span></div><div class="tseg g5" style="flex:60"><span class="tsl">4:00</span><span class="tsh">段階整備を提案して次を決める</span></div></div>
+        <ol class="ccards">
+        <li class="ccard">
+          <p class="ctime">0:00–0:30</p>
+          <div class="cbody">
+            <h4>セミナーを口実に入る</h4>
+            <blockquote class="speech">「先日ご案内いたしました所有外管理資産のセミナーの件で伺いました。ご参加は難しかったかと存じますので、要点だけ5分でお伝えできればと思っております。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>セミナーは案内して終わりにしない。参加の有無にかかわらず内容を届けに行くのが本来のフォロー。訪問記録では「セミナー案内」で止まっている記録が多く、ここが取りこぼしになっている。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">0:30–1:30</p>
+          <div class="cbody">
+            <h4>台帳の実態を3問だけ聞く</h4>
+            <blockquote class="speech">「①固定資産台帳の更新は、毎年度されていますでしょうか。」
+「②公有財産台帳との突合は、これまでにされたことはございますか。」
+「③借地の上に建っている施設や、指定管理でお願いしている施設は、台帳にどう入っていますか。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>③が即答できなければ所有外の整理は未着手。3問目で「うちはどうなっているだろう」と相手自身に思わせるのが目的で、答えを引き出すこと自体は目的ではない。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">1:30–3:00</p>
+          <div class="cbody">
+            <h4>論点を具体名で並べる</h4>
+            <blockquote class="speech">「所有外管理資産と申しましても、中身はいくつかに分かれます。借地の上の建物、指定管理施設、無償で譲り受けた資産、法定外公共物──里道や水路ですね、共有や区分所有のもの、リース資産、PFIの施設。それから逆に、所有はしているが管理を他に委ねているもの。まず、どれが御市に当てはまるかを一覧にするところからです。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>抽象的な「精緻化」では動かない。具体名を並べると「うちにもある」と気づいてもらえる。ここで相手が挙げた資産が、そのまま提案の対象になる。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">3:00–4:00</p>
+          <div class="cbody">
+            <h4>影響の連鎖を見せる</h4>
+            <blockquote class="speech">「台帳の資産額が実態より少ないと、有形固定資産減価償却率が実態とずれます。その数字は公共施設等総合管理計画の更新費用試算の前提になっていて、さらに起債や交付金の裏付けにもなります。台帳は公会計だけの話ではなく、施設と財源の話につながっているとお考えいただければと思います。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>公会計担当だけの問題にしない。財政課・管財課を巻き込む理由になり、公共施設マネジメントへのクロスセルの入口にもなる。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">4:00–5:00</p>
+          <div class="cbody">
+            <h4>段階整備を提案して次を決める</h4>
+            <blockquote class="speech">「一度に全部やる必要はありません。金額の大きいものと、所管課が特定できるものから、複数年に分けて整理する進め方をご提案しています。まず現状の台帳を拝見して、どこから手を付けるべきかの整理表をお持ちします。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>「全部やる＝高い」で止まらせない。整理表の持参が次回訪問の理由になり、複数年契約の入口にもなる。</p>
+          </div>
+        </li></ol>
+        <h4 class="sub-h2">想定問答</h4>
+        <ul class="qalist"><li class="qa"><p class="qq">「まだ財務書類の作成で手一杯です」</p><blockquote class="speech q">「でしたら台帳の整備は来年度以降で結構です。ただ、どこから手を付けるべきかの整理だけ先にしておくと、来年度のご要求を具体的に書けるようになります。」</blockquote><p class="qn"><span class="k">補足</span>着手時期を譲り、整理だけ先行させる。予算要求の材料を提供する立場に回る。</p></li><li class="qa"><p class="qq">「所有外というのは何を指すのですか」</p><blockquote class="speech q">「団体によって使われ方が違いますので、まず御市で何を指すかをそろえるところからです。所有していないが管理しているもの、所有しているが管理を委ねているもの、その両方を含めて整理するのが一般的です。」</blockquote><p class="qn"><span class="k">補足</span>定義が現場で揺れている。用語をそろえる作業そのものが業務になる。</p></li><li class="qa"><p class="qq">「台帳は業者にお願いしています」</p><blockquote class="speech q">「ご契約の範囲は、毎年度の更新まででしょうか。更新と精緻化は別の作業ですので、精緻化の部分が残っていることがあります。」</blockquote><p class="qn"><span class="k">補足</span>更新の委託と精緻化は別業務。範囲を確認せずに引き下がらない。</p></li><li class="qa"><p class="qq">「予算がありません」</p><blockquote class="speech q">「単年度で全部という前提ですと、確かに大きくなります。3か年に分けて、初年度は影響の大きいところだけ、という形であれば要求しやすいかと思います。」</blockquote><p class="qn"><span class="k">補足</span>段階整備は金額を下げる話ではなく、要求を通しやすくする話として伝える。</p></li></ul>
+        <h4 class="sub-h2">やってはいけないこと</h4>
+        <ul class="nglist"><li>「台帳が間違っています」と言う ── 精緻化されていないことと誤りは違う。担当者の否定になる。</li><li>精緻化の効果を金額で断定する ── 資産額がいくら増えるかは調べてみないと分からない。</li><li>セミナーに来なかったことを責める・確認する ── 案内が担当者まで届いていないことも多い。</li><li>公会計の話だけで終える ── 財政課・管財課につながる話に広げないと、単発の小さな受注で終わる。</li></ul>
+      </div>
+      <div class="cpanel" id="cs3" role="tabpanel" aria-labelledby="ctab3" hidden>
+        <div class="axis">
+          <p class="axis-t">この5分で伝えることは1つだけ</p>
+          <p class="axis-b">公共施設等適正管理推進事業債は、総合管理計画に基づく事業であることが要件。裏を返せば、計画に書かれていない事業は起債の対象にならない。計画改定は「作り直し」ではなく「財源を使えるようにする作業」。</p>
+          <p class="axis-g"><span class="k">対象</span>公共施設等総合管理計画の改定時期がR9〜R10に来る自治体</p>
         </div>
-      </li>
-      <li class="ccard">
-        <p class="ctime">3:00–4:00</p>
-        <div class="cbody">
-          <h4>部分委託という逃げ道を示す</h4>
-          <blockquote class="speech">「全部をお預けいただく必要はありません。いちばん時間がかかるのは保険料の算定と給付費推計で、ここは見える化システムと厚労省のワークシートを使った作業です。ここだけをお預かりして、計画本文は御町で書いていただく、という切り分けができます。この形なら金額も抑えられますので、12月補正で十分間に合います。」</blockquote>
-          <p class="caim"><span class="k">ねらい</span>全部委託は補正で通りにくい（金額が大きい・査定に耐えない）。「作れない」ではなく「時間がかかる工程だけ外に出す」と提示すると、担当者の面目も立つ。</p>
+        <div class="timeline"><div class="tseg g1" style="flex:30"><span class="tsl">0:00</span><span class="tsh">改定時期から入る</span></div><div class="tseg g2" style="flex:60"><span class="tsl">0:30</span><span class="tsh">充足状況を3問だけ聞く</span></div><div class="tseg g3" style="flex:90"><span class="tsl">1:30</span><span class="tsh">起債の要件から必要性を語る</span></div><div class="tseg g4" style="flex:60"><span class="tsl">3:00</span><span class="tsh">3点セットで提案する</span></div><div class="tseg g5" style="flex:60"><span class="tsl">4:00</span><span class="tsh">点検表を約束して帰る</span></div></div>
+        <ol class="ccards">
+        <li class="ccard">
+          <p class="ctime">0:00–0:30</p>
+          <div class="cbody">
+            <h4>改定時期から入る</h4>
+            <blockquote class="speech">「公共施設等総合管理計画の件で伺いました。御町の計画はR◯年度までと拝見しましたので、そろそろ改定のご検討時期かと存じます。5分だけお時間をいただけますでしょうか。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>計画期間を調べてから行く。「R◯年度まで」と言えるだけで、他社との差がつく。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">0:30–1:30</p>
+          <div class="cbody">
+            <h4>充足状況を3問だけ聞く</h4>
+            <blockquote class="speech">「①国の見直し要請の内容──個別施設計画の反映、保有量の数値目標、脱炭素化、ユニバーサルデザイン化ですが、現行計画に入っていますでしょうか。」
+「②個別施設計画は、施設類型ごとに一通り揃っていますか。」
+「③更新費用の試算は、いつのデータで作られたものでしょうか。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>3問とも「たぶん入っている」「揃っていないかもしれない」で返ってくることが多い。その曖昧さ自体が、点検表を持参する理由になる。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">1:30–3:00</p>
+          <div class="cbody">
+            <h4>起債の要件から必要性を語る</h4>
+            <blockquote class="speech">「公共施設等適正管理推進事業債は、総合管理計画に基づく事業であることが要件になっています。裏を返しますと、計画に書かれていない事業は起債の対象になりません。これから集約化や長寿命化を進められるのであれば、その事業が計画に位置付けられているかどうかが、そのまま財源を使えるかどうかになります。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>計画改定を「作り直し」ではなく「財源を使えるようにする作業」として提示する。充当率・交付税措置率・適用期限は必ず当年度の地方債計画で確認してから話す。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">3:00–4:00</p>
+          <div class="cbody">
+            <h4>3点セットで提案する</h4>
+            <blockquote class="speech">「総合管理計画だけを改定しても、個別施設計画が古いままですと整合が取れません。また更新費用の試算は、固定資産台帳と連動させると精度が上がります。総合管理計画・個別施設計画・台帳の3つをどう組み合わせるかで、ご提案の形が変わってまいります。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>単発の改定業務で終わらせない。台帳を持ち出すことで公会計テーマとのクロスセルになる。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">4:00–5:00</p>
+          <div class="cbody">
+            <h4>点検表を約束して帰る</h4>
+            <blockquote class="speech">「現行計画を拝見して、国の要請事項がどこまで反映されているかの点検表をお持ちします。改定の要否をご判断いただく材料になるかと思います。いつ頃までにあるとよろしいでしょうか。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>点検表は公表資料だけで作れて、相手にとって価値がある。最も費用対効果の高い置き土産。</p>
+          </div>
+        </li></ol>
+        <h4 class="sub-h2">想定問答</h4>
+        <ul class="qalist"><li class="qa"><p class="qq">「改定の予定はありません」</p><blockquote class="speech q">「承知しました。それでは点検表だけお持ちします。要請事項が反映されていない項目があれば、そのときにご判断いただければと思います。」</blockquote><p class="qn"><span class="k">補足</span>改定予定なしの団体こそ点検表が効く。未反映が見つかれば、それが改定の理由になる。</p></li><li class="qa"><p class="qq">「個別施設計画は他社にお願いしています」</p><blockquote class="speech q">「でしたら、総合管理計画と個別施設計画の整合を取る部分でお役に立てるかもしれません。両方が別々に作られていて数字が合っていない団体は少なくありません。」</blockquote><p class="qn"><span class="k">補足</span>他社の成果物を批判せず、「整合」という別の業務として立てる。</p></li><li class="qa"><p class="qq">「更新費用は総務省のソフトで試算しました」</p><blockquote class="speech q">「単価法での試算ですと、実際の施設の規模や構造が反映されません。固定資産台帳と連動させると、施設ごとの数字になります。」</blockquote><p class="qn"><span class="k">補足</span>台帳連動の再試算は公会計とのクロスセル。ここが最も単価を上げやすい。</p></li><li class="qa"><p class="qq">「予算が取れません」</p><blockquote class="speech q">「起債の要件にかかわる部分ですので、財政課の方とご一緒にお話しできる機会があれば、そちらでもご説明します。」</blockquote><p class="qn"><span class="k">補足</span>財政課を巻き込む。施設所管課だけでは予算が動かないことが多い。</p></li></ul>
+        <h4 class="sub-h2">やってはいけないこと</h4>
+        <ul class="nglist"><li>起債の充当率・措置率・適用期限を、当年度資料で確認せずに口に出す ── 数値の誤りはそのまま事故になる。</li><li>「この計画は要件を満たしていません」と断定する ── 判断するのは総務省と県であって、当社ではない。</li><li>他社が作った計画を批判する ── その計画を選んだのは目の前の担当者。</li><li>「起債が使えなくなります」と脅す ── 事実に基づかない不安の煽りは、後で必ず信用を失う。</li></ul>
+      </div>
+      <div class="cpanel" id="cs4" role="tabpanel" aria-labelledby="ctab4" hidden>
+        <div class="axis">
+          <p class="axis-t">この5分で伝えることは1つだけ</p>
+          <p class="axis-b">随意契約は「変える理由がない」から続いている。変えさせようとするのではなく、契約範囲に入っていない隣の業務を取る。そして改定年度の前年度に必ず戻る。随契が切れる機会は、担当者の交代と改定年度しかない。</p>
+          <p class="axis-g"><span class="k">対象</span>現在ほかの会社と随意契約している自治体。訪問記録では他社随契20件のうち7件が「再訪不要」で打ち切られているが、改定時期はR9〜R14と先の団体が多い。</p>
         </div>
-      </li>
-      <li class="ccard">
-        <p class="ctime">4:00–5:00</p>
-        <div class="cbody">
-          <h4>次を決めて帰る</h4>
-          <blockquote class="speech">「12月補正ですと、財政課へのご要求はおおむね11月上旬かと思います。10月中に、業務の切り分け案と参考のお見積をお持ちします。いつ頃までにあるとよろしいでしょうか。」</blockquote>
-          <p class="caim"><span class="k">ねらい</span>提出期限を相手に言わせる。相手の庁内スケジュールがそのまま分かり、次回訪問の理由も確定する。「検討します」で終わらせない。</p>
+        <div class="timeline"><div class="tseg g1" style="flex:30"><span class="tsl">0:00</span><span class="tsh">随契を前提に、切り替えを迫らずに入る</span></div><div class="tseg g2" style="flex:60"><span class="tsl">0:30</span><span class="tsh">契約範囲を3問で確かめる</span></div><div class="tseg g3" style="flex:90"><span class="tsl">1:30</span><span class="tsh">隣の業務を示す</span></div><div class="tseg g4" style="flex:60"><span class="tsl">3:00</span><span class="tsh">参考見積を比較材料として置く</span></div><div class="tseg g5" style="flex:60"><span class="tsl">4:00</span><span class="tsh">改定年度の前年度に戻る約束をする</span></div></div>
+        <ol class="ccards">
+        <li class="ccard">
+          <p class="ctime">0:00–0:30</p>
+          <div class="cbody">
+            <h4>随契を前提に、切り替えを迫らずに入る</h4>
+            <blockquote class="speech">「◯◯の件は、現在お願いされている会社さんがいらっしゃると伺っております。切り替えのお願いに参ったわけではございません。ただ、ご契約の範囲に入っていない部分でお役に立てることがあるかと思いまして、5分だけお時間をいただけますでしょうか。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>最初に「切り替えの話ではない」と言い切る。ここで警戒を解けるかどうかが、この5分の成否を決める。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">0:30–1:30</p>
+          <div class="cbody">
+            <h4>契約範囲を3問で確かめる</h4>
+            <blockquote class="speech">「①現在のご契約は、どこまでの範囲でしょうか。」
+「②経営戦略の改定や料金の見直しは、同じところにお願いされていますか。」
+「③次の改定は、R◯年度でよろしかったでしょうか。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>①で範囲外が見つかれば今日の商談になり、③で改定年度が分かれば数年後の商談になる。どちらかは必ず取れる質問構成。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">1:30–3:00</p>
+          <div class="cbody">
+            <h4>隣の業務を示す</h4>
+            <blockquote class="speech">「会計のご支援と経営戦略は、別のご発注になっている団体が多くございます。財務書類の作成と固定資産台帳の精緻化も同じです。総合管理計画と個別施設計画も分かれることが多いです。いまご契約に入っていない部分について、比較のための材料としてご覧いただければと思います。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>現受託者の仕事を評価も批判もしない。「範囲」という事実だけを扱う。ここで他社批判に踏み込むと、担当者の判断を否定することになり一度で終わる。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">3:00–4:00</p>
+          <div class="cbody">
+            <h4>参考見積を比較材料として置く</h4>
+            <blockquote class="speech">「もしよろしければ、その部分の参考のお見積をお持ちします。ご発注いただかなくても、次回のご契約の際に金額の目安としてお使いいただければ結構です。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>随契先がある団体で見積を受け取ってもらう唯一の名目が「比較材料」。受け取ってもらえれば、次の契約時に必ず思い出される。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">4:00–5:00</p>
+          <div class="cbody">
+            <h4>改定年度の前年度に戻る約束をする</h4>
+            <blockquote class="speech">「次の改定がR◯年度でしたら、その前年度にまた伺わせてください。ご担当が代わられるタイミングでも、もう一度ご相談いただけますと幸いです。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>随契が切れる唯一の機会は担当者交代と改定年度。訪問記録に「再訪不要」と書いて切ると、その機会を自ら捨てることになる。改定時期が先でも「再アプローチ」とし、備考に再訪する年度を書く。</p>
+          </div>
+        </li></ol>
+        <h4 class="sub-h2">想定問答</h4>
+        <ul class="qalist"><li class="qa"><p class="qq">「今のところで満足しています」</p><blockquote class="speech q">「承知しました。無理にお切り替えいただく話ではございません。範囲に入っていない部分だけ、資料をお渡しして失礼いたします。」</blockquote><p class="qn"><span class="k">補足</span>満足を否定しない。引き際が良いと、次の改定年度に呼ばれる。</p></li><li class="qa"><p class="qq">「見積だけもらっても困ります」</p><blockquote class="speech q">「ご発注のご判断材料としてではなく、庁内で金額の妥当性をご説明される際の材料としてお使いいただければと思います。」</blockquote><p class="qn"><span class="k">補足</span>「比較材料」という位置づけなら受け取ってもらえる。押しつけない。</p></li><li class="qa"><p class="qq">「他社の批判はしないでほしい」</p><blockquote class="speech q">「もちろんいたしません。ご契約の範囲のお話だけさせてください。」</blockquote><p class="qn"><span class="k">補足</span>そもそも批判しない。この一言で信頼が生まれる。</p></li><li class="qa"><p class="qq">「担当が代わったら連絡します」</p><blockquote class="speech q">「ありがとうございます。R◯年度の改定の前年度に、こちらからも一度伺わせてください。」</blockquote><p class="qn"><span class="k">補足</span>相手の言葉を記録に残し、必ずこちらから戻る。待っていても連絡は来ない。</p></li></ul>
+        <h4 class="sub-h2">やってはいけないこと</h4>
+        <ul class="nglist"><li>現受託者の成果物を批判する ── その会社を選んだのは目の前の担当者。否定は担当者への否定になる。</li><li>「随意契約は競争性がない」と制度論を持ち出す ── 契約方式は自治体が決めること。</li><li>訪問記録に「再訪不要」と書いて切る ── 改定時期が先なら「再アプローチ」とし、備考に再訪年度を書く。</li><li>現受託者の契約金額を聞き出そうとする ── 聞き方によっては相手を困らせる。公表資料で調べる。</li></ul>
+      </div>
+      <div class="cpanel" id="cs5" role="tabpanel" aria-labelledby="ctab5" hidden>
+        <div class="axis">
+          <p class="axis-t">この5分で伝えることは1つだけ</p>
+          <p class="axis-b">不在は失敗ではなく、次を作る機会。受付で3つ確認し、1枚置いて帰る。何も置かずに帰ると、訪問した事実が相手側に何も残らない。</p>
+          <p class="axis-g"><span class="k">対象</span>訪問先で担当者が不在だった場合。訪問記録では不在が15件あり、すべて「再アプローチ」としているが、備考に再訪日まで書けている記録は一部にとどまる。</p>
         </div>
-      </li></ol>
-
-      <h4 class="sub-h2">想定問答</h4>
-      <ul class="qalist"><li class="qa"><p class="qq">「予算がないので今年度は無理です」</p><blockquote class="speech q">「補正でも難しいようでしたら、まず調査・集計の部分だけ、既定予算の範囲でお受けする形もあります。本体は次年度当初でも、分析が先に終わっていれば間に合います。」</blockquote><p class="qn"><span class="k">補足</span>少額随意契約の範囲（金額は自治体の契約規則による）で先行着手し、本体を補正または当初に回す二段構え。金額の線引きは必ず当該自治体の契約規則で確認してから話す。</p></li><li class="qa"><p class="qq">「自前でやれます」</p><blockquote class="speech q">「承知しました。無理にお預けいただく話ではありません。ただ保険料の算定だけは、算定後の検算をセカンドオピニオンとしてお使いいただく形もございます。3年間の保険料に直結しますので、二重にご確認いただく価値はあるかと思います。」</blockquote><p class="qn"><span class="k">補足</span>自前を否定しない。否定した瞬間に担当者の面目を潰し、次年度以降も入れなくなる。検算・レビューという小さな入口を残す。</p></li><li class="qa"><p class="qq">「もう他社にお願いしています」</p><blockquote class="speech q">「失礼しました。差し支えなければ、業務の範囲はどこまででしょうか。調査だけのご契約でしたら、保険料の算定と計画本文が残っているかもしれません。」</blockquote><p class="qn"><span class="k">補足</span>調査のみ・アンケートのみの分離発注は多い。範囲を確認せずに引き下がらない。ただし食い下がらず、1往復で判断する。</p></li><li class="qa"><p class="qq">「国の基本指針がまだ固まっていない」</p><blockquote class="speech q">「おっしゃるとおりです。ですので、指針を待つ部分（骨子・成果目標）と、待たなくてよい部分（アンケート集計・現状分析・人口推計）を分けて、待たなくてよい部分から先に進めておくご提案です。」</blockquote><p class="qn"><span class="k">補足</span>指針待ちは着手しない理由として最も多い。工程を二分して見せることが唯一の崩し方。</p></li><li class="qa"><p class="qq">「議会を通るか分かりません」</p><blockquote class="speech q">「見積は要求のための資料としてお使いください。通らなければ次年度当初でご検討いただければ結構です。資料が無いと要求そのものができませんので、まずお持ちします。」</blockquote><p class="qn"><span class="k">補足</span>補正の可否を断定しない。「見積＝要求資料」と位置づけると、断る理由がなくなる。</p></li><li class="qa"><p class="qq">「担当が異動したばかりで分からない」</p><blockquote class="speech q">「でしたら、前期の計画と実績の突合だけ、こちらで整理してお持ちしましょうか。次期に何を直すべきかが1枚で分かる形にします。」</blockquote><p class="qn"><span class="k">補足</span>異動直後は最大の機会。資料を作って持参するだけで、以後の相談相手になれる。</p></li></ul>
-
-      <h4 class="sub-h2">この5分でやってはいけないこと</h4>
-      <ul class="nglist"><li>「このままでは間に合いませんよ」と脅す ── 担当者の面目を潰した時点で、以後どの案件にも入れなくなる。</li><li>保険料の上昇率を推測で口に出す ── 推計前の数字は、外れたときに議会・住民への説明を壊す。</li><li>「補正で必ず取れます」と断定する ── 予算の可否は財政課と議会が決める。こちらは資料を用意する側。</li><li>5分と言って10分話す ── 次のアポが取れなくなる。話し切れなければ「続きは資料でお持ちします」で切る。</li><li>他団体の進捗を引き合いに出す ── 「△△町さんはもう委託されています」は、未公表情報の持ち込みになる。</li></ul>
+        <div class="timeline"><div class="tseg g1" style="flex:30"><span class="tsl">0:00</span><span class="tsh">受付で3つ確認する</span></div><div class="tseg g2" style="flex:60"><span class="tsl">0:30</span><span class="tsh">置いていく資料を渡す</span></div><div class="tseg g3" style="flex:60"><span class="tsl">1:30</span><span class="tsh">名刺に一言添える</span></div><div class="tseg g4" style="flex:30"><span class="tsl">2:30</span><span class="tsh">その場で記録する</span></div><div class="tseg g5" style="flex:0 0 auto"><span class="tsl">帰社後・当日中</span><span class="tsh">訪問記録に次が読める形で残す</span></div></div>
+        <ol class="ccards">
+        <li class="ccard">
+          <p class="ctime">0:00–0:30</p>
+          <div class="cbody">
+            <h4>受付で3つ確認する</h4>
+            <blockquote class="speech">「①◯◯のご担当は△△様でお間違いないでしょうか。」
+「②お戻りのお時間、あるいは在席されやすい曜日・時間帯はございますか。」
+「③改めて伺いたいのですが、◯月頃でご都合のよい時期はございますでしょうか。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>この3つを聞くだけで、次回の訪問が当てずっぽうでなくなる。同じ時間帯に何度も行って不在を繰り返すのが、最も無駄な時間の使い方。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">0:30–1:30</p>
+          <div class="cbody">
+            <h4>置いていく資料を渡す</h4>
+            <blockquote class="speech">「△△様にお渡しいただけますでしょうか。ご覧いただいて、ご関心がありましたらご連絡いただければ幸いです。」</blockquote>
+            <p class="caim"><span class="k">ねらい</span>置く資料は4つの条件を満たすこと──1枚であること、宛名が入っていること、次にいつ伺うかが書いてあること、連絡先があること。宛名を手書きで入れるだけで、机上で捨てられにくくなる。カタログだけを置かない。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">1:30–2:30</p>
+          <div class="cbody">
+            <h4>名刺に一言添える</h4>
+            <blockquote class="speech">（名刺の裏に「◯月に改めて伺います」と手書きで添えて、資料に留める）</blockquote>
+            <p class="caim"><span class="k">ねらい</span>名刺だけでは用件が残らない。一言あるだけで、次に訪ねたときの入口になる。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">2:30–3:00</p>
+          <div class="cbody">
+            <h4>その場で記録する</h4>
+            <blockquote class="speech">（受付で確認した担当者名・在席しやすい時間帯・次回訪問の目安を、庁舎を出る前にメモする）</blockquote>
+            <p class="caim"><span class="k">ねらい</span>帰社してからでは細部を忘れる。特に担当者の氏名の漢字は、その場で確認しておく。</p>
+          </div>
+        </li>
+        <li class="ccard">
+          <p class="ctime">帰社後・当日中</p>
+          <div class="cbody">
+            <h4>訪問記録に次が読める形で残す</h4>
+            <blockquote class="speech">（結果＝不在／次回アクション＝再アプローチ／備考に「◯月◯日再訪」と日付まで書く）</blockquote>
+            <p class="caim"><span class="k">ねらい</span>備考が「担当不在」だけで終わっている記録は、書いた本人以外には追えない。訪問記録の中には再訪日を具体的に書けているものがあり、そうした記録はそのまま引き継げる。</p>
+          </div>
+        </li></ol>
+        <h4 class="sub-h2">想定問答</h4>
+        <ul class="qalist"><li class="qa"><p class="qq">不在が続いて会えない</p><p class="stage">受付で聞いた在席しやすい曜日・時間帯に合わせる。それでも会えなければ、資料送付とあわせて電話でアポイントを取る形に切り替える。</p><p class="qn"><span class="k">補足</span>訪問の回数ではなく、会えた回数が成果。同じやり方を繰り返さない。</p></li><li class="qa"><p class="qq">資料を置いてよいか分からない</p><blockquote class="speech q">「△△様にお渡しいただけますでしょうか」と受付に確認する。断られたら持ち帰り、郵送かメールにする。</blockquote><p class="qn"><span class="k">補足</span>無理に置いていかない。受付での印象は担当者に伝わる。</p></li><li class="qa"><p class="qq">次回の時期を聞きにくい</p><blockquote class="speech q">「◯月頃にまた伺ってもよろしいでしょうか」と月単位で聞く。日付を詰めない。</blockquote><p class="qn"><span class="k">補足</span>受付は日程を決める権限を持たない。月単位なら答えやすい。</p></li></ul>
+        <h4 class="sub-h2">やってはいけないこと</h4>
+        <ul class="nglist"><li>何も置かずに帰る ── 訪問した事実が相手側に何も残らず、その日の移動時間がすべて無駄になる。</li><li>備考に「担当不在」とだけ書く ── 次に何をするかが読めない記録は、記録として成立していない。</li><li>次回アクションを空欄にする ── 空欄は「決めていない」と同義で、そのままフォローが漏れる。</li><li>在席時間を確認せず、同じ曜日・時間帯に繰り返し訪問する ── 不在が続く原因はたいていこれ。</li><li>受付で担当者の携帯番号や不在の理由を聞き出そうとする ── 相手を困らせる。</li></ul>
+      </div>
 
       <h3 class="sub-h">来期（R9年度）営業方針</h3>
       <div class="plans">
@@ -2467,6 +2701,18 @@ html{scroll-behavior:smooth}
       hc.forEach(function(o){o.classList.toggle('is-on',o===c);});
       var g=c.dataset.g;
       hr.forEach(function(r){ r.hidden = !(g==='all' || r.dataset.h===g); });
+    });
+  });
+
+  var ct=[].slice.call(document.querySelectorAll('.ytab[data-c]'));
+  ct.forEach(function(t){
+    t.addEventListener('click',function(){
+      ct.forEach(function(o){
+        var on=o===t;
+        o.classList.toggle('is-on',on);
+        o.setAttribute('aria-selected',on?'true':'false');
+        document.getElementById('cs'+o.dataset.c).hidden=!on;
+      });
     });
   });
 })();
