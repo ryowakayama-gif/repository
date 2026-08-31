@@ -51,7 +51,10 @@ try:
     G = runpy.run_path("build_projection.py")
 finally:
     sys.stdout = _old
-CL, pop, rate = G["CL"], G["pop"], G["rate"]
+# 本表は「社人研を用いた場合（案A）と補正（案B）」の記録である。
+# 令和8年8月31日のご指示により、採用する基礎は住民基本台帳の実績趨勢
+# （案C）に変わったため、本表では社人研による pop_ipss を明示的に用いる。
+CL, pop, rate = G["CL"], G["pop_ipss"], G["rate"]
 BP, BR = G["BP"], G["BR"]
 BASE75 = BP["75-84"] + BP["85+"]
 BASE65 = sum(BP.values())

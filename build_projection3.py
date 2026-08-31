@@ -26,6 +26,10 @@
   10_確定を要する事項
 """
 
+import io
+import runpy
+import sys
+
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
@@ -57,10 +61,38 @@ SHIZENTAI = [
     ("介護予防サービス給付費", (127.1, 127.5, 128.3)),
     ("居宅介護支援給付費", (124.2, 125.3, 127.4)),
 ]
-KYUFU = [sum(v[i] for _n, v in SHIZENTAI) for i in range(3)]     # 3,056.7 …
+KYUFU_IPSS = [sum(v[i] for _n, v in SHIZENTAI) for i in range(3)]   # 3,056.7 …
 
-# 推計上の第1号被保険者数（将来推計 第1段階 02シート・実績起点）
-HIHOKEN = [9080, 9078, 9072]
+# ------------------------------------------------ 人口の基礎（案C）への置換え
+# 令和8年8月31日のご指示により、人口は社人研ではなく総合戦略上の人口を
+# 基礎とすることとなった。将来推計 第1段階では、総人口を総合戦略に置き、
+# 年齢階級別は住民基本台帳の実績趨勢で延ばす案Cを採っている。
+# 見える化システムの自然体推計は社人研を基礎としているため、
+# 給付費は認定者数の比（案C÷案A）で置き直す。
+_buf, _old = io.StringIO(), sys.stdout
+sys.stdout = _buf
+try:
+    _G = runpy.run_path("build_projection.py")
+finally:
+    sys.stdout = _old
+
+_Y3 = ["2027", "2028", "2029"]
+_SC = 2                                  # ② トレンド継続（採用シナリオ）
+_CL, _rate = _G["CL"], _G["rate"]
+
+
+def _nintei(f, y):
+    return sum(f(c, y) * _rate(c, y, _SC) / 100 for c in _CL)
+
+
+NIN_IPSS = [_nintei(_G["pop_ipss"], y) for y in _Y3]      # 案A（社人研）
+NIN_JUKI = [_nintei(_G["pop_juki"], y) for y in _Y3]      # 案C（採用）
+KYUFU_HOSEI = [c / a for c, a in zip(NIN_JUKI, NIN_IPSS)]
+KYUFU = [k * h for k, h in zip(KYUFU_IPSS, KYUFU_HOSEI)]
+
+# 推計上の第1号被保険者数（将来推計 第1段階 02シート・案C）
+HIHOKEN = [round(sum(_G["pop_juki"](c, y) for c in _CL)) for y in _Y3]
+HIHOKEN_IPSS = [9080, 9078, 9072]        # 案A（社人研）による従前の値
 
 # 第9期の条例による所得段階の乗率（16段階）
 JORITSU = [0.455, 0.639, 0.690, 0.860, 1.000, 1.260, 1.310, 1.590,
@@ -235,8 +267,10 @@ r = header(ws, r, ["Step", "項目", "算式", "本表での置き方", "確定�
 for st, ko, shiki, oki, kak in [
     ("1", "標準給付費見込額（A）",
      "総給付費×割増率",
-     "見える化システムの自然体推計による給付費（3年計 9,267.4百万円）に、"
-     "令和6年度決算による割増率%.4fを乗じる" % UPLIFT, "暫定"),
+     "見える化システムの自然体推計による給付費（3年計 %.1f百万円）を"
+     "人口の基礎の変更により%.4f倍に置き直し、"
+     "令和6年度決算による割増率%.4fを乗じる"
+     % (sum(KYUFU_IPSS), sum(NIN_JUKI) / sum(NIN_IPSS), UPLIFT), "暫定"),
     ("1", "地域支援事業費（B）", "事業費の積上げ",
      "令和6年度決算額%s円を3年分とする" % "{:,}".format(CHIIKI_R6), "暫定"),
     ("1", "合計（①）", "①＝A＋B", "―", "暫定"),
@@ -316,12 +350,33 @@ r = header(ws, r, ["区分"] + YEARS + ["第10期計", "備考"])
 for nm, v in SHIZENTAI:
     r = body(ws, r, [nm] + [round(x, 1) for x in v] + [round(sum(v), 1), ""],
              numfmt="#,##0.0")
-r = body(ws, r, ["合計"] + [round(x, 1) for x in KYUFU]
-         + [round(sum(KYUFU), 1), "計画素案 第6章第3節1と同じ"],
+r = body(ws, r, ["合計"] + [round(x, 1) for x in KYUFU_IPSS]
+         + [round(sum(KYUFU_IPSS), 1), "計画素案 第6章第3節1と同じ"],
          {1: MID_B}, bold=True, numfmt="#,##0.0")
 r = note(ws, r, "単位：百万円。見える化システムの自然体推計による。"
          "報酬改定、地域支援事業費、供給制約、基盤整備及び政策効果は"
          "反映していません。", 6, 32)
+
+r = lead(ws, r, "【1の2　人口の基礎を総合戦略ベースに改めたことによる置換え】", 6)
+r = header(ws, r, ["区分"] + YEARS + ["第10期計", "備考"])
+r = body(ws, r, ["認定者数　案A（社人研）"] + [round(x) for x in NIN_IPSS]
+         + [round(sum(NIN_IPSS)), "見える化システムの自然体推計の基礎"],
+         numfmt="#,##0")
+r = body(ws, r, ["認定者数　案C（総合戦略ベース）"] + [round(x) for x in NIN_JUKI]
+         + [round(sum(NIN_JUKI)), "将来推計 第1段階 03シート・シナリオ②"],
+         {1: MID_B}, numfmt="#,##0")
+r = body(ws, r, ["置換率（案C÷案A）"]
+         + ["%.4f" % h for h in KYUFU_HOSEI]
+         + ["%.4f" % (sum(NIN_JUKI) / sum(NIN_IPSS)), "給付費に乗じる"],
+         align={1: "center", 2: "center", 3: "center", 4: "center"})
+r = body(ws, r, ["置換え後の給付費"] + [round(x, 1) for x in KYUFU]
+         + [round(sum(KYUFU), 1), "本表で用いる値"],
+         {1: OK_G}, bold=True, numfmt="#,##0.0")
+r = note(ws, r, "単位：人・百万円。"
+         "見える化システムの自然体推計は社人研の推計人口を基礎としています。"
+         "令和8年8月31日のご指示により人口の基礎を総合戦略ベース（案C）に"
+         "改めたため、給付費を認定者数の比で置き直しました。"
+         "サービス構成比は変えていません。", 6, 46)
 
 r = lead(ws, r, "【2　総給付費から標準給付費見込額への割増率】", 6)
 r = header(ws, r, ["算定の経路", "総給付費（円）", "標準給付費見込額（円）",
@@ -627,7 +682,9 @@ r = header(ws, r, ["No.", "要因", "第9期", "第10期（暫定）", "月額�
 step = []
 for nm, kw, before, after in [
     ("給付費の水準", dict(kyufu_oku=sum(KYUFU) * 1e6, uplift=UPLIFT),
-     "8,905百万円（第9期計画）", "9,267百万円（自然体推計）"),
+     "8,905百万円（第9期計画）",
+     "%s百万円（自然体推計・人口の基礎の置換え後）"
+     % "{:,.0f}".format(sum(KYUFU))),
     ("地域支援事業費", dict(chiiki=CHIIKI_R6 * 3, sogo=SOGO_R6 * 3),
      "593.7百万円（うち総合事業331.1百万円）",
      "550.2百万円（うち総合事業303.8百万円）"),
@@ -694,7 +751,7 @@ SENS = [
     ("給付費の割増率", "%.4f（令和6年度決算）" % UPLIFT,
      "%.4f（第9期計画）" % UPLIFT_K9, dict(uplift=UPLIFT_K9),
      "高額介護サービス費等を加えるための率"),
-    ("給付費の水準", "自然体推計 9,267百万円",
+    ("給付費の水準", "自然体推計（置換え後）%s百万円" % "{:,.0f}".format(sum(KYUFU)),
      "第9期の実績年率×3年 8,599百万円",
      dict(kyufu_oku=5732501580 / 2 * 3),
      "令和6・7年度の給付費実績の年平均を3年分とした場合"),
