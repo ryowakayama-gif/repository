@@ -17,8 +17,8 @@ os.makedirs(os.path.dirname(OUT), exist_ok=True)
 F = "游ゴシック"
 C = {"header":"1F3864","sub":"2E75B6","band":"DDEBF7","alt":"F7FAFC",
      "note":"FFF3F3","vill":"FFF2CC","key":"FCE4D6","white":"FFFFFF",
-     "done":"E2EFDA","doing":"FFF2CC","chk":"FCE4D6","prioA":"FF7C80",
-     "prioB":"FFD966","prioC":"D9D9D9","solved":"E7E6E6"}
+     "done":"E2EFDA","doing":"FFF2CC","chk":"FCE4D6","prioS":"FF5050","prioA":"FFC000",
+     "prioB":"FFE699","prioC":"D9D9D9","solved":"E7E6E6"}
 THIN = Side(border_style="thin", color="BFBFBF")
 BD = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
 D = lambda s: datetime.datetime.strptime(s, "%Y/%m/%d") if s else None
@@ -124,13 +124,13 @@ KH = ["優先度","区分","確認事項","なぜ必要か／影響","関連WBS 
 KW = [8, 12, 46, 56, 14, 16, 10, 30]
 title_bar(wk, "A1:H1", "北塩原村への確認事項　一覧（基準日：令和8年8月31日）")
 sub_bar(wk, "A2:H2",
-    "優先度A＝令和8年9月上旬までに回答が必要（調査工程のクリティカルパス上）／"
-    "B＝令和8年11〜12月までに必要（計画策定工程）／C＝随時　"
+    "優先度S＝キックオフ会議（令和8年9月1日）で決着が必要（9月9日の入稿・9月中旬の発送を守るため）／"
+    "A＝令和8年9月中に確定が必要／B＝第1回策定委員会（11月）まで／C＝第2回以降　"
     "｜　出所の doc番号は docs/北塩原村_第10期/ 配下の分析資料に対応します")
 KHR = 4
 head_row(wk, KHR, KH, KW)
 kr = KHR + 1
-for kubun, item, why, wbsno, src, prio, sts in sorted(K, key=lambda x: ("ABC".index(x[5]), x[0])):
+for kubun, item, why, wbsno, src, prio, sts in sorted(K, key=lambda x: ("SABC".index(x[5]), x[0])):
     vals = [prio, kubun, item, why, wbsno, src, sts, ""]
     for i, v in enumerate(vals, 1):
         c = wk.cell(row=kr, column=i, value=v)
@@ -140,7 +140,7 @@ for kubun, item, why, wbsno, src, prio, sts in sorted(K, key=lambda x: ("ABC".in
                                 horizontal="center" if i in (1,5,6,7) else "left")
     wk.cell(row=kr, column=1).fill = PatternFill("solid", fgColor=C["prio"+prio])
     wk.cell(row=kr, column=1).font = Font(name=F, size=10, bold=True)
-    if prio == "A":
+    if prio in ("S", "A"):
         for i in range(2, 9):
             wk.cell(row=kr, column=i).fill = PatternFill("solid", fgColor=C["note"])
     wk.row_dimensions[kr].height = 34
@@ -164,6 +164,8 @@ for kubun, item, why, wbsno, src, prio, sts in SOLVED:
     kr += 1
 
 dv3 = DataValidation(type="list", formula1='"未依頼,依頼済,回答待ち,回答済,解決済"', allow_blank=True)
+dv4 = DataValidation(type="list", formula1='"S,A,B,C"', allow_blank=True)
+wk.add_data_validation(dv4); dv4.add(f"A{KHR+1}:A{KLAST}")
 wk.add_data_validation(dv3); dv3.add(f"G{KHR+1}:G{KLAST}")
 wk.freeze_panes = "C5"
 wk.auto_filter.ref = f"A{KHR}:H{KLAST}"
@@ -259,7 +261,7 @@ blk(rr + 1, "■ 行の塗り分け")
 legend = [
  (C["done"], "薄い緑", "完了した作業です。"),
  (C["doing"], "薄い黄", "着手中・確認中の作業、または北塩原村が担当する作業です。"),
- (C["note"], "薄い赤", "「村への確認事項」シートの優先度A、および未受領の資料です。"),
+ (C["note"], "薄い赤", "「村への確認事項」シートの優先度S・A、および未受領の資料です。"),
 ]
 lr = rr + 2
 for fill, nm, desc in legend:
@@ -318,6 +320,7 @@ kpis = [
  ("完了した作業", f'=COUNTIF({sh}!$O${HR+1}:$O${LAST},"完了")', "0"),
  ("着手・確認中の作業", f'=COUNTIF({sh}!$O${HR+1}:$O${LAST},"着手")+COUNTIF({sh}!$O${HR+1}:$O${LAST},"確認中")', "0"),
  ("未着手の作業", f'=COUNTIF({sh}!$O${HR+1}:$O${LAST},"未着手")', "0"),
+ ("村への確認事項（優先度S）", '=COUNTIF(\'村への確認事項\'!$A:$A,"S")', "0"),
  ("村への確認事項（優先度A）", '=COUNTIF(\'村への確認事項\'!$A:$A,"A")', "0"),
  ("村への確認事項（未依頼）", '=COUNTIF(\'村への確認事項\'!$G:$G,"未依頼")', "0"),
  ("未受領の資料・データ", '=COUNTIF(\'受領資料・データ管理\'!$F:$F,"未受領")', "0"),
