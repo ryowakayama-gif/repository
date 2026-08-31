@@ -22,8 +22,8 @@ def w(path, rows):
     print('  ->', os.path.relpath(path, OUT), '(%d行)' % len(rows))
 
 # --- 現行料金体系 ------------------------------------------------------------
-CUR = dict(base=2016, r1=37, r2=174, r3=200)
-PLAN1 = dict(base=2440, r1=45.5, r2=211.5, r3=242)
+CUR = (2016, 37, 174, 200)
+PLAN1 = (2440, 45.5, 211.5, 242)
 
 def charge(v, base, r1, r2, r3):
     n = base
@@ -32,17 +32,24 @@ def charge(v, base, r1, r2, r3):
     if v > 100: n += r3 * (v - 100)
     return n
 
-def cur_amt(v):   return math.floor(charge(v, **CUR) * 1.1)
-def plan1_amt(v): return math.floor(charge(v, **PLAN1))
+def cur_amt(v):   return math.floor(charge(v, *CUR) * 1.1)
+def plan1_amt(v): return math.floor(charge(v, *PLAN1))
 
-INDEX = {}
-for _v in range(1, 4000):
-    INDEX.setdefault(cur_amt(_v), _v)
+def uniform(ratio):
+    p = (math.floor(2217 * ratio), round(40.7 * ratio, 1),
+         round(191.4 * ratio, 1), round(220.0 * ratio, 1))
+    return (lambda v: math.floor(charge(v, *p))), p
 
-def vol_of(a):
-    if a in INDEX: return INDEX[a]
-    if a <= 2217:  return 10
-    return INDEX[max(k for k in INDEX if k <= a)]
+# 11㎥以上は金額と水量が1対1。1〜10㎥は基本料金2,217円に縮退し特定できない。
+EXACT = {cur_amt(v): v for v in range(11, 4000)}
+BASIC_AMT = cur_amt(10)
+NORMAL, BASIC, SPECIAL = '通常算定', '基本料金帯', '特殊算定'
+
+def classify(amount):
+    """請求金額から (区分, 水量) を返す。水量は通常算定のみ確定。"""
+    if amount == BASIC_AMT: return BASIC, None
+    if amount in EXACT:     return NORMAL, EXACT[amount]
+    return SPECIAL, None
 
 shutil.rmtree(OUT, ignore_errors=True)
 os.makedirs(OUT, exist_ok=True)
@@ -67,16 +74,19 @@ rows = [['#', '隔月検針のため1請求＝2か月分。2か月水量Vに対�
         ['2か月水量(㎥)', '税抜額(円)', '現行 請求額(円・税込)', '案1 請求額(円・税込)', '差額(円)', '増減率(%)']]
 for v in list(range(1, 51)) + [60, 70, 80, 90, 100, 101, 110, 150, 200, 300, 378, 500, 766]:
     c, p = cur_amt(v), plan1_amt(v)
-    rows.append([v, int(charge(v, **CUR)), c, p, p - c, '%.2f' % ((p / c - 1) * 100)])
+    rows.append([v, int(charge(v, *CUR)), c, p, p - c, '%.2f' % ((p / c - 1) * 100)])
 w(OUT + '/data/02_隔月請求額_早見表.csv', rows)
 
 # === 03/04 金額別度数分布 ====================================================
-def distribution(sheet, path, title, with_plan):
+def distribution(sheet, path, title):
     ws = wb[sheet]
     rows = [['#', title + '／出典：【R7】使用料集計ブック ' + sheet],
-            ['2か月水量(㎥)', '現行請求額(円)', '5月', '7月', '9月', '11月', '1月', '3月',
-             '件数計', '現行調定額(円)'] + (['案1請求額(円)', '案1調定額(円)'] if with_plan else [])]
+            ['#', '区分：通常算定＝金額から水量が一意に定まる／基本料金帯＝1〜10㎥のいずれでも同額で水量不詳／特殊算定＝日割・異動等で料金式に一致しない'],
+            ['#', '案1調定額は、通常算定・基本料金帯は水量から再計算、特殊算定は現行調定額×1.10で算定'],
+            ['2か月水量(㎥)', '現行請求額(円)', '区分', '5月', '7月', '9月', '11月', '1月', '3月',
+             '件数計', '現行調定額(円)', '案1請求額(円)', '案1調定額(円)']]
     tc = ta = tp = 0
+    tally = {}
     for r in ws.iter_rows(min_row=3, values_only=True):
         if str(r[0]).strip() == '合計': continue
         amt, cnt = r[1], r[8]
@@ -84,25 +94,36 @@ def distribution(sheet, path, title, with_plan):
         cnt = int(cnt)
         months = [int(x) if isinstance(x, (int, float)) else '' for x in r[2:8]]
         if not isinstance(amt, (int, float)):
-            rows.append([r[0] or '', '〜2,216'] + months + [cnt, int(r[9] or 0)] +
-                        (['同左×1.10', round(int(r[9] or 0) * 1.10)] if with_plan else []))
-            tc += cnt; ta += int(r[9] or 0); tp += round(int(r[9] or 0) * 1.10)
-            continue
-        amt = int(amt); v = vol_of(amt)
-        line = [r[0] if r[0] is not None else v, amt] + months + [cnt, amt * cnt]
-        if with_plan:
-            line += [plan1_amt(v), plan1_amt(v) * cnt]
-            tp += plan1_amt(v) * cnt
-        rows.append(line); tc += cnt; ta += amt * cnt
-    rows.append(['合計', '', '', '', '', '', '', '', tc, ta] + (['', tp] if with_plan else []))
+            cur_a = int(r[9] or 0); new_a = round(cur_a * 1.10)
+            rows.append([r[0] or '', '〜2,216', SPECIAL] + months +
+                        [cnt, cur_a, '現行×1.10', new_a])
+            kind, vol = SPECIAL, None
+        else:
+            amt = int(amt); kind, vol = classify(amt)
+            cur_a = amt * cnt
+            if kind == SPECIAL:
+                new_unit, new_a = '現行×1.10', round(cur_a * 1.10)
+            else:
+                new_unit = plan1_amt(vol if kind == NORMAL else 10)
+                new_a = new_unit * cnt
+            rows.append([r[0] if r[0] is not None else (vol or ''), amt, kind] + months +
+                        [cnt, cur_a, new_unit, new_a])
+        tc += cnt; ta += cur_a; tp += new_a
+        t = tally.setdefault(kind, [0, 0, 0, 0])
+        t[0] += cnt; t[1] += cur_a
+        if kind == NORMAL:
+            t[2] += vol * cnt; t[3] += vol * cnt
+        elif kind == BASIC:
+            t[2] += 1 * cnt; t[3] += 10 * cnt
+    rows.append(['合計', '', '', '', '', '', '', '', '', tc, ta, '', tp])
     w(path, rows)
-    return tc, ta, tp
+    return tc, ta, tp, tally
 
 print('03/04 金額別度数分布')
-g_cnt, g_cur, g_plan = distribution('R7漁集 (件数)', OUT + '/data/03_金額別度数分布_漁業集落排水.csv',
-                                    '漁業集落排水 R7年度 金額別度数分布', True)
-k_cnt, k_cur, k_plan = distribution('R7公共 (件数) ', OUT + '/data/04_金額別度数分布_公共下水道.csv',
-                                    '公共下水道 R7年度 金額別度数分布', True)
+g_cnt, g_cur, g_plan, g_tally = distribution(
+    'R7漁集 (件数)', OUT + '/data/03_金額別度数分布_漁業集落排水.csv', '漁業集落排水 R7年度 金額別度数分布')
+k_cnt, k_cur, k_plan, k_tally = distribution(
+    'R7公共 (件数) ', OUT + '/data/04_金額別度数分布_公共下水道.csv', '公共下水道 R7年度 金額別度数分布')
 
 # === 05 水量区分別集計 =======================================================
 print('05 水量区分別集計')
@@ -128,8 +149,8 @@ for ws in wb83.worksheets:
         if not (r[1] and str(r[1]).startswith('階上') and r[2]): continue
         if not isinstance(r[6], (int, float)): continue
         a = int(r[6]); k = str(r[1])
-        if a in INDEX:      tally[(k, '体系と完全一致')] += 1
-        elif a < 2217:      tally[(k, '基本料金未満（日割・休止等）')] += 1
+        if a == BASIC_AMT or a in EXACT: tally[(k, '体系と完全一致')] += 1
+        elif a < BASIC_AMT: tally[(k, '基本料金未満（日割・休止等）')] += 1
         else:               tally[(k, '不一致（月中異動の日割等）')] += 1; miss[(k, a)] += 1
 rows = [['#', '出典：R8.3月 調定簿明細（令和7年度3月分）。氏名・使用者番号は出力していない'],
         ['下水区分', '判定', '件数']]
@@ -145,30 +166,34 @@ w(OUT + '/data/06_料金体系の検証_R8.3月調定.csv', rows)
 
 # === 07 増収試算 =============================================================
 print('07 増収試算')
-def uniform(ratio):
-    p = dict(base=math.floor(2217 * ratio), r1=round(40.7 * ratio, 1),
-             r2=round(191.4 * ratio, 1), r3=round(220.0 * ratio, 1))
-    return lambda v: math.floor(charge(v, **p)), p
-
 def load(sheet):
     ws = wb[sheet]; recs = []
     for r in ws.iter_rows(min_row=3, values_only=True):
         if str(r[0]).strip() == '合計': continue
         amt, cnt = r[1], r[8]
         if not isinstance(cnt, (int, float)) or cnt == 0: continue
+        cnt = int(cnt)
         if not isinstance(amt, (int, float)):
-            recs.append((None, int(cnt), int(r[9] or 0))); continue
-        amt = int(amt); recs.append((vol_of(amt), int(cnt), amt * int(cnt)))
+            recs.append((SPECIAL, None, cnt, int(r[9] or 0))); continue
+        amt = int(amt); kind, vol = classify(amt)
+        recs.append((kind, vol, cnt, amt * cnt))
     return recs
 
 def revenue(recs, fn, ratio):
-    return sum(round(cur * ratio) if v is None else fn(v) * c for v, c, cur in recs)
+    """通常算定・基本料金帯は水量から再計算、特殊算定は現行調定額×改定率。"""
+    total = 0
+    for kind, vol, cnt, cur in recs:
+        if kind == NORMAL:  total += fn(vol) * cnt
+        elif kind == BASIC: total += fn(10) * cnt
+        else:               total += round(cur * ratio)
+    return total
 
-rows = [['#', '試算方法：R7年度調定実績の金額別度数分布に各料金案を当てはめて再計算（税込・年額）'],
-        ['料金案', '基本(5㎥まで)', '6〜10㎥', '11〜50㎥', '51㎥〜',
-         '漁業集落排水(円)', '公共下水道(円)', '合計(円)', '対現行 増収額(円)', '増減率(%)']]
 gr, kr = load('R7漁集 (件数)'), load('R7公共 (件数) ')
 base_total = g_cur + k_cur
+rows = [['#', '試算方法：R7年度奇数月6回調定の金額別度数分布に各料金案を当てはめて再計算（税込・年額）'],
+        ['#', '通常算定・基本料金帯は水量から再計算、特殊算定（日割・異動等）は現行調定額×改定率'],
+        ['料金案', '基本(5㎥まで)', '6〜10㎥', '11〜50㎥', '51㎥〜',
+         '漁業集落排水(円)', '公共下水道(円)', '合計(円)', '対現行 増収額(円)', '増減率(%)']]
 rows.append(['現行', '1108.8', '40.7', '191.4', '220.0', g_cur, k_cur, base_total, 0, '0.00'])
 gp, kp = revenue(gr, plan1_amt, 1.10), revenue(kr, plan1_amt, 1.10)
 rows.append(['案1（集計ブック／約+10%）', '1220', '45.5', '211.5', '242', gp, kp, gp + kp,
@@ -176,7 +201,7 @@ rows.append(['案1（集計ブック／約+10%）', '1220', '45.5', '211.5', '24
 for ratio in (1.15, 1.20):
     fn, p = uniform(ratio)
     g2, k2 = revenue(gr, fn, ratio), revenue(kr, fn, ratio)
-    rows.append(['参考 一律%+.0f%%' % ((ratio - 1) * 100), p['base'] / 2, p['r1'], p['r2'], p['r3'],
+    rows.append(['参考 一律%+.0f%%' % ((ratio - 1) * 100), p[0] / 2, p[1], p[2], p[3],
                  g2, k2, g2 + k2, g2 + k2 - base_total, '%.2f' % ((g2 + k2) / base_total * 100 - 100)])
 rows.append([])
 rows.append(['# 参考：集計ブック上の案1集計値（奇数㎥を2㎥ブロックに切上げ）'])
@@ -188,16 +213,70 @@ w(OUT + '/data/07_増収試算.csv', rows)
 
 # === 08 実績サマリ ===========================================================
 print('08 実績サマリ')
-gv = sum((v or 10) * c for v, c, _ in gr); kv = sum((v or 10) * c for v, c, _ in kr)
+def bounds(recs):
+    lo = sum((v if k == NORMAL else 1) * c for k, v, c, _ in recs if k != SPECIAL)
+    hi = sum((v if k == NORMAL else 10) * c for k, v, c, _ in recs if k != SPECIAL)
+    return lo, hi
+glo, ghi = bounds(gr); klo, khi = bounds(kr)
+gmet = sum(a for k, _, _, a in gr if k != SPECIAL)
+kmet = sum(a for k, _, _, a in kr if k != SPECIAL)
+gsp = sum(c for k, _, c, _ in gr if k == SPECIAL); ksp = sum(c for k, _, c, _ in kr if k == SPECIAL)
 w(OUT + '/data/08_R7調定実績サマリ.csv', [
-    ['#', 'R7年度（隔月調定6回＝12か月分）。水量は請求額からの逆算推計'],
+    ['#', 'R7年度奇数月6回調定集計ベース。通常の隔月検針者については概ね12か月相当だが、'
+          '偶数月調定及び毎月検針者の一部を含まない'],
+    ['#', '水量は請求金額から算定式を逆引きした推計値。基本料金帯（2,217円）は1〜10㎥のいずれでも'
+          '同額のため水量が特定できず、下限・上限で示す。特殊算定分は推計対象外'],
     ['項目', '漁業集落排水', '公共下水道', '合計'],
     ['調定件数(件)', g_cnt, k_cnt, g_cnt + k_cnt],
     ['調定額(円・税込)', g_cur, k_cur, g_cur + k_cur],
-    ['推計年間水量(㎥)', gv, kv, gv + kv],
-    ['実効単価(円/㎥・税込)', '%.1f' % (g_cur / gv), '%.1f' % (k_cur / kv), '%.1f' % ((g_cur + k_cur) / (gv + kv))],
+    ['推計水量 下限(㎥)', glo, klo, glo + klo],
+    ['推計水量 上限(㎥)', ghi, khi, ghi + khi],
+    ['実効単価 下限(円/㎥・税込)', '%.1f' % (gmet / ghi), '%.1f' % (kmet / khi),
+     '%.1f' % ((gmet + kmet) / (ghi + khi))],
+    ['実効単価 上限(円/㎥・税込)', '%.1f' % (gmet / glo), '%.1f' % (kmet / klo),
+     '%.1f' % ((gmet + kmet) / (glo + klo))],
     ['1件平均調定額(円)', '%.0f' % (g_cur / g_cnt), '%.0f' % (k_cur / k_cnt), ''],
-    ['1件平均水量(㎥/2か月)', '%.1f' % (gv / g_cnt), '%.1f' % (kv / k_cnt), ''],
+    ['水量推計対象外の件数(特殊算定)', gsp, ksp, gsp + ksp],
+])
+
+# === 12 水量推計の内訳 =======================================================
+print('12 水量推計の内訳')
+rows = [['#', '調定を3区分に分けた内訳。実効単価は水量を推計できる区分（通常算定＋基本料金帯）のみで算出'],
+        ['事業', '区分', '件数', '調定額(円)', '水量 下限(㎥)', '水量 上限(㎥)', '備考']]
+for recs, label in [(gr, '漁業集落排水'), (kr, '公共下水道')]:
+    for kind, note in [(NORMAL, '金額から水量が一意に定まる'),
+                       (BASIC, '基本料金2,217円。1〜10㎥のいずれでも同額のため水量不詳'),
+                       (SPECIAL, '日割・異動等で料金式に一致しない。水量推計は対象外')]:
+        c = sum(x[2] for x in recs if x[0] == kind)
+        a = sum(x[3] for x in recs if x[0] == kind)
+        if kind == NORMAL:
+            lo = hi = sum(x[1] * x[2] for x in recs if x[0] == kind)
+        elif kind == BASIC:
+            lo, hi = c * 1, c * 10
+        else:
+            lo = hi = ''
+        rows.append([label, kind, c, a, lo, hi, note])
+w(OUT + '/data/12_水量推計の内訳.csv', rows)
+
+# === 13 v1からの訂正 =========================================================
+print('13 訂正履歴')
+w(OUT + '/data/13_訂正履歴.csv', [
+    ['#', '2026-08-31 レビュー指摘を受けた訂正。増収試算への影響は軽微だが、水量・実効単価は訂正が必要'],
+    ['項目', 'v1（2026-08-19）', 'v2（2026-08-31）', '訂正理由'],
+    ['漁集 推計水量(㎥)', '41,303', '%s〜%s' % (format(glo, ','), format(ghi, ',')),
+     '基本料金帯285件を1㎥として計上していた。1〜10㎥で特定不能のため範囲表示に変更'],
+    ['公共 推計水量(㎥)', '193,707', '%s〜%s' % (format(klo, ','), format(khi, ',')),
+     '基本料金帯1,657件を1㎥として計上。併せて特殊算定487件を推計対象外とした'],
+    ['漁集 実効単価(円/㎥)', '178.5', '%.1f〜%.1f' % (gmet / ghi, gmet / glo), '上記水量の訂正を反映'],
+    ['公共 実効単価(円/㎥)', '183.9', '%.1f〜%.1f' % (kmet / khi, kmet / klo), '上記水量の訂正を反映'],
+    ['漁集 案1調定額(円)', '8,136,229', format(gp, ','), '特殊算定5件を現行×1.10に統一'],
+    ['公共 案1調定額(円)', '39,275,397', format(kp, ','), '特殊算定487件を現行×1.10に統一'],
+    ['2事業計 増収額(円)', '4,424,494', format(gp + kp - base_total, ','), '同上（差 %s円）'
+     % format(gp + kp - base_total - 4424494, ',')],
+    ['調定の表現', 'R7年度年間実績（隔月6回＝12か月分）',
+     'R7年度奇数月6回調定集計ベース', '偶数月調定・毎月検針者の一部を含まないため'],
+    ['経営戦略との収入比較', '公共 R7予測38,724千円に対し実績35,613千円＝▲8%',
+     '単純比較を保留', '税込／税抜の別、調定と決算上の収入の別、集計範囲の欠落が未整理のため'],
 ])
 
 # === 09 モデルケース =========================================================
