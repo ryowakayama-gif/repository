@@ -1,7 +1,8 @@
 // 第10期計画 素案 Word生成（soan_content.py が出力した /tmp/soan.json を読む）
 const fs = require('fs');
 const d = require('/tmp/node_modules/docx');
-const {Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBreak,
+const path = require('path');
+const {Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBreak, ImageRun,
        Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, LevelFormat,
        TableOfContents, Header, Footer, PageNumber} = d;
 
@@ -41,6 +42,33 @@ function table(head, rows, widths) {
     rows: [new TableRow({tableHeader: true, children: head.map((h, i) => cell(h, i, true))}),
            ...rows.map(r => new TableRow({children: r.map((v, i) => cell(v, i, false))}))],
   });
+}
+
+const FIGDIR = '/home/user/repository/output/figures';
+function figure(f) {
+  const buf = fs.readFileSync(path.join(FIGDIR, f.file));
+  // 本文幅 9360 DXA = 6.5in。300dpiのPNGを幅6.3inに収める
+  const dim = pngSize(buf);
+  const wIn = 6.3, hIn = wIn * dim.h / dim.w;
+  return [
+    new Paragraph({
+      alignment: AlignmentType.CENTER, spacing: {before: 160, after: 60},
+      children: [new ImageRun({type: 'png', data: buf,
+                               transformation: {width: Math.round(wIn*96), height: Math.round(hIn*96)}})],
+    }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER, spacing: {after: 40},
+      children: [new TextRun({text: f.caption, font: FONTG, size: 18, bold: true, color: NAVY})],
+    }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER, spacing: {after: 200},
+      children: [new TextRun({text: '出典：' + f.source, font: FONTG, size: 15, color: GREY})],
+    }),
+  ];
+}
+function pngSize(buf) {
+  // PNG IHDR: 幅=16..19バイト, 高さ=20..23バイト（ビッグエンディアン）
+  return {w: buf.readUInt32BE(16), h: buf.readUInt32BE(20)};
 }
 
 const kids = [];
@@ -88,6 +116,7 @@ C.chapters.forEach((ch, ci) => {
       children: [new TextRun({text: `${sec.no}　${sec.title}`, font: FONTG, size: 24,
                               bold: true, color: NAVY})],
     }));
+    (C.figures[sec.no] || []).forEach(f => { figure(f).forEach(x => kids.push(x)); });
     sec.blocks.forEach(b => {
       if (b.t === 'p') kids.push(p(b.v));
       else if (b.t === 'h3') kids.push(p(b.v, {size: 21, bold: true, font: FONTG,

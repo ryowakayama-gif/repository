@@ -3,9 +3,14 @@
 import os, sys, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import soan_content as S
+from figures_map import FIGS
 
 MD = "/home/user/repository/docs/北塩原村_第10期/18_計画素案.md"
 JS = "/tmp/soan.json"
+
+figs = {}
+for _sec, _fn, _cap, _src in FIGS:
+    figs.setdefault(_sec, []).append({"file": _fn, "caption": _cap, "source": _src})
 
 out = [f"# {S.TITLE}・{S.TITLE2}　{S.DRAFT}", "",
        f"**計画期間：{S.SUBTITLE}**　／　{S.ISSUER}　／　{S.DATE}", "",
@@ -16,6 +21,9 @@ for ch in S.CH:
     out += [f"# {ch['no']}　{ch['title']}", ""]
     for sec in ch["sections"]:
         out += [f"## {sec['no']}　{sec['title']}", ""]
+        for f in figs.get(sec["no"], []):
+            out += [f"![{f['caption']}](../../output/figures/{f['file']})", "",
+                    f"**{f['caption']}**", "", f"出典：{f['source']}", ""]
         for b in sec["blocks"]:
             t = b["t"]
             if t == "p":
@@ -35,8 +43,12 @@ for ch in S.CH:
     out += ["---", ""]
 
 open(MD, "w", encoding="utf-8").write("\n".join(out))
+figs = {}
+for sec, fn, cap, src in FIGS:
+    figs.setdefault(sec, []).append({"file": fn, "caption": cap, "source": src})
 json.dump({"title": S.TITLE, "title2": S.TITLE2, "subtitle": S.SUBTITLE,
-           "draft": S.DRAFT, "issuer": S.ISSUER, "date": S.DATE, "chapters": S.CH},
+           "draft": S.DRAFT, "issuer": S.ISSUER, "date": S.DATE,
+           "chapters": S.CH, "figures": figs},
           open(JS, "w", encoding="utf-8"), ensure_ascii=False)
 print(f"Markdown: {MD}  ({len(out)}行)")
 print(f"JSON    : {JS}")
