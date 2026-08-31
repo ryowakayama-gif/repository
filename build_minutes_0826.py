@@ -298,10 +298,21 @@ PROGRESS_ROW = (
 )
 
 
+KAIGI_HI = "令和8年8月26日"
+
+
 def progress_text():
-    """業務進捗の行の本文。進捗率は data_progress から取る。"""
+    """業務進捗の行の本文。
+
+    議事録は会議の当日に報告した値を記すものであるため、
+    現時点の値（data_progress.PROGRESS）ではなく、
+    当日の記録（data_progress.KIROKU）を用いる。
+    """
     import data_progress as G
-    seq = [(no, nm, v) for no, nm, v, st, mv in G.PROGRESS if v is not None]
+    rec = G.KIROKU[KAIGI_HI]
+    nm = {no: n for no, n, _v, _s, _d in G.PROGRESS}
+    seq = [(no, nm[no], v) for no, v in rec.items()]
+    zentai = round(sum(rec.values()) / len(rec) * 100)
     top = sorted(seq, key=lambda x: -x[2])[:3]
     low = [x for x in seq if x[2] <= 0.45]
     return (
@@ -312,10 +323,10 @@ def progress_text():
         "受領により進む。"
         "%sは今後の工程による。"
         "詳細は業務進捗報告書（令和8年8月分）による。"
-        % (G.KIJUNBI, G.overall_pct(),
+        % (KAIGI_HI, zentai,
            "、".join("%s%s%d％" % (a, b, c * 100) for a, b, c in top),
            "(2)第9期計画の評価・検証%d％・(5)将来推計%d％"
-           % (G.rate("(2)") * 100, G.rate("(5)") * 100),
+           % (rec["(2)"] * 100, rec["(5)"] * 100),
            "、".join("%s%s%d％" % (a, b, c * 100) for a, b, c in low)))
 
 
