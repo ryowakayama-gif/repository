@@ -18,23 +18,52 @@ B6系列（調整済み重度・軽度認定率）により、認定率の推移
   06_訂正の内容と施策への含意
 """
 
-import json
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
-SRC = ("/tmp/claude-0/-home-user-repository/54f527c9-842b-534d-b822-e5a6c91f837c/"
-       "scratchpad/b4b5b6.json")
+import data_nintei
+
 OUT = "/home/user/repository/output/第10期計画_認定率の年齢調整分析.xlsx"
+
+# 見える化B系列は data_nintei に一元化している。
+# 本スクリプトは {系列名: 年次順の値の並び} の形に組み替えて用いる。
+_ERA = {"平成": 1988, "令和": 2018}
+
+
+def _seq(label):
+    """「平成19年3月末」等を西暦の年に直して並べ替えの鍵とする。"""
+    era = label[:2]
+    num = label[2:label.index("年")]
+    return _ERA[era] + (1 if num == "元" else int(num))
+
+
+def _series(key, prefix=""):
+    """data_nintei.B の1系列を {系列名: [年次順の値]} と年ラベルで返す。"""
+    ser = data_nintei.B[key]["系列"]
+    years = sorted(next(iter(ser.values())).keys(), key=_seq)
+    return {"years": years,
+            "data": {prefix + k: [v[y] for y in years] for k, v in ser.items()}}
+
+
+D = {
+    "B4a": _series("B4-a"),
+    "B4c": _series("B4-c"),
+    "B4d": _series("B4-d"),
+    "B4e": _series("B4-e"),
+    "B5a_hikaku": _series("B5-a_比較"),
+    "B5a_chumoku": _series("B5-a"),
+    "B6a_hikaku": _series("B6-a_比較", "【他地域と比較】"),
+    "B6b_hikaku": _series("B6-b_比較", "【他地域と比較】"),
+    "B6a_chumoku": _series("B6-a", "【注目する地域のみ】"),
+    "B6b_chumoku": _series("B6-b", "【注目する地域のみ】"),
+}
 
 FONT = "游ゴシック"
 NAVY, HEAD = "1F4E78", "5B9BD5"
 IN_Y, OK_G, NG_O, MID_B, GRAY = "FFF2CC", "E2EFDA", "FCE4D6", "DEEBF7", "F2F2F2"
 thin = Side(style="thin", color="BFBFBF")
 BORDER = Border(left=thin, right=thin, top=thin, bottom=thin)
-
-D = json.load(open(SRC, encoding="utf-8"))
-
 
 def yr(s):
     return s.replace("年3月末", "").replace("平成", "H").replace("令和", "R")
