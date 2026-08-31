@@ -37,6 +37,9 @@ from openpyxl.utils import get_column_letter
 import data_kessan_r6 as K
 import data_kikin_jorei as J
 import data_nenpo as N
+import data_shien_tool as T
+
+TOWNS3 = ["東川町", "美瑛町", "東神楽町"]
 
 OUT = ("/home/user/repository/output/"
        "第10期計画_将来推計_第3段階_給付費と保険料.xlsx")
@@ -124,9 +127,52 @@ def waribiki():
 UPLIFT, R6_KYUFU, R6_HYOJUN = waribiki()
 UPLIFT_K9 = K9["A"] / 8905234000          # 第9期計画による割増率（見える化の計画値）
 
-CHIIKI_R6 = K.SAISHUTSU["4 地域支援事業費"][1]        # 183,384,259 円
-SOGO_R6 = K.SAISHUTSU[
+# ---------------------------------------------- 地域支援事業費（B）と総合事業費
+# 令和8年8月31日の点検により、次の2点を国の様式に合わせて改めた。
+#
+# ① 地域支援事業費（B）から、保険者機能強化推進事業費（2,033,000円）及び
+#    保険者努力支援事業費（4,190,000円）を除く。
+#    これらは保険者機能強化推進交付金及び介護保険保険者努力支援交付金を
+#    財源とする事業であり、当該交付金が特定財源となるため
+#    第1号被保険者負担分の算定基礎には含まれない。
+#    従前は決算の款4の全体（183,384,259円）を用いていた。
+# ② 調整交付金の算定基礎（②）に加える総合事業費を、
+#    決算科目の「介護予防・生活支援サービス事業費」（101,274,621円）から、
+#    介護保険事業計画作成支援ツールの実績値シートによる
+#    「介護予防・日常生活支援総合事業費」（3町計107,129,318円）に改める。
+#    国の様式でいう総合事業費は介護予防・生活支援サービス事業と
+#    一般介護予防事業の合計であり、決算科目とは範囲が異なる。
+_KESSAN_KYOKA = K.SAISHUTSU["4 地域支援事業費／3 保険者機能強化推進事業"][1]
+_KESSAN_DORYOKU = K.SAISHUTSU["4 地域支援事業費／4 保険者努力支援事業"][1]
+CHIIKI_ZEN = K.SAISHUTSU["4 地域支援事業費"][1]       # 183,384,259 円（款4の全体）
+CHIIKI_R6 = CHIIKI_ZEN - _KESSAN_KYOKA - _KESSAN_DORYOKU   # 177,161,259 円
+CHIIKI_TOOL = sum(T.HOKENRYO[t]["地域支援事業費（円）"] for t in TOWNS3)
+SOGO_KESSAN = K.SAISHUTSU[
     "4 地域支援事業費／1 介護予防・生活支援サービス事業費"][1]   # 101,274,621 円
+SOGO_R6 = sum(T.HOKENRYO[t]["介護予防・日常生活支援総合事業費（円）"]
+              for t in TOWNS3)                              # 107,129,318 円
+
+# 標準給付費見込額（A）の加算項目。計画作成支援ツールの実績値シートによる。
+# 総給付費にこれらを加えたものが標準給付費見込額であり、
+# 令和6年度では決算の保険給付費（款2）と15,246円（0.0005％）の差で一致する。
+UPLIFT_ITEM = [
+    ("特定入所者介護サービス費　施設サービス居住費",
+     "施設サービス　居住費（円）"),
+    ("特定入所者介護サービス費　施設サービス食費",
+     "施設サービス　食費（円）"),
+    ("特定入所者介護サービス費　短期入所の居住費・滞在費",
+     "短期入所生活介護・短期入所療養介護　居住費・滞在費（円）"),
+    ("特定入所者介護サービス費　短期入所の食費",
+     "短期入所生活介護・短期入所療養介護　食費（円）"),
+    ("高額介護サービス費等給付額", "高額介護サービス費等給付額（円）"),
+    ("高額医療合算介護サービス費等給付額",
+     "高額医療合算介護サービス費等給付額（円）"),
+    ("算定対象審査支払手数料", "算定対象審査支払手数料（円）"),
+    ("市町村特別給付費等", "市町村特別給付費等（円）"),
+]
+UPLIFT_SUM = {nm: sum(T.HOKENRYO[t][k] for t in TOWNS3)
+              for nm, k in UPLIFT_ITEM}
+UPLIFT_ADD = sum(UPLIFT_SUM.values())
 
 FUTAN = 0.23                               # 第1号被保険者負担割合（第9期と同じ）
 CHOSEI_D = 0.05                            # 調整交付金相当額の割合
@@ -154,8 +200,21 @@ KEISU_R7, N_R7 = keisu("R7")
 KEISU_K9 = K9["hosei"] / K9["hiho"]
 
 
+# 国の様式（介護保険事業計画作成支援ツール）における保険料収納必要額は
+#   J ＝ C ＋ D － E ＋ F ＋ G ± H － I
+# である。当広域連合では次の3項目がいずれも0であるため式に現れない。
+#   F 財政安定化基金拠出金見込額（第9期・第10期とも拠出の予定なし）
+#   G 財政安定化基金償還金（借入れの実績がない）
+#   H 市町村相互財政安定化事業負担額・交付額（同事業に参加していない）
+# 0であることの確認は「保険料算定式の国の様式との対照」による。
+ANTEIKA_F = 0                              # 財政安定化基金拠出金見込額
+ANTEIKA_G = 0                              # 財政安定化基金償還金
+SOGO_ANTEI_H = 0                           # 市町村相互財政安定化事業
+
+
 def gaku(kyufu_oku=None, uplift=None, chiiki=None, sogo=None, futan=None,
-         chosei_e=None, torikuzushi=0, keisu=None, shuno=None, hiho=None):
+         chosei_e=None, torikuzushi=0, keisu=None, shuno=None, hiho=None,
+         f=None, g=None, h=None):
     """保険料基準額（算定上の月額）を返す。既定は基本ケース。"""
     ky = sum(KYUFU) * 1e6 if kyufu_oku is None else kyufu_oku
     up = UPLIFT if uplift is None else uplift
@@ -172,9 +231,13 @@ def gaku(kyufu_oku=None, uplift=None, chiiki=None, sogo=None, futan=None,
     c = maru * ft
     d = maru2 * CHOSEI_D
     e = maru2 * ce
-    j = c + d - e - torikuzushi
+    ff = ANTEIKA_F if f is None else f
+    gg = ANTEIKA_G if g is None else g
+    hh2 = SOGO_ANTEI_H if h is None else h
+    j = c + d - e + ff + gg + hh2 - torikuzushi
     hosei = hh * ks
     return {"A": a, "B": ch, "①": maru, "②": maru2, "C": c, "D": d, "E": e,
+            "F": ff, "G": gg, "H": hh2,
             "I": torikuzushi, "J": j, "③": hosei,
             "月額": j / sh / hosei / 12}
 
@@ -394,6 +457,47 @@ r = body(ws, r, ["第9期計画", 8905234000, K9["A"], round(UPLIFT_K9, 5),
          {5: IN_Y}, height=44, numfmt="#,##0", align={5: "center"})
 
 r += 1
+r = lead(ws, r, "【2の2　割増率の項目別の検算（国の様式との対照）】", 6)
+r = header(ws, r, ["No.", "項目", "令和6年度（円）", "総給付費に対する率",
+                   "出所", "内容"])
+for i, (nm, _key) in enumerate(UPLIFT_ITEM, start=1):
+    v = UPLIFT_SUM[nm]
+    r = body(ws, r, [i, nm, en(v), "%.4f％" % (v / R6_KYUFU * 100),
+                     "計画作成支援ツール 実績値シート（3町計）",
+                     "標準給付費見込額に含める項目"],
+             height=22, numfmt="#,##0", align={1: "center", 4: "right"})
+r = body(ws, r, ["", "加算計", en(UPLIFT_ADD),
+                 "%.4f％" % (UPLIFT_ADD / R6_KYUFU * 100), "―", "―"],
+         {2: MID_B}, bold=True, height=22, numfmt="#,##0",
+         align={4: "right"})
+r = body(ws, r, ["", "総給付費＋加算計", en(R6_KYUFU + UPLIFT_ADD),
+                 "%.5f" % ((R6_KYUFU + UPLIFT_ADD) / R6_KYUFU),
+                 "―", "項目の積上げによる標準給付費見込額"],
+         {2: OK_G}, bold=True, height=22, numfmt="#,##0",
+         align={4: "right"})
+r = body(ws, r, ["", "保険給付費（款2・令和6年度決算）", en(R6_HYOJUN),
+                 "%.5f" % UPLIFT, "―", "現行の割増率の算定に用いている値"],
+         {2: OK_G}, bold=True, height=22, numfmt="#,##0",
+         align={4: "right"})
+_sa = R6_KYUFU + UPLIFT_ADD - R6_HYOJUN
+r = body(ws, r, ["", "差", en(_sa),
+                 "%.6f％" % (abs(_sa) / R6_HYOJUN * 100), "―",
+                 "決算の介護サービス等諸費2,817,209,701円と"
+                 "年報の給付費合計2,817,194,455円との差に一致する"],
+         {2: IN_Y}, height=30, numfmt="#,##0", align={4: "right"})
+r = note(ws, r, "国の様式（介護保険事業計画作成支援ツール）では、"
+         "標準給付費見込額は総給付費に"
+         "特定入所者介護サービス費・高額介護サービス費・"
+         "高額医療合算介護サービス費・審査支払手数料・市町村特別給付費を"
+         "加えて求めます。"
+         "本表の割増率%.5fは令和6年度の決算から求めたものですが、"
+         "計画作成支援ツールの実績値シートによる項目の積上げでも"
+         "%.5fとなり、両者は一致します（差%s円・%.4f％）。"
+         "割増率は単一の係数ではなく、上記5項目の合計として説明できます。"
+         % (UPLIFT, (R6_KYUFU + UPLIFT_ADD) / R6_KYUFU,
+            "{:,}".format(en(_sa)), abs(_sa) / R6_HYOJUN * 100), 6, 60)
+
+r += 1
 r = lead(ws, r, "【3　標準給付費見込額（A）】", 6)
 r = header(ws, r, ["区分"] + YEARS + ["第10期計", "第9期計画との比"])
 a_y = [x * 1e6 * UPLIFT for x in KYUFU]
@@ -481,8 +585,10 @@ r = header(ws, r, ["記号", "項目", "第10期（円）", "第9期計画（円
                    "置き方"])
 for kg, nm, v10, v9, oki in [
     ("A", "標準給付費見込額", BASE["A"], K9["A"],
-     "自然体給付費×割増率%.4f" % UPLIFT),
-    ("B", "地域支援事業費", BASE["B"], K9["B"], "令和6年度決算額×3年"),
+     "自然体給付費×割増率%.4f（01シートで項目別に検算）" % UPLIFT),
+    ("B", "地域支援事業費", BASE["B"], K9["B"],
+     "令和6年度決算額×3年。保険者機能強化推進事業費及び"
+     "保険者努力支援事業費は交付金を財源とするため除く"),
     ("①", "合計（A＋B）", BASE["①"], K9["A"] + K9["B"], "―"),
     ("②", "調整交付金の算定基礎（A＋総合事業費）", BASE["②"],
      K9["A"] + K9_SOGO,
@@ -492,9 +598,15 @@ for kg, nm, v10, v9, oki in [
     ("D", "調整交付金相当額", BASE["D"], K9["D"], "②×5％"),
     ("E", "調整交付金見込額", BASE["E"], K9["E"],
      "②×%.3f％（第9期計画と同水準）" % (CHOSEI_E * 100)),
+    ("F", "財政安定化基金拠出金見込額", BASE["F"], 0,
+     "拠出の予定がないため0円"),
+    ("G", "財政安定化基金償還金", BASE["G"], 0,
+     "借入れの実績がないため0円"),
+    ("H", "市町村相互財政安定化事業負担額", BASE["H"], 0,
+     "同事業に参加していないため0円"),
     ("I", "財政調整基金取崩額", BASE["I"], K9["I"],
      "基本ケースは0円。07シート参照"),
-    ("J", "保険料収納必要額（C＋D－E－I）", BASE["J"], K9["J"], "―"),
+    ("J", "保険料収納必要額（C＋D－E＋F＋G±H－I）", BASE["J"], K9["J"], "―"),
 ]:
     fl = {1: MID_B} if kg in ("①", "②", "J") else None
     r = body(ws, r, [kg, nm, en(v10), v9, "%.1f％" % (v10 / v9 * 100)
@@ -507,7 +619,7 @@ r = lead(ws, r, "【2　検算】", 6)
 r = header(ws, r, ["No.", "検算の内容", "式", "結果", "判定", ""])
 chk = BASE["C"] + BASE["D"] - BASE["E"] - BASE["I"]
 for no, naiyo, shiki, kekka, hantei in [
-    (1, "J＝C＋D－E－I", "%s＋%s－%s－%s"
+    (1, "J＝C＋D－E＋F＋G±H－I（F・G・Hはいずれも0）", "%s＋%s－%s－%s"
      % ("{:,}".format(en(BASE["C"])), "{:,}".format(en(BASE["D"])),
         "{:,}".format(en(BASE["E"])), "{:,}".format(en(BASE["I"]))),
      "{:,}".format(en(chk)), "一致" if abs(chk - BASE["J"]) < 1 else "不一致"),

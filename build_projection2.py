@@ -183,22 +183,46 @@ for _code, nm, c46, unit in SVC:
         TREND_PER[nm][c] = trend3(d, LAST3)
 
 
-def use_rate(kub, c, y, sens=False):
+# 国の「自然体推計の計算過程確認シートのガイド」（14.0次リリース版）は、
+# 要介護認定率及びサービス利用率の自然体推計に
+# 基準年度の実績×1.1を上限、×0.9を下限とする制約を課している。
+# 趨勢を延長する感度分析にも同じ制約を適用する（令和8年8月31日の点検による）。
+CAP_HI, CAP_LO = 1.1, 0.9
+CAPPED = []                       # 制約が働いた項目（00シートに掲げる）
+
+
+def _cap(base, v, label):
+    """基準年度実績の×0.9〜×1.1に収める。"""
+    if base <= 0:
+        return max(0.0, v)
+    hi, lo = base * CAP_HI, base * CAP_LO
+    if v > hi:
+        CAPPED.append((label, base, v, hi, "上限"))
+        return hi
+    if v < lo:
+        CAPPED.append((label, base, v, lo, "下限"))
+        return lo
+    return v
+
+
+def use_rate(kub, c, y, sens=False, cap=True):
     r = USE[kub][c]
     if sens:
         d = int(y) - 2025
-        r = max(0.0, r + TREND_USE[kub][c] * d)
+        v = max(0.0, r + TREND_USE[kub][c] * d)
+        return _cap(r, v, "%s／%s／%s" % (kub, c, y)) if cap else v
     return r
 
 
-def per_val(nm, c, y, sens=False):
-    v = PER.get(nm, {}).get(c)
-    if v is None:
+def per_val(nm, c, y, sens=False, cap=True):
+    v0 = PER.get(nm, {}).get(c)
+    if v0 is None:
         return None
     if sens:
         d = int(y) - 2025
-        v = max(0.0, v + TREND_PER[nm][c] * d)
-    return v
+        v = max(0.0, v0 + TREND_PER[nm][c] * d)
+        return _cap(v0, v, "%s／%s／%s" % (nm, c, y)) if cap else v
+    return v0
 
 
 # ================================================================ 体裁
@@ -647,6 +671,36 @@ for sc in (1, 2, 3):
                      "基本ケース" if sc == 2 else ""],
              {1: OK_G if sc == 2 else None}, height=20, align=RIGHT)
 
+r += 1
+r = lead(ws, r, "【⑤ 上限1.1・下限0.9の制約（国のガイドによる）】", 7)
+r = header(ws, r, ["区分", "対象の項目数", "制約が働いた項目数",
+                   "うち上限", "うち下限", "", "内容"])
+_hi = sum(1 for x in CAPPED if x[4] == "上限")
+_lo = sum(1 for x in CAPPED if x[4] == "下限")
+_use = [x for x in CAPPED if x[0].split("／")[0] in ("在宅", "居住系", "施設")]
+_per = [x for x in CAPPED if x not in _use]
+for kubun, n_all, lst, naiyo in [
+    ("区分別の利用率", 19, _use,
+     "在宅・居住系・施設×要介護度別。令和11年度の値で判定した"),
+    ("1人当たりの利用日数・回数", len(TREND_PER) * len(CARE), _per,
+     "サービス種別×要介護度別。同上"),
+]:
+    r = body(ws, r, [kubun, n_all, len(lst),
+                     sum(1 for x in lst if x[4] == "上限"),
+                     sum(1 for x in lst if x[4] == "下限"), "", naiyo],
+             {3: NG_O if lst else OK_G}, height=24,
+             align={2: "center", 3: "center", 4: "center", 5: "center"})
+r = note(ws, r, "国の「自然体推計の計算過程確認シートのガイド」"
+         "（14.0次リリース版）は、要介護認定率及びサービス利用率の"
+         "自然体推計に、基準年度の実績×1.1を上限、×0.9を下限とする"
+         "制約を課しています。"
+         "令和8年8月31日の点検により、本シートの趨勢にも同じ制約を"
+         "適用しました（延べ%d件・上限%d件／下限%d件）。"
+         "制約を掛けない場合、居住系の要介護4は基準年度の0.300倍、"
+         "要支援1は1.643倍となり、自然体推計として成り立ちません。"
+         "第1段階の認定率の3シナリオはいずれも制約の範囲内です。"
+         % (len(CAPPED), _hi, _lo), 7, 60)
+
 note(ws, r + 1,
      "注1）見込量を最も動かすのは1人当たりの利用日数・回数の趨勢である（②）。"
      "訪問介護は直近3年で年平均4回増えており、"
@@ -667,7 +721,9 @@ note(ws, r + 1,
      "令和7年度は11か月分であるため、確定値が出た時点で再計算する。"
      "注5）感度分析は前提の影響の大きさを確認するためのものであり、"
      "いずれかを採用値とするものではない。"
-     "採用値は発注者のご意向と委員会の審議による。", 7)
+     "採用値は発注者のご意向と委員会の審議による。"
+     "注6）⑤のとおり、趨勢には国のガイドによる上限1.1・下限0.9を"
+     "適用している。", 7)
 
 # ================================================================ 06
 ws = sheet("06_施設・居住系の定員との突合", "施設・居住系サービスの定員との突合",
