@@ -1,203 +1,111 @@
 # -*- coding: utf-8 -*-
-"""第10期北塩原村高齢者福祉計画・介護保険事業計画策定業務 WBS／進捗管理表
-   仕様書（8北保福第483号 別紙）4「業務の内容」を作業レベルに分解したもの。"""
-import os
+"""第10期北塩原村高齢者福祉計画・介護保険事業計画策定業務 WBS／進捗管理表（Ver.2）
+   wbs_data.W（仕様書の分解）＋ wbs_progress.P（実績反映）＋ wbs_kakunin.K（村への確認事項）から生成。
+   基準日：令和8年8月31日"""
+import os, sys, datetime
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
+from wbs_data import W
+from wbs_progress import P, BASE_DATE
+from wbs_kakunin import K, SOLVED
 
 OUT = "/home/user/repository/output/05_北塩原村第10期_WBS進捗管理表.xlsx"
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 F = "游ゴシック"
 C = {"header":"1F3864","sub":"2E75B6","band":"DDEBF7","alt":"F7FAFC",
-     "green":"2CA02C","note":"FFF3F3","vill":"FFF2CC","key":"FCE4D6","white":"FFFFFF"}
+     "note":"FFF3F3","vill":"FFF2CC","key":"FCE4D6","white":"FFFFFF",
+     "done":"E2EFDA","doing":"FFF2CC","chk":"FCE4D6","prioA":"FF7C80",
+     "prioB":"FFD966","prioC":"D9D9D9","solved":"E7E6E6"}
 THIN = Side(border_style="thin", color="BFBFBF")
 BD = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
+D = lambda s: datetime.datetime.strptime(s, "%Y/%m/%d") if s else None
+TANTO = {"受":"受託者","村":"北塩原村","双":"双方"}
 
-# 担当区分：受＝受託者／村＝北塩原村／双＝双方
-# 根拠：仕様書の条項番号／「手引き」＝国の実施の手引き／「確認」＝本業務での確認事項
-W = [
- # (大分類, 中分類, 作業項目, 仕様書該当, 担当, 成果物・アウトプット, 前提・依存, 想定時期)
- ("０ 契約・立上げ","契約手続","見積書の提出","通知2","受","見積書","", "R8.8"),
- ("０ 契約・立上げ","契約手続","契約締結","仕様書3","双","委託契約書","北塩原村委託契約約款に準拠","R8.9"),
- ("０ 契約・立上げ","立上げ","キックオフ会議の開催","仕様書4Ⅲ","双","キックオフ会議資料・議事録","", "R8.9上"),
- ("０ 契約・立上げ","立上げ","連絡体制・資料授受方法の確定","仕様書4Ⅲ","双","連絡体制表","所管課（保健福祉課福祉係）の確認","R8.9上"),
- ("０ 契約・立上げ","立上げ","現行計画・関連計画・実績資料の受領","仕様書4Ⅱ(2)","村","第9期計画書／第5次総合振興計画／第3次健康21ほか","", "R8.9上"),
- ("０ 契約・立上げ","立上げ","見える化システムのID・パスワードの受領","確認","村","アカウント情報","", "R8.9上"),
+def title_bar(ws, rng, text, size=14, h=30):
+    ws.merge_cells(rng)
+    c = ws[rng.split(":")[0]]
+    c.value = text
+    c.font = Font(name=F, size=size, bold=True, color=C["white"])
+    c.fill = PatternFill("solid", fgColor=C["header"])
+    c.alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[int("".join(ch for ch in rng.split(":")[0] if ch.isdigit()))].height = h
 
- ("Ⅰ ニーズ調査","Ⅰ-1 調査設計","調査手法の決定（在宅：手法Ⅰ〜Ⅳ）","手引き／確認","双","調査手法決定メモ","手法Ⅲは自動集計ソフトなし。仕様書Ⅰ(5)との整合を要確認","R8.9上"),
- ("Ⅰ ニーズ調査","Ⅰ-1 調査設計","調査対象者の抽出条件の確定","仕様書4Ⅰ(1)","双","抽出条件メモ","①要支援を含むか②更新・区分変更に限るか③サ高住等を含むか","R8.9上"),
- ("Ⅰ ニーズ調査","Ⅰ-1 調査設計","調査票の設計（ニーズ調査）","仕様書4Ⅰ(2)","受","調査票案","厚労省令和7年8月版様式を基礎","R8.9上"),
- ("Ⅰ ニーズ調査","Ⅰ-1 調査設計","調査票の設計（在宅介護実態調査）","仕様書4Ⅰ(2)","受","調査票案","調査手法の決定が前提","R8.9上"),
- ("Ⅰ ニーズ調査","Ⅰ-1 調査設計","令和7年8月版 標準様式との逐条突合","手引き","受","突合ワークシート","必須項目・オプション項目の充足確認","R8.9上"),
- ("Ⅰ ニーズ調査","Ⅰ-1 調査設計","オプション項目の採否決定","仕様書4Ⅰ(2)","双","採否一覧","「問6 就労について」の採否を含む","R8.9上"),
- ("Ⅰ ニーズ調査","Ⅰ-1 調査設計","村独自設問の設定","仕様書4Ⅰ(2)","双","設問一覧","除雪・在宅医療・成年後見・歯科受診・服薬ほか","R8.9上"),
- ("Ⅰ ニーズ調査","Ⅰ-1 調査設計","依頼状（表紙）の作成","仕様書4Ⅰ(2)","受","依頼状","村長名・担当課・問合せ先・基準日・回答期限","R8.9上"),
- ("Ⅰ ニーズ調査","Ⅰ-1 調査設計","調査票の村協議・確定","仕様書4Ⅰ(2)","双","確定版調査票","以降の全工程の起点","R8.9上"),
- ("Ⅰ ニーズ調査","Ⅰ-1 調査設計","ウェブ回答フォームの作成","仕様書4Ⅰ(2)","受","ウェブフォーム","通信の暗号化・公開期間の設定","R8.9上"),
- ("Ⅰ ニーズ調査","Ⅰ-1 調査設計","二次元コードの作成・調査票／依頼状への印字","仕様書4Ⅰ(2)","受","二次元コード","URLの確定が前提","R8.9上"),
- ("Ⅰ ニーズ調査","Ⅰ-1 調査設計","重複回答の管理方法の設計（管理番号）","仕様書4Ⅰ(2)","受","管理番号設計書","紙・ウェブの重複を排除","R8.9上"),
- ("Ⅰ ニーズ調査","Ⅰ-1 調査設計","被保険者番号と照合可能な管理番号の設計","手引き","双","管理番号設計書","第10期の新規要件。村のラベル作成仕様と一体","R8.9上"),
+def sub_bar(ws, rng, text, h=20, fill=None):
+    ws.merge_cells(rng)
+    c = ws[rng.split(":")[0]]
+    c.value = text
+    c.font = Font(name=F, size=9)
+    c.fill = PatternFill("solid", fgColor=fill or C["band"])
+    c.alignment = Alignment(horizontal="left", vertical="center", indent=1)
+    ws.row_dimensions[int("".join(ch for ch in rng.split(":")[0] if ch.isdigit()))].height = h
 
- ("Ⅰ ニーズ調査","Ⅰ-2 印刷・発送準備","入稿データの作成","仕様書4Ⅰ(3)","受","入稿データ","調査票の確定が前提","R8.9中"),
- ("Ⅰ ニーズ調査","Ⅰ-2 印刷・発送準備","調査票の印刷（ニーズ調査 A4約12頁・黒1色）","仕様書4Ⅰ(3)","受","印刷物 約850部","頁数は村と要協議","R8.9中"),
- ("Ⅰ ニーズ調査","Ⅰ-2 印刷・発送準備","調査票の印刷（在宅調査 A4約8頁・黒1色）","仕様書4Ⅰ(3)","受","印刷物 約150部","", "R8.9中"),
- ("Ⅰ ニーズ調査","Ⅰ-2 印刷・発送準備","返信用封筒の印刷","仕様書4Ⅰ(3)","受","返信用封筒","", "R8.9中"),
- ("Ⅰ ニーズ調査","Ⅰ-2 印刷・発送準備","調査対象者の抽出","仕様書4Ⅰ(1)","村","対象者リスト","ニーズ約850人／在宅約150人","R8.9中"),
- ("Ⅰ ニーズ調査","Ⅰ-2 印刷・発送準備","宛名ラベルシールの作成・提供","仕様書4Ⅰ(1)","村","宛名ラベルシール","被保険者番号との照合可能な形式","R8.9中"),
- ("Ⅰ ニーズ調査","Ⅰ-2 印刷・発送準備","配布用封筒の提供","仕様書4Ⅰ(4)","村","配布用封筒","", "R8.9中"),
- ("Ⅰ ニーズ調査","Ⅰ-2 印刷・発送準備","宛名ラベルの貼付","仕様書4Ⅰ(4)","受","―","村からの提供が前提","R8.9中"),
- ("Ⅰ ニーズ調査","Ⅰ-2 印刷・発送準備","封入・封緘","仕様書4Ⅰ(4)","受","発送物","", "R8.9中"),
-
- ("Ⅰ ニーズ調査","Ⅰ-3 発送・回収","発送（郵送費は受託者負担）","仕様書4Ⅰ(4)","受","発送完了報告","5連休（9/19〜9/23）の影響を考慮","R8.9下"),
- ("Ⅰ ニーズ調査","Ⅰ-3 発送・回収","回収状況の管理","仕様書4Ⅰ(4)","受","回収状況表","","R8.9下〜10"),
- ("Ⅰ ニーズ調査","Ⅰ-3 発送・回収","督促（リマインド）の実施","確認","受","督促文書","第9期の在宅調査回収率45.8%を踏まえ実施要否を判断","R8.10上"),
- ("Ⅰ ニーズ調査","Ⅰ-3 発送・回収","回収期限の管理・締切","仕様書4Ⅰ(4)","受","―","","R8.10"),
- ("Ⅰ ニーズ調査","Ⅰ-3 発送・回収","開封確認","仕様書4Ⅰ(4)","受","―","","R8.10"),
-
- ("Ⅰ ニーズ調査","Ⅰ-4 データ入力","用紙回答のデータ入力","仕様書4Ⅰ(5)","受","入力データ","厚労省提示の集計ファイル様式","R8.10"),
- ("Ⅰ ニーズ調査","Ⅰ-4 データ入力","ウェブ回答データの取込","仕様書4Ⅰ(5)","受","入力データ","","R8.10"),
- ("Ⅰ ニーズ調査","Ⅰ-4 データ入力","重複回答の排除","仕様書4Ⅰ(2)","受","―","管理番号で管理","R8.10"),
- ("Ⅰ ニーズ調査","Ⅰ-4 データ入力","要介護認定データの受領","仕様書4Ⅰ(5)","村","認定データ","手法Ⅰ・Ⅱの場合。目的外利用の手続きに留意","R8.10"),
- ("Ⅰ ニーズ調査","Ⅰ-4 データ入力","認定データとの関連付け（自動プログラム）","仕様書4Ⅰ(5)","受","関連付け済データ","手法Ⅲでは自動集計ソフトなし","R8.10"),
-
- ("Ⅰ ニーズ調査","Ⅰ-5 集計・分析","単純集計","仕様書4Ⅰ(6)","受","集計表","","R8.10〜11"),
- ("Ⅰ ニーズ調査","Ⅰ-5 集計・分析","基本属性別クロス集計（地区・性別・年齢）","仕様書4Ⅰ(6)","受","集計表","","R8.10〜11"),
- ("Ⅰ ニーズ調査","Ⅰ-5 集計・分析","時系列比較（第8期・第9期との対比）","仕様書4Ⅰ(6)","受","比較表","村と協議のうえ範囲を決定","R8.10〜11"),
- ("Ⅰ ニーズ調査","Ⅰ-5 集計・分析","設問間クロス集計","仕様書4Ⅰ(6)","受","集計表","村と協議のうえ設計","R8.10〜11"),
- ("Ⅰ ニーズ調査","Ⅰ-5 集計・分析","リスク判定11種の算出","手引き","受","リスク判定結果","運動器・転倒・閉じこもり・低栄養・口腔・認知・うつ・IADL等","R8.10〜11"),
- ("Ⅰ ニーズ調査","Ⅰ-5 集計・分析","自由記述の整理","仕様書4Ⅰ(6)","受","自由意見一覧","","R8.10〜11"),
- ("Ⅰ ニーズ調査","Ⅰ-5 集計・分析","在宅調査の要介護度別・介護者就労状況別分析","仕様書4Ⅰ(6)","受","分析結果","","R8.10〜11"),
- ("Ⅰ ニーズ調査","Ⅰ-5 集計・分析","見える化システム登録用データの作成","手引き","受","登録用データ","標準様式の項目順に並べ替えが必要","R8.11"),
-
- ("Ⅰ ニーズ調査","Ⅰ-6 報告書","設問ごとのグラフ作成","仕様書4Ⅰ(7)","受","グラフ","","R8.11"),
- ("Ⅰ ニーズ調査","Ⅰ-6 報告書","調査結果報告書の執筆・レイアウト","仕様書4Ⅰ(7)","受","報告書案","A4両面約100頁","R8.11"),
- ("Ⅰ ニーズ調査","Ⅰ-6 報告書","報告書の村確認・修正","仕様書4Ⅰ(7)","双","報告書（確定）","","R8.11〜12"),
-
- ("Ⅱ 計画策定","Ⅱ-1 基礎調査","制度改正動向の資料収集・整理","仕様書4Ⅱ(1)","受","論点整理メモ","","R8.9〜11"),
- ("Ⅱ 計画策定","Ⅱ-1 基礎調査","第10期国の基本指針の確認・反映","仕様書4Ⅱ(1)","受","基本指針対応表","令和8年内告示予定。遅延時は暫定版で作業","R8.11〜"),
- ("Ⅱ 計画策定","Ⅱ-1 基礎調査","前提条件と基本的課題の明確化","仕様書4Ⅱ(1)","受","課題整理メモ","","R8.11"),
-
- ("Ⅱ 計画策定","Ⅱ-2 現行計画の評価","高齢者福祉事業等の実績資料の受領","仕様書4Ⅱ(2)①","村","実績資料","R6年度実績、可能であればR7年度","R8.10〜11"),
- ("Ⅱ 計画策定","Ⅱ-2 現行計画の評価","高齢者福祉事業等の実施状況の把握と課題整理","仕様書4Ⅱ(2)①","受","評価シート","","R8.11"),
- ("Ⅱ 計画策定","Ⅱ-2 現行計画の評価","介護保険給付統計の取りまとめ","仕様書4Ⅱ(2)②","受","統計表","","R8.11"),
- ("Ⅱ 計画策定","Ⅱ-2 現行計画の評価","計画数値の評価（計画値と実績の乖離分析）","仕様書4Ⅱ(2)②","受","乖離分析表","第9期は第1号被保険者数を過小推計（-5.6〜-6.8%）","R8.11"),
- ("Ⅱ 計画策定","Ⅱ-2 現行計画の評価","課題の整理","仕様書4Ⅱ(2)","受","課題一覧","","R8.11"),
-
- ("Ⅱ 計画策定","Ⅱ-3 見込量・保険料","将来人口の整理（2040年度含む中長期）","仕様書4Ⅱ(3)","受","人口推計表","社人研の新推計（2050年まで）に差し替え","R8.11〜12"),
- ("Ⅱ 計画策定","Ⅱ-3 見込量・保険料","第1号被保険者数の推計","仕様書4Ⅱ(3)①","受","推計表","第9期の過小推計を直近実績で補正","R8.11〜12"),
- ("Ⅱ 計画策定","Ⅱ-3 見込量・保険料","要介護者数の推計","仕様書4Ⅱ(3)①","受","推計表","要支援1の急増（39→51人）を反映","R8.11〜12"),
- ("Ⅱ 計画策定","Ⅱ-3 見込量・保険料","各介護保険サービス見込量の推計","仕様書4Ⅱ(3)②","受","見込量表","居宅・施設・地域密着型・総合事業。村外利用を考慮","R8.12"),
- ("Ⅱ 計画策定","Ⅱ-3 見込量・保険料","給付費の試算","仕様書4Ⅱ(3)③","受","給付費試算表","R9年度報酬改定は現行単価で仮試算→確定後に精緻化","R8.12"),
- ("Ⅱ 計画策定","Ⅱ-3 見込量・保険料","介護保険準備基金の残高・取崩方針の確認","確認","村","基金残高資料","第9期は設定額が必要額を上回る（R6+709円/R7+199円）","R8.12"),
- ("Ⅱ 計画策定","Ⅱ-3 見込量・保険料","介護保険料の試算（複数案の比較）","仕様書4Ⅱ(3)③","受","保険料試算表","所得段階・基金活用・上限の設定を反映","R8.12〜R9.1"),
- ("Ⅱ 計画策定","Ⅱ-3 見込量・保険料","成果目標及び活動指標の設定","仕様書4Ⅱ(3)④","受","指標一覧","第9期実績との接続。達成可能性の検証を併せて実施","R8.12〜R9.1"),
-
- ("Ⅱ 計画策定","Ⅱ-4 高齢者福祉施策","現行計画の成果と課題の整理","仕様書4Ⅱ(4)","受","整理メモ","","R8.11〜12"),
- ("Ⅱ 計画策定","Ⅱ-4 高齢者福祉施策","次期計画に盛り込む施策の検討","仕様書4Ⅱ(4)","受","施策案","環境整備・支援体制の構築等","R8.11〜12"),
-
- ("Ⅱ 計画策定","Ⅱ-5 成年後見","制度の利用実態・考え方の情報提供","仕様書4Ⅱ(5)","村","情報提供資料","村長申立の運用、中核機関の状況","R8.11"),
- ("Ⅱ 計画策定","Ⅱ-5 成年後見","利用促進の方向性・計画案の提示","仕様書4Ⅱ(5)","受","計画案","広域調整・関係機関協議は村が実施","R8.12"),
-
- ("Ⅱ 計画策定","Ⅱ-6 計画案の検討","第10期の課題の整理","仕様書4Ⅱ(6)","受","課題整理","","R8.12"),
- ("Ⅱ 計画策定","Ⅱ-6 計画案の検討","施策体系の整理","仕様書4Ⅱ(6)","受","施策体系図","","R8.12"),
- ("Ⅱ 計画策定","Ⅱ-6 計画案の検討","関連計画との整合確認","仕様書4Ⅱ(6)","受","整合確認表","第5次総合振興計画／第3次健康21・グッドヘルスプラン","R8.12"),
- ("Ⅱ 計画策定","Ⅱ-6 計画案の検討","一体的策定の範囲の確認","確認","双","確認メモ","成年後見制度利用促進基本計画・認知症施策推進計画の継続可否","R8.11"),
-
- ("Ⅱ 計画策定","Ⅱ-7 計画書の作成","骨子案の作成","仕様書4Ⅱ(7)","受","骨子案","","R8.11〜12"),
- ("Ⅱ 計画策定","Ⅱ-7 計画書の作成","素案の作成","仕様書4Ⅱ(7)","受","素案","","R8.12〜R9.1"),
- ("Ⅱ 計画策定","Ⅱ-7 計画書の作成","パブリックコメントの実施","仕様書4Ⅱ(7)","村","パブコメ資料・意見","通常30日間","R8.12〜R9.1"),
- ("Ⅱ 計画策定","Ⅱ-7 計画書の作成","パブリックコメント意見の反映","仕様書4Ⅱ(7)","受","対応表","","R9.1〜2"),
- ("Ⅱ 計画策定","Ⅱ-7 計画書の作成","原案の作成","仕様書4Ⅱ(7)","受","原案","","R9.1〜2"),
- ("Ⅱ 計画策定","Ⅱ-7 計画書の作成","計画書の最終取りまとめ","仕様書4Ⅱ(7)","受","計画書（確定）","","R9.2〜3"),
-
- ("Ⅱ 計画策定","Ⅱ-8 策定委員会支援","委員の改選・委嘱","確認","村","委員名簿","現委員の任期は令和8年9月30日満了","R8.9〜10"),
- ("Ⅱ 計画策定","Ⅱ-8 策定委員会支援","第1回 会議資料の作成","仕様書4Ⅱ(8)","受","会議資料","調査結果報告・第9期評価・策定方針","R8.11"),
- ("Ⅱ 計画策定","Ⅱ-8 策定委員会支援","第1回 会議出席・会議記録（要旨）の作成","仕様書4Ⅱ(8)","受","会議記録","","R8.11"),
- ("Ⅱ 計画策定","Ⅱ-8 策定委員会支援","第2回 会議資料の作成","仕様書4Ⅱ(8)","受","会議資料","計画素案・見込量・保険料の考え方","R8.12〜R9.1"),
- ("Ⅱ 計画策定","Ⅱ-8 策定委員会支援","第2回 会議出席・会議記録（要旨）の作成","仕様書4Ⅱ(8)","受","会議記録","","R8.12〜R9.1"),
- ("Ⅱ 計画策定","Ⅱ-8 策定委員会支援","第3回 会議資料の作成","仕様書4Ⅱ(8)","受","会議資料","パブコメ結果の反映・計画原案・保険料の確定","R9.2"),
- ("Ⅱ 計画策定","Ⅱ-8 策定委員会支援","第3回 会議出席・会議記録（要旨）の作成","仕様書4Ⅱ(8)","受","会議記録","","R9.2"),
-
- ("Ⅲ 打合せ等","Ⅲ-1 打合せ","定例打合せの実施（電話・オンライン・対面）","仕様書4Ⅲ","双","打合せ記録","必要に応じて随時","通期"),
- ("Ⅲ 打合せ等","Ⅲ-1 打合せ","資料授受の管理","仕様書4Ⅲ","双","資料授受記録","","通期"),
-
- ("Ⅳ 成果品・納品","Ⅳ-1 成果品","計画書の印刷・製本（A4両面約100頁・くるみ製本）","仕様書5①","受","計画書 50部","モノクロ印刷","R9.3"),
- ("Ⅳ 成果品・納品","Ⅳ-1 成果品","アンケート調査報告書の印刷・製本（ホチキス製本）","仕様書5②","受","報告書 10部","A4両面約100頁・モノクロ","R9.3"),
- ("Ⅳ 成果品・納品","Ⅳ-1 成果品","電子媒体の作成（Word/Excel/PowerPoint/PDF）","仕様書5③","受","CD-R等一式","関連データを含む","R9.3"),
- ("Ⅳ 成果品・納品","Ⅳ-1 成果品","概要版の作成","確認","双","概要版","仕様書に記載なし。要否・費用・部数・体裁を要協議","R9.2〜3"),
- ("Ⅳ 成果品・納品","Ⅳ-2 納品","納品・検収","仕様書3","双","検収書","履行期限 令和9年3月31日","R9.3"),
-
- ("Ⅴ 管理","Ⅴ-1 情報管理","個人情報の適正管理（アクセス制限・保管ルール）","仕様書6(1)","受","管理記録","契約終了後・解除後も同様","通期"),
- ("Ⅴ 管理","Ⅴ-1 情報管理","業務完了後の情報の返還・消去","仕様書6(1)","受","消去証明","村の指示に従う","R9.3"),
- ("Ⅴ 管理","Ⅴ-2 再委託","再委託の書面承諾の取得","仕様書6(2)","双","承諾書","印刷・データ入力・ウェブフォーム構築等を外注する場合","随時"),
- ("Ⅴ 管理","Ⅴ-3 進捗管理","進捗管理・課題管理","―","受","本進捗管理表","","通期"),
-]
+def head_row(ws, row, heads, widths, h=34):
+    for i, hh in enumerate(heads, 1):
+        c = ws.cell(row=row, column=i, value=hh)
+        c.font = Font(name=F, size=10, bold=True, color=C["white"])
+        c.fill = PatternFill("solid", fgColor=C["sub"])
+        c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        c.border = BD
+        ws.column_dimensions[get_column_letter(i)].width = widths[i-1]
+    ws.row_dimensions[row].height = h
 
 wb = Workbook()
 
-# ══════════ Sheet1: WBS・進捗管理 ══════════
-ws = wb.active
-ws.title = "WBS・進捗管理"
-HEAD = ["WBS No.","大分類","中分類","作業項目","仕様書該当","担当","成果物・アウトプット",
-        "前提・依存／留意点","想定時期","予定開始","予定完了","実績開始","実績完了",
-        "進捗率","ステータス","備考"]
-WID = [9,15,20,44,13,6,26,44,10,11,11,11,11,8,11,24]
+# ══════════════════ Sheet1: WBS・進捗管理 ══════════════════
+ws = wb.active; ws.title = "WBS・進捗管理"
+HEAD = ["No.","大分類","中分類","作業項目","仕様書該当","担当","成果物・アウトプット","前提・依存",
+        "想定時期","予定開始","予定完了","実績開始","実績完了","進捗率","ステータス","備考"]
+WID  = [9,16,17,42,11,9,26,34,11,12,12,12,12,8,10,52]
 
-ws.merge_cells("A1:P1")
-t = ws["A1"]
-t.value = "第10期北塩原村高齢者福祉計画・第10期北塩原村介護保険事業計画　策定業務　WBS／進捗管理表"
-t.font = Font(name=F, size=14, bold=True, color=C["white"])
-t.fill = PatternFill("solid", fgColor=C["header"])
-t.alignment = Alignment(horizontal="center", vertical="center")
-ws.row_dimensions[1].height = 30
-
-ws.merge_cells("A2:P2")
-s = ws["A2"]
-s.value = ("委託第27号／業務期間：契約締結の日〜令和9年3月31日／計画期間：令和9〜11年度　"
-           "｜　出典：仕様書（8北保福第483号 別紙）4「業務の内容」を作業レベルに分解")
-s.font = Font(name=F, size=9)
-s.fill = PatternFill("solid", fgColor=C["band"])
-s.alignment = Alignment(horizontal="left", vertical="center", indent=1)
-ws.row_dimensions[2].height = 20
+title_bar(ws, "A1:P1", "第10期北塩原村高齢者福祉計画・第10期北塩原村介護保険事業計画　策定業務　WBS／進捗管理表")
+sub_bar(ws, "A2:P2",
+    "委託第27号／業務期間：契約締結の日〜令和9年3月31日／計画期間：令和9〜11年度　"
+    "｜　出典：仕様書（8北保福第483号 別紙）4「業務の内容」を作業レベルに分解　"
+    f"｜　進捗基準日：令和8年8月31日")
 
 HR = 4
-for i, h in enumerate(HEAD, 1):
-    c = ws.cell(row=HR, column=i, value=h)
-    c.font = Font(name=F, size=10, bold=True, color=C["white"])
-    c.fill = PatternFill("solid", fgColor=C["sub"])
-    c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-    c.border = BD
-    ws.column_dimensions[get_column_letter(i)].width = WID[i-1]
-ws.row_dimensions[HR].height = 34
+head_row(ws, HR, HEAD, WID)
 
-TANTO = {"受":"受託者","村":"北塩原村","双":"双方"}
 r = HR + 1
 prev_major = None
+rows_by_no = {}
 for major, mid, task, spec, tanto, deliv, dep, timing in W:
     no = f"{major.split()[0]}-{r-HR:02d}"
-    vals = [no, major, mid, task, spec, TANTO[tanto], deliv, dep, timing, "", "", "", "", None, "未着手", ""]
+    st, pct, s_st, s_ed, note = P.get(task, ("未着手", 0.0, None, None, ""))
+    vals = [no, major, mid, task, spec, TANTO[tanto], deliv, dep, timing,
+            None, None, D(s_st), D(s_ed), pct, st, note]
     for i, v in enumerate(vals, 1):
         c = ws.cell(row=r, column=i, value=v)
         c.font = Font(name=F, size=9)
         c.border = BD
         c.alignment = Alignment(vertical="top", wrap_text=(i in (4,7,8,16)),
                                 horizontal="center" if i in (1,5,6,9,14,15) else "left")
-    # 村担当行に淡い塗り／新しい大分類の切替を強調
-    if tanto == "村":
-        for i in range(1, 17):
-            ws.cell(row=r, column=i).fill = PatternFill("solid", fgColor=C["vill"])
+    # 行の塗り：ステータス優先、次いで村担当、次いで縞
+    if st == "完了":
+        fill = C["done"]
+    elif st in ("着手", "確認中"):
+        fill = C["doing"] if tanto != "村" else C["vill"]
+    elif tanto == "村":
+        fill = C["vill"]
     elif (r - HR) % 2 == 0:
+        fill = C["alt"]
+    else:
+        fill = None
+    if fill:
         for i in range(1, 17):
-            ws.cell(row=r, column=i).fill = PatternFill("solid", fgColor=C["alt"])
+            ws.cell(row=r, column=i).fill = PatternFill("solid", fgColor=fill)
     if major != prev_major:
         ws.cell(row=r, column=2).font = Font(name=F, size=9, bold=True, color=C["header"])
         prev_major = major
-    pc = ws.cell(row=r, column=14); pc.value = 0; pc.number_format = "0%"
+    ws.cell(row=r, column=14).number_format = "0%"
+    ws.cell(row=r, column=15).font = Font(name=F, size=9, bold=(st != "未着手"))
     for i in (10, 11, 12, 13):
         ws.cell(row=r, column=i).number_format = "yyyy/mm/dd"
     ws.row_dimensions[r].height = 30
+    rows_by_no[no] = r
     r += 1
 LAST = r - 1
 
@@ -210,20 +118,121 @@ ws.freeze_panes = "E5"
 ws.auto_filter.ref = f"A{HR}:P{LAST}"
 ws.sheet_view.zoomScale = 90
 
-# ══════════ Sheet2: 凡例・集計 ══════════
+# ══════════════════ Sheet2: 村への確認事項 ══════════════════
+wk = wb.create_sheet("村への確認事項")
+KH = ["優先度","区分","確認事項","なぜ必要か／影響","関連WBS No.","出所","状況","回答内容・回答日"]
+KW = [8, 12, 46, 56, 14, 16, 10, 30]
+title_bar(wk, "A1:H1", "北塩原村への確認事項　一覧（基準日：令和8年8月31日）")
+sub_bar(wk, "A2:H2",
+    "優先度A＝令和8年9月上旬までに回答が必要（調査工程のクリティカルパス上）／"
+    "B＝令和8年11〜12月までに必要（計画策定工程）／C＝随時　"
+    "｜　出所の doc番号は docs/北塩原村_第10期/ 配下の分析資料に対応します")
+KHR = 4
+head_row(wk, KHR, KH, KW)
+kr = KHR + 1
+for kubun, item, why, wbsno, src, prio, sts in sorted(K, key=lambda x: ("ABC".index(x[5]), x[0])):
+    vals = [prio, kubun, item, why, wbsno, src, sts, ""]
+    for i, v in enumerate(vals, 1):
+        c = wk.cell(row=kr, column=i, value=v)
+        c.font = Font(name=F, size=9)
+        c.border = BD
+        c.alignment = Alignment(vertical="top", wrap_text=(i in (3,4,8)),
+                                horizontal="center" if i in (1,5,6,7) else "left")
+    wk.cell(row=kr, column=1).fill = PatternFill("solid", fgColor=C["prio"+prio])
+    wk.cell(row=kr, column=1).font = Font(name=F, size=10, bold=True)
+    if prio == "A":
+        for i in range(2, 9):
+            wk.cell(row=kr, column=i).fill = PatternFill("solid", fgColor=C["note"])
+    wk.row_dimensions[kr].height = 34
+    kr += 1
+KLAST = kr - 1
+
+# 解決済みブロック
+kr += 1
+sub_bar(wk, f"A{kr}:H{kr}", "■ 解決済み（記録）", fill=C["sub"])
+wk[f"A{kr}"].font = Font(name=F, size=10, bold=True, color=C["white"])
+kr += 1
+for kubun, item, why, wbsno, src, prio, sts in SOLVED:
+    for i, v in enumerate([prio, kubun, item, why, wbsno, src, sts, ""], 1):
+        c = wk.cell(row=kr, column=i, value=v)
+        c.font = Font(name=F, size=9)
+        c.border = BD
+        c.fill = PatternFill("solid", fgColor=C["solved"])
+        c.alignment = Alignment(vertical="top", wrap_text=(i in (3,4,8)),
+                                horizontal="center" if i in (1,5,6,7) else "left")
+    wk.row_dimensions[kr].height = 34
+    kr += 1
+
+dv3 = DataValidation(type="list", formula1='"未依頼,依頼済,回答待ち,回答済,解決済"', allow_blank=True)
+wk.add_data_validation(dv3); dv3.add(f"G{KHR+1}:G{KLAST}")
+wk.freeze_panes = "C5"
+wk.auto_filter.ref = f"A{KHR}:H{KLAST}"
+wk.sheet_view.zoomScale = 90
+
+# ══════════════════ Sheet3: 受領資料・データ管理 ══════════════════
+wd = wb.create_sheet("受領資料・データ管理")
+DH = ["区分","資料・データ名","内容・数量","受領日","整理先","状況"]
+DW = [16, 44, 46, 12, 40, 10]
+title_bar(wd, "A1:F1", "受領資料・データ管理（基準日：令和8年8月31日）")
+sub_bar(wd, "A2:F2", "仕様書4Ⅲ「資料授受の管理」に対応。★＝未受領で業務進行に影響するもの")
+DHR = 4
+head_row(wd, DHR, DH, DW, h=24)
+DOCS = [
+ ("仕様書","委託第27号 仕様書（8北保福第483号 別紙）","業務内容・成果品・その他条件","2026/08/25","docs/…/01_業務内容整理.md","受領済"),
+ ("現行計画","第9期北塩原村高齢者福祉計画・介護保険事業計画","本文104頁・全6章＋資料編","2026/08/25","docs/…/01_業務内容整理.md","受領済"),
+ ("現行計画","第9期計画 概要版（表・裏の2ページ）","基本理念・基本目標・数値①〜⑦・施策体系図","2026/08/31","docs/…/08_第9期計画概要_計画実績突合.md","受領済"),
+ ("現行計画","★北塩原村第五次総合振興計画（2017〜2026）","上位計画。第六次の策定状況も要確認","―","―","未受領"),
+ ("現行計画","★第3次健康きたしおばら21","関連計画","―","―","未受領"),
+ ("調査票","キックオフ資料（0828版・082802版）","2版をレビュー済","2026/08/25","docs/…/03,06","受領済"),
+ ("調査票","ニーズ調査・在宅介護実態調査 調査票案（資料B・C・C'）","修正案まで受領","2026/08/25","docs/…/03,04","受領済"),
+ ("国様式","令和7年8月版 標準調査票（ニーズ調査・在宅介護実態調査）","逐条突合の基礎。要確認0件で完了","2026/08/27","docs/…/05_令和7年8月版との逐条突合.md","受領済"),
+ ("見える化","A系 人口・世帯／B系 認定者","第1号被保険者数・認定者数・認定率ほか","2026/08/25","data/mieruka_tidy.csv","受領済"),
+ ("見える化","C1 保険料／D系 給付費・受給者・利用回数","第1号被保険者1人あたり給付月額ほか","2026/08/31","data/mieruka_tidy.csv","受領済"),
+ ("見える化","K系 施設数／D13系 給付費","村内施設ゼロを確認","2026/08/31","data/mieruka_tidy.csv","受領済"),
+ ("見える化","D25〜D30 定員／F15〜F25 地域包括支援センター","定員は平成30年度以降据置","2026/08/31","docs/…/02 追記3","受領済"),
+ ("見える化","F1〜F14・F28〜F40 日常生活支援総合事業","17系列が実データなし（＝未実施）","2026/08/31","docs/…/02 追記3","受領済"),
+ ("見える化","D47・D48 介護保険特別会計 歳入・歳出","平成26〜令和5年度決算","2026/08/31","docs/…/02 追記3","受領済"),
+ ("見える化","W系 保険者機能強化推進交付金 評価指標（77ファイル）","令和3〜5年度。0点項目21件を抽出","2026/08/31","docs/…/07","受領済"),
+ ("見える化","W138〜W155 アウトプット・アウトカム指標（18ファイル）","令和5年度","2026/08/31","docs/…/07","受領済"),
+ ("見える化","地域分析 P1〜P4","県平均・全国平均・県内順位・全国順位","2026/08/31","docs/…/09","受領済"),
+ ("村データ","★介護給付費準備基金の現在高","令和6年度末実績・令和7年度末見込","―","―","未受領"),
+ ("村データ","★令和6年度決算・令和7年度給付費見込","第9期の乖離確定に必要","―","―","未受領"),
+ ("村データ","★通いの場の実数（令和3〜7年度）","見える化は令和2年度で更新停止","―","―","未受領"),
+ ("村データ","★高齢者福祉事業（村単独事業）の実績","現行計画の評価に必要","―","―","未受領"),
+ ("村データ","★成年後見制度の利用実態・市民後見人養成実績","見える化に該当データなし","―","―","未受領"),
+ ("村データ","★W系の福島県平均・全国平均／交付要綱の配点表","目標値設定に必要","―","―","未受領"),
+ ("村データ","★令和6・7年度の交付金評価結果","第10期の基準値を最新年度に置くため","―","―","未受領"),
+ ("村データ","★要介護認定データ（調査票との関連付け用）","仕様書4Ⅰ(5)。調査回収後に必要","―","―","未受領"),
+]
+dr = DHR + 1
+for kubun, name, cont, day, dest, sts in DOCS:
+    for i, v in enumerate([kubun, name, cont, D(day) if day != "―" else "―", dest, sts], 1):
+        c = wd.cell(row=dr, column=i, value=v)
+        c.font = Font(name=F, size=9)
+        c.border = BD
+        c.alignment = Alignment(vertical="top", wrap_text=(i in (2,3,5)),
+                                horizontal="center" if i in (1,4,6) else "left")
+        if i == 4 and day != "―": c.number_format = "yyyy/mm/dd"
+    fill = C["note"] if sts == "未受領" else C["done"]
+    for i in range(1, 7):
+        wd.cell(row=dr, column=i).fill = PatternFill("solid", fgColor=fill)
+    wd.row_dimensions[dr].height = 28
+    dr += 1
+DLAST = dr - 1
+wd.freeze_panes = "C5"
+wd.auto_filter.ref = f"A{DHR}:F{DLAST}"
+wd.sheet_view.zoomScale = 90
+
+# ══════════════════ Sheet4: 凡例・集計 ══════════════════
 ws2 = wb.create_sheet("凡例・集計")
 ws2.column_dimensions["A"].width = 3
-for col, w in zip("BCDEFG", [22, 15, 12, 12, 12, 46]): ws2.column_dimensions[col].width = w
+for col, w in zip("BCDEFGH", [24, 13, 11, 11, 11, 11, 40]):
+    ws2.column_dimensions[col].width = w
 
-ws2.merge_cells("B2:G2")
-h = ws2["B2"]; h.value = "凡例・入力ルール／進捗集計"
-h.font = Font(name=F, size=13, bold=True, color=C["white"])
-h.fill = PatternFill("solid", fgColor=C["header"])
-h.alignment = Alignment(horizontal="center", vertical="center")
-ws2.row_dimensions[2].height = 26
+title_bar(ws2, "B2:H2", "凡例・入力ルール／進捗集計", size=13, h=26)
 
 def blk(row, title):
-    ws2.merge_cells(f"B{row}:G{row}")
+    ws2.merge_cells(f"B{row}:H{row}")
     c = ws2[f"B{row}"]; c.value = title
     c.font = Font(name=F, size=10, bold=True, color=C["white"])
     c.fill = PatternFill("solid", fgColor=C["sub"])
@@ -231,7 +240,7 @@ def blk(row, title):
 
 blk(4, "■ 入力する列（ここだけ編集してください）")
 rules = [
- ("予定開始・予定完了", "日付", "yyyy/mm/dd 形式で入力します。"),
+ ("予定開始・予定完了", "日付", "yyyy/mm/dd 形式で入力します。村との協議で工程が固まり次第、入力してください。"),
  ("実績開始・実績完了", "日付", "着手日・完了日を実績として入力します。"),
  ("進捗率", "％", "0〜100% を入力します。完了時は 100%。"),
  ("ステータス", "選択", "未着手／着手／確認中／完了／保留／対象外 から選択します。"),
@@ -241,43 +250,33 @@ rr = 5
 for a, b, cc in rules:
     ws2.cell(row=rr, column=2, value=a).font = Font(name=F, size=9, bold=True)
     ws2.cell(row=rr, column=3, value=b).font = Font(name=F, size=9)
-    ws2.merge_cells(f"D{rr}:G{rr}")
+    ws2.merge_cells(f"D{rr}:H{rr}")
     ws2.cell(row=rr, column=4, value=cc).font = Font(name=F, size=9)
-    for i in range(2, 8): ws2.cell(row=rr, column=i).border = BD
+    for i in range(2, 9): ws2.cell(row=rr, column=i).border = BD
     rr += 1
 
-blk(rr + 1, "■ 記入例（1行目の書式の目安。実際の入力時は削除してください）")
-ex = rr + 2
-exv = ["Ⅰ-07", "2026/09/01", "2026/09/05", "2026/09/01", "", 0.6, "着手"]
-exh = ["WBS No.", "予定開始", "予定完了", "実績開始", "実績完了", "進捗率", "ステータス"]
-for i, (a, b) in enumerate(zip(exh, exv)):
-    ws2.cell(row=ex, column=2 + i if i < 6 else 7, value=a)
-for i, hh in enumerate(exh):
-    c = ws2.cell(row=ex, column=2 + i, value=hh)
+blk(rr + 1, "■ 行の塗り分け")
+legend = [
+ (C["done"], "薄い緑", "完了した作業です。"),
+ (C["doing"], "薄い黄", "着手中・確認中の作業、または北塩原村が担当する作業です。"),
+ (C["note"], "薄い赤", "「村への確認事項」シートの優先度A、および未受領の資料です。"),
+]
+lr = rr + 2
+for fill, nm, desc in legend:
+    c = ws2.cell(row=lr, column=2, value=nm)
     c.font = Font(name=F, size=9, bold=True); c.border = BD
-    c.fill = PatternFill("solid", fgColor=C["band"])
-    c.alignment = Alignment(horizontal="center")
-for i, v in enumerate(exv):
-    c = ws2.cell(row=ex + 1, column=2 + i, value=v)
-    c.font = Font(name=F, size=9, color="0000FF"); c.border = BD
-    c.alignment = Alignment(horizontal="center")
-    if i in (1, 2, 3, 4): c.number_format = "yyyy/mm/dd"
-    if i == 5: c.number_format = "0%"
-
-blk(ex + 3, "■ 担当区分の塗り分け")
-ws2.cell(row=ex + 4, column=2, value="淡い黄色の行").font = Font(name=F, size=9, bold=True)
-ws2.cell(row=ex + 4, column=2).fill = PatternFill("solid", fgColor=C["vill"])
-ws2.merge_cells(f"C{ex+4}:G{ex+4}")
-ws2.cell(row=ex + 4, column=3,
-         value="北塩原村が担当する作業です。ここが遅れると後続の受託者作業が止まります。").font = Font(name=F, size=9)
-for i in range(2, 8): ws2.cell(row=ex + 4, column=i).border = BD
+    c.fill = PatternFill("solid", fgColor=fill)
+    ws2.merge_cells(f"C{lr}:H{lr}")
+    ws2.cell(row=lr, column=3, value=desc).font = Font(name=F, size=9)
+    for i in range(2, 9): ws2.cell(row=lr, column=i).border = BD
+    lr += 1
 
 # 進捗集計（COUNTIF）
-SUM_R = ex + 6
+SUM_R = lr + 1
 blk(SUM_R, "■ 進捗集計（WBSシートから自動集計されます）")
 sh = "'WBS・進捗管理'"
-sts = ["未着手", "着手", "確認中", "完了", "保留", "対象外"]
-hdr = ["大分類", "件数"] + sts
+sts_list = ["未着手", "着手", "確認中", "完了", "保留", "対象外"]
+hdr = ["大分類", "件数"] + sts_list
 for i, hh in enumerate(hdr):
     c = ws2.cell(row=SUM_R + 1, column=2 + i, value=hh)
     c.font = Font(name=F, size=9, bold=True, color=C["white"])
@@ -289,17 +288,16 @@ for m, *_ in W:
 rw = SUM_R + 2
 for m in majors:
     ws2.cell(row=rw, column=2, value=m).font = Font(name=F, size=9)
-    ws2.cell(row=rw, column=3,
-             value=f'=COUNTIF({sh}!$B${HR+1}:$B${LAST},$B{rw})')
-    for j, st in enumerate(sts):
+    ws2.cell(row=rw, column=3, value=f'=COUNTIF({sh}!$B${HR+1}:$B${LAST},$B{rw})')
+    for j, st in enumerate(sts_list):
         ws2.cell(row=rw, column=4 + j,
-                 value=f'=COUNTIFS({sh}!$B${HR+1}:$B${LAST},$B{rw},{sh}!$O${HR+1}:$O${LAST},{get_column_letter(4+j)}${SUM_R+1})')
+                 value=f'=COUNTIFS({sh}!$B${HR+1}:$B${LAST},$B{rw},'
+                       f'{sh}!$O${HR+1}:$O${LAST},{get_column_letter(4+j)}${SUM_R+1})')
     for i in range(2, 10):
         c = ws2.cell(row=rw, column=i); c.border = BD
         c.font = Font(name=F, size=9)
         if i >= 3: c.alignment = Alignment(horizontal="center")
     rw += 1
-# 合計行
 ws2.cell(row=rw, column=2, value="合計").font = Font(name=F, size=9, bold=True)
 for i in range(3, 10):
     col = get_column_letter(i)
@@ -309,20 +307,45 @@ for i in range(3, 10):
     c.alignment = Alignment(horizontal="center")
 ws2.cell(row=rw, column=2).border = BD
 ws2.cell(row=rw, column=2).fill = PatternFill("solid", fgColor=C["band"])
+TOT_R = rw
 
-# 全体進捗率
-ws2.cell(row=rw + 2, column=2, value="全体進捗率（平均）").font = Font(name=F, size=10, bold=True)
-c = ws2.cell(row=rw + 2, column=3, value=f'=AVERAGE({sh}!$N${HR+1}:$N${LAST})')
-c.font = Font(name=F, size=12, bold=True, color=C["header"])
-c.number_format = "0.0%"; c.border = BD
-c.fill = PatternFill("solid", fgColor=C["key"])
-c.alignment = Alignment(horizontal="center")
+# 全体進捗率・確認事項集計
+kpi = TOT_R + 2
+blk(kpi, "■ 主要指標")
+kpis = [
+ ("全体進捗率（平均）", f'=AVERAGE({sh}!$N${HR+1}:$N${LAST})', "0.0%"),
+ ("作業総数", f'=COUNTA({sh}!$A${HR+1}:$A${LAST})', "0"),
+ ("完了した作業", f'=COUNTIF({sh}!$O${HR+1}:$O${LAST},"完了")', "0"),
+ ("着手・確認中の作業", f'=COUNTIF({sh}!$O${HR+1}:$O${LAST},"着手")+COUNTIF({sh}!$O${HR+1}:$O${LAST},"確認中")', "0"),
+ ("未着手の作業", f'=COUNTIF({sh}!$O${HR+1}:$O${LAST},"未着手")', "0"),
+ ("村への確認事項（優先度A）", '=COUNTIF(\'村への確認事項\'!$A:$A,"A")', "0"),
+ ("村への確認事項（未依頼）", '=COUNTIF(\'村への確認事項\'!$G:$G,"未依頼")', "0"),
+ ("未受領の資料・データ", '=COUNTIF(\'受領資料・データ管理\'!$F:$F,"未受領")', "0"),
+]
+kr2 = kpi + 1
+for nm, fml, fmt in kpis:
+    ws2.cell(row=kr2, column=2, value=nm).font = Font(name=F, size=10, bold=True)
+    c = ws2.cell(row=kr2, column=3, value=fml)
+    c.font = Font(name=F, size=12, bold=True, color=C["header"])
+    if fmt: c.number_format = fmt
+    c.border = BD
+    c.fill = PatternFill("solid", fgColor=C["key"])
+    c.alignment = Alignment(horizontal="center")
+    ws2.cell(row=kr2, column=2).border = BD
+    kr2 += 1
 
-ws2.cell(row=rw + 4, column=2,
-         value="※「仕様書該当」欄の凡例：仕様書＝8北保福第483号 別紙／手引き＝厚生労働省の実施の手引き（令和7年8月版）／確認＝本業務での確認事項").font = Font(name=F, size=8)
-ws2.cell(row=rw + 5, column=2,
-         value="※ 想定時期は仕様書の履行期限（令和9年3月31日）から逆算した目安です。村との協議結果により確定します。").font = Font(name=F, size=8)
+notes = [
+ "※「仕様書該当」欄の凡例：仕様書＝8北保福第483号 別紙／手引き＝厚生労働省の実施の手引き（令和7年8月版）／確認＝本業務での確認事項",
+ "※ 想定時期は仕様書の履行期限（令和9年3月31日）から逆算した目安です。村との協議結果により確定します。",
+ "※ 令和8年9月19日（土）〜23日（水）は5連休（敬老の日9/21・国民の休日9/22・秋分の日9/23）です。発送・回収工程に影響します。",
+ "※ 進捗基準日は令和8年8月31日です。備考欄の doc番号は docs/北塩原村_第10期/ 配下の分析資料に対応します。",
+]
+nr = kr2 + 1
+for n in notes:
+    ws2.cell(row=nr, column=2, value=n).font = Font(name=F, size=8)
+    nr += 1
 
 wb.save(OUT)
 print(f"保存: {OUT}")
-print(f"WBS行数: {LAST-HR} 件 / 大分類: {len(majors)} 区分")
+print(f"WBS: {LAST-HR}件 / 確認事項: {len(K)}件（解決済{len(SOLVED)}件） / 受領資料: {DLAST-DHR}件")
+print(f"進捗反映: {len(P)}件")
