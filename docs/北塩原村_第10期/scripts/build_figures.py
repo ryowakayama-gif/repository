@@ -469,7 +469,66 @@ def fig_2_18():
     ax.set_title("図2-18　保険者機能強化推進交付金等 指標群別得点（令和5年度）", loc="left", pad=10)
     save(fig, "fig2-18_交付金指標群.png")
 
+
+# ══════════ 図2-11 在宅・施設居住系の1人あたり給付月額 ══════════
+def fig_2_11():
+    lab = ["H29", "H30", "R元", "R2", "R3", "R4", "R5", "R6", "R7"]
+    x = list(range(len(lab)))
+    zaitaku = [8157, 7334, 6198, 6324, 6527, 5597, 5737, 6329, 7154]
+    shisetsu = [15127, 16286, 15561, 14531, 13422, 14729, 15747, 14915, 15651]
+    fig, ax = plt.subplots(figsize=(7.2, 3.6))
+    ax.plot(x, shisetsu, label="施設・居住系サービス", color=K["d"], ls="-",
+            marker="o", ms=6, lw=2.2)
+    ax.plot(x, zaitaku, label="在宅サービス", color=K["m"], ls="--",
+            marker="s", ms=5.5, lw=1.8)
+    ax.plot([5], [5597], marker="o", ms=11, mfc="none", mec=K["m"], mew=1.6)
+    ax.annotate("最低 5,597円\n（令和4年度）", (5, 5597), xytext=(0, -36),
+                textcoords="offset points", ha="center", fontsize=8.5, color=K["m"])
+    label_last(ax, x, shisetsu, "15,651円")
+    label_last(ax, x, zaitaku, "7,154円", color=K["m"])
+    ax.set_xticks(x); ax.set_xticklabels([f"{l}\n年度" for l in lab], fontsize=8.5)
+    ax.set_xlim(-0.4, 9.7); ax.set_ylim(3500, 18500)
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, p: f"{int(v):,}"))
+    style_ax(ax, ylab="1人1月あたり給付月額（円）")
+    ax.legend(loc="center left", fontsize=9)
+    ax.set_title("図2-11　在宅・施設居住系別 第1号被保険者1人1月あたり給付月額",
+                 loc="left", pad=10)
+    save(fig, "fig2-11_在宅施設別給付月額.png")
+
+# ══════════ 図2-14 サービス区分別の変化（H29→R7）══════════
+def fig_2_14():
+    names = ["訪問系", "通所系", "短期入所", "福祉用具・住宅改修",
+             "居宅介護支援", "居住系", "施設系"]
+    h29 = [1481, 4166, 756, 628, 1127, 4740, 10387]
+    r7  = [728, 3851, 593, 879, 1103, 6748, 8903]
+    y = list(range(len(names)))[::-1]
+    fig, ax = plt.subplots(figsize=(7.4, 4.2))
+    h = 0.36
+    b1 = ax.barh([i + h/2 for i in y], h29, height=h, color=K["l"],
+                 edgecolor=K["m"], linewidth=0.8, label="平成29年度")
+    b2 = ax.barh([i - h/2 for i in y], r7, height=h, color=K["d"],
+                 edgecolor=K["d"], linewidth=0.8, label="令和7年度", hatch="///")
+    for bars in (b1, b2):
+        for b in bars:
+            ax.annotate(f"{int(b.get_width()):,}",
+                        (b.get_width(), b.get_y()+b.get_height()/2),
+                        xytext=(4, 0), textcoords="offset points", va="center", fontsize=8.5)
+    for i, a, b in zip(y, h29, r7):
+        g = (b/a - 1) * 100
+        ax.annotate(f"{g:+.1f}%", (12300, i), fontsize=9.5, va="center",
+                    fontweight="bold", color=K["d"] if abs(g) >= 40 else K["m"])
+    ax.set_yticks(y); ax.set_yticklabels(names, fontsize=9.5)
+    ax.set_xlim(0, 14200)
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda v, p: f"{int(v):,}"))
+    style_ax(ax, xlab="1人1月あたり給付月額（円）")
+    ax.grid(axis="x", visible=True); ax.grid(axis="y", visible=False)
+    ax.legend(loc="upper right", fontsize=9, bbox_to_anchor=(1.0, 0.99))
+    ax.set_title("図2-14　サービス区分別 1人1月あたり給付月額の変化（平成29年度→令和7年度）",
+                 loc="left", pad=10)
+    save(fig, "fig2-14_サービス区分別変化.png")
+
 if __name__ == "__main__":
     fig_2_5(); fig_2_6(); fig_2_7(); fig_2_8()
-    fig_2_9(); fig_2_10(); fig_2_12(); fig_2_13()
-    fig_2_15(); fig_2_16(); fig_2_17(); fig_2_18()
+    fig_2_9(); fig_2_10(); fig_2_11(); fig_2_12()
+    fig_2_13(); fig_2_14(); fig_2_15(); fig_2_16()
+    fig_2_17(); fig_2_18()
