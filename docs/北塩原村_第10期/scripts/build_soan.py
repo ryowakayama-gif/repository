@@ -21,7 +21,7 @@ for ch in S.CH:
     out += [f"# {ch['no']}　{ch['title']}", ""]
     for sec in ch["sections"]:
         out += [f"## {sec['no']}　{sec['title']}", ""]
-        for f in figs.get(sec["no"], []):
+        for f in figs.get(f'{ch["no"]}|{sec["no"]}', []):
             out += [f"![{f['caption']}](../../output/figures/{f['file']})", "",
                     f"**{f['caption']}**", "", f"出典：{f['source']}", ""]
         for b in sec["blocks"]:

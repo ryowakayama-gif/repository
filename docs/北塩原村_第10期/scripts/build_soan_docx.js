@@ -116,7 +116,7 @@ C.chapters.forEach((ch, ci) => {
       children: [new TextRun({text: `${sec.no}　${sec.title}`, font: FONTG, size: 24,
                               bold: true, color: NAVY})],
     }));
-    (C.figures[sec.no] || []).forEach(f => { figure(f).forEach(x => kids.push(x)); });
+    (C.figures[ch.no + '|' + sec.no] || []).forEach(f => { figure(f).forEach(x => kids.push(x)); });
     sec.blocks.forEach(b => {
       if (b.t === 'p') kids.push(p(b.v));
       else if (b.t === 'h3') kids.push(p(b.v, {size: 21, bold: true, font: FONTG,
