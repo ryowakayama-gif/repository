@@ -340,13 +340,49 @@ for nm, fml, fmt in kpis:
     ws2.cell(row=kr2, column=2).border = BD
     kr2 += 1
 
+# 直近マイルストーン
+ms = kr2 + 1
+blk(ms, "■ 直近のマイルストーン（基準日 令和8年9月2日）")
+MILESTONES = [
+ ("令和8年9月1日（火）", "キックオフ会議（資料上の予定日）", "経過・結果未確認", "★"),
+ ("令和8年9月9日（水）", "調査票の入稿", "残り7日。優先度Sの決着が前提", "★"),
+ ("令和8年9月11日（金）", "宛名ラベル・配布用封筒の提供（前倒し案）", "村。原案は9/14", ""),
+ ("令和8年9月16〜17日", "宛名貼付・封入・封緘", "受託者", ""),
+ ("令和8年9月18日（金）", "発送（案）", "★5連休（9/19〜9/23）の直前。9/17前倒しを協議", "★"),
+ ("令和8年9月30日（水）", "策定委員会 現委員の任期満了", "★10月中の改選・委嘱が必要", "★"),
+ ("令和8年10月上旬", "督促（リマインド）の要否判断", "第9期の在宅調査回収率45.8%を踏まえ", ""),
+ ("令和8年11月", "第1回策定委員会", "委員改選の完了が前提", ""),
+ ("令和8年12月中旬", "第2回策定委員会", "★12月を外すと第3回が3月となり履行期限に間に合わない", "★"),
+ ("令和9年2月", "第3回策定委員会", "", ""),
+ ("令和9年3月31日", "履行期限（納品・検収）", "", ""),
+]
+mh = ms + 1
+for j, h in enumerate(["", "期日", "内容", "留意点"], 1):
+    c = ws2.cell(row=mh, column=j+1, value=h)
+    c.font = Font(name=F, size=9, bold=True, color="FFFFFF")
+    c.fill = PatternFill("solid", fgColor=C["header"]); c.border = BD
+    c.alignment = Alignment(horizontal="center")
+mr = mh + 1
+for day, cont, note, mark in MILESTONES:
+    vals = [mark, day, cont, note]
+    for j, v in enumerate(vals, 2):
+        c = ws2.cell(row=mr, column=j, value=v)
+        c.font = Font(name=F, size=9, bold=bool(mark))
+        c.border = BD
+        c.alignment = Alignment(vertical="top", wrap_text=(j == 5),
+                                horizontal="center" if j == 2 else "left")
+        if mark:
+            c.fill = PatternFill("solid", fgColor=C["note"])
+    mr += 1
+
 notes = [
  "※「仕様書該当」欄の凡例：仕様書＝8北保福第483号 別紙／手引き＝厚生労働省の実施の手引き（令和7年8月版）／確認＝本業務での確認事項",
  "※ 想定時期は仕様書の履行期限（令和9年3月31日）から逆算した目安です。村との協議結果により確定します。",
  "※ 令和8年9月19日（土）〜23日（水）は5連休（敬老の日9/21・国民の休日9/22・秋分の日9/23）です。発送・回収工程に影響します。",
- "※ 進捗基準日は令和8年8月31日です。備考欄の doc番号は docs/北塩原村_第10期/ 配下の分析資料に対応します。",
+ "※ 進捗基準日は令和8年9月2日です。備考欄の doc番号は docs/北塩原村_第10期/ 配下の分析資料に対応します。",
+ "※ マイルストーンの★印は、遅れると後続工程が連鎖的に破綻する項目です。",
 ]
-nr = kr2 + 1
+nr = mr + 1
 for n in notes:
     ws2.cell(row=nr, column=2, value=n).font = Font(name=F, size=8)
     nr += 1
