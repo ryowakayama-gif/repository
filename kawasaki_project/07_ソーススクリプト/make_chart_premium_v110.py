@@ -8,7 +8,12 @@ C 6,344円）と整合しない。Ver.1.10 で本文・表に試算値を掲載�
 同じ配色・体裁のまま数値を試算値に差し替える。
 
 出力：08_図表/chart_premium_v110.png
+
+図番号と出力先は引数で変えられる（素案 Ver.1.11 で章を繰り下げ、図7-1→図8-1 となった）。
+    python3 07_ソーススクリプト/make_chart_premium_v110.py 図8-1 08_図表/chart_premium_v111.png
 """
+import sys
+
 import matplotlib
 
 matplotlib.use("Agg")
@@ -31,7 +36,8 @@ plt.rcParams["axes.unicode_minus"] = False
 NAVY, LBLUE, ORANGE, LORANGE = "#1F3864", "#DAE3F3", "#ED7D31", "#FCE4D6"
 LGREEN, GRAY = "#E2EFDA", "#808080"
 
-OUT = "08_図表/chart_premium_v110.png"
+FIGNO = sys.argv[1] if len(sys.argv) > 1 else "図7-1"
+OUT = sys.argv[2] if len(sys.argv) > 2 else "08_図表/chart_premium_v110.png"
 
 # 令和8年9月2日時点の概算試算（中位ケース・calc_hokenryo_R8.9.2.py）
 K8, K9 = 6_380, 6_500
@@ -69,7 +75,7 @@ def main():
     ax.set_xticks(x)
     ax.set_xticklabels(periods, fontproperties=JP_S, fontsize=9)
     ax.set_ylabel("月額基準額（円）", fontproperties=JP)
-    ax.set_title("図7-1　介護保険料月額基準額の推移（第10期は令和8年9月時点の仮試算）",
+    ax.set_title(f"{FIGNO}　介護保険料月額基準額の推移（第10期は令和8年9月時点の仮試算）",
                  fontproperties=JP_T, color=NAVY, pad=15)
     ax.set_ylim(6_000, 8_400)
     ax.grid(axis="y", linestyle=":", alpha=0.4)
