@@ -46,6 +46,7 @@ kids.push(p(C.title,  {align: AlignmentType.CENTER, size: 32, bold: true, font: 
 kids.push(p(C.title2, {align: AlignmentType.CENTER, size: 32, bold: true, font: FONTG, color: NAVY, after: 700}));
 kids.push(p(C.subtitle, {align: AlignmentType.CENTER, size: 24, font: FONTG, after: 1600}));
 kids.push(p('資料2　第9期計画の進捗と評価', {align: AlignmentType.CENTER, size: 24, font: FONTG, after: 100}));
+kids.push(p('資料4　第10期計画の基本理念・基本目標・施策体系（案）', {align: AlignmentType.CENTER, size: 24, font: FONTG, after: 100}));
 kids.push(p('資料5　サービス見込み量の考え方（案）', {align: AlignmentType.CENTER, size: 24, font: FONTG, after: 100}));
 kids.push(p('資料6　介護保険料の概算シミュレーション', {align: AlignmentType.CENTER, size: 24, font: FONTG, after: 100}));
 kids.push(p('資料7　成果目標・活動指標（案）', {align: AlignmentType.CENTER, size: 24, font: FONTG, after: 1600}));
@@ -55,7 +56,7 @@ kids.push(new Paragraph({children: [new PageBreak()]}));
 
 // 本書の見方
 kids.push(p('本資料の見方', {size: 28, bold: true, font: FONTG, color: NAVY, after: 240}));
-kids.push(p('本資料は、令和8年11月に開催する第2回策定委員会の資料の一部です。資料3（アンケート調査結果）と資料4（基本理念・基本目標・施策体系）は、調査の集計後に作成します。', {after: 180}));
+kids.push(p('本資料は、令和8年11月に開催する第2回策定委員会の資料の一部です。資料3（アンケート調査結果）は、調査の集計後に作成します。', {after: 180}));
 kids.push(table(['表記', '意味'], [
   ['【要確認】', '北塩原村への確認により確定する事項です。'],
   ['【要設定】', '目標値等を今後設定する箇所です。'],
@@ -64,7 +65,8 @@ kids.push(table(['表記', '意味'], [
   ['注記の囲み', '未確定の事項と、その確定の見通しです。'],
 ], [26, 74]));
 kids.push(p('', {after: 200}));
-kids.push(p('資料5・6は骨格です。数値は、国の推計ワークシートの提供（第10期基本指針の告示後）と、村の実績データの受領をもって確定します。本日は「考え方」についてご意見をいただきたく存じます。', {after: 240}));
+kids.push(p('資料5・6は骨格です。数値は、国の推計ワークシートの提供（第10期基本指針の告示後）と、村の実績データの受領をもって確定します。本日は「考え方」についてご意見をいただきたく存じます。', {after: 180}));
+kids.push(p('資料4は、本委員会でご議論いただきたい事項の中心です。各施策の根拠となる住民ニーズの数値は、資料3で補足します。', {after: 240}));
 kids.push(new Paragraph({children: [new PageBreak()]}));
 
 // 目次
@@ -95,12 +97,19 @@ C.chapters.forEach((ch, ci) => {
         numbering: {reference: 'bul', level: 0}, spacing: {after: 60, line: 300},
         children: [new TextRun({text: x, font: FONT, size: 21})],
       })));
-      else if (b.t === 'key') kids.push(new Paragraph({
-        spacing: {before: 140, after: 200, line: 300}, indent: {left: 200, right: 200},
-        shading: {type: ShadingType.CLEAR, fill: KEYB},
-        border: {left: {style: BorderStyle.SINGLE, size: 18, color: 'BF8F00', space: 8}},
-        children: [new TextRun({text: b.v, font: FONTG, size: 20, bold: true})],
-      }));
+      else if (b.t === 'key') {
+        const lines = String(b.v).split('\n');
+        const runs = [];
+        lines.forEach((ln, i) => runs.push(new TextRun({
+          text: ln, font: FONTG, size: 20, bold: true, break: i > 0 ? 1 : 0,
+        })));
+        kids.push(new Paragraph({
+          spacing: {before: 140, after: 200, line: 300}, indent: {left: 200, right: 200},
+          shading: {type: ShadingType.CLEAR, fill: KEYB},
+          border: {left: {style: BorderStyle.SINGLE, size: 18, color: 'BF8F00', space: 8}},
+          children: runs,
+        }));
+      }
       else if (b.t === 'note') kids.push(new Paragraph({
         spacing: {before: 120, after: 180, line: 280}, indent: {left: 200, right: 200},
         shading: {type: ShadingType.CLEAR, fill: NOTE},
