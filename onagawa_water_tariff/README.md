@@ -4,7 +4,7 @@
 **委託元**：女川町 ／ **受託**：ビズアップ公共コンサルティング株式会社
 **中間報告期限**：令和8年9月末
 
-claude.ai のチャットで進めていた検討作業を、Claude Code に移行したものです。
+チャットで進めていた検討作業を、本フォルダに移したものです。
 
 ---
 
@@ -12,7 +12,7 @@ claude.ai のチャットで進めていた検討作業を、Claude Code に移�
 
 | 順 | ファイル | 内容 |
 |:--:|---|---|
-| 1 | [`06_capital_plan_update/README.md`](06_capital_plan_update/README.md) | **建設改良費の改定と必要改定幅への影響。最新の論点** |
+| 1 | [`06_capital_plan_update/README.md`](06_capital_plan_update/README.md) | **総括原価の前提条件の切替と再試算。最新かつ最重要の論点** |
 | 2 | [`05_review/file_check_report.md`](05_review/file_check_report.md) | Excel成果品の確認レポート。既知の不整合6件と残作業 |
 | 3 | [`05_review/word_document_review.md`](05_review/word_document_review.md) | Word文書の確認レポート。表現ルール違反1件ほか |
 | 4 | [`03_documents/handoff_memo.md`](03_documents/handoff_memo.md) | 引継ぎメモ。数値前提、確定値と推計値の区別 |
@@ -75,42 +75,44 @@ onagawa_water_tariff/
 宮城県内臨海4団体（女川町・気仙沼市・石巻広域・塩竈市）の料金体系比較。
 仕様書上は**参考資料**の位置づけで、主資料は女川町単独の改定シミュレーション（02_deliverables）です。
 
-検証スクリプトは再実行可能です。
-
-```bash
-cd 04_prefecture_unification/03_verification_scripts
-python3 verify_all_rates.py      # 各団体の公式早見表との逆算検証（全件一致）
-python3 impact_simulation.py     # 政策シナリオ別の影響試算
-```
-
-### 06_capital_plan_update（建設改良費の改定）
-
-女川町から回答のあった建設改良費調査票（R8〜R17）と、それが総括原価・必要改定幅に
-与える影響の再計算です。**成果品Excelの数値はまだこの改定を織り込んでいません。**
+各団体の料金構造は、次の検証用ファイルで再確認できます。
 
 | ファイル | 内容 |
 |---|---|
-| `construction_cost_survey_R8toR17.xlsx` | 建設改良費調査票（女川町回答・全4事業） |
-| `recalc_capital_impact.py` | 新旧計画の比較と総括原価への影響の再計算 |
-| `recalc_output.txt` | 上記の実行結果 |
-| `README.md` | 結論・感応度分析・調査票の不備・確認事項 |
+| `04_prefecture_unification/03_verification_scripts/verify_all_rates.py` | 各団体の公式早見表との逆算検証（全件一致を確認済み） |
+| `04_prefecture_unification/03_verification_scripts/impact_simulation.py` | 政策別の影響試算 |
 
-```bash
-cd 06_capital_plan_update && python3 recalc_capital_impact.py
-```
+実行手順は `04_prefecture_unification/07_readme/README.md` に記載があります。
+
+### 06_capital_plan_update（前提条件の切替と再試算）
+
+女川町から回答のあった建設改良費調査票（R8〜R17）を反映するにあたり、
+経営戦略と成果品とで前提条件が食い違っている箇所を洗い出し、
+項目ごとに切り替えて総括原価を計算できるようにしたものです。
+
+| ファイル | 内容 |
+|---|---|
+| `09_assumption_switch_cost_calc.xlsx` | **前提条件の切替表**。黄色セルの選択で総括原価と必要改定幅が変わる |
+| `construction_cost_survey_R8toR17.xlsx` | 建設改良費調査票（女川町回答・全4事業） |
+| `README.md` | 結論・差異一覧・確認事項 |
+| `build/` | 切替表の作成用ファイル。成果品ではない |
+
+**成果品Excelの数値はまだこの再試算を織り込んでいません。**
+現在の成果品が示す必要改定率4.32倍は、長期前受金戻入益の見込額が実態と離れているため
+過大になっている可能性が高く、中間報告に用いる前に確定が必要です。
 
 ---
 
-## 旧チャット環境からのパス対応
+## 移行前のパスとの対応
 
-`handoff_memo.md` 第8章に記載のパスは旧環境のものです。
+`handoff_memo.md` 第8章に記載のパスは移行前のものです。
 
-| 旧環境 | 本リポジトリ |
+| 移行前 | 本フォルダ |
 |---|---|
 | `/mnt/user-data/uploads/` | `01_source_evidence/` |
 | `/mnt/user-data/outputs/` | `02_deliverables/` |
 
-| 旧ファイル名 | 本リポジトリ |
+| 移行前のファイル名 | 本フォルダ |
 |---|---|
 | `onagawa_rate_reform_v1.xlsx` | `02_deliverables/01_rate_reform_simulation_MAIN.xlsx` |
 | `onagawa_cost_sim_v1.xlsx` | `02_deliverables/02_total_cost_simulation.xlsx` |
@@ -135,7 +137,7 @@ cd 06_capital_plan_update && python3 recalc_capital_impact.py
 - 県内4団体の料金（各団体の条例別表・公式早見表から逆算検証済み）
 
 **推計値（要更新）**
-- 控除項目（長期前受金戻入益・他会計補助金等）
+- 控除項目（長期前受金戻入益・他会計補助金等）★実態と大きく離れている。`06_capital_plan_update/README.md` 参照
 - 対象資産の期首・期末残高
 - 水産加工業19社モデルの使用水量
 
