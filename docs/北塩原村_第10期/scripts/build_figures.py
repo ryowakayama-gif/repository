@@ -446,28 +446,93 @@ def fig_2_17():
 
 # ══════════ 図2-18 交付金 指標群別得点 ══════════
 def fig_2_18():
-    grp = ["取組・体制\n指標群", "活動指標群\n（アウトプット）", "成果指標群\n（アウトカム）"]
+    """指標群別得点（令和8年度）と全国平均の対比。"""
+    grp = ["推進\n目標Ⅰ", "推進\n目標Ⅱ", "推進\n目標Ⅲ", "推進\n目標Ⅳ",
+           "支援\n目標Ⅰ", "支援\n目標Ⅱ", "支援\n目標Ⅲ", "支援\n目標Ⅳ"]
+    mura = [76, 62, 46, 45, 71, 32, 70, 45]
+    zenkoku = [62.3, 69.2, 50.8, 47.8, 57.8, 51.1, 68.3, 47.8]
     x = list(range(len(grp)))
-    suishin = [50, 9, 65]; shien = [77, 29, 65]
-    fig, ax = plt.subplots(figsize=(7.0, 3.6))
-    w = 0.34
-    b1 = ax.bar([i-w/2 for i in x], suishin, width=w, label="保険者機能強化推進交付金",
+    fig, ax = plt.subplots(figsize=(7.4, 3.8))
+    w = 0.36
+    b1 = ax.bar([i-w/2 for i in x], mura, width=w, label="北塩原村",
                 color=K["d"], edgecolor="white", linewidth=1.2, hatch="///")
-    b2 = ax.bar([i+w/2 for i in x], shien, width=w, label="介護保険保険者努力支援交付金",
+    b2 = ax.bar([i+w/2 for i in x], zenkoku, width=w, label="全国平均",
                 color=K["l"], edgecolor=K["m"], linewidth=0.8)
-    for bars in (b1, b2):
-        for b in bars:
-            ax.annotate(f"{int(b.get_height())}点", (b.get_x()+b.get_width()/2, b.get_height()),
-                        xytext=(0, 3), textcoords="offset points", ha="center",
-                        fontsize=9.5, fontweight="bold")
-    ax.annotate("活動量が\n突出して低い", (1, 45), ha="center", fontsize=10,
+    for b in b1:
+        ax.annotate(f"{int(b.get_height())}", (b.get_x()+b.get_width()/2, b.get_height()),
+                    xytext=(0, 3), textcoords="offset points", ha="center",
+                    fontsize=8.5, fontweight="bold")
+    ax.annotate("支援 目標Ⅱは全国平均を19点下回る", (4.55, 87), ha="center", fontsize=9,
                 fontweight="bold", color=K["d"])
-    ax.set_xticks(x); ax.set_xticklabels(grp, fontsize=9)
-    ax.set_ylim(0, 92)
-    style_ax(ax, ylab="得点（点）")
-    ax.legend(loc="upper right", fontsize=8.5)
-    ax.set_title("図2-18　保険者機能強化推進交付金等 指標群別得点（令和5年度）", loc="left", pad=10)
+    ax.annotate("", xy=(4.9, 34), xytext=(4.55, 84),
+                arrowprops=dict(arrowstyle="->", color=K["d"], lw=1.2,
+                                connectionstyle="arc3,rad=-0.15"))
+    ax.set_xticks(x); ax.set_xticklabels(grp, fontsize=8.5)
+    ax.set_ylim(0, 100)
+    style_ax(ax, ylab="得点（各100点満点）")
+    ax.legend(loc="upper right", fontsize=8.5, ncol=2, bbox_to_anchor=(1.0, 1.02))
+    ax.set_title("図2-18　交付金 目標別得点と全国平均の対比（令和8年度）", loc="left", pad=10)
     save(fig, "fig2-18_交付金指標群.png")
+
+
+# ══════════ 図2-19 交付金 合計得点の推移 ══════════
+def fig_2_19():
+    lab = ["令和6年度", "令和7年度", "令和8年度"]
+    x = list(range(len(lab)))
+    mura = [295, 339, 447]
+    zenkoku = [422.4, 435.0, 455.1]
+    ken = [354.1, 385.3, 456.4]
+    fig, ax = plt.subplots(figsize=(6.6, 3.6))
+    ax.plot(x, mura, label="北塩原村", **S_MURA)
+    ax.plot(x, ken, label="福島県平均", **S_KEN)
+    ax.plot(x, zenkoku, label="全国平均", **S_ZEN)
+    for xi, v in zip(x, mura):
+        ax.annotate(f"{v}点", (xi, v), xytext=(0, -18), textcoords="offset points",
+                    ha="center", fontsize=9, fontweight="bold")
+    # 令和6年度の村と全国平均の差を縦の矢印で示す
+    ax.annotate("", xy=(0.06, 295), xytext=(0.06, 422.4),
+                arrowprops=dict(arrowstyle="<->", color=K["d"], lw=1.1))
+    ax.annotate("全国平均との差\n−127点", (0.12, 358), ha="left", va="center",
+                fontsize=8.5, fontweight="bold", color=K["d"])
+    ax.annotate("−8点", (2, 447), xytext=(10, -4), textcoords="offset points",
+                ha="left", va="center", fontsize=8.5, fontweight="bold", color=K["d"])
+    ax.set_xticks(x); ax.set_xticklabels(lab, fontsize=9)
+    ax.set_xlim(-0.35, 2.75); ax.set_ylim(250, 520)
+    style_ax(ax, ylab="合計得点（800点満点）")
+    ax.legend(loc="lower right", fontsize=9)
+    ax.set_title("図2-19　交付金 合計得点の推移（村・福島県平均・全国平均）", loc="left", pad=10)
+    save(fig, "fig2-19_交付金得点推移.png")
+
+
+# ══════════ 図2-20 通いの場の状況 ══════════
+def fig_2_20():
+    """令和6年度 介護予防・日常生活支援総合事業実施状況調査による。"""
+    cat = ["箇所数", "参加者数"]
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.2, 3.4))
+    # 左：箇所数
+    x = [0, 1]
+    ax1.bar(x, [23, 8], width=0.5, color=[K["l"], K["d"]],
+            edgecolor=K["m"], linewidth=0.9, hatch=["", "///"])
+    for xi, v in zip(x, [23, 8]):
+        ax1.annotate(f"{v}か所", (xi, v), xytext=(0, 4), textcoords="offset points",
+                     ha="center", fontsize=10, fontweight="bold")
+    ax1.set_xticks(x); ax1.set_xticklabels(["全体", "週1回以上\n開催"], fontsize=9)
+    ax1.set_ylim(0, 28)
+    style_ax(ax1, ylab="箇所数")
+    ax1.set_title("箇所数", loc="left", fontsize=10.5, pad=6)
+    # 右：参加者数と参加率
+    ax2.bar(x, [281, 123], width=0.5, color=[K["l"], K["d"]],
+            edgecolor=K["m"], linewidth=0.9, hatch=["", "///"])
+    for xi, v, r in zip(x, [281, 123], ["12.2%", "5.3%"]):
+        ax2.annotate(f"{v}人\n（参加率{r}）", (xi, v), xytext=(0, 4),
+                     textcoords="offset points", ha="center", fontsize=9.5, fontweight="bold")
+    ax2.set_xticks(x); ax2.set_xticklabels(["全体", "週1回以上\n開催"], fontsize=9)
+    ax2.set_ylim(0, 350)
+    style_ax(ax2, ylab="参加者数（人）")
+    ax2.set_title("参加者数", loc="left", fontsize=10.5, pad=6)
+    fig.suptitle("図2-20　住民主体の通いの場の状況（令和6年度）",
+                 x=0.02, ha="left", fontsize=12, y=1.02)
+    save(fig, "fig2-20_通いの場.png")
 
 
 # ══════════ 図2-11 在宅・施設居住系の1人あたり給付月額 ══════════
@@ -531,4 +596,4 @@ if __name__ == "__main__":
     fig_2_5(); fig_2_6(); fig_2_7(); fig_2_8()
     fig_2_9(); fig_2_10(); fig_2_11(); fig_2_12()
     fig_2_13(); fig_2_14(); fig_2_15(); fig_2_16()
-    fig_2_17(); fig_2_18()
+    fig_2_17(); fig_2_18(); fig_2_19(); fig_2_20()
