@@ -91,6 +91,25 @@ def table_sheet(path):
     return grid, out_date
 
 
+AGG_UNITS = {"全国", "北海道", "札幌市"}
+
+
+def norm_region(v):
+    """地域名から時点接尾辞（R5 / R7/2 / H30 等）を落とす"""
+    s = str(v).strip()
+    return re.sub(r"(R\d+(?:/\d+)?|H\d+)$", "", s).strip()
+
+
+def count_peers(regions):
+    """比較対象となる管内他団体の数（全国・北海道・札幌市・音威子府村を除く）"""
+    base = []
+    for r in regions:
+        b = norm_region(r)
+        if b and not b.startswith("（") and b not in base:
+            base.append(b)
+    return len([b for b in base if b not in AGG_UNITS and b != TARGET])
+
+
 def find_period_row(grid):
     for i, row in enumerate(grid[:12]):
         n = sum(1 for v in row
@@ -149,7 +168,8 @@ def audit_one(path):
     fn = os.path.basename(path)
     kind = "時系列" if "時系列" in fn else ("地域別" if "地域別" in fn else "不明")
     rec = dict(file=fn, cat=os.path.basename(os.path.dirname(path)), kind=kind,
-               marked_x=any(c in fn for c in "✕×✖"), dup=bool(re.search(r"\(\d+\)", fn)))
+               marked_x=any(c in fn for c in "✕×✖"), dup=bool(re.search(r"\(\d+\)", fn)),
+               n_peers=0)
     m = re.search(r"_((?:19|20)\d{2,6})_", fn)
     rec["vintage"] = m.group(1) if m else ""
     m = re.match(r"([A-Z]\d+(?:-[a-z])?)_", fn)
@@ -186,6 +206,8 @@ def audit_one(path):
                        n_cells=0, n_value=0, fill=0.0)
             return rec
         rec["n_regions"] = sum(1 for v in grid[hr][3:] if not is_blank(v) and not is_ph(v))
+        rec["n_peers"] = count_peers([v for j, v in enumerate(grid[hr])
+                                      if j >= 3 and v is not None and not is_ph(v)])
         cols = [j for j, v in enumerate(grid[hr])
                 if v is not None and str(v).strip().startswith(TARGET)]
         for row in grid[hr + 1:]:
@@ -203,6 +225,7 @@ def audit_one(path):
         per = ["" if v is None or is_ph(v) else str(v).replace("\n", "").strip() for v in grid[hr]]
         named = [r for r in grid[hr + 1:] if len(r) > 1 and r[1] is not None and not is_ph(r[1])]
         rec["n_regions"] = len({str(r[1]).strip() for r in named})
+        rec["n_peers"] = count_peers([r[1] for r in named])
         if not named:
             rec.update(status="空DL（データ行なし）", n_cells=0, n_value=0, fill=0.0)
             return rec
@@ -375,10 +398,21 @@ FINDINGS = [
      "A1総人口は2000年実績から2050年推計まで収録（社人研準拠）。"
      "総人口は2026年584人→2050年328人。高齢化率は2026年31.2%をピークに2050年23.5%まで低下する見通し。",
      "人口推計（WBS 3.1）のベースラインとして利用可。高齢者数自体が減る点を計画に明記"),
+    ("比較群", "要対応",
+     "音威子府村しか出力されておらず管内他団体と比較できない時系列ファイルが35件ある。"
+     "ファイル名に✕印があるのは9件のみで、残る26件は無印のまま同じ状態にある。",
+     "見える化システムで比較地域を指定して再出力する（対象は『06_比較群・年度点検』を参照）"),
+    ("比較群", "注意",
+     "介護保険関係の地域別ファイル250件は比較群が19団体で、東川町・東神楽町・美瑛町が含まれない。"
+     "3町は大雪地区広域連合として集計されるため市町村単位では出力されない仕様。",
+     "近隣比較の対象からは除外し、必要なら広域連合値として別途扱う"),
     ("運用", "確認",
-     "ファイル名の「✕」印31件（うち30件が時系列）は、データ内容としては欠測が多いわけではなく"
-     "（データ取得率90%／全体69%）、意図が判別できない。",
-     "印の意味をご教示ください（不要＝除外指標なのか、確認済みマークなのか）"),
+     "✕印31件を検証したところ、9件は比較群が出力されていないファイル、"
+     "3件は音威子府村に利用実績がなく値が無いもの（訪問入浴・短期入所療養・認知症対応型通所）、"
+     "3件は村の系列だけ早く終わるもの（訪問看護R6・訪問リハR2・短期入所生活介護H30／比較群はR7まで）、"
+     "残る16件はデータ・年次とも問題がない。",
+     "✕は複数の異なる事象に付いており、単一の意味では運用されていない。"
+     "印の意図をご教示いただければ棚卸し表の扱いを揃える"),
 ]
 
 NEXT_ACTIONS = [
@@ -396,8 +430,10 @@ NEXT_ACTIONS = [
      "村内に施設・居住系がないため、近隣市町村の施設利用状況を給付実績から分解", "WBS 2.1.2／4.1.2"),
     ("A-7", "重複ファイルの整理（(1)付き19件・カテゴリ間重複162件）", "受託者", "令和8年9月中",
      "指標コードで名寄せしたマスタを作成", "WBS 1.3.2"),
-    ("A-8", "「✕」印の意味を村／社内で確認", "受託者", "第1回打合せまで",
-     "除外指標か確認済みマークかで取扱いが変わる", "WBS 1.3.2"),
+    ("A-8", "「✕」印の意味を社内で確認", "受託者", "第1回打合せまで",
+     "9件は比較群欠落、6件は村の利用実績由来、16件は問題なし。単一の意味では運用されていない", "WBS 1.3.2"),
+    ("A-9", "比較群が0団体の35ファイルを再出力", "受託者", "令和8年9月中",
+     "見える化システムで比較地域（上川管内）を指定し直して再ダウンロード", "WBS 1.3.2／2.1.3"),
 ]
 
 
@@ -517,14 +553,15 @@ def add_summary(wb, recs, src):
 def add_file_list(wb, recs):
     ws = wb.create_sheet("01_ファイル一覧")
     headers = ["No.", "カテゴリ", "指標コード", "指標名", "形式", "データ年次",
-               "ステータス", "取得セル数", "値あり", "充足率", "最初の時点／系列",
-               "最後の時点／系列", "重複", "✕印", "ファイル名"]
-    set_col_widths(ws, [5, 26, 9, 46, 8, 11, 17, 9, 8, 9, 26, 26, 7, 6, 62])
+               "ステータス", "比較群\n(団体数)", "比較群\n判定", "取得セル数", "値あり", "充足率",
+               "最初の時点／系列", "最後の時点／系列", "重複", "✕印", "ファイル名"]
+    set_col_widths(ws, [5, 26, 9, 46, 8, 11, 17, 9, 10, 9, 8, 9, 26, 26, 7, 6, 62])
     ws.row_dimensions[1].height = 28
-    ws.merge_cells("A1:O1")
+    ws.merge_cells("A1:Q1")
     style_title(ws["A1"], "ダウンロードファイル一覧（全件監査結果）")
-    ws.merge_cells("A2:O2")
-    ws["A2"] = "充足率＝音威子府村の値が入っているセル ÷ 取得対象セル。オートフィルタでステータス別の絞り込みが可能。"
+    ws.merge_cells("A2:Q2")
+    ws["A2"] = ("充足率＝音威子府村の値が入っているセル ÷ 取得対象セル。"
+                "比較群＝管内他団体の数（全国・北海道・札幌市・音威子府村を除く）。0団体＝音威子府村しか出力されておらず比較不能。")
     ws["A2"].font = Font(name=FONT, size=9, color="595959")
     ws["A2"].alignment = Alignment(vertical="center", indent=1)
     style_header_row(ws, 4, headers)
@@ -532,21 +569,32 @@ def add_file_list(wb, recs):
 
     r = 5
     for i, x in enumerate(recs, 1):
+        np_ = x.get("n_peers", 0)
+        if x["status"] in ("対象自治体なし",) or x["status"].startswith("空DL"):
+            judge = "－"
+        elif np_ == 0:
+            judge = "比較不能"
+        else:
+            judge = "比較可"
         vals = [i, x["cat"], x["code"], x["indicator"], x["kind"], x["vintage"],
-                x["status"], x.get("n_cells", 0), x.get("n_value", 0), x.get("fill", 0.0),
+                x["status"], np_, judge, x.get("n_cells", 0), x.get("n_value", 0), x.get("fill", 0.0),
                 x.get("first", ""), x.get("last", ""),
                 "○" if x["dup"] else "", "✕" if x["marked_x"] else "", x["file"]]
         for c, v in enumerate(vals, 1):
             cell = ws.cell(row=r, column=c, value=v)
-            style_data_cell(cell, alt=(r % 2 == 0), center=(c in (1, 3, 5, 6, 7, 8, 9, 10, 13, 14)))
-        ws.cell(row=r, column=10).number_format = "0.0%"
+            style_data_cell(cell, alt=(r % 2 == 0), center=(c in (1, 3, 5, 6, 7, 8, 9, 10, 11, 12, 15, 16)))
+        ws.cell(row=r, column=12).number_format = "0.0%"
         sc = ws.cell(row=r, column=7)
         sc.fill = PatternFill("solid", fgColor=STATUS_COLOR.get(x["status"], COLORS["gray"]))
         sc.font = Font(name=FONT, size=10, bold=True, color="FFFFFF")
+        jc = ws.cell(row=r, column=9)
+        if judge == "比較不能":
+            jc.fill = PatternFill("solid", fgColor=COLORS["ng"])
+            jc.font = Font(name=FONT, size=10, bold=True, color="FFFFFF")
         r += 1
 
     ws.freeze_panes = "D5"
-    ws.auto_filter.ref = f"A4:O{r-1}"
+    ws.auto_filter.ref = f"A4:Q{r-1}"
     ws.sheet_view.showGridLines = False
     ws.print_title_rows = "4:4"
     return ws
@@ -688,6 +736,118 @@ WBS_MAP = [
 ]
 
 
+VINTAGE_NOTE = [
+    ("2026", "令和8年4月末", "最新", "B1・B2・B3・B4系（第1号被保険者数、認定者数、認定率）",
+     "そのまま利用可。現状分析・認定者数推計の主データ"),
+    ("202602", "令和8年2月", "最新", "D41-a（受給率）", "そのまま利用可"),
+    ("2025", "令和7年度", "1年前", "C1（保険料）、D13・D17・D25〜D30（給付月額・定員）ほか",
+     "そのまま利用可。給付・保険料の主データ"),
+    ("2024", "令和6年度", "2年前", "B5・B6（調整済み認定率）、F15〜F21（地域包括支援センター）",
+     "調整済み系は素の指標（B4認定率）と併用し、時点の違いを図表に明記"),
+    ("2023", "令和5年度", "3年前", "D47・D48（特別会計 歳入歳出）、D8・D9・D14（調整済み給付月額）、B15（所得段階別）",
+     "特別会計は村の決算書（令和6・7年度）で補完。所得段階別は保険料算定時に村データで更新"),
+    ("2020", "令和2年（2020年）", "6年前", "A1〜A9（人口）、A5〜A8（世帯）、F1〜F14（通いの場）、F26・F27",
+     "人口・世帯は国勢調査ベースのため6年前で正常（時系列は2050年まで収録）。"
+     "通いの場・生活支援コーディネーターは村実績で補完が必要"),
+    ("202103", "令和2年度末", "5年前", "F28〜F40（総合事業の実施延べ件数）",
+     "第10期の現状分析には古い。村の総合事業実績（令和3〜7年度）で補完"),
+    ("2019", "平成30年度・令和元年度", "—", "L16〜L28（在宅医療のレセプト系）",
+     "そもそもデータ行が出力されていない。二次医療圏単位で再取得または代替"),
+    ("2017", "平成29年度", "9年前", "J1〜J15（認知症関連の研修修了者数）",
+     "全て欠測。市町村単位では非公表のため村実績で補完"),
+    ("2016", "平成28年", "10年前", "G7（医師数）", "医師・歯科医師・薬剤師統計は隔年公表のため正常"),
+]
+
+
+def add_axis_sheet(wb, recs):
+    """比較群が出力されていないファイルとデータ年次の点検"""
+    ws = wb.create_sheet("06_比較群・年度点検")
+    set_col_widths(ws, [26, 9, 50, 8, 10, 7, 62])
+    ws.row_dimensions[1].height = 28
+    ws.merge_cells("A1:G1")
+    style_title(ws["A1"], "比較群（管内他団体）の出力状況とデータ年次の点検")
+
+    bad = [x for x in recs if x.get("n_peers", 0) == 0
+           and x["status"] not in ("対象自治体なし",) and not x["status"].startswith("空DL")]
+    nx = sum(1 for x in bad if x["marked_x"])
+    ws.merge_cells("A2:G2")
+    ws["A2"] = (f"音威子府村しか出力されておらず管内他団体と比較できないファイルが {len(bad)} 件"
+                f"（うちファイル名に✕印があるのは {nx} 件、印のないものが {len(bad)-nx} 件）。"
+                "見える化システムで比較地域を指定して再出力すれば解消する。")
+    ws["A2"].font = Font(name=FONT, size=9, color="595959")
+    ws["A2"].alignment = Alignment(vertical="center", indent=1)
+
+    r = 4
+    ws.merge_cells(f"A{r}:G{r}")
+    style_subhead(ws.cell(row=r, column=1), f"1. 比較群が0団体のファイル（{len(bad)}件）＝要再出力")
+    r += 1
+    style_header_row(ws, r, ["カテゴリ", "指標コード", "指標名", "形式", "ステータス", "✕印", "ファイル名"])
+    r += 1
+    for x in sorted(bad, key=lambda z: (not z["marked_x"], z["cat"], z["file"])):
+        for c, v in enumerate([x["cat"], x["code"], x["indicator"], x["kind"],
+                               x["status"], "✕" if x["marked_x"] else "－", x["file"]], 1):
+            cell = ws.cell(row=r, column=c, value=v)
+            style_data_cell(cell, alt=(r % 2 == 0), center=(c in (2, 4, 5, 6)))
+        mc = ws.cell(row=r, column=6)
+        if x["marked_x"]:
+            mc.fill = PatternFill("solid", fgColor=COLORS["warn"])
+            mc.font = Font(name=FONT, size=10, bold=True, color="FFFFFF")
+        else:
+            mc.fill = PatternFill("solid", fgColor=COLORS["ng"])
+            mc.font = Font(name=FONT, size=10, bold=True, color="FFFFFF")
+        r += 1
+    r += 1
+
+    ws.merge_cells(f"A{r}:G{r}")
+    style_subhead(ws.cell(row=r, column=1), "2. 比較群の構成（地域別ファイル）")
+    r += 1
+    style_header_row(ws, r, ["比較群の規模", "件数", "含まれない自治体", "", "", "", "備考"])
+    r += 1
+    axis_rows = [
+        ("22団体（フル）", "47", "－", "人口・世帯系（A1〜A9）。上川管内の全24市町村＋北海道＋全国"),
+        ("21団体", "77", "幌加内町", "地域包括支援センター系（F15〜F21）など"),
+        ("19団体", "250", "東川町・東神楽町・美瑛町",
+         "介護保険関係（B1〜B4、D13〜D46 ほか）。3町は大雪地区広域連合として集計されるため市町村単位では出力されない"),
+    ]
+    for name, n, miss, note in axis_rows:
+        ws.cell(row=r, column=1, value=name)
+        ws.cell(row=r, column=2, value=int(n))
+        ws.merge_cells(start_row=r, start_column=3, end_row=r, end_column=6)
+        ws.cell(row=r, column=3, value=miss)
+        ws.cell(row=r, column=7, value=note)
+        for c in range(1, 8):
+            style_data_cell(ws.cell(row=r, column=c), alt=(r % 2 == 0), center=(c in (2, 3)))
+        ws.row_dimensions[r].height = 30
+        r += 1
+    r += 1
+
+    ws.merge_cells(f"A{r}:G{r}")
+    style_subhead(ws.cell(row=r, column=1), "3. データ年次の点検（第10期＝令和8年度策定の視点）")
+    r += 1
+    style_header_row(ws, r, ["年次表記", "実際の時点", "古さ", "該当する主な指標", "", "", "取扱い"])
+    r += 1
+    age_color = {"最新": COLORS["ok"], "1年前": COLORS["ok"], "2年前": COLORS["subhead"],
+                 "3年前": COLORS["warn"], "5年前": COLORS["ng"], "6年前": COLORS["warn"],
+                 "9年前": COLORS["ng"], "10年前": COLORS["gray"], "—": COLORS["gray"]}
+    for vin, when, age, inds, how in VINTAGE_NOTE:
+        ws.cell(row=r, column=1, value=vin)
+        ws.cell(row=r, column=2, value=when)
+        ws.cell(row=r, column=3, value=age)
+        ws.merge_cells(start_row=r, start_column=4, end_row=r, end_column=6)
+        ws.cell(row=r, column=4, value=inds)
+        ws.cell(row=r, column=7, value=how)
+        for c in range(1, 8):
+            style_data_cell(ws.cell(row=r, column=c), alt=(r % 2 == 0), center=(c in (1, 2, 3)))
+        ac = ws.cell(row=r, column=3)
+        ac.fill = PatternFill("solid", fgColor=age_color.get(age, COLORS["gray"]))
+        ac.font = Font(name=FONT, size=10, bold=True, color="FFFFFF")
+        ws.row_dimensions[r].height = 34
+        r += 1
+
+    ws.sheet_view.showGridLines = False
+    return ws
+
+
 def add_wbs_map(wb):
     ws = wb.create_sheet("05_WBS対応")
     set_col_widths(ws, [10, 40, 44, 12, 14, 48])
@@ -822,6 +982,7 @@ def main():
     add_key_sheet(wb, keyrows)
     add_peer_sheet(wb, peerrows)
     add_wbs_map(wb)
+    add_axis_sheet(wb, recs)
     path = os.path.join(OUT_DIR, FILENAME)
     wb.save(path)
     print(f"  ✓ 作成: {path}")
