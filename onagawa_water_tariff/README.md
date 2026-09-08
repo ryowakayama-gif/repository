@@ -12,9 +12,11 @@ claude.ai のチャットで進めていた検討作業を、Claude Code に移�
 
 | 順 | ファイル | 内容 |
 |:--:|---|---|
-| 1 | [`05_review/file_check_report.md`](05_review/file_check_report.md) | **移行時のファイル確認レポート。既知の不整合6件と残作業** |
-| 2 | [`03_documents/handoff_memo.md`](03_documents/handoff_memo.md) | 引継ぎメモ。数値前提、確定値と推計値の区別 |
-| 3 | [`03_documents/spec_alignment_summary.md`](03_documents/spec_alignment_summary.md) | 業務仕様書との整合確認 |
+| 1 | [`06_capital_plan_update/README.md`](06_capital_plan_update/README.md) | **建設改良費の改定と必要改定幅への影響。最新の論点** |
+| 2 | [`05_review/file_check_report.md`](05_review/file_check_report.md) | Excel成果品の確認レポート。既知の不整合6件と残作業 |
+| 3 | [`05_review/word_document_review.md`](05_review/word_document_review.md) | Word文書の確認レポート。表現ルール違反1件ほか |
+| 4 | [`03_documents/handoff_memo.md`](03_documents/handoff_memo.md) | 引継ぎメモ。数値前提、確定値と推計値の区別 |
+| 5 | [`03_documents/spec_alignment_summary.md`](03_documents/spec_alignment_summary.md) | 業務仕様書との整合確認 |
 
 ---
 
@@ -26,7 +28,8 @@ onagawa_water_tariff/
 ├── 02_deliverables/             成果品Excel 8ブック / 全65シート
 ├── 03_documents/                引継ぎメモ・仕様書整合確認
 ├── 04_prefecture_unification/   宮城県水道料金体系統一化 検討（参考資料の位置づけ）
-└── 05_review/                   確認・レビュー記録
+├── 05_review/                   確認・レビュー記録
+└── 06_capital_plan_update/      建設改良費調査票（女川町回答）と影響再計算
 ```
 
 ### 01_source_evidence（作業元エビデンス）
@@ -78,6 +81,22 @@ onagawa_water_tariff/
 cd 04_prefecture_unification/03_verification_scripts
 python3 verify_all_rates.py      # 各団体の公式早見表との逆算検証（全件一致）
 python3 impact_simulation.py     # 政策シナリオ別の影響試算
+```
+
+### 06_capital_plan_update（建設改良費の改定）
+
+女川町から回答のあった建設改良費調査票（R8〜R17）と、それが総括原価・必要改定幅に
+与える影響の再計算です。**成果品Excelの数値はまだこの改定を織り込んでいません。**
+
+| ファイル | 内容 |
+|---|---|
+| `construction_cost_survey_R8toR17.xlsx` | 建設改良費調査票（女川町回答・全4事業） |
+| `recalc_capital_impact.py` | 新旧計画の比較と総括原価への影響の再計算 |
+| `recalc_output.txt` | 上記の実行結果 |
+| `README.md` | 結論・感応度分析・調査票の不備・確認事項 |
+
+```bash
+cd 06_capital_plan_update && python3 recalc_capital_impact.py
 ```
 
 ---
