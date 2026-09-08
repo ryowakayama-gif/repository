@@ -18,7 +18,7 @@ out = [f"# {S.TITLE}・{S.TITLE2}　{S.DRAFT}", "",
        "> 編集注記（⚙）は素案段階の申し送りで、計画確定時に削除します。", "", "---", ""]
 
 for ch in S.CH:
-    out += [f"# {ch['no']}　{ch['title']}", ""]
+    out += [f"# {ch['no']}　{ch['title']}".rstrip("　"), ""]
     for sec in ch["sections"]:
         out += [f"## {sec['no']}　{sec['title']}", ""]
         for f in figs.get(f'{ch["no"]}|{sec["no"]}', []):
