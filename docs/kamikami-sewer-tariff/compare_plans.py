@@ -2,9 +2,15 @@
 # -*- coding: utf-8 -*-
 """料金改定案の比較表を作成する。
 
-  案A : 現行体系を維持し、各単価を一律に引き上げる（経営戦略ケース①準拠）
+  案A : 現行体系を維持し、全区分の単価を一律に引き上げる
   案B : 同等の増収を確保しつつ体系を見直す
-        （6〜10㎥の単価を引き上げ、11㎥での4.7倍の段差を緩和し、区分を1つ増やす）
+        ・基本使用料は据置（少量利用者への配慮）
+        ・6〜10㎥の単価を引き上げ、11㎥での4.7倍の段差を緩和
+        ・51㎥〜（大口）は全体改定率と同水準にとどめる
+
+改定率は5%・10%・15%の3水準。経費回収率は決算統計32表ベースで
+経営戦略のR16目標（公共40%・漁集26%）を既に上回っているため、
+20%改定は検討対象から外している。
 
 使い方:
     python3 compare_plans.py <【R7】使用料集計ブック.xlsx> [出力ディレクトリ]
@@ -40,16 +46,28 @@ R6 = {
 # tiers : [(1か月の区分上限㎥, 1㎥あたり税込単価), ...] 末尾は (None, 単価)
 CURRENT = dict(base=1108.8, tiers=[(10, 40.7), (50, 191.4), (None, 220.0)])
 
-PLAN_A = {  # 現行体系を一律に引き上げ（+10%は集計ブックの案1と同一）
-    0.10: dict(base=1220, tiers=[(10, 45.5), (50, 211.5), (None, 242)]),
-    0.15: dict(base=1274.5, tiers=[(10, 46.8), (50, 220.1), (None, 253)]),
-    0.20: dict(base=1330, tiers=[(10, 48.8), (50, 229.7), (None, 264)]),
+UPLIFTS = (0.05, 0.10, 0.15)
+
+PLAN_A = {  # 現行の各単価を一律に引き上げ（0.1円単位に丸め）
+    0.05: dict(base=1164.2, tiers=[(10, 42.7), (50, 201.0), (None, 231.0)]),
+    0.10: dict(base=1219.7, tiers=[(10, 44.8), (50, 210.5), (None, 242.0)]),
+    0.15: dict(base=1275.1, tiers=[(10, 46.8), (50, 220.1), (None, 253.0)]),
 }
-PLAN_B = {  # 体系見直し（区分を4つに、6〜10㎥を引上げ、11㎥の段差を緩和）
-    0.10: dict(base=1145, tiers=[(10, 110), (30, 180), (50, 205), (None, 240)]),
-    0.15: dict(base=1190, tiers=[(10, 115), (30, 190), (50, 215), (None, 250)]),
-    0.20: dict(base=1235, tiers=[(10, 120), (30, 200), (50, 225), (None, 260)]),
+PLAN_B = {  # 基本使用料は据置。6〜10㎥を引き上げ、11㎥の段差を緩和。大口は全体率並み
+    0.05: dict(base=1108.8, tiers=[(10, 60), (50, 200.7), (None, 231.0)]),
+    0.10: dict(base=1108.8, tiers=[(10, 80), (50, 209.5), (None, 242.0)]),
+    0.15: dict(base=1108.8, tiers=[(10, 90), (50, 225.1), (None, 253.0)]),
 }
+# 集計ブックが作成済みの案（現行体系を一律引上げ。厳密には+10.30%）
+PLAN_1 = dict(base=1220, tiers=[(10, 45.5), (50, 211.5), (None, 242)])
+
+# 月使用量帯（世帯像の目安つき）。境界は「超〜以下」
+BANDS = [(0, 5, '月5㎥以下', '単身・高齢世帯など'),
+         (5, 10, '月6〜10㎥', '2人世帯など'),
+         (10, 20, '月11〜20㎥', '3〜4人世帯など'),
+         (20, 30, '月21〜30㎥', '5人以上世帯など'),
+         (30, 50, '月31〜50㎥', '小規模事業所など'),
+         (50, 10 ** 9, '月51㎥〜', '大口（事業所・公共施設）')]
 
 
 def charge2m(volume, base, tiers):
@@ -206,66 +224,161 @@ def main():
     write(os.path.join(out, '14_R6決算統計_32表40表.csv'), rows)
 
     # === 料金表の比較 =======================================================
-    rows = [['#', '1か月あたり・税込。基本使用料は5㎥まで。案Bは区分を4つに増やし、'
-                  '6〜10㎥の単価を引き上げて11㎥での段差を緩和している'],
-            ['料金案', '基本使用料(5㎥まで)', '6〜10㎥', '11〜30㎥', '31〜50㎥', '51㎥〜',
-             '11㎥での単価の跳ね上がり']]
-    rows.append(['現行', 1108.8, 40.7, 191.4, 191.4, 220.0, '4.70倍'])
-    for uplift in (0.10, 0.15, 0.20):
-        a = PLAN_A[uplift]
-        rows.append(['案A %+.0f%%（体系維持）' % (uplift * 100), a['base'], a['tiers'][0][1],
-                     a['tiers'][1][1], a['tiers'][1][1], a['tiers'][2][1],
-                     '%.2f倍' % (a['tiers'][1][1] / a['tiers'][0][1])])
-    for uplift in (0.10, 0.15, 0.20):
-        b = PLAN_B[uplift]
-        rows.append(['案B %+.0f%%（体系見直し）' % (uplift * 100), b['base'], b['tiers'][0][1],
-                     b['tiers'][1][1], b['tiers'][2][1], b['tiers'][3][1],
-                     '%.2f倍' % (b['tiers'][1][1] / b['tiers'][0][1])])
+    rows = [['#', '1か月あたり・税込。基本使用料は5㎥まで。'
+                  '案Aは全区分を一律に引き上げ、案Bは基本使用料を据え置いて6〜10㎥を引き上げる'],
+            ['料金案', '基本使用料(5㎥まで)', '6〜10㎥', '11〜50㎥', '51㎥〜',
+             '11㎥での単価の跳ね上がり', '基本使用料の増減率(%)']]
+
+    def tariff_row(label, plan):
+        rate_6, rate_11, rate_51 = (plan['tiers'][0][1], plan['tiers'][1][1], plan['tiers'][2][1])
+        return [label, plan['base'], rate_6, rate_11, rate_51,
+                '%.2f倍' % (rate_11 / rate_6),
+                '%+.1f' % (plan['base'] / CURRENT['base'] * 100 - 100)]
+
+    rows.append(tariff_row('現行', CURRENT))
+    for uplift in UPLIFTS:
+        rows.append(tariff_row('案A %+.0f%%（一律改定）' % (uplift * 100), PLAN_A[uplift]))
+    for uplift in UPLIFTS:
+        rows.append(tariff_row('案B %+.0f%%（体系見直し）' % (uplift * 100), PLAN_B[uplift]))
+    rows.append(tariff_row('（参考）集計ブック案1', PLAN_1))
     write(os.path.join(out, '15_料金表の比較.csv'), rows)
 
     # === 増収と経費回収率の比較 =============================================
     rows = [['#', '増収額はR7奇数月6回調定に各案を当てはめた再計算（税込）。'
                   '経費回収率・繰入金はR6決算統計に増収率を乗じたもので、汚水処理費はR6水準で据置'],
-            ['#', '水洗便所等普及費330千円（漁集は不明水処理費2,318千円）は現行額が継続する前提'],
+            ['#', '水洗便所等普及費330千円（漁集は不明水処理費2,318千円）は現行額が継続する前提。'
+                  '繰出基準の使用料対象資本費がゼロのままのため基準内繰入金は全案で不変'],
             ['料金案', '漁集 調定額(円)', '公共 調定額(円)', '合計(円)', '増収額(円)', '増収率(%)',
              '公共 経費回収率(%)', '漁集 経費回収率(%)',
-             '公共 使用料対象資本費(千円)', '公共 基準内繰入金(千円)',
-             '漁集 基準内繰入金(千円)', '2事業 増収額(千円・税抜換算)']]
+             '公共 基準内繰入金(千円)', '漁集 基準内繰入金(千円)',
+             '基準外繰入金の削減余地(千円)']]
     base_total = cur_g + cur_k
     plans = [('現行', CURRENT, 0.0)]
-    for uplift in (0.10, 0.15, 0.20):
-        plans.append(('案A %+.0f%%（体系維持）' % (uplift * 100), PLAN_A[uplift], uplift))
-    for uplift in (0.10, 0.15, 0.20):
+    for uplift in UPLIFTS:
+        plans.append(('案A %+.0f%%（一律改定）' % (uplift * 100), PLAN_A[uplift], uplift))
+    for uplift in UPLIFTS:
         plans.append(('案B %+.0f%%（体系見直し）' % (uplift * 100), PLAN_B[uplift], uplift))
+    plans.append(('（参考）集計ブック案1', PLAN_1, 0.10))
     for label, plan, uplift in plans:
         g = revenue(gyo, plan, 1 + uplift)
         k = revenue(kou, plan, 1 + uplift)
-        u_g = g / cur_g - 1
-        u_k = k / cur_k - 1
-        rk = recovery('公共下水道', u_k)
-        rg = recovery('漁業集落排水', u_g)
+        rk = recovery('公共下水道', k / cur_k - 1)
+        rg = recovery('漁業集落排水', g / cur_g - 1)
         rows.append([label, g, k, g + k, g + k - base_total,
                      '%.2f' % ((g + k) / base_total * 100 - 100),
                      '%.1f' % rk['経費回収率'], '%.1f' % rg['経費回収率'],
-                     rk['使用料対象資本費'], rk['基準内繰入金'], rg['基準内繰入金'],
+                     rk['基準内繰入金'], rg['基準内繰入金'],
                      rk['増収額'] + rg['増収額']])
     write(os.path.join(out, '16_増収と経費回収率の比較.csv'), rows)
 
-    # === モデルケースと単価の公平性 =========================================
-    rows = [['#', '一般汚水。1か月あたりの使用料（税込）と、その使用量における単価（円/㎥）'],
-            ['#', '現在は月10㎥の層の単価が最も低く（131.2円/㎥）、月5㎥の層（221.8円/㎥）を下回っている'],
-            ['月使用量(㎥)', '現行(円)', '案A+10%(円)', '案B+10%(円)',
-             '現行との差 案A', '現行との差 案B', '増減率 案A(%)', '増減率 案B(%)',
-             '現行 単価(円/㎥)', '案A+10% 単価', '案B+10% 単価']]
-    for v in (5, 8, 10, 12, 15, 20, 25, 30, 40, 50, 60, 80, 100):
-        c = monthly(v, **CURRENT)
-        a = monthly(v, **PLAN_A[0.10])
-        b = monthly(v, **PLAN_B[0.10])
-        rows.append([v, round(c, 1), round(a, 1), round(b, 1),
-                     '%+.1f' % (a - c), '%+.1f' % (b - c),
-                     '%+.2f' % ((a / c - 1) * 100), '%+.2f' % ((b / c - 1) * 100),
-                     '%.1f' % (c / v), '%.1f' % (a / v), '%.1f' % (b / v)])
-    write(os.path.join(out, '17_モデルケースと単価の公平性.csv'), rows)
+    # === 世帯への影響度 =====================================================
+    rows = [['#', '一般汚水。1か月あたりの使用料（税込）。調定は隔月のため実際の請求額はこの2倍'],
+            ['#', '案Aは全区分を一律に引き上げるため、どの使用量帯もほぼ同じ率で上がる。'
+                  '案Bは基本使用料を据え置くため月5㎥以下は据置となり、その分を6〜50㎥が負担する'],
+            ['月使用量(㎥)', '世帯像の目安', '現行(円)']]
+    for uplift in UPLIFTS:
+        rows[-1] += ['案A%+.0f%% 月額' % (uplift * 100), '案A%+.0f%% 増減額' % (uplift * 100),
+                     '案A%+.0f%% 増減率(%%)' % (uplift * 100)]
+    for uplift in UPLIFTS:
+        rows[-1] += ['案B%+.0f%% 月額' % (uplift * 100), '案B%+.0f%% 増減額' % (uplift * 100),
+                     '案B%+.0f%% 増減率(%%)' % (uplift * 100)]
+    examples = [(3, '単身（節水）'), (5, '単身・高齢世帯'), (8, '2人世帯'), (10, '2人世帯'),
+                (13, '3人世帯'), (15, '3〜4人世帯'), (20, '4人世帯'), (25, '5人世帯'),
+                (30, '5人以上世帯'), (40, '小規模事業所'), (50, '小規模事業所'),
+                (100, '大口事業所'), (200, '大口事業所')]
+    for volume, who in examples:
+        current = monthly(volume, **CURRENT)
+        row = [volume, who, round(current, 1)]
+        for plans_by_rate in (PLAN_A, PLAN_B):
+            for uplift in UPLIFTS:
+                after = monthly(volume, **plans_by_rate[uplift])
+                row += [round(after, 1), '%+.1f' % (after - current),
+                        '%+.2f' % ((after / current - 1) * 100)]
+        rows.append(row)
+    write(os.path.join(out, '17_世帯への影響度.csv'), rows)
+
+    # === 使用量帯別の構成と影響 =============================================
+    def band_of(kind, volume):
+        v = 5 if kind == BASIC else volume / 2      # 2か月水量→月使用量
+        for low, high, name, who in BANDS:
+            if v <= high:
+                return name
+        return BANDS[-1][2]
+
+    rows = [['#', '月使用量帯ごとの件数・調定額の構成と、各案での負担増加率（帯の代表値で算定）'],
+            ['#', '大口（月51㎥〜）は件数がごく僅かで、増収への寄与も限られる'],
+            ['事業', '月使用量帯', '世帯像の目安', '件数', '件数割合(%)', '調定額(円)', '金額割合(%)',
+             '代表値(㎥)', '案A+10% 増減率(%)', '案B+10% 増減率(%)']]
+    rep = {'月5㎥以下': 5, '月6〜10㎥': 8, '月11〜20㎥': 15, '月21〜30㎥': 25,
+           '月31〜50㎥': 40, '月51㎥〜': 100}
+    for records, label, total in [(kou, '公共下水道', cur_k), (gyo, '漁業集落排水', cur_g)]:
+        agg = {name: [0, 0] for _, _, name, _ in BANDS}
+        special = [0, 0]
+        for kind, volume, count, amount in records:
+            if kind == SPECIAL:
+                special[0] += count
+                special[1] += amount
+                continue
+            name = band_of(kind, volume)
+            agg[name][0] += count
+            agg[name][1] += amount
+        count_all = sum(v[0] for v in agg.values()) + special[0]
+        for _, _, name, who in BANDS:
+            count, amount = agg[name]
+            v = rep[name]
+            cur_m = monthly(v, **CURRENT)
+            rows.append([label, name, who, count, '%.1f' % (count / count_all * 100),
+                         amount, '%.1f' % (amount / total * 100), v,
+                         '%+.2f' % ((monthly(v, **PLAN_A[0.10]) / cur_m - 1) * 100),
+                         '%+.2f' % ((monthly(v, **PLAN_B[0.10]) / cur_m - 1) * 100)])
+        rows.append([label, '特殊算定（日割・異動等）', '—', special[0],
+                     '%.1f' % (special[0] / count_all * 100), special[1],
+                     '%.1f' % (special[1] / total * 100), '—', '—', '—'])
+    write(os.path.join(out, '18_使用量帯別の構成と影響.csv'), rows)
+
+    # === 設計レバーの感度 ===================================================
+    # 料金体系の設計は「基本使用料をどれだけ据え置くか」と「大口をどこまで抑えるか」
+    # の2つのレバーで決まる。どちらも中間層（月11〜50㎥）の負担に跳ね返る。
+    coef = {'件数': 0, '6〜10㎥帯': 0, '11〜50㎥帯': 0, '51㎥〜帯': 0, '特殊': 0}
+    for records in (gyo, kou):
+        for kind, volume, count, amount in records:
+            if kind == SPECIAL:
+                coef['特殊'] += amount
+                continue
+            coef['件数'] += count
+            if kind == BASIC:
+                continue
+            coef['6〜10㎥帯'] += max(0, min(volume, 20) - 10) * count
+            coef['11〜50㎥帯'] += max(0, min(volume, 100) - 20) * count
+            coef['51㎥〜帯'] += max(0, volume - 100) * count
+    total_current = cur_g + cur_k
+
+    def solve_middle(uplift, base, rate_6, rate_51):
+        """基本使用料・6〜10㎥・51㎥〜を決めたとき、目標増収に必要な11〜50㎥の単価。"""
+        need = (total_current * uplift - coef['特殊'] * uplift
+                - (base - CURRENT['base']) * 2 * coef['件数']
+                - (rate_6 - 40.7) * coef['6〜10㎥帯']
+                - (rate_51 - 220.0) * coef['51㎥〜帯'])
+        return round(191.4 + need / coef['11〜50㎥帯'], 1)
+
+    rows = [['#', '全体+10%を確保する前提で、設計レバーを動かしたときの負担分布'],
+            ['#', '基本使用料を据え置くほど少量利用者は軽くなるが、その分を中間層が負担する。'
+                  '大口を抑えるほど中間層の負担が増えるが、大口は件数が僅少のため影響は限定的'],
+            ['設計', '基本使用料', '6〜10㎥', '11〜50㎥（逆算）', '51㎥〜',
+             '月5㎥', '月10㎥', '月15㎥', '月20㎥', '月30㎥', '月50㎥', '月100㎥']]
+    levers = [('案A：全区分を一律+10%', 1219.7, 44.8, 242.0),
+              ('案B：基本据置・大口は全体率並み', 1108.8, 80, 242.0),
+              ('（変種）基本据置・大口も据置', 1108.8, 80, 220.0),
+              ('（変種）基本を全体率の半分だけ引上げ', 1164.2, 80, 242.0),
+              ('（変種）基本据置・6〜10㎥は控えめ', 1108.8, 60, 242.0)]
+    for label, base, rate_6, rate_51 in levers:
+        rate_mid = solve_middle(0.10, base, rate_6, rate_51)
+        plan = dict(base=base, tiers=[(10, rate_6), (50, rate_mid), (None, rate_51)])
+        row = [label, base, rate_6, rate_mid, rate_51]
+        for v in (5, 10, 15, 20, 30, 50, 100):
+            row.append('%+.1f' % ((monthly(v, **plan) / monthly(v, **CURRENT) - 1) * 100))
+        rows.append(row)
+    write(os.path.join(out, '19_設計レバーの感度.csv'), rows)
     return 0
 
 
