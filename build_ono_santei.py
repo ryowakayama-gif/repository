@@ -28,9 +28,12 @@ import openpyxl
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
+from build_ono_tanka import POP_DAI10 as TANKA_POP
+from build_ono_tanka import TESURYO, build_mikomi_input
+
 ROOT = pathlib.Path(__file__).parent
 OUT = ROOT / "小野町_引継ぎ_整理済" / "04_算定・見込量"
-ASOF = "20260908"
+ASOF = "20260909"
 
 IN_FILL = PatternFill("solid", fgColor="FFF2CC")      # 入力欄
 CALC_FILL = PatternFill("solid", fgColor="EAF1FB")    # 算式
@@ -50,12 +53,16 @@ YEARS = ["令和9年度", "令和10年度", "令和11年度"]
 POP_ACT = {          # 実績（年度末）
     "R7": {"総人口": None, "1号": 3443, "65-74": 1634, "75-84": 1090, "85+": 719},
 }
-POP_EST = {          # 推計（10月1日時点）
-    "R8": {"総人口": 8771, "1号": 3449, "65-74": 1613, "75-84": 1117, "85+": 719, "2号": 2295},
-    "R9": {"総人口": 8591, "1号": 3439, "65-74": 1583, "75-84": 1150, "85+": 705, "2号": 2251},
-    "R10": {"総人口": 8411, "1号": 3428, "65-74": 1554, "75-84": 1183, "85+": 691, "2号": 2207},
-    "R11": {"総人口": 8232, "1号": 3418, "65-74": 1524, "75-84": 1217, "85+": 677, "2号": 2163},
-}
+# 推計（10月1日時点）。build_ono_tanka が原本から集計した値を使い、
+# 単価・見込量試算ブックと同じ人口で組む。第2号被保険者数は15〜64歳人口の
+# 医療保険加入者分として別途置いている。
+_NIGO = {"R8": 2295, "R9": 2251, "R10": 2207, "R11": 2163}
+POP_EST = {}
+for _k, _y in (("R8", "令和8年度"), ("R9", "令和9年度"),
+               ("R10", "令和10年度"), ("R11", "令和11年度")):
+    _d = TANKA_POP[_y]
+    POP_EST[_k] = {"総人口": _d["総人口"], "1号": _d["1号"], "65-74": _d["65-74"],
+                   "75-84": _d["75-84"], "85+": _d["85+"], "2号": _NIGO[_k]}
 # 令和8年3月末の要介護度別認定者数（様式1の5）。第1号783＋第2号9＝792
 NINTEI_R7 = {"要支援1": 70, "要支援2": 129, "要介護1": 143, "要介護2": 125,
              "要介護3": 145, "要介護4": 108, "要介護5": 72}
@@ -74,6 +81,11 @@ SHOTOKU_R7 = [("第1段階", 0.285, 525), ("第2段階", 0.486, 297), ("第3段�
               ("第10段階", 1.900, 36), ("第11段階", 2.100, 14), ("第12段階", 2.300, 7),
               ("第13段階", 2.400, 31)]
 GRADES = ["要支援1", "要支援2", "要介護1", "要介護2", "要介護3", "要介護4", "要介護5"]
+
+# サービス別の実績・単価・見込量（年報 様式2から算出）と、
+# 標準給付費に加算する項目の対総給付費比。
+# 算出の方法は build_ono_tanka.py と「小野町_第10期_サービス別単価・見込量試算」を参照。
+MIKOMI, RATIO_JISSEKI = build_mikomi_input()
 
 # 介護給付のサービス区分（見込量の単位つき）
 SVC_KAIGO = [
@@ -443,47 +455,77 @@ def sheet_jukyu(wb):
 
 # ---------------------------------------------------------------- 05・06_見込量
 
-def sheet_mikomi(wb, name, services, label):
+def sheet_mikomi(wb, name, services, label, kind):
+    """05・06_見込量。年報から算出した実績・単価・見込量を入れた状態で出す。
+
+    件数（延べ利用者数）と給付費は build_ono_tanka の試算による。
+    「量」の列（回・日）は年報から取れないため空欄のままとし、
+    国保連の給付実績を受領した時点で入れる。
+    """
+    src = MIKOMI[kind]
     ws = wb.create_sheet(name)
-    header = ["区分", "サービス", "単位"]
+    header = ["区分", "サービス", "単位", "令和7年度 件数", "令和7年度 給付費(千円)",
+              "単価(円/件)"]
     for y in YEARS:
-        header += [f"{y} 利用者数", f"{y} 量", f"{y} 給付費(千円)"]
-    header += ["単価(円/単位)", "備考"]
+        header += [f"{y} 件数", f"{y} 人/月", f"{y} 量", f"{y} 給付費(千円)"]
+    header += ["備考"]
     ws.append(header)
     start = 2
     for cat, svc, unit in services:
-        ws.append([cat, svc, unit] + [None] * 9 + [None, ""])
+        d = src.get(svc)
+        row = [cat, svc, unit]
+        if d is None:
+            row += [None, None, None] + [None] * 12
+            row += ["**対応する年報の区分がありません。確認を要します**"]
+        else:
+            row += [d["件数実績"], d["給付費実績"], d["単価"]]
+            for ken, kyu in d["見込"]:
+                row += [ken, ken / 12.0, None, kyu]
+            last = d["見込"][-1][0]
+            if last == 0:
+                memo = "5年間を通じて実績なし。町内・近隣に事業所がないか確認します"
+            elif last < 12:
+                memo = ("**月あたり1人に満たない見込みです。"
+                        "計画書の見込量表に載せるかどうかの判断を要します**")
+            else:
+                memo = ""
+            row += [memo]
+        ws.append(row)
     end = start + len(services) - 1
-    # 給付費 = 量 × 単価 ÷ 1000（単位が「人」の場合は利用者数×単価）
-    for i in range(len(services)):
-        r = start + i
-        for k, base in enumerate(("E", "H", "K")):        # 量の列
-            gcol = ("F", "I", "L")[k]                     # 給付費の列
-            ws[f"{gcol}{r}"] = f"=IF(OR({base}{r}=\"\",$M{r}=\"\"),\"\",{base}{r}*$M{r}/1000)"
-    ws.append(["合計", "", ""] +
-              [None, None, f"=SUM(F{start}:F{end})",
-               None, None, f"=SUM(I{start}:I{end})",
-               None, None, f"=SUM(L{start}:L{end})", None, ""])
+    ws.append(["合計", "", "",
+               f"=SUM(D{start}:D{end})", f"=SUM(E{start}:E{end})", None]
+              + sum(([f"=SUM({get_column_letter(7 + i * 4)}{start}:"
+                      f"{get_column_letter(7 + i * 4)}{end})",
+                      f"=SUM({get_column_letter(8 + i * 4)}{start}:"
+                      f"{get_column_letter(8 + i * 4)}{end})",
+                      None,
+                      f"=SUM({get_column_letter(10 + i * 4)}{start}:"
+                      f"{get_column_letter(10 + i * 4)}{end})"]
+                     for i in range(len(YEARS))), [])
+              + [""])
     style_header(ws)
-    for r in range(start, end + 1):
-        for col in ("D", "E", "G", "H", "J", "K", "M"):
-            ws[f"{col}{r}"].fill = IN_FILL
-            ws[f"{col}{r}"].number_format = "#,##0"
-        for col in ("F", "I", "L"):
-            ws[f"{col}{r}"].fill = CALC_FILL
-            ws[f"{col}{r}"].number_format = "#,##0"
-    tot = end + 1
-    for col in ("F", "I", "L"):
-        ws[f"{col}{tot}"].fill = CALC_FILL
-        ws[f"{col}{tot}"].number_format = "#,##0"
-        ws[f"{col}{tot}"].font = Font(bold=True, size=9)
-    body_style(ws, wrap_cols=(13,))
-    widths(ws, [11, 30, 6] + [11, 11, 13] * 3 + [13, 30])
+    n = len(header)
+    for r in range(start, end + 2):
+        for c in range(4, n):
+            cell = ws.cell(r, c)
+            cell.number_format = "#,##0.0" if (c - 7) % 4 == 1 else "#,##0"
+            # 量（回・日）の列だけが入力欄。ほかは年報からの算出値
+            cell.fill = IN_FILL if (c >= 7 and (c - 7) % 4 == 2) else CALC_FILL
+    for c in range(1, n + 1):
+        ws.cell(end + 1, c).font = Font(bold=True, size=9)
+    body_style(ws, wrap_cols=(n,))
+    widths(ws, [11, 30, 6, 12, 15, 12] + [11, 9, 9, 13] * len(YEARS) + [34])
     ws.freeze_panes = "D2"
     ws.append([])
-    ws.append([f"※ {label}。「量」は単位欄の単位（回・日・人）による月あたりの量に12を乗じた年間量を入れます。"])
-    ws.append(["※ 単価は直近実績の給付費 ÷ 量で求め、報酬改定がある場合は改定率を乗じます（ケースC4）。"])
-    ws.append(["※ 単位が「人」のサービスは、量の欄に延べ人数（月あたり人数×12）を入れます。"])
+    ws.append([f"※ {label}。件数・給付費は年報（様式2）の実績から算出したもので、"
+               "「小野町_第10期_サービス別単価・見込量試算」の04・05と同じ値です。"])
+    ws.append(["※ 件数は請求件数（＝月あたり受給者数の年間累計）。「人/月」は件数÷12です。"])
+    ws.append(["※ 見込件数は「基準期間の件数÷第1号被保険者数」に将来の第1号被保険者数を"
+               "乗じたもの。給付費は同じ方法で給付費そのものを延ばしています。"])
+    ws.append(["**※ 「量」（回・日）の列だけが空欄です。年報には回数・日数が入っていないため、"
+               "国保連の給付実績を受領した時点で入れます。**"])
+    ws.append(["※ 報酬改定率は0.0％（据置）で置いています。"
+               "改定率が決まったら試算ブックの06_感度分析で置き換えます。"])
     return ws
 
 
@@ -543,10 +585,16 @@ def sheet_hyojun(wb):
         ("介護給付費（05_見込量_介護の合計）", "svc_kaigo", "05_見込量_介護 の合計行"),
         ("予防給付費（06_見込量_予防の合計）", "svc_yobo", "06_見込量_予防 の合計行"),
         ("総給付費", "sum2", "介護給付費＋予防給付費"),
-        ("特定入所者介護サービス費等給付額", "input", "補足給付。実績の伸びで見込む"),
-        ("高額介護サービス費等給付額", "input", "同上"),
-        ("高額医療合算介護サービス費等給付額", "input", "同上"),
-        ("算定対象審査支払手数料", "input", "国保連への手数料"),
+        ("特定入所者介護サービス費等給付額", "ratio",
+         f"補足給付。総給付費×{RATIO_JISSEKI['特定入所'] * 100:.3f}％"
+         "（令和5〜7年度の対総給付費比の平均）"),
+        ("高額介護サービス費等給付額", "ratio",
+         f"総給付費×{RATIO_JISSEKI['高額'] * 100:.3f}％（同）"),
+        ("高額医療合算介護サービス費等給付額", "ratio",
+         f"総給付費×{RATIO_JISSEKI['高額合算'] * 100:.3f}％（同）"),
+        ("算定対象審査支払手数料", "tesuryo",
+         "国保連への手数料。05・06の件数合計×60円。"
+         "**年報に計上欄がないため仮置き。決算での確認を要します**"),
         ("標準給付費見込額", "std", "総給付費＋補足給付＋高額＋高額合算＋手数料"),
         ("地域支援事業費（07の合計）", "chiiki", "07_地域支援事業 の合計行"),
         ("総費用額", "total", "標準給付費見込額＋地域支援事業費"),
@@ -558,13 +606,21 @@ def sheet_hyojun(wb):
     R = {label: start + i for i, (label, _, _) in enumerate(rows)}
     for ci, col in enumerate(("B", "C", "D")):
         y = ci  # 0-based 年度
-        gcol = ("F", "I", "L")[y]
+        gcol = ("J", "N", "R")[y]        # 05・06の年度別 給付費(千円) 列
         ws[f"{col}{R['介護給付費（05_見込量_介護の合計）']}"] = \
             f"='05_見込量_介護'!{gcol}{2 + len(SVC_KAIGO)}"
         ws[f"{col}{R['予防給付費（06_見込量_予防の合計）']}"] = \
             f"='06_見込量_予防'!{gcol}{2 + len(SVC_YOBO)}"
         ws[f"{col}{R['総給付費']}"] = \
             f"={col}{R['介護給付費（05_見込量_介護の合計）']}+{col}{R['予防給付費（06_見込量_予防の合計）']}"
+        for lab, key in (("特定入所者介護サービス費等給付額", "特定入所"),
+                         ("高額介護サービス費等給付額", "高額"),
+                         ("高額医療合算介護サービス費等給付額", "高額合算")):
+            ws[f"{col}{R[lab]}"] = f"={col}{R['総給付費']}*{RATIO_JISSEKI[key]:.6f}"
+        kcol = ("G", "K", "O")[y]        # 05・06の年度別 件数 列
+        ws[f"{col}{R['算定対象審査支払手数料']}"] = (
+            f"=('05_見込量_介護'!{kcol}{2 + len(SVC_KAIGO)}"
+            f"+'06_見込量_予防'!{kcol}{2 + len(SVC_YOBO)})*{TESURYO}/1000")
         ws[f"{col}{R['標準給付費見込額']}"] = (
             f"={col}{R['総給付費']}+{col}{R['特定入所者介護サービス費等給付額']}"
             f"+{col}{R['高額介護サービス費等給付額']}+{col}{R['高額医療合算介護サービス費等給付額']}"
@@ -793,8 +849,8 @@ def main():
     sheet_population(wb)
     sheet_nintei(wb)
     sheet_jukyu(wb)
-    sheet_mikomi(wb, "05_見込量_介護", SVC_KAIGO, "介護給付（要介護1〜5）")
-    sheet_mikomi(wb, "06_見込量_予防", SVC_YOBO, "予防給付（要支援1・2）")
+    sheet_mikomi(wb, "05_見込量_介護", SVC_KAIGO, "介護給付（要介護1〜5）", "介護")
+    sheet_mikomi(wb, "06_見込量_予防", SVC_YOBO, "予防給付（要支援1・2）", "予防")
     sheet_chiiki(wb)
     _, hyojun_rows = sheet_hyojun(wb)
     sheet_hokenryo(wb, hyojun_rows)
