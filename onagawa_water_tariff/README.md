@@ -14,9 +14,10 @@
 |:--:|---|---|
 | 1 | [`06_capital_plan_update/README.md`](06_capital_plan_update/README.md) | **総括原価の前提条件の切替と再試算。最新かつ最重要の論点** |
 | 2 | [`05_review/file_check_report.md`](05_review/file_check_report.md) | Excel成果品の確認レポート。既知の不整合6件と残作業 |
-| 3 | [`05_review/word_document_review.md`](05_review/word_document_review.md) | Word文書の確認レポート。表現ルール違反1件ほか |
-| 4 | [`03_documents/handoff_memo.md`](03_documents/handoff_memo.md) | 引継ぎメモ。数値前提、確定値と推計値の区別 |
-| 5 | [`03_documents/spec_alignment_summary.md`](03_documents/spec_alignment_summary.md) | 業務仕様書との整合確認 |
+| 3 | [`08_word_revisions/README.md`](08_word_revisions/README.md) | Word文書の修正記録（5件とも対応済み） |
+| 4 | [`05_review/word_document_review.md`](05_review/word_document_review.md) | Word文書の確認レポート |
+| 5 | [`03_documents/handoff_memo.md`](03_documents/handoff_memo.md) | 引継ぎメモ。数値前提、確定値と推計値の区別 |
+| 6 | [`03_documents/spec_alignment_summary.md`](03_documents/spec_alignment_summary.md) | 業務仕様書との整合確認 |
 
 ---
 
