@@ -9,7 +9,7 @@
 指摘が1件でも残る場合は終了コード1で終わる。
 
 点検の観点
-  A 合計の一致　　町別の合計が広域連合・3町計の値に一致するか
+  A 合計の一致　　町別の合計が広域連合・保険者の値に一致するか
   B 転記の一致　　他の成果品からの転記が原本と一致するか
   C 算定方法　　　計画素案・国の様式・見える化との相違がないか
   D 越権　　　　　保険者単位でしか算定できないものを町別に掲げていないか
@@ -184,9 +184,10 @@ for t in TOWNS:
             ng("A", "交付金の増減 %s %s" % (t, k), exp[2] - exp[0], v[3],
                "令和6→8年度の増減が一致しない")
 
-# A5 按分値の合計＝3町計の推計
+# A5 将来人口（見える化システム A系列）の転記と合計
 import io                                     # noqa: E402
 import runpy                                  # noqa: E402
+import data_mieruka_a as MA                   # noqa: E402
 
 _buf, _old = io.StringIO(), sys.stdout
 sys.stdout = _buf
@@ -195,28 +196,79 @@ try:
 finally:
     sys.stdout = _old
 BANDS = ["65-74", "75-84", "85+"]
-PROJ_Y = ["2027", "2028", "2029"]
-LBL = {"65-74": "65〜74歳", "75-84": "75〜84歳", "85+": "85歳以上"}
-for bi, b in enumerate(BANDS):
-    exp3 = [_G["pop_juki"](b, y) for y in PROJ_Y]
-    got = [0, 0, 0]
-    ok = True
-    for t in TOWNS:
-        rows = block(ALL[TSHEET[t]], "【2　将来の高齢者人口")
-        v = nums(rows, LBL[b])
-        if v is None or len(v) < 4:
-            ng("A", "将来人口 %s %s" % (t, LBL[b]), "4列以上", v,
-               "按分値の行が読めない")
-            ok = False
-            break
-        for i in range(3):
-            got[i] += v[1 + i]
-    if ok:
-        for i, y in enumerate(PROJ_Y):
-            if abs(got[i] - exp3[i]) > 2:
-                ng("A", "将来人口の3町計 %s %s" % (LBL[b], y),
-                   "%.0f" % exp3[i], got[i],
-                   "町別の按分値の合計が3町計の推計と2人を超えて食い違う")
+PROJ3_65_2029 = sum(_G["pop_juki"](b, "2029") for b in BANDS)
+
+MA_Y = [2025, 2026, 2027, 2028, 2029, 2030, 2040, 2045, 2050]
+MA_ROWS = [("A1", "総人口", "総人口（人）"),
+           ("A3", "高齢者数", "65歳以上（人）"),
+           ("A2", "高齢化率", "高齢化率（％）"),
+           ("A9", "高齢者１人あたり現役世代数",
+            "高齢者1人あたり現役世代数（％）")]
+for t in TOWNS:
+    rows = block(ALL[TSHEET[t]], "【2　高齢者人口の推移と将来推計")
+    if not rows:
+        ng("A", "将来人口の表 %s" % t, "表がある", "ない",
+           "見える化システムA系列の表が見当たらない")
+        continue
+    for series, shihyo, label in MA_ROWS:
+        v = nums(rows, label)
+        exp = [MA.val(series, t, shihyo, y) for y in MA_Y]
+        exp = [x for x in exp if x is not None]
+        if v is None:
+            ng("A", "将来人口 %s %s" % (t, label), exp, "行がない",
+               "行が見当たらない")
+        elif [float(x) for x in v[:len(exp)]] != [float(x) for x in exp]:
+            ng("A", "将来人口 %s %s" % (t, label), exp, list(v[:len(exp)]),
+               "見える化システムA系列の値と一致しない")
+
+# 3町の合計＝保険者の値
+for y in MA_Y:
+    z = MA.val("A3", "大雪地区広域連合", "高齢者数", y)
+    s3 = sum(MA.val("A3", t, "高齢者数", y) for t in TOWNS)
+    if z is None or abs(s3 - z) > 0.5:
+        ng("A", "将来人口の3町計 %d" % y, z, s3,
+           "町別の合計が保険者の値に一致しない")
+
+# 世帯（A5〜A8）
+MA_SETAI_Y = [2000, 2005, 2010, 2015, 2020]
+SETAI_ROWS = [("A5", "一般世帯数", "一般世帯数（世帯）"),
+              ("A6", "高齢者を含む世帯数", "高齢者を含む世帯数（世帯）"),
+              ("A6-a", "高齢者を含む世帯の割合",
+               "高齢者を含む世帯の割合（％）"),
+              ("A7", "高齢独居世帯数", "高齢独居世帯数（世帯）"),
+              ("A7-a", "高齢独居世帯の割合", "高齢独居世帯の割合（％）"),
+              ("A8", "高齢夫婦世帯数", "高齢夫婦世帯数（世帯）"),
+              ("A8-a", "高齢夫婦世帯の割合", "高齢夫婦世帯の割合（％）")]
+for t in TOWNS:
+    rows = block(ALL[TSHEET[t]], "【2の2　世帯の状況")
+    if not rows:
+        ng("A", "世帯の表 %s" % t, "表がある", "ない",
+           "世帯の表が見当たらない")
+        continue
+    for series, shihyo, label in SETAI_ROWS:
+        v = nums(rows, label)
+        exp = [MA.val(series, t, shihyo, y) for y in MA_SETAI_Y]
+        exp = [x for x in exp if x is not None]
+        if v is None:
+            ng("A", "世帯 %s %s" % (t, label), exp, "行がない",
+               "行が見当たらない")
+        elif [float(x) for x in v[:len(exp)]] != [float(x) for x in exp]:
+            ng("A", "世帯 %s %s" % (t, label), exp, list(v[:len(exp)]),
+               "見える化システムA5〜A8の値と一致しない")
+
+# 04シートの1の2・1の3
+for y in [2025, 2029, 2040, 2045]:
+    lbl = "%s（%d）　65歳以上" % ({2025: "令和7年", 2029: "令和11年",
+                                   2040: "令和22年", 2045: "令和27年"}[y], y)
+    v = nums(ALL["04_3町の比較"], lbl)
+    exp = [MA.val("A3", t, "高齢者数", y) for t in TOWNS]
+    exp.append(MA.val("A3", "大雪地区広域連合", "高齢者数", y))
+    if v is None:
+        ng("A", "比較シート 将来人口 %d" % y, exp, "行がない",
+           "行が見当たらない")
+    elif [float(x) for x in v[:4]] != [float(x) for x in exp]:
+        ng("A", "比較シート 将来人口 %d" % y, exp, list(v[:4]),
+           "見える化システムA3の値と一致しない")
 
 # ============================================================ B 転記の一致
 # B1 健康とくらしの調査
@@ -508,6 +560,12 @@ F = [
      [str(TOOL_GH), "99"],
      "計画作成支援ツールの3町計と見える化D26とで定員が異なる。"
      "計画素案は見える化の値を用いている"),
+    ("将来人口の推計の基礎の差",
+     ["{:,.0f}".format(MA.val("A3", "大雪地区広域連合", "高齢者数", 2029)),
+      "{:,.0f}".format(PROJ3_65_2029)],
+     "見える化システム（社人研が基礎）と計画素案の案C"
+     "（総合戦略・住民基本台帳の実績趨勢が基礎）とで"
+     "3町計の令和11年度の65歳以上人口が異なる"),
     ("給付費の実績の出所の差",
      [format(KYUFU_R6, ",")],
      "給付費データ集計の総計と決算の保険給付費とは範囲が異なる。"
@@ -602,13 +660,17 @@ for t in TOWNS:
         ng("H", "保険者単位の説明 %s" % t, "記載がある", "ない",
            "町別に掲げない理由が町別シートに書かれていない")
 
-# H5 按分値に「按分」「参考値」の語があること
+# H5 将来人口の基礎の違いの注記
 for t in TOWNS:
     txt = TEXT[TSHEET[t]]
-    for k in ["按分", "参考値"]:
+    for k in ["見える化", "社人研", "案C"]:
         if k not in txt:
             ng("H", "将来人口の注記 %s %s" % (t, k), "記載がある", "ない",
-               "按分した参考値であることが示されていない")
+               "推計の基礎と計画素案との違いが示されていない")
+    if "按分" in txt:
+        ng("H", "将来人口の注記 %s" % t, "按分の記載が残っていない",
+           "残っている",
+           "見える化システムの町別の値に置き換えたため按分は行っていない")
 
 # H6 00シートの一覧が実際のシート構成と一致すること
 listed = [str(r[1]) for r in ALL["00_この資料について"]
@@ -641,7 +703,8 @@ if not FINDINGS:
     print("指摘 0件。レビューを通過した。")
     print()
     print("点検した項目")
-    print("  A 合計の一致　認定者数・施設定員・地域支援事業費・交付金・按分値")
+    print("  A 合計の一致　認定者数・施設定員・地域支援事業費・交付金・"
+          "将来人口・世帯")
     print("  B 転記の一致　健康とくらしの調査・給付費・論点・住民基本台帳")
     print("  C 算定方法　　10項目の4欄・根拠6件")
     print("  D 越権　　　　保険者単位の値を町別に掲げていないこと")
