@@ -126,7 +126,18 @@ def _shade(cell, hexcolor):
     shd.set(qn("w:val"), "clear")
     shd.set(qn("w:color"), "auto")
     shd.set(qn("w:fill"), hexcolor)
-    tcPr.append(shd)
+    # CT_TcPrBase は要素の順序が定められており、
+    # shd は noWrap・tcMar・textDirection・tcFitText・vAlign・hideMark より前に置く。
+    after = None
+    for tag in ("w:noWrap", "w:tcMar", "w:textDirection", "w:tcFitText",
+                "w:vAlign", "w:hideMark"):
+        after = tcPr.find(qn(tag))
+        if after is not None:
+            break
+    if after is None:
+        tcPr.append(shd)
+    else:
+        after.addprevious(shd)
 
 
 def _cellmargin(t, left=0.12, right=0.12, top=0.06, bottom=0.06):
@@ -137,7 +148,18 @@ def _cellmargin(t, left=0.12, right=0.12, top=0.06, bottom=0.06):
         e.set(qn("w:w"), str(int(v * 567)))
         e.set(qn("w:type"), "dxa")
         mar.append(e)
-    t._tbl.tblPr.append(mar)
+    # CT_TblPrBase は要素の順序が定められており、
+    # tblCellMar は tblLook・tblCaption・tblDescription より前に置く。
+    tblPr = t._tbl.tblPr
+    after = None
+    for tag in ("w:tblLook", "w:tblCaption", "w:tblDescription"):
+        after = tblPr.find(qn(tag))
+        if after is not None:
+            break
+    if after is None:
+        tblPr.append(mar)
+    else:
+        after.addprevious(mar)
 
 
 def H1(text):
@@ -996,6 +1018,12 @@ NOTE("本要領に記載した交付金の評価結果・全国該当率は、"
      "すべて厚生労働省の公表資料によるものである。"
      "給付実績は大雪地区広域連合の給付費データ集計の集計値による。"
      "個人が特定される情報は収録していない。")
+
+# 既定のテンプレートの w:zoom は必須属性 w:percent を欠いており、
+# スキーマ検証の誤りとなるため補う。
+_zoom = doc.settings.element.find(qn("w:zoom"))
+if _zoom is not None and _zoom.get(qn("w:percent")) is None:
+    _zoom.set(qn("w:percent"), "100")
 
 doc.save(OUT)
 print("saved:", OUT)
