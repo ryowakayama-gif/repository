@@ -98,6 +98,16 @@ No.68、No.73〜No.85。うち期限が近いもの：
   個人情報は値の形（正規表現）で、禁止表現は点検方法の記述シートを除いて判定する。
 - 成果品件数は `build_deliverable_index.py` ほか複数のスクリプトが参照する。
   追加時は `data_dispatch.py` と併せて更新する。
+- OOXMLは要素の順序が定められている。python-docx で生の要素を足すときは
+  順序を守る。実際に誤りが出たもの：`w:pgNumType`（cols より前）、
+  `w:updateFields`（compat より前）、`w:tabs`（spacing・ind より前。
+  `paragraph_format.tab_stops` を使えばよい）、
+  `w:bookmarkStart`（pPr の次）。
+  作った docx は docx スキルの `scripts/office/validate.py` で検証する。
+- 見出しを増減したら `build_toc_pages.py` を実行して
+  目次のページ番号を作り直す。この環境の LibreOffice には
+  Writer が入っていないことがあるため、
+  `apt-get install -y libreoffice-writer` が必要な場合がある。
 
 ## 5 外部接続
 
@@ -110,7 +120,8 @@ URLは受領資料に記載のあるものだけを引用し、
 
 | 用途 | スクリプト | 出力 |
 |---|---|---|
-| 計画素案 | `build_plan_draft.py` | 第10期計画_計画素案.docx |
+| 計画素案 | `build_plan_draft.py` | 第10期介護保険事業計画_協議用素案_令和8年8月.docx |
+| 目次のページ番号 | `build_toc_pages.py` | output/_toc_pages.json |
 | 将来推計・保険料 | `build_projection3.py` | 将来推計 |
 | 町別データシート | `build_town_datasheet.py` | 第10期計画_町別データシート.xlsx |
 | 同 点検 | `build_town_datasheet_review.py` | 指摘が残ると終了コード1 |

@@ -17,13 +17,17 @@ output/第10期計画_計画素案の別管理表.xlsx の 01シートで管理�
 """
 
 import os
+import json
 
 from docx import Document
 from docx.shared import Pt, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_TAB_ALIGNMENT, WD_TAB_LEADER
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.section import WD_ORIENT
 from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
+from docx.enum.section import WD_SECTION
 
 FONT = "游ゴシック"
 doc = Document()
@@ -68,6 +72,140 @@ def BUL(text, size=10):
     return p
 
 
+def FIELD(p, instr, placeholder="", size=10.5, bold=False):
+    """段落にWordのフィールドを埋め込む。
+
+    placeholder はフィールドを更新するまで表示される文字列である。
+    Wordで開いた時点で settings.xml の updateFields により更新される。
+    """
+    def _run(child):
+        r = p.add_run()
+        r.font.size = Pt(size)
+        r.bold = bold
+        r.font.name = FONT
+        r._element.rPr.rFonts.set(qn("w:eastAsia"), FONT)
+        r._r.append(child)
+        return r
+
+    def _fld(kind):
+        e = OxmlElement("w:fldChar")
+        e.set(qn("w:fldCharType"), kind)
+        return e
+
+    _run(_fld("begin"))
+    it = OxmlElement("w:instrText")
+    it.set(qn("xml:space"), "preserve")
+    it.text = instr
+    _run(it)
+    _run(_fld("separate"))
+    if placeholder:
+        r = p.add_run(placeholder)
+        r.font.size = Pt(size)
+        r.bold = bold
+        r.font.name = FONT
+        r._element.rPr.rFonts.set(qn("w:eastAsia"), FONT)
+    _run(_fld("end"))
+    return p
+
+
+def _fldchar(kind):
+    e = OxmlElement("w:fldChar")
+    e.set(qn("w:fldCharType"), kind)
+    return e
+
+
+def FIELD_OPEN(p, instr, size=10):
+    """フィールドの開始（begin・命令・separate）だけを置く。
+
+    FIELD_CLOSE までの段落がフィールドの結果となる。
+    目次のように結果が複数段落にわたるフィールドで用いる。
+    """
+    for child in (_fldchar("begin"), None, _fldchar("separate")):
+        r = p.add_run()
+        r.font.size = Pt(size)
+        r.font.name = FONT
+        r._element.rPr.rFonts.set(qn("w:eastAsia"), FONT)
+        if child is None:
+            it = OxmlElement("w:instrText")
+            it.set(qn("xml:space"), "preserve")
+            it.text = instr
+            r._r.append(it)
+        else:
+            r._r.append(child)
+    p.paragraph_format.space_after = Pt(0)
+    return p
+
+
+def FIELD_CLOSE(p, size=10):
+    r = p.add_run()
+    r.font.size = Pt(size)
+    r.font.name = FONT
+    r._element.rPr.rFonts.set(qn("w:eastAsia"), FONT)
+    r._r.append(_fldchar("end"))
+    p.paragraph_format.space_after = Pt(0)
+    return p
+
+
+def PAGENO(section, prefix="－ ", suffix=" －", size=9):
+    """セクションのフッターに中央揃えのページ番号を置く。"""
+    section.footer.is_linked_to_previous = False
+    p = section.footer.paragraphs[0]
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    for t in p.runs:
+        t.text = ""
+    r = p.add_run(prefix)
+    r.font.size = Pt(size)
+    r.font.name = FONT
+    r._element.rPr.rFonts.set(qn("w:eastAsia"), FONT)
+    FIELD(p, " PAGE ", "1", size=size)
+    r = p.add_run(suffix)
+    r.font.size = Pt(size)
+    r.font.name = FONT
+    r._element.rPr.rFonts.set(qn("w:eastAsia"), FONT)
+    return p
+
+
+def PGNUM_START(section, start):
+    """セクションのページ番号を start から数え直す。"""
+    sp = section._sectPr
+    e = sp.find(qn("w:pgNumType"))
+    if e is None:
+        e = OxmlElement("w:pgNumType")
+        # CT_SectPr は要素の順序が定められており、
+        # pgNumType は cols より前に置かなければならない。
+        after = None
+        for tag in ("w:cols", "w:formProt", "w:vAlign", "w:noEndnote",
+                    "w:titlePg", "w:textDirection", "w:docGrid"):
+            after = sp.find(qn(tag))
+            if after is not None:
+                break
+        if after is None:
+            sp.append(e)
+        else:
+            after.addprevious(e)
+    e.set(qn("w:start"), str(start))
+
+
+HEADINGS = []                            # 目次に載せる見出し（章・節）
+
+
+def _bookmark(p, name):
+    """段落の先頭と末尾にブックマークを置く。目次のリンク先となる。"""
+    bid = str(len(HEADINGS) + 100)
+    s = OxmlElement("w:bookmarkStart")
+    s.set(qn("w:id"), bid)
+    s.set(qn("w:name"), name)
+    e = OxmlElement("w:bookmarkEnd")
+    e.set(qn("w:id"), bid)
+    # pPr は段落の先頭になければならないため、その次に置く。
+    pPr = p._p.find(qn("w:pPr"))
+    if pPr is None:
+        p._p.insert(0, s)
+    else:
+        pPr.addnext(s)
+    p._p.append(e)
+
+
 def _h(text, level, size):
     p = doc.add_paragraph(style="Heading %d" % level)
     r = p.add_run(text)
@@ -77,6 +215,10 @@ def _h(text, level, size):
     r._element.rPr.rFonts.set(qn("w:eastAsia"), FONT)
     p.paragraph_format.space_before = Pt(12 if level == 1 else 9)
     p.paragraph_format.space_after = Pt(5)
+    if level <= 2:
+        name = "_Toc10_%03d" % (len(HEADINGS) + 1)
+        HEADINGS.append((level, text, name))
+        _bookmark(p, name)
     return p
 
 
@@ -209,13 +351,18 @@ TOC = [
              "資料5 主な参照資料", "資料6 基本指針の新別表への対応",
              "資料7 図表番号一覧"]),
 ]
-for ch, secs in TOC:
-    P(ch, size=11, bold=True, space_after=1)
-    for s in secs:
-        P("　　" + s, size=10, space_after=0)
-P("")
+P("章名又は節名をクリックすると、該当ページに移動します。", size=9,
+  align=WD_ALIGN_PARAGRAPH.CENTER, space_after=10)
 
-doc.add_page_break()
+# 目次の中身は、本文の見出しから自動で組み立てる（末尾の TOC_BUILD）。
+# ここには差し込み位置の目印となる空段落を置くだけとする。
+# TOC は第9期計画の目次との対照に用いる（TOC_CHECK）。
+_TOC_ANCHOR = doc.add_paragraph()
+
+# 表紙・目次はページ番号を付けず、本文の第1章から1ページとして数える。
+_sec2 = doc.add_section(WD_SECTION.NEW_PAGE)
+PGNUM_START(_sec2, 1)
+PAGENO(_sec2)
 
 # ================================================================== 第1章
 H1("第1章　計画策定の意義")
@@ -3817,5 +3964,117 @@ BUL("図表集を参照する図は、本文に【図N　図表名】　別冊�
 BUL("図表集の各図には、掲載区分（本文／資料編／参考）と備考が付されています。"
     "図表集の「32_図表番号一覧」シートは、図の配置位置から自動生成しています。")
 
+# ================================================================== 目次の組立て
+# 本文の見出し1（章）・見出し2（節）から目次を組み立て、
+# 冒頭に置いた目印の段落の位置に差し込む。
+#
+# 各行は、本文のブックマークへのリンク（w:hyperlink）と、
+# ページ番号のフィールド（PAGEREF）で構成する。
+#   ・リンクはフィールドではないため、更新しなくてもクリックで移動できる。
+#   ・ページ番号は、Wordで開いた時点で updateFields により更新される。
+#     更新前に表示する値として、_toc_pages.json のページ数を用いる。
+#     このファイルは build_toc_pages.py が組版結果から作る。
+#     ファイルがない場合は「－」を表示する。
+_PAGES = {}
+_PAGEMAP = "/home/user/repository/output/_toc_pages.json"
+if os.path.exists(_PAGEMAP):
+    with open(_PAGEMAP, encoding="utf-8") as _f:
+        _PAGES = json.load(_f)
+
+
+def _toc_line(level, text, name):
+    """目次の1行を作って返す。"""
+    p = doc.add_paragraph()
+    pf = p.paragraph_format
+    pf.space_after = Pt(0)
+    pf.space_before = Pt(0)
+    pf.line_spacing = 1.0
+    pf.left_indent = Cm(0 if level == 1 else 0.9)
+    pf.right_indent = Cm(0)
+    # 右端にドットリーダー付きのタブ位置を置く。
+    pf.tab_stops.add_tab_stop(Cm(TEXTW), WD_TAB_ALIGNMENT.RIGHT,
+                              WD_TAB_LEADER.DOTS)
+
+    hl = OxmlElement("w:hyperlink")
+    hl.set(qn("w:anchor"), name)
+    p._p.append(hl)
+
+    def _run(parent, txt=None, child=None, bold=False, size=10.5):
+        r = OxmlElement("w:r")
+        rPr = OxmlElement("w:rPr")
+        f = OxmlElement("w:rFonts")
+        for a in ("w:ascii", "w:hAnsi", "w:eastAsia"):
+            f.set(qn(a), FONT)
+        rPr.append(f)
+        if bold:
+            rPr.append(OxmlElement("w:b"))
+        sz = OxmlElement("w:sz")
+        sz.set(qn("w:val"), str(int(size * 2)))
+        rPr.append(sz)
+        r.append(rPr)
+        if txt is not None:
+            t = OxmlElement("w:t")
+            t.set(qn("xml:space"), "preserve")
+            t.text = txt
+            r.append(t)
+        if child is not None:
+            r.append(child)
+        parent.append(r)
+        return r
+
+    _run(hl, txt=text, bold=(level == 1), size=10.5 if level == 1 else 10)
+    _run(hl, child=OxmlElement("w:tab"), size=10)
+
+    # ページ番号（PAGEREF フィールド）
+    _run(hl, child=_fldchar("begin"), size=10)
+    it = OxmlElement("w:instrText")
+    it.set(qn("xml:space"), "preserve")
+    it.text = " PAGEREF %s \\h " % name
+    _run(hl, child=it, size=10)
+    _run(hl, child=_fldchar("separate"), size=10)
+    _run(hl, txt=str(_PAGES.get(name, "－")), bold=(level == 1), size=10)
+    _run(hl, child=_fldchar("end"), size=10)
+    return p
+
+
+_toc_paras = [_toc_line(lv, tx, nm) for lv, tx, nm in HEADINGS]
+for _p in _toc_paras:
+    _TOC_ANCHOR._p.addprevious(_p._p)
+_TOC_ANCHOR._p.getparent().remove(_TOC_ANCHOR._p)
+
+# 第9期計画の目次（TOC）と、本文から拾った見出しの対照。
+# 章の数と節の数が食い違う場合は、目次の定義か本文の見出しのいずれかが古い。
+_ch_body = [t for lv, t, _ in HEADINGS if lv == 1]
+_sec_body = [t for lv, t, _ in HEADINGS if lv == 2]
+assert len(_ch_body) == len(TOC), \
+    "章の数が合わない 本文%d／目次の定義%d" % (len(_ch_body), len(TOC))
+assert len(_sec_body) == sum(len(s) for _, s in TOC), \
+    "節の数が合わない 本文%d／目次の定義%d" % (
+        len(_sec_body), sum(len(s) for _, s in TOC))
+
+# Wordで開いた時点で目次フィールドとページ番号を更新させる。
+# CT_Settings は要素の順序が定められており、updateFields は
+# compat・rsids などより前に置かなければならない。
+_st = doc.settings.element
+_uf = _st.find(qn("w:updateFields"))
+if _uf is None:
+    _uf = OxmlElement("w:updateFields")
+    _after = None
+    for _tag in ("w:compat", "w:docVars", "w:rsids", "w:themeFontLang"):
+        _after = _st.find(qn(_tag))
+        if _after is not None:
+            break
+    if _after is None:
+        _st.append(_uf)
+    else:
+        _after.addprevious(_uf)
+_uf.set(qn("w:val"), "true")
+
+# 既定のテンプレートの w:zoom は必須属性 w:percent を欠いており、
+# スキーマ検証で唯一の誤りとなるため補う。
+_zoom = _st.find(qn("w:zoom"))
+if _zoom is not None and _zoom.get(qn("w:percent")) is None:
+    _zoom.set(qn("w:percent"), "100")
+
 doc.save("/home/user/repository/output/第10期介護保険事業計画_協議用素案_令和8年8月.docx")
-print("saved")
+print("saved　セクション数 %d" % len(doc.sections))
