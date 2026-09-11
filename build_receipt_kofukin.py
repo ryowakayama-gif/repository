@@ -38,8 +38,9 @@ from openpyxl.utils import get_column_letter
 import data_kofukin as KF
 import data_kofukin_item as IT
 import data_kofukin_zenkoku as Z
+import repo_paths as RP
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_交付金評価指標と全国集計の受領点検.xlsx")
 
 FONT = "游ゴシック"

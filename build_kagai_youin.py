@@ -65,6 +65,7 @@
 """
 
 import io
+import repo_paths as RP
 import os
 import runpy
 import statistics as st
@@ -78,7 +79,7 @@ import data_hokkaido_roster as HR
 import data_mieru_soukatu as M
 import data_nintei as NT
 
-ODIR = "/home/user/repository/output"
+ODIR = RP.ROOT + "/output"
 OUT = os.path.join(ODIR, "第10期計画_趨勢に現れない要因の分析.xlsx")
 
 FONT = "游ゴシック"
@@ -193,8 +194,8 @@ TEKI = {"在宅サービス 住宅改修": "住宅改修の点検",
 _buf, _old = io.StringIO(), sys.stdout
 sys.stdout = _buf
 try:
-    _G = runpy.run_path("build_projection.py")
-    _P = runpy.run_path("build_projection3.py")
+    _G = runpy.run_path(RP.ROOT + "/build_projection.py")
+    _P = runpy.run_path(RP.ROOT + "/build_projection3.py")
 finally:
     sys.stdout = _old
 gaku, total = _P["gaku"], _G["total"]

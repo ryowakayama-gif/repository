@@ -50,8 +50,9 @@ import data_jukyu as J
 import data_kyufu_jisseki as KJ
 import data_mieru_soukatu as M
 import data_nenpo as N
+import repo_paths as RP
 
-ODIR = "/home/user/repository/output"
+ODIR = RP.ROOT + "/output"
 OUT = os.path.join(ODIR, "介護保険事業計画_サービス見込量算定の手引き.docx")
 
 FONT = "游ゴシック"
@@ -126,8 +127,8 @@ G_HIKAITEI = st.mean([r for _, r, k in TANKA if not k])
 _buf, _old = io.StringIO(), sys.stdout
 sys.stdout = _buf
 try:
-    _G = runpy.run_path("build_projection.py")
-    _P = runpy.run_path("build_projection3.py")
+    _G = runpy.run_path(RP.ROOT + "/build_projection.py")
+    _P = runpy.run_path(RP.ROOT + "/build_projection3.py")
 finally:
     sys.stdout = _old
 gaku, total = _P["gaku"], _G["total"]

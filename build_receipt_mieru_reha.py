@@ -40,8 +40,9 @@ from openpyxl.utils import get_column_letter
 
 import data_mieruka_reha as R
 import data_kofukin_detail as KD
+import repo_paths as RP
 
-ODIR = "/home/user/repository/output"
+ODIR = RP.ROOT + "/output"
 OUT = os.path.join(
     ODIR, "第10期計画_見える化データの受領点検_福祉用具住宅改修とリハ.xlsx")
 

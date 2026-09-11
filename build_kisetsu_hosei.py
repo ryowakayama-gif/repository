@@ -88,8 +88,9 @@ import data_jukyu as J
 import data_kyufu_jisseki as KJ
 import data_mieru_soukatu as M
 import data_nenpo as N
+import repo_paths as RP
 
-ODIR = "/home/user/repository/output"
+ODIR = RP.ROOT + "/output"
 OUT = os.path.join(ODIR, "第10期計画_見込量の季節性の検証と施策反映の設計.xlsx")
 
 TOWNS3 = ["東川町", "美瑛町", "東神楽町"]
@@ -275,8 +276,8 @@ for base in ("広域", "3町"):
 _buf, _old = io.StringIO(), sys.stdout
 sys.stdout = _buf
 try:
-    _G = runpy.run_path("build_projection.py")
-    _P = runpy.run_path("build_projection3.py")
+    _G = runpy.run_path(RP.ROOT + "/build_projection.py")
+    _P = runpy.run_path(RP.ROOT + "/build_projection3.py")
 finally:
     sys.stdout = _old
 gaku, total = _P["gaku"], _G["total"]

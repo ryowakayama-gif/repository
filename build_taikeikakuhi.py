@@ -68,8 +68,9 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 import data_mieru_soukatu as M
+import repo_paths as RP
 
-ODIR = "/home/user/repository/output"
+ODIR = RP.ROOT + "/output"
 OUT = os.path.join(ODIR, "第10期計画_対計画比の偏りの補正試算.xlsx")
 
 FONT = "游ゴシック"
@@ -172,8 +173,8 @@ UNIFORM = [(k, v) for k, v in BT.items() if k[0] == 0.0][0]
 _buf, _old = io.StringIO(), sys.stdout
 sys.stdout = _buf
 try:
-    _G = runpy.run_path("build_projection.py")
-    _P = runpy.run_path("build_projection3.py")
+    _G = runpy.run_path(RP.ROOT + "/build_projection.py")
+    _P = runpy.run_path(RP.ROOT + "/build_projection3.py")
 finally:
     sys.stdout = _old
 gaku, total = _P["gaku"], _G["total"]

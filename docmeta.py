@@ -19,6 +19,7 @@ import os
 import re
 import shutil
 import zipfile
+import repo_paths as RP
 
 ORG = "大雪地区広域連合"
 VENDOR = "ビズアップ公共コンサルティング株式会社"
@@ -138,9 +139,9 @@ def scan_meta(path):
 if __name__ == "__main__":
     import glob
     bad = 0
-    for p in sorted(glob.glob("/home/user/repository/output/*.docx") +
-                    glob.glob("/home/user/repository/output/*.xlsx") +
-                    glob.glob("/home/user/repository/output/*.odt")):
+    for p in sorted(glob.glob(RP.ROOT + "/output/*.docx") +
+                    glob.glob(RP.ROOT + "/output/*.xlsx") +
+                    glob.glob(RP.ROOT + "/output/*.odt")):
         h = scan_meta(p)
         if h:
             bad += 1

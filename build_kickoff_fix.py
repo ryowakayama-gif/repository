@@ -22,12 +22,13 @@ python-docx により実行単位（run）で文字列を置換する。
 """
 
 import os
+import repo_paths as RP
 
 from docx import Document
 
 SRC = ("/root/.claude/uploads/54f527c9-842b-534d-b822-e5a6c91f837c/"
        "40c7a514-_2026.8.5__________________1.docx")
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_キックオフ会議資料_令和8年8月.docx")
 
 

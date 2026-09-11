@@ -17,6 +17,7 @@ from openpyxl.utils import get_column_letter
 
 import data_kikin_jorei as J
 import data_kessan_r6 as K
+import repo_paths as RP
 
 FONT = "游ゴシック"
 NAVY = "1F4E78"
@@ -346,7 +347,7 @@ note(ws, r + 1,
      "検討が可能となったものです。第10期の保険料の水準に影響します。",
      5, 88)
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_基金条例の確認.xlsx")
 wb.save(OUT)
 print("saved:", OUT)

@@ -43,12 +43,13 @@ import data_survey_cross as C
 import data_mieruka_km as MK
 import data_hokkaido_roster as R
 import data_hokkaido_shitei as H
+import repo_paths as RP
 
 SW = [k for k in H.KOHYO if k["事業所名"] == "さわやか東神楽館"][0]
 SW_N = sum(SW["要介護度別入居者数"].values())
 SW_KAIGO = SW["介護職員_常勤"] + SW["介護職員_非常勤"]
 
-OUT = "/home/user/repository/output/第10期計画_アンケート調査の集計分析報告書.xlsx"
+OUT = RP.ROOT + "/output/第10期計画_アンケート調査の集計分析報告書.xlsx"
 
 FONT = "游ゴシック"
 NAVY, HEAD = "1F3864", "4472C4"

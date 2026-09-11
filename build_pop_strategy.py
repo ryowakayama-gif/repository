@@ -34,8 +34,9 @@ import sys
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+import repo_paths as RP
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_人口推計の基礎の変更_総合戦略ベース.xlsx")
 
 FONT = "游ゴシック"
@@ -49,8 +50,8 @@ wb.remove(wb.active)
 
 _buf, _old = io.StringIO(), sys.stdout
 sys.stdout = _buf
-G = runpy.run_path("build_pop_adjust.py")
-P3 = runpy.run_path("build_projection3.py")
+G = runpy.run_path(RP.ROOT + "/build_pop_adjust.py")
+P3 = runpy.run_path(RP.ROOT + "/build_projection3.py")
 sys.stdout = _old
 JUKI, TOWNS = G["JUKI"], G["TOWNS"]
 

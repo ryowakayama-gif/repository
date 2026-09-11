@@ -20,8 +20,9 @@ from docx import Document
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from data_dispatch import DISPATCH, SOFU, JOKEN     # noqa: E402
+import repo_paths as RP
 
-ODIR = "/home/user/repository/output"
+ODIR = RP.ROOT + "/output"
 OUT = os.path.join(ODIR, "第10期計画_送付資料一覧.xlsx")
 
 FONT = "游ゴシック"

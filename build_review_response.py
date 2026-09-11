@@ -31,9 +31,10 @@ from docx.text.paragraph import Paragraph
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+import repo_paths as RP
 
 # 送付用（発注者にご決定・ご確認をお願いする事項）
-OUT_PUB = ("/home/user/repository/output/"
+OUT_PUB = (RP.ROOT + "/output/"
            "第10期計画_発注者確認事項一覧.xlsx")
 # 内部保管（受託者の点検対応の記録）
 def _count_ph(path):
@@ -59,9 +60,9 @@ def _count_ph(path):
     return c, sum(c.values())
 
 
-OUT_INT = ("/home/user/repository/output/"
+OUT_INT = (RP.ROOT + "/output/"
            "第10期計画_レビュー対応記録.xlsx")
-DRAFT = ("/home/user/repository/output/"
+DRAFT = (RP.ROOT + "/output/"
          "第10期介護保険事業計画_協議用素案_令和8年8月.docx")
 
 PH, PH_N = _count_ph(DRAFT)
@@ -564,11 +565,14 @@ for a in [
     ("④", "同［要内訳］の件数", "4件", "4件", "一致", "同上"),
     ("⑤", "同「暫定」の件数", "1件", "1件", "一致", "同上"),
     ("⑥", "計画素案の段落・表・図の数", "667段落114表34図",
-     "667段落114表", "一致",
-     "python-docxにより数えた。図は34点で変わらない"),
+     RP.draft_label() + "（実物）", "改訂により増えた",
+     "令和8年9月11日の点検で、管理表の記載が実物とずれていることが分かった。"
+     "以後は実物から数える（repo_paths.draft_label）。"
+     "本欄の667段落114表34図は本改訂の時点の値である"),
     ("⑦", "成果品一覧の記載（段落・表数）", "620段落108表と併存",
-     "620段落108表のまま更新されていなかった", "一致",
-     "改訂前の値が残っていた。本改訂で667段落114表に更新した"),
+     "620段落108表のまま更新されていなかった", "解消",
+     "改訂前の値が残っていた。本改訂で667段落114表に更新し、"
+     "令和8年9月11日に固定値をやめて実物から数える形に改めた"),
     ("⑧", "Excelに数式があるか", "40ブック中36ブックに数式なし",
      "成果品のExcelはすべて数式なし", "一致",
      "すべて生成スクリプトから値を書き出しているため。"

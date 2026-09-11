@@ -32,8 +32,9 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
+import repo_paths as RP
 
-OUT = "/home/user/repository/output/第10期計画_キックオフ会議資料_点検反映版.docx"
+OUT = RP.ROOT + "/output/第10期計画_キックオフ会議資料_点検反映版.docx"
 
 FONT = "游ゴシック"
 NAVY = RGBColor(0x1F, 0x38, 0x64)

@@ -750,6 +750,7 @@ note(ws, r + 1,
 
 # ============================================================ 08
 import data_kofukin_item as KI
+import repo_paths as RP
 
 ws = sheet("08_交付金指標による暫定代替",
            "保険者機能強化推進交付金等の大項目別得点（3町・3か年）",
@@ -868,7 +869,7 @@ note(ws, r + 1,
      "受領後は実績値に置き換え、置き換えた箇所を別管理表に記録します。",
      16, 96)
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_資料提供依頼_第9期の施策事業実績.xlsx")
 wb.save(OUT)
 print("saved:", OUT)

@@ -24,8 +24,9 @@ import sys
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+import repo_paths as RP
 
-ODIR = "/home/user/repository/output"
+ODIR = RP.ROOT + "/output"
 EDIR = os.path.join(ODIR, "evidence")
 
 FONT = "游ゴシック"
@@ -308,7 +309,7 @@ def build_e1():
     buf, old = io.StringIO(), sys.stdout
     sys.stdout = buf
     try:
-        G = runpy.run_path("build_pop_adjust.py")
+        G = runpy.run_path(RP.ROOT + "/build_pop_adjust.py")
     finally:
         sys.stdout = old
     JUKI, JY, TOWNS = G["JUKI"], G["JY"], G["TOWNS"]

@@ -24,6 +24,7 @@
 """
 
 import io
+import repo_paths as RP
 import runpy
 import sys
 from collections import Counter
@@ -32,7 +33,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_第9期施策別評価表と暫定評価ルール.xlsx")
 
 FONT = "游ゴシック"
@@ -44,7 +45,7 @@ BORDER = Border(left=thin, right=thin, top=thin, bottom=thin)
 _buf, _old = io.StringIO(), sys.stdout
 sys.stdout = _buf
 try:
-    G = runpy.run_path("build_policy_survey_kpi.py")
+    G = runpy.run_path(RP.ROOT + "/build_policy_survey_kpi.py")
 finally:
     sys.stdout = _old
 SISAKU = G["SISAKU"]

@@ -21,8 +21,9 @@
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+import repo_paths as RP
 
-OUT = "/home/user/repository/output/第10期計画_第9期評価の自己点検記録.xlsx"
+OUT = RP.ROOT + "/output/第10期計画_第9期評価の自己点検記録.xlsx"
 
 FONT = "游ゴシック"
 NAVY, HEAD = "7B2E2E", "C0504D"          # レビュー文書は赤系で区別する

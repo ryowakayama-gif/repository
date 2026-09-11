@@ -33,8 +33,9 @@ from docx.oxml import OxmlElement
 
 import data_kofukin_detail as D
 import data_kofukin_zenkoku as Z
+import repo_paths as RP
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_策定委員会資料_交付金評価結果.docx")
 
 FONT = "游ゴシック"
@@ -214,7 +215,7 @@ def TBL(head, rows, widths, size=9.5, center=None, first_bold=False):
 
 def FIG(name, src=None, width=15.0):
     import os
-    p = "/home/user/repository/output/figures/%s.png" % name
+    p = RP.ROOT + "/output/figures/%s.png" % name
     if not os.path.exists(p):
         return
     par = doc.add_paragraph()

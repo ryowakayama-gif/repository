@@ -43,8 +43,9 @@ from openpyxl.utils import get_column_letter
 
 import data_population as dp
 import data_juki as DJ
+import repo_paths as RP
 
-OUT = "/home/user/repository/output/第10期計画_将来推計_人口と認定者数.xlsx"
+OUT = RP.ROOT + "/output/第10期計画_将来推計_人口と認定者数.xlsx"
 
 FONT = "游ゴシック"
 NAVY, HEAD = "1F3864", "4472C4"
@@ -56,7 +57,7 @@ BORDER = Border(left=thin, right=thin, top=thin, bottom=thin)
 _buf, _old = io.StringIO(), sys.stdout
 sys.stdout = _buf
 try:
-    _g = runpy.run_path("build_certrate_analysis.py")
+    _g = runpy.run_path(RP.ROOT + "/build_certrate_analysis.py")
 finally:
     sys.stdout = _old
 IDX = _g["IDX"]

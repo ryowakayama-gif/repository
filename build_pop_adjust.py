@@ -34,8 +34,9 @@ import data_ipss_town as IP
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+import repo_paths as RP
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_人口推計の補正_65歳以上75歳以上の突合.xlsx")
 
 FONT = "游ゴシック"
@@ -48,7 +49,7 @@ BORDER = Border(left=thin, right=thin, top=thin, bottom=thin)
 _buf, _old = io.StringIO(), sys.stdout
 sys.stdout = _buf
 try:
-    G = runpy.run_path("build_projection.py")
+    G = runpy.run_path(RP.ROOT + "/build_projection.py")
 finally:
     sys.stdout = _old
 # 本表は「社人研を用いた場合（案A）と補正（案B）」の記録である。

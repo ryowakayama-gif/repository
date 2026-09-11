@@ -38,10 +38,11 @@ import data_kessan_r6 as K
 import data_kikin_jorei as J
 import data_nenpo as N
 import data_shien_tool as T
+import repo_paths as RP
 
 TOWNS3 = ["東川町", "美瑛町", "東神楽町"]
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_将来推計_第3段階_給付費と保険料.xlsx")
 
 FONT = "游ゴシック"
@@ -75,7 +76,7 @@ KYUFU_IPSS = [sum(v[i] for _n, v in SHIZENTAI) for i in range(3)]   # 3,056.7 �
 _buf, _old = io.StringIO(), sys.stdout
 sys.stdout = _buf
 try:
-    _G = runpy.run_path("build_projection.py")
+    _G = runpy.run_path(RP.ROOT + "/build_projection.py")
 finally:
     sys.stdout = _old
 

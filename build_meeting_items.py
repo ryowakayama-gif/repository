@@ -24,8 +24,9 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.formatting.rule import CellIsRule
+import repo_paths as RP
 
-OUT = "/home/user/repository/output/第10期計画_計画素案の別管理表.xlsx"
+OUT = RP.ROOT + "/output/第10期計画_計画素案の別管理表.xlsx"
 
 FONT = "游ゴシック"
 NAVY, HEAD = "1F3864", "4472C4"

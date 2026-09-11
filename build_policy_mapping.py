@@ -4,6 +4,7 @@
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+import repo_paths as RP
 
 FONT = "Carlito"
 NAVY, PALE, HEAD = "1F4E78", "EAF3F8", "5B9BD5"
@@ -256,5 +257,5 @@ note(ws, end + 2,
      "計画本文には両者を併記し、断絶の理由を注記してください。")
 
 del wb["Sheet"]
-wb.save("/home/user/repository/output/第10期計画_施策体系新旧対照表.xlsx")
+wb.save(RP.ROOT + "/output/第10期計画_施策体系新旧対照表.xlsx")
 print("saved:", len(wb.sheetnames), "sheets")

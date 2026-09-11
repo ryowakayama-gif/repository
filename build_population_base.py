@@ -30,8 +30,9 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 from data_population import YEARS, A2, A3, A3a, A4, A9  # noqa: F401
+import repo_paths as RP
 
-OUT = "/home/user/repository/output/第10期計画_人口推計の基礎の検証.xlsx"
+OUT = RP.ROOT + "/output/第10期計画_人口推計の基礎の検証.xlsx"
 
 FONT = "游ゴシック"
 NAVY, HEAD = "1F3864", "4472C4"

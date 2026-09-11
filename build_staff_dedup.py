@@ -30,10 +30,11 @@ import openpyxl
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+import repo_paths as RP
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-ODIR = "/home/user/repository/output"
+ODIR = RP.ROOT + "/output"
 SRC = os.path.join(ODIR, "第10期計画_3町の社会資源一覧との突合.xlsx")
 OUT = os.path.join(ODIR, "第10期計画_従業員数の重複計上の整理.xlsx")
 

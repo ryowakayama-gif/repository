@@ -20,8 +20,9 @@ import os
 import re
 import sys
 from collections import Counter, defaultdict
+import repo_paths as RP
 
-ODIR = "/home/user/repository/output"
+ODIR = RP.ROOT + "/output"
 
 GROUPS = [
     # 「撤回」「誤読」は、記述を改めた事実の説明として必要なため対象外とする。

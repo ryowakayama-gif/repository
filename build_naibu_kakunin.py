@@ -36,6 +36,7 @@
 """
 
 import os
+import repo_paths as RP
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -43,7 +44,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.formatting.rule import CellIsRule
 from openpyxl.worksheet.datavalidation import DataValidation
 
-ODIR = "/home/user/repository/output"
+ODIR = RP.ROOT + "/output"
 OUT = os.path.join(ODIR, "第10期計画_内部確認結果への対応整理.xlsx")
 
 JURYOBI = "令和8年9月3日"

@@ -49,8 +49,9 @@ import os
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+import repo_paths as RP
 
-ODIR = "/home/user/repository/output"
+ODIR = RP.ROOT + "/output"
 OUT = os.path.join(ODIR,
                    "第10期計画_給付適正化計画の位置づけと追加検討事項.xlsx")
 
@@ -546,9 +547,9 @@ CHO = [
      "―", "3事業中2事業の実施にとどまる",
      "令和9年度からケアプランの点検を実施する", NG_O),
     (2, "調整交付金の見込交付割合",
-     "第9期計画は7.375％",
+     "第9期計画は7.3755％（E÷（A＋総合事業費）の実数）",
      "将来推計 第3段階は「第9期計画と同水準」として"
-     "7.375％を置いている",
+     "7.3755％を置いている。7.375％に丸めると49,113円合わない",
      "取組状況が勘案される仕組みであるため、"
      "この前提が成り立つかを確認する必要がある",
      "北海道に算定方法と当広域連合の交付割合の見通しを確認する", IN_Y),

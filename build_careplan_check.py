@@ -49,8 +49,9 @@ import data_shakai_shigen as SG
 import data_hokkaido_shitei as HS
 import data_hokkaido_roster as HR
 import data_kofukin_detail as KD
+import repo_paths as RP
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_ケアプラン点検実施要領（案）.docx")
 
 FONT = "游ゴシック"

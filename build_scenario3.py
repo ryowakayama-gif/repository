@@ -43,8 +43,9 @@ from openpyxl.utils import get_column_letter
 import data_hokkaido_roster as R
 import data_hokkaido_shitei as H
 import data_survey2025 as S
+import repo_paths as RP
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_将来推計_需要3シナリオの感度表.xlsx")
 
 FONT = "游ゴシック"
@@ -57,7 +58,7 @@ BORDER = Border(left=thin, right=thin, top=thin, bottom=thin)
 _buf, _old = io.StringIO(), sys.stdout
 sys.stdout = _buf
 try:
-    G = runpy.run_path("build_projection2.py")
+    G = runpy.run_path(RP.ROOT + "/build_projection2.py")
 finally:
     sys.stdout = _old
 

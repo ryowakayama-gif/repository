@@ -30,6 +30,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+import repo_paths as RP
 
 FONT = "游ゴシック"
 NAVY = RGBColor(0x1F, 0x38, 0x64)
@@ -591,7 +592,7 @@ TBL(["項目", "内容", "受託者の仮置き", "確定の期限"],
 NOTE("上記の仮置きは、ご確認の結果によって変わります。"
      "変わった場合の影響範囲は、計画素案の別管理表に記録しています。")
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_キックオフ会議_トークスクリプト_60分.docx")
 doc.save(OUT)
 print("saved:", OUT)

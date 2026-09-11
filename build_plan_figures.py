@@ -22,6 +22,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
 from matplotlib.ticker import MaxNLocator, FuncFormatter
+import repo_paths as RP
 
 rcParams["font.family"] = "IPAGothic"
 rcParams["axes.unicode_minus"] = False
@@ -40,7 +41,7 @@ rcParams["legend.handlelength"] = 1.6
 rcParams["legend.handleheight"] = 0.8
 rcParams["legend.columnspacing"] = 1.4
 
-OUT = "/home/user/repository/output/figures"
+OUT = RP.ROOT + "/output/figures"
 os.makedirs(OUT, exist_ok=True)
 
 # 前回計画の配色（白黒印刷前提のグレースケール）

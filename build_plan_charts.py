@@ -4,6 +4,7 @@
 数値の出所は 00_凡例・出典 シートに明記。第9期計画（令和6年3月）及び
 計画素案に掲載された見える化データのみを使用し、推測値は使用していない。
 """
+import repo_paths as RP
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -3207,5 +3208,5 @@ note(ws, _end + 2,
 
 
 del wb["Sheet"]
-wb.save("/home/user/repository/output/第10期計画_図表集_白黒.xlsx")
+wb.save(RP.ROOT + "/output/第10期計画_図表集_白黒.xlsx")
 print("saved:", len(wb.sheetnames), "sheets")

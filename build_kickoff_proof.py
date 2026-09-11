@@ -18,10 +18,11 @@
 """
 
 from openpyxl import Workbook
+import repo_paths as RP
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_キックオフ会議資料（更新版）の校正結果.xlsx")
 
 FONT = "游ゴシック"

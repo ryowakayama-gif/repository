@@ -47,8 +47,9 @@ from openpyxl.utils import get_column_letter
 
 import data_kessan_r6 as K
 import data_shien_tool as T
+import repo_paths as RP
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_算定方法の整合確認_国と見える化.xlsx")
 
 FONT = "游ゴシック"
@@ -64,9 +65,9 @@ wb.remove(wb.active)
 _buf, _old = io.StringIO(), sys.stdout
 sys.stdout = _buf
 try:
-    P1 = runpy.run_path("build_projection.py")
-    P2 = runpy.run_path("build_projection2.py")
-    P3 = runpy.run_path("build_projection3.py")
+    P1 = runpy.run_path(RP.ROOT + "/build_projection.py")
+    P2 = runpy.run_path(RP.ROOT + "/build_projection2.py")
+    P3 = runpy.run_path(RP.ROOT + "/build_projection3.py")
 finally:
     sys.stdout = _old
 

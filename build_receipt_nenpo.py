@@ -21,6 +21,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 import data_nenpo as N
+import repo_paths as RP
 
 FONT = "游ゴシック"
 NAVY = "1F4E78"
@@ -656,7 +657,7 @@ note(ws, r + 1,
      "値そのものの誤りではないと解しています。",
      7, 76)
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_年報月報の受領点検.xlsx")
 wb.save(OUT)
 print("saved:", OUT)

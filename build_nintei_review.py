@@ -32,8 +32,9 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 import data_nintei as N
+import repo_paths as RP
 
-OUT = "/home/user/repository/output/第10期計画_要介護認定データの確認.xlsx"
+OUT = RP.ROOT + "/output/第10期計画_要介護認定データの確認.xlsx"
 
 FONT = "游ゴシック"
 NAVY, HEAD = "1F3864", "4472C4"

@@ -23,12 +23,13 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 import docmeta
+import repo_paths as RP
 
-SRC = ("/home/user/repository/source/"
+SRC = (RP.ROOT + "/source/"
        "中間報告会議議事録_令和8年8月26日_受領版2.odt")
-OUT_ODT = ("/home/user/repository/output/"
+OUT_ODT = (RP.ROOT + "/output/"
            "第10期計画_中間報告会議議事録_令和8年8月26日.odt")
-OUT_XLSX = ("/home/user/repository/output/"
+OUT_XLSX = (RP.ROOT + "/output/"
             "第10期計画_中間報告会議議事録の校正結果_第2回.xlsx")
 
 # ------------------------------------------------------------------

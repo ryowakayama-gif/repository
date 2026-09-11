@@ -31,11 +31,12 @@ import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+import repo_paths as RP
 
 SRC = ("/tmp/claude-0/-home-user-repository/54f527c9-842b-534d-b822-e5a6c91f837c/scratchpad/"
        "z4/3-19大雪地区広域連合_2025健康とくらしの調査_個票データ・集計表_030")
 CSV = os.path.join(SRC, "KK_2025_CSV_3-19大雪地区広域連合.csv")
-OUT = "/home/user/repository/output/第10期計画_調査クロス集計・分析.xlsx"
+OUT = RP.ROOT + "/output/第10期計画_調査クロス集計・分析.xlsx"
 
 FONT = "游ゴシック"
 NAVY, HEAD = "1F4E78", "5B9BD5"

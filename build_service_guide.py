@@ -43,8 +43,9 @@ import unicodedata
 import data_hokkaido_shitei as H
 import data_shakai_shigen as S
 import data_sogo_r6 as SG
+import repo_paths as RP
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_介護高齢者福祉サービスガイド_構成案.docx")
 
 FONT = "游ゴシック"

@@ -24,6 +24,7 @@
 """
 
 import io
+import repo_paths as RP
 import runpy
 import sys
 
@@ -31,7 +32,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_事業所調査の照会票と確定値管理表.xlsx")
 
 FONT = "游ゴシック"
@@ -44,7 +45,7 @@ BORDER = Border(left=thin, right=thin, top=thin, bottom=thin)
 _buf, _old = io.StringIO(), sys.stdout
 sys.stdout = _buf
 try:
-    G = runpy.run_path("build_survey_review.py")
+    G = runpy.run_path(RP.ROOT + "/build_survey_review.py")
 finally:
     sys.stdout = _old
 FIND = G["FIND"]

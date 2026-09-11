@@ -42,12 +42,13 @@
 """
 
 import math
+import repo_paths as RP
 import statistics as stt
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
-OUT = "/home/user/repository/output/第10期計画_地域差の分析.xlsx"
+OUT = RP.ROOT + "/output/第10期計画_地域差の分析.xlsx"
 
 FONT = "游ゴシック"
 NAVY, HEAD = "1F3864", "4472C4"

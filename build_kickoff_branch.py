@@ -20,8 +20,9 @@
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+import repo_paths as RP
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_キックオフ会議_ファシリテーションの分岐.xlsx")
 
 FONT = "游ゴシック"

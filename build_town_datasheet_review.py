@@ -20,6 +20,7 @@
 """
 
 import os
+import repo_paths as RP
 import re
 import sys
 
@@ -32,7 +33,7 @@ import data_shien_tool as T                  # noqa: E402
 import data_kyufu_jisseki as KJ              # noqa: E402
 import data_kofukin_zenkoku as KZ            # noqa: E402
 
-ODIR = "/home/user/repository/output"
+ODIR = RP.ROOT + "/output"
 SHEET = os.path.join(ODIR, "第10期計画_町別データシート.xlsx")
 CROSS = os.path.join(ODIR, "第10期計画_調査クロス集計・分析.xlsx")
 RONTEN = os.path.join(ODIR, "第10期計画_3町別の論点整理.xlsx")
@@ -193,7 +194,7 @@ import data_mieruka_a as MA                   # noqa: E402
 _buf, _old = io.StringIO(), sys.stdout
 sys.stdout = _buf
 try:
-    _G = runpy.run_path("/home/user/repository/build_projection.py")
+    _G = runpy.run_path(RP.ROOT + "/build_projection.py")
 finally:
     sys.stdout = _old
 BANDS = ["65-74", "75-84", "85+"]

@@ -10,6 +10,7 @@ from docx.shared import Pt, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
+import repo_paths as RP
 
 FONT = "游ゴシック"
 doc = Document()
@@ -764,5 +765,5 @@ P("なお、図表のレイアウト・体裁につきましては、"
   "第9期計画の体裁を維持する方針でご確認をお願いしております。"
   "ご確認の結果をいただき次第、全図表へ反映いたします。", space_after=8)
 
-doc.save("/home/user/repository/output/第10期計画_確認依頼書.docx")
+doc.save(RP.ROOT + "/output/第10期計画_確認依頼書.docx")
 print("saved")

@@ -21,8 +21,9 @@
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+import repo_paths as RP
 
-OUT = "/home/user/repository/output/第10期計画_キックオフ資料の点検結果.xlsx"
+OUT = RP.ROOT + "/output/第10期計画_キックオフ資料の点検結果.xlsx"
 
 FONT = "游ゴシック"
 NAVY, HEAD = "1F3864", "4472C4"

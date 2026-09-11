@@ -20,6 +20,7 @@
 """
 
 import io
+import repo_paths as RP
 import runpy
 import sys
 
@@ -29,7 +30,7 @@ from openpyxl.utils import get_column_letter
 
 import data_ipss_town as IP
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_社人研推計の町別データの受領点検.xlsx")
 
 FONT = "游ゴシック"
@@ -44,7 +45,7 @@ wb.remove(wb.active)
 # build_pop_adjust から町別総人口・公表ベースの値・従来の按分値を取り出す
 _buf, _old = io.StringIO(), sys.stdout
 sys.stdout = _buf
-G = runpy.run_path("build_pop_adjust.py")
+G = runpy.run_path(RP.ROOT + "/build_pop_adjust.py")
 sys.stdout = _old
 POP16, K65, K75, ANBUN = G["POP16"], G["K65"], G["K75"], G["ANBUN"]
 TOWNS, YS, CMP = G["TOWNS"], G["YS"], G["CMP"]

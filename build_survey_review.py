@@ -45,8 +45,9 @@ import data_survey2025 as S
 import data_mieruka_km as MK
 import data_survey_cross as C
 import data_survey_entry as E
+import repo_paths as RP
 
-OUT = "/home/user/repository/output/第10期計画_実施済み3調査の受領点検と集計.xlsx"
+OUT = RP.ROOT + "/output/第10期計画_実施済み3調査の受領点検と集計.xlsx"
 
 # 事業所票（JIN）の並び順に対応するサービス区分。
 # 見える化のK系列（事業所数）・M2系列（従事者数）と突合するために用いる。

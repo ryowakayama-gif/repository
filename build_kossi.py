@@ -27,6 +27,7 @@ from docx.oxml.ns import qn
 import data_survey2025 as S
 import data_hokkaido_roster as R
 import data_hokkaido_shitei as H
+import repo_paths as RP
 
 FONT = "游ゴシック"
 HEADFILL = "F2F2F2"      # 表の見出し行の網掛け（白黒印刷を前提）
@@ -794,7 +795,7 @@ NOTE("時期・作業は仕様書5の業務スケジュールによります。"
      "（第10節No.11）。")
 
 # ================================================================== 保存
-OUT = "/home/user/repository/output/第10期介護保険事業計画_骨子案.docx"
+OUT = RP.ROOT + "/output/第10期介護保険事業計画_骨子案.docx"
 doc.save(OUT)
 print("saved:", OUT)
 print("段落 %d / 表 %d" % (len(doc.paragraphs), len(doc.tables)))

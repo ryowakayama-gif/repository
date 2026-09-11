@@ -53,6 +53,7 @@
 """
 
 import os
+import repo_paths as RP
 import sys
 
 import openpyxl
@@ -70,7 +71,7 @@ import data_kofukin_zenkoku as KZ            # noqa: E402
 import data_hokkaido_shitei as HS            # noqa: E402
 import data_mieruka_a as MA                  # noqa: E402
 
-ODIR = "/home/user/repository/output"
+ODIR = RP.ROOT + "/output"
 OUT = os.path.join(ODIR, "第10期計画_町別データシート.xlsx")
 CROSS = os.path.join(ODIR, "第10期計画_調査クロス集計・分析.xlsx")
 RONTEN = os.path.join(ODIR, "第10期計画_3町別の論点整理.xlsx")
@@ -179,7 +180,7 @@ def _load_projection():
     buf, old = io.StringIO(), sys.stdout
     sys.stdout = buf
     try:
-        g = runpy.run_path("/home/user/repository/build_projection.py")
+        g = runpy.run_path(RP.ROOT + "/build_projection.py")
     finally:
         sys.stdout = old
     return g

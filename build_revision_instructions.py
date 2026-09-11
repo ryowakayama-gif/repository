@@ -4,6 +4,7 @@
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+import repo_paths as RP
 
 FONT = "Carlito"
 NAVY = "1F4E78"
@@ -1042,5 +1043,5 @@ for ref in REFS:
     r += 1
 
 del wb["Sheet"]
-wb.save("/home/user/repository/output/第10期計画素案_修正指示書_令和8年7月.xlsx")
+wb.save(RP.ROOT + "/output/第10期計画素案_修正指示書_令和8年7月.xlsx")
 print("saved")

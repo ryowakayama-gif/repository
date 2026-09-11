@@ -23,8 +23,9 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 import data_nintei
+import repo_paths as RP
 
-OUT = "/home/user/repository/output/第10期計画_認定率の年齢調整分析.xlsx"
+OUT = RP.ROOT + "/output/第10期計画_認定率の年齢調整分析.xlsx"
 
 # 見える化B系列は data_nintei に一元化している。
 # 本スクリプトは {系列名: 年次順の値の並び} の形に組み替えて用いる。

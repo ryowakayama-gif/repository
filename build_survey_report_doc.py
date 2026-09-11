@@ -48,10 +48,11 @@ import data_survey_cross as C
 import data_mieruka_km as MK
 import data_hokkaido_roster as R
 import data_hokkaido_shitei as H
+import repo_paths as RP
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_実施済み調査_結果報告書.docx")
-FIGDIR = "/home/user/repository/output/figures_report"
+FIGDIR = RP.ROOT + "/output/figures_report"
 os.makedirs(FIGDIR, exist_ok=True)
 
 # 白黒印刷を前提としたグレースケール。前回計画及び図表集と同じ配色。

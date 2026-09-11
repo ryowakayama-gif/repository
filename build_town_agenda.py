@@ -21,6 +21,7 @@
 """
 
 from openpyxl import Workbook
+import repo_paths as RP
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
@@ -28,7 +29,7 @@ import data_kofukin_item as KI
 import data_shien_tool as T
 import data_sogo_r6 as S
 
-OUT = "/home/user/repository/output/第10期計画_3町別の論点整理.xlsx"
+OUT = RP.ROOT + "/output/第10期計画_3町別の論点整理.xlsx"
 
 FONT = "游ゴシック"
 NAVY, HEAD = "1F4E78", "5B9BD5"

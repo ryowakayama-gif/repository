@@ -20,8 +20,9 @@ from openpyxl.utils import get_column_letter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from data_dispatch import DISPATCH, SOFU, JOKEN, NAIBU, GAI   # noqa: E402
+import repo_paths as RP
 
-ODIR = "/home/user/repository/output"
+ODIR = RP.ROOT + "/output"
 OUT = os.path.join(ODIR, "第10期計画_成果品の送付区分表.xlsx")
 
 FONT = "游ゴシック"

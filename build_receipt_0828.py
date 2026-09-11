@@ -24,8 +24,9 @@ from openpyxl.utils import get_column_letter
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from data_kofukin import KOF                       # noqa: E402
 import data_nintei_shinsei as NS                   # noqa: E402
+import repo_paths as RP
 
-ODIR = "/home/user/repository/output"
+ODIR = RP.ROOT + "/output"
 OUT = os.path.join(ODIR, "第10期計画_令和8年8月28日受領資料の点検結果.xlsx")
 
 FONT = "游ゴシック"

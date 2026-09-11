@@ -16,6 +16,7 @@
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+import repo_paths as RP
 
 FONT = "Carlito"
 NAVY = "1F4E78"
@@ -3056,5 +3057,5 @@ note(ws, r + 2,
 
 
 del wb["Sheet"]
-wb.save("/home/user/repository/output/第10期計画_妥当性検証報告書.xlsx")
+wb.save(RP.ROOT + "/output/第10期計画_妥当性検証報告書.xlsx")
 print("saved:", len(wb.sheetnames), "sheets")

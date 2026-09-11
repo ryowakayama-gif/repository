@@ -23,6 +23,7 @@ from openpyxl.utils import get_column_letter
 import data_mieru_soukatu as M
 import data_nenpo as N
 import data_kikin_jorei as J
+import repo_paths as RP
 
 FONT = "游ゴシック"
 NAVY = "1F4E78"
@@ -767,7 +768,7 @@ note(ws, r + 1,
      "第8期の認定事務の推移まで遡って確認できます。", 6, 96)
 
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_見える化総括表の受領点検.xlsx")
 wb.save(OUT)
 print("saved:", OUT)

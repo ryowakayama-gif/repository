@@ -24,6 +24,7 @@
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+import repo_paths as RP
 
 FONT = "游ゴシック"
 NAVY = "1F4E78"
@@ -1123,7 +1124,7 @@ note(ws, r + 1,
      "注3）本工程は前期計画の評価のみを対象とします。"
      "将来推計・見込量・保険料算定は別の工程によります。", 6, 88)
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "介護保険事業計画_前期計画の評価_実施要領.xlsx")
 wb.save(OUT)
 print("saved:", OUT)

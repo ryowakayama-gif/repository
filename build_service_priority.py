@@ -36,8 +36,9 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 import data_sogo_r6 as SG
+import repo_paths as RP
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_広域連合において行うべき事業の優先順位.xlsx")
 
 FONT = "游ゴシック"

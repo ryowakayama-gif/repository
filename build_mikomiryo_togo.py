@@ -75,10 +75,11 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 import data_dispatch as DP
+import repo_paths as RP
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
-ODIR = "/home/user/repository/output"
+ODIR = RP.ROOT + "/output"
 OUT = os.path.join(ODIR, "第10期計画_サービス見込量算定_統合報告書.xlsx")
 KIJUNBI = "令和8年9月10日"
 

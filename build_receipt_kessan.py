@@ -23,6 +23,7 @@ from openpyxl.utils import get_column_letter
 
 import data_kessan_r6 as K
 import data_nenpo as N
+import repo_paths as RP
 
 FONT = "游ゴシック"
 NAVY = "1F4E78"
@@ -520,7 +521,7 @@ note(ws, r + 1,
      "決算書は款項レベルであり、これらの代替にはなりません。",
      6, 96)
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_令和6年度決算書の受領点検.xlsx")
 wb.save(OUT)
 print("saved:", OUT)

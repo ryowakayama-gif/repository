@@ -36,8 +36,9 @@ from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
 import data_kessan_r6 as K
+import repo_paths as RP
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_構成町の意見への回答と工程の前倒し案.docx")
 
 FONT = "游ゴシック"

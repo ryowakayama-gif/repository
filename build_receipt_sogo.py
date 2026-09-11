@@ -19,6 +19,7 @@ from openpyxl.utils import get_column_letter
 
 import data_sogo_r6 as S
 import data_population as P
+import repo_paths as RP
 
 FONT = "游ゴシック"
 NAVY = "1F4E78"
@@ -662,7 +663,7 @@ note(ws, r + 1,
      "注3）令和8年度分は年度途中のため、"
      "第9期の評価は令和6・7年度の2か年で成立させる方針です。", 6, 96)
 
-OUT = ("/home/user/repository/output/"
+OUT = (RP.ROOT + "/output/"
        "第10期計画_総合事業実施状況調査の受領点検.xlsx")
 wb.save(OUT)
 print("saved:", OUT)

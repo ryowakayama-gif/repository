@@ -44,8 +44,9 @@ from openpyxl.utils import get_column_letter
 import data_jukyu as J
 import data_nintei as N
 import data_survey2025 as S
+import repo_paths as RP
 
-OUT = "/home/user/repository/output/第10期計画_将来推計_第2段階_サービス見込量.xlsx"
+OUT = RP.ROOT + "/output/第10期計画_将来推計_第2段階_サービス見込量.xlsx"
 
 FONT = "游ゴシック"
 NAVY, HEAD = "1F3864", "4472C4"
@@ -63,7 +64,7 @@ POP1 = 9082                      # 令和7年度の第1号被保険者数（D2�
 _buf, _old = io.StringIO(), sys.stdout
 sys.stdout = _buf
 try:
-    _g = runpy.run_path("build_projection.py")
+    _g = runpy.run_path(RP.ROOT + "/build_projection.py")
 finally:
     sys.stdout = _old
 total = _g["total"]

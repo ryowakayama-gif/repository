@@ -20,8 +20,9 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.chart import BarChart, Reference
+import repo_paths as RP
 
-OUT = "/home/user/repository/output/第10期計画_保険料と施策評価の他団体比較.xlsx"
+OUT = RP.ROOT + "/output/第10期計画_保険料と施策評価の他団体比較.xlsx"
 
 FONT = "游ゴシック"
 NAVY, HEAD = "1F4E78", "5B9BD5"

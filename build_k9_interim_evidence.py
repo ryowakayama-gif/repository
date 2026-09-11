@@ -24,8 +24,9 @@ from collections import Counter
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+import repo_paths as RP
 
-ROOT = "/home/user/repository/output"
+ROOT = RP.ROOT + "/output"
 OUT = os.path.join(ROOT, "第10期計画_中間報告の根拠対照表.xlsx")
 
 FONT = "游ゴシック"

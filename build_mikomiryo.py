@@ -71,8 +71,9 @@ import data_kyufu_jisseki as KJ
 import data_mieru_soukatu as M
 import data_nenpo as N
 import data_shien_tool as T
+import repo_paths as RP
 
-ODIR = "/home/user/repository/output"
+ODIR = RP.ROOT + "/output"
 OUT = os.path.join(ODIR,
                    "第10期計画_サービス見込量の算定_基準年度とパターンの比較.xlsx")
 
@@ -100,8 +101,8 @@ def chk(no, naiyo, shiki, kekka, ok):
 _buf, _old = io.StringIO(), sys.stdout
 sys.stdout = _buf
 try:
-    _G = runpy.run_path("build_projection.py")       # 第1段階（人口・認定者数）
-    _P = runpy.run_path("build_projection3.py")      # 第3段階（給付費・保険料）
+    _G = runpy.run_path(RP.ROOT + "/build_projection.py")       # 第1段階（人口・認定者数）
+    _P = runpy.run_path(RP.ROOT + "/build_projection3.py")      # 第3段階（給付費・保険料）
 finally:
     sys.stdout = _old
 

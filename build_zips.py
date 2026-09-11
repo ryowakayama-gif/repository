@@ -17,8 +17,9 @@ ZIP名及びファイル名は日本語のため、UTF-8フラグを立てて格
 
 import os
 import zipfile
+import repo_paths as RP
 
-ROOT = "/home/user/repository/output"
+ROOT = RP.ROOT + "/output"
 DEST = os.path.join(ROOT, "zip")
 EDIR = os.path.join(ROOT, "evidence")
 
@@ -228,7 +229,7 @@ def build_by_dispatch(missing):
                 n_sofu += 1
         print("  %-52s 図表の画像 %d点を同梱" % ("", n_png))
 
-    doc = "/home/user/repository/docs/令和8年8月_送付状.md"
+    doc = RP.ROOT + "/docs/令和8年8月_送付状.md"
     if os.path.exists(doc):
         with zipfile.ZipFile(os.path.join(DEST, nm), "a",
                              zipfile.ZIP_DEFLATED) as z:
@@ -339,7 +340,7 @@ if __name__ == "__main__":
     _buf, _old = _io.StringIO(), _sys.stdout
     _sys.stdout = _buf
     try:
-        _G = _runpy.run_path("build_deliverable_index.py")
+        _G = _runpy.run_path(RP.ROOT + "/build_deliverable_index.py")
     finally:
         _sys.stdout = _old
     idx = {fn for _c, fn, _a, _b, _d in _G["ITEMS"]}

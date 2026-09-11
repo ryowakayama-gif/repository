@@ -31,8 +31,9 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.formatting.rule import CellIsRule
+import repo_paths as RP
 
-OUT = "/home/user/repository/output/第10期計画_必要事項の一覧.xlsx"
+OUT = RP.ROOT + "/output/第10期計画_必要事項の一覧.xlsx"
 
 FONT = "游ゴシック"
 NAVY, HEAD = "1F3864", "4472C4"
@@ -521,7 +522,8 @@ PROD = [
     (1, "計画書の本文の頁数と章別のページ配分",
      "仕様書は本文100頁程度としている。"
      "章別に何頁を割り当てるか。第9期計画との対比。",
-     "素案は令和8年8月時点の版（667段落114表34図）。組版前のため頁数が未確定。",
+     "素案は令和8年8月時点の版（%s）。組版前のため頁数が未確定。"
+     % RP.draft_label(),
      "発注者", "R8.9"),
     (2, "本文に掲載する図表の点数",
      "図表集は33シート133点。本文には33点を掲載する案としている。"
