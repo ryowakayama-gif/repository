@@ -1,0 +1,479 @@
+<title>階上町使用料体系の構造</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#F5F8F8;
+  --panel:#FFFFFF;
+  --panel-2:#EDF2F2;
+  --ink:#16242A;
+  --ink-2:#3B5058;
+  --muted:#6B8189;
+  --rule:#D3DEDE;
+  --rule-strong:#A9BEBE;
+  --accent:#0E5A61;
+  --accent-soft:#DCEAEA;
+  --flag:#A84C1B;
+  --flag-soft:#F4E5DC;
+  --caution:#7A6412;
+  --shadow:0 1px 2px rgba(22,36,42,.06),0 8px 24px -16px rgba(22,36,42,.28);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E1517;
+    --panel:#151E21;
+    --panel-2:#1B262A;
+    --ink:#E6EDEC;
+    --ink-2:#B4C4C6;
+    --muted:#8397A0;
+    --rule:#26343A;
+    --rule-strong:#3A4D54;
+    --accent:#63BCBF;
+    --accent-soft:#16333A;
+    --flag:#E39268;
+    --flag-soft:#33231A;
+    --caution:#C9AC4C;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 10px 30px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E1517;
+  --panel:#151E21;
+  --panel-2:#1B262A;
+  --ink:#E6EDEC;
+  --ink-2:#B4C4C6;
+  --muted:#8397A0;
+  --rule:#26343A;
+  --rule-strong:#3A4D54;
+  --accent:#63BCBF;
+  --accent-soft:#16333A;
+  --flag:#E39268;
+  --flag-soft:#33231A;
+  --caution:#C9AC4C;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 10px 30px -18px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:"Noto Sans JP",system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+  font-size:16px;
+  line-height:1.85;
+  font-feature-settings:"palt" 1;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:940px;margin:0 auto;padding:0 24px 96px}
+
+/* ---------- masthead ---------- */
+.masthead{
+  border-bottom:2px solid var(--ink);
+  padding:56px 0 22px;
+  margin-bottom:44px;
+}
+.eyebrow{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--accent);margin:0 0 14px;
+}
+h1{
+  font-family:"Shippori Mincho","Yu Mincho",serif;
+  font-weight:700;
+  font-size:clamp(30px,4.6vw,44px);
+  line-height:1.32;
+  letter-spacing:.02em;
+  margin:0 0 16px;
+  text-wrap:balance;
+}
+.standfirst{
+  max-width:60ch;color:var(--ink-2);margin:0 0 24px;font-size:16.5px;
+}
+.meta{
+  display:flex;flex-wrap:wrap;gap:8px 28px;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:12.5px;color:var(--muted);
+}
+.meta b{color:var(--ink-2);font-weight:500}
+
+/* ---------- headline figures ---------- */
+.figures{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:1px;background:var(--rule);
+  border:1px solid var(--rule);
+  margin:0 0 52px;
+}
+.fig{background:var(--panel);padding:20px 22px}
+.fig .k{font-size:12px;letter-spacing:.08em;color:var(--muted);margin:0 0 8px}
+.fig .v{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:26px;font-weight:500;line-height:1.15;color:var(--ink);
+  font-variant-numeric:tabular-nums;
+}
+.fig .v small{font-size:14px;font-weight:400;color:var(--ink-2);margin-left:3px}
+.fig .n{font-size:12.5px;color:var(--muted);margin:6px 0 0;line-height:1.6}
+.fig.mark .v{color:var(--flag)}
+
+/* ---------- sections ---------- */
+section{margin:0 0 64px;scroll-margin-top:24px}
+.sechead{
+  display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:baseline;
+  border-top:1px solid var(--rule-strong);
+  padding-top:14px;margin:0 0 26px;
+}
+.secnum{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:13px;color:var(--accent);letter-spacing:.08em;
+}
+h2{
+  font-family:"Shippori Mincho","Yu Mincho",serif;
+  font-weight:700;font-size:clamp(21px,2.6vw,26px);line-height:1.4;
+  margin:0;letter-spacing:.02em;text-wrap:balance;
+}
+h3{
+  font-size:15.5px;font-weight:700;color:var(--ink);
+  margin:36px 0 12px;letter-spacing:.02em;
+  padding-left:11px;border-left:3px solid var(--accent);
+}
+h4{font-size:14.5px;font-weight:700;margin:24px 0 8px;color:var(--ink-2)}
+p{margin:0 0 14px;max-width:68ch}
+ul,ol{margin:0 0 16px;padding-left:1.3em;max-width:68ch}
+li{margin:0 0 7px}
+li::marker{color:var(--muted)}
+strong{font-weight:700}
+.num{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+code{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:13px;
+  background:var(--panel-2);padding:.12em .4em;border-radius:2px;
+}
+
+/* ---------- tables ---------- */
+.scroll{overflow-x:auto;margin:0 0 20px;border:1px solid var(--rule);background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.6}
+caption{
+  text-align:left;padding:12px 16px;font-size:12.5px;color:var(--muted);
+  border-bottom:1px solid var(--rule);background:var(--panel-2);
+}
+th,td{padding:9px 14px;text-align:left;border-bottom:1px solid var(--rule);white-space:nowrap}
+thead th{
+  background:var(--panel-2);color:var(--ink-2);font-weight:700;font-size:12.5px;
+  letter-spacing:.04em;border-bottom:1px solid var(--rule-strong);
+}
+tbody tr:last-child td,tbody tr:last-child th{border-bottom:0}
+td.n,th.n{text-align:right;font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+tr.total td,tr.total th{background:var(--accent-soft);font-weight:700}
+tr.hi td,tr.hi th{background:var(--flag-soft)}
+td.em{color:var(--flag);font-weight:700}
+.tnote{font-size:12.5px;color:var(--muted);margin:-8px 0 22px;max-width:68ch}
+
+/* ---------- callouts ---------- */
+.note{
+  background:var(--panel);border:1px solid var(--rule);
+  border-left:3px solid var(--accent);
+  padding:16px 20px;margin:0 0 22px;box-shadow:var(--shadow);
+}
+.note.warn{border-left-color:var(--flag)}
+.note .lbl{
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);margin:0 0 8px;
+}
+.note.warn .lbl{color:var(--flag)}
+.note p:last-child,.note ul:last-child,.note ol:last-child{margin-bottom:0}
+
+.formula{
+  background:var(--panel-2);border:1px solid var(--rule);
+  padding:16px 20px;margin:0 0 18px;overflow-x:auto;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;
+  font-size:13px;line-height:2;white-space:pre;color:var(--ink);
+}
+
+/* ---------- bar ---------- */
+.bars{display:grid;gap:10px;margin:0 0 22px}
+.bar{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;font-size:13px}
+.bar .lab{color:var(--ink-2);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;text-align:right}
+.track{position:relative;height:22px;background:var(--panel-2);border:1px solid var(--rule)}
+.fill{position:absolute;inset:0 auto 0 0;background:var(--accent);opacity:.85}
+.fill.alt{background:var(--flag)}
+.bar .val{
+  position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11.5px;color:var(--ink-2);
+}
+
+/* ---------- next steps ---------- */
+ol.steps{list-style:none;padding:0;counter-reset:s;max-width:none}
+ol.steps li{
+  counter-increment:s;display:grid;grid-template-columns:auto 1fr;gap:16px;
+  padding:14px 0;border-bottom:1px solid var(--rule);margin:0;
+}
+ol.steps li::before{
+  content:counter(s,decimal-leading-zero);
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:12px;
+  color:var(--accent);padding-top:4px;
+}
+ol.steps b{display:block;margin-bottom:2px}
+ol.steps span{color:var(--ink-2);font-size:14.5px}
+
+footer{
+  border-top:1px solid var(--rule-strong);padding-top:18px;
+  font-size:12.5px;color:var(--muted);
+}
+a{color:var(--accent)}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media (max-width:640px){
+  .bar{grid-template-columns:78px 1fr}
+  .wrap{padding:0 16px 72px}
+}
+</style>
+<style>
+.chartwrap{background:var(--panel);border:1px solid var(--rule);padding:18px 18px 10px;margin:0 0 10px;position:relative}
+.chartwrap svg{display:block;width:100%;height:auto}
+.gl{stroke:var(--rule);stroke-width:1}
+.ax{fill:var(--muted);font-size:11px;font-family:"IBM Plex Mono",ui-monospace,monospace}
+.curve{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.asym{stroke:var(--flag);stroke-width:1.5;stroke-dasharray:5 4;opacity:.8}
+.pt{fill:var(--accent);opacity:0;cursor:pointer}
+.pt:hover{opacity:1}
+.dot{fill:var(--accent);stroke:var(--panel);stroke-width:2}
+.anno{fill:var(--ink);font-size:11.5px;font-weight:700}
+.anno.sub{fill:var(--muted);font-weight:400;font-size:11px}
+.annoflag{fill:var(--flag);font-size:11px;font-weight:700}
+#tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--ground);
+  font-size:12px;padding:6px 10px;border-radius:3px;opacity:0;transition:opacity .12s;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;white-space:nowrap;transform:translate(-50%,-130%)}
+.axtitle{fill:var(--ink-2);font-size:11.5px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px;margin:0 0 18px}
+.kv dt{color:var(--muted);white-space:nowrap}
+.kv dd{margin:0}
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">下水道使用料改定の検討 ／ 打ち合わせ用サマリー</p>
+  <h1>調定データでみる<br>使用料体系の状況</h1>
+  <p class="standfirst">令和7年度の調定 9,070件を使用量に置き直し、現行の使用料体系がどこから収入を得て、誰にどう効いているかを整理しました。改定の設計に直結する4点にしぼっています。</p>
+  <div class="meta">
+    <span><b>データ</b>　R7年度 奇数月6回調定（公共7,641件／漁集1,429件）</span>
+    <span><b>金額</b>　42,987,132円（税込）</span>
+  </div>
+</header>
+
+<div class="figures">
+  <div class="fig">
+    <p class="k">中央値の世帯（公共）</p>
+    <p class="v">10.5<small>㎥/月</small></p>
+    <p class="n">四分位は5.5㎥〜17.0㎥。半数が月10㎥前後</p>
+  </div>
+  <div class="fig mark">
+    <p class="k">6〜10㎥帯が生む収入</p>
+    <p class="v">5.3<small>%</small></p>
+    <p class="n">従量水量の37.9%を占めるのに収入はこれだけ</p>
+  </div>
+  <div class="fig">
+    <p class="k">基本使用料が占める収入</p>
+    <p class="v">44.5<small>%</small></p>
+    <p class="n">収入の柱。水量に関係なく入る固定収入</p>
+  </div>
+  <div class="fig">
+    <p class="k">大口（月51㎥〜）の件数</p>
+    <p class="v">0.8<small>%</small></p>
+    <p class="n">64件。収入シェアも6.1%にとどまる</p>
+  </div>
+</div>
+
+<section>
+  <div class="sechead"><span class="secnum">01</span><h2>単価は月10㎥で底を打つ</h2></div>
+  <p>現行体系は「使用水量が多いほど単価を高くする累進制」と説明されていますが、実際に1㎥あたりの負担を計算すると<strong>U字カーブ</strong>になります。基本使用料があるため少量ほど平均単価が高くなるのは体系上自然ですが、<strong>6〜10㎥の単価が40.7円と極端に低い</strong>ため、底が深くなっています。</p>
+
+  <div class="chartwrap">
+    <svg viewBox="0 0 660 300" role="img" aria-label="月使用量別の1㎥あたり負担額。月5㎥で221.8円、月10㎥で131.2円まで下がり、月50㎥で179.4円まで戻る">
+    <line class="gl" x1="52" y1="243.5" x2="644" y2="243.5"/>
+    <line class="gl" x1="52" y1="198.4" x2="644" y2="198.4"/>
+    <line class="gl" x1="52" y1="153.3" x2="644" y2="153.3"/>
+    <line class="gl" x1="52" y1="108.2" x2="644" y2="108.2"/>
+    <line class="gl" x1="52" y1="63.1" x2="644" y2="63.1"/>
+    <line class="gl" x1="52" y1="18.0" x2="644" y2="18.0"/>
+      <line class="asym" x1="52" y1="40.5" x2="644" y2="40.5"/>
+      <text class="annoflag" x="644" y="33.5" text-anchor="end">どれだけ使っても 220円/㎥ が上限</text>
+      <path class="curve" d="M52.0 36.6 L65.2 104.6 L78.3 153.2 L91.5 189.7 L104.6 218.0 L117.8 240.7 L130.9 228.3 L144.1 218.1 L157.2 209.4 L170.4 201.9 L183.6 195.5 L196.7 189.8 L209.9 184.8 L223.0 180.4 L236.2 176.4 L249.3 172.9 L262.5 169.6 L275.6 166.7 L288.8 164.0 L302.0 161.5 L315.1 159.3 L328.3 157.2 L341.4 155.3 L354.6 153.5 L367.7 151.8 L380.9 150.2 L394.0 148.8 L407.2 147.4 L420.4 146.1 L433.5 144.9 L446.7 143.8 L459.8 142.7 L473.0 141.7 L486.1 140.7 L499.3 139.8 L512.4 138.9 L525.6 138.1 L538.8 137.3 L551.9 136.6 L565.1 135.9 L578.2 135.2 L591.4 134.5 L604.5 133.9 L617.7 133.3 L630.8 132.7 L644.0 132.2"/>
+      <circle class="dot" cx="52.0" cy="36.6" r="5"/>
+      <text class="anno" x="60.0" y="40.6">月5㎥ 221.8円/㎥</text>
+      <circle class="dot" cx="117.8" cy="240.7" r="5"/>
+      <text class="anno" x="130.8" y="243.7">月10㎥ 131.2円/㎥</text>
+      <text class="anno sub" x="130.8" y="258.7">全区分で最も安い（中央値の世帯）</text>
+      <circle class="dot" cx="644.0" cy="132.2" r="5"/>
+      <text class="anno" x="636.0" y="136.2" text-anchor="end">月50㎥ 179.4円/㎥</text>
+    <circle class="pt" cx="52.0" cy="36.6" r="4" data-v="5" data-u="221.8" data-m="1,108.8"/>
+    <circle class="pt" cx="65.2" cy="104.6" r="4" data-v="6" data-u="191.6" data-m="1,149.5"/>
+    <circle class="pt" cx="78.3" cy="153.2" r="4" data-v="7" data-u="170.0" data-m="1,190.2"/>
+    <circle class="pt" cx="91.5" cy="189.7" r="4" data-v="8" data-u="153.9" data-m="1,230.9"/>
+    <circle class="pt" cx="104.6" cy="218.0" r="4" data-v="9" data-u="141.3" data-m="1,271.6"/>
+    <circle class="pt" cx="117.8" cy="240.7" r="4" data-v="10" data-u="131.2" data-m="1,312.3"/>
+    <circle class="pt" cx="130.9" cy="228.3" r="4" data-v="11" data-u="136.7" data-m="1,503.7"/>
+    <circle class="pt" cx="144.1" cy="218.1" r="4" data-v="12" data-u="141.3" data-m="1,695.1"/>
+    <circle class="pt" cx="157.2" cy="209.4" r="4" data-v="13" data-u="145.1" data-m="1,886.5"/>
+    <circle class="pt" cx="170.4" cy="201.9" r="4" data-v="14" data-u="148.4" data-m="2,077.9"/>
+    <circle class="pt" cx="183.6" cy="195.5" r="4" data-v="15" data-u="151.3" data-m="2,269.3"/>
+    <circle class="pt" cx="196.7" cy="189.8" r="4" data-v="16" data-u="153.8" data-m="2,460.7"/>
+    <circle class="pt" cx="209.9" cy="184.8" r="4" data-v="17" data-u="156.0" data-m="2,652.1"/>
+    <circle class="pt" cx="223.0" cy="180.4" r="4" data-v="18" data-u="158.0" data-m="2,843.5"/>
+    <circle class="pt" cx="236.2" cy="176.4" r="4" data-v="19" data-u="159.7" data-m="3,034.9"/>
+    <circle class="pt" cx="249.3" cy="172.9" r="4" data-v="20" data-u="161.3" data-m="3,226.3"/>
+    <circle class="pt" cx="262.5" cy="169.6" r="4" data-v="21" data-u="162.7" data-m="3,417.7"/>
+    <circle class="pt" cx="275.6" cy="166.7" r="4" data-v="22" data-u="164.1" data-m="3,609.1"/>
+    <circle class="pt" cx="288.8" cy="164.0" r="4" data-v="23" data-u="165.2" data-m="3,800.5"/>
+    <circle class="pt" cx="302.0" cy="161.5" r="4" data-v="24" data-u="166.3" data-m="3,991.9"/>
+    <circle class="pt" cx="315.1" cy="159.3" r="4" data-v="25" data-u="167.3" data-m="4,183.3"/>
+    <circle class="pt" cx="328.3" cy="157.2" r="4" data-v="26" data-u="168.3" data-m="4,374.7"/>
+    <circle class="pt" cx="341.4" cy="155.3" r="4" data-v="27" data-u="169.1" data-m="4,566.1"/>
+    <circle class="pt" cx="354.6" cy="153.5" r="4" data-v="28" data-u="169.9" data-m="4,757.5"/>
+    <circle class="pt" cx="367.7" cy="151.8" r="4" data-v="29" data-u="170.7" data-m="4,948.9"/>
+    <circle class="pt" cx="380.9" cy="150.2" r="4" data-v="30" data-u="171.3" data-m="5,140.3"/>
+    <circle class="pt" cx="394.0" cy="148.8" r="4" data-v="31" data-u="172.0" data-m="5,331.7"/>
+    <circle class="pt" cx="407.2" cy="147.4" r="4" data-v="32" data-u="172.6" data-m="5,523.1"/>
+    <circle class="pt" cx="420.4" cy="146.1" r="4" data-v="33" data-u="173.2" data-m="5,714.5"/>
+    <circle class="pt" cx="433.5" cy="144.9" r="4" data-v="34" data-u="173.7" data-m="5,905.9"/>
+    <circle class="pt" cx="446.7" cy="143.8" r="4" data-v="35" data-u="174.2" data-m="6,097.3"/>
+    <circle class="pt" cx="459.8" cy="142.7" r="4" data-v="36" data-u="174.7" data-m="6,288.7"/>
+    <circle class="pt" cx="473.0" cy="141.7" r="4" data-v="37" data-u="175.1" data-m="6,480.1"/>
+    <circle class="pt" cx="486.1" cy="140.7" r="4" data-v="38" data-u="175.6" data-m="6,671.5"/>
+    <circle class="pt" cx="499.3" cy="139.8" r="4" data-v="39" data-u="176.0" data-m="6,862.9"/>
+    <circle class="pt" cx="512.4" cy="138.9" r="4" data-v="40" data-u="176.4" data-m="7,054.3"/>
+    <circle class="pt" cx="525.6" cy="138.1" r="4" data-v="41" data-u="176.7" data-m="7,245.7"/>
+    <circle class="pt" cx="538.8" cy="137.3" r="4" data-v="42" data-u="177.1" data-m="7,437.1"/>
+    <circle class="pt" cx="551.9" cy="136.6" r="4" data-v="43" data-u="177.4" data-m="7,628.5"/>
+    <circle class="pt" cx="565.1" cy="135.9" r="4" data-v="44" data-u="177.7" data-m="7,819.9"/>
+    <circle class="pt" cx="578.2" cy="135.2" r="4" data-v="45" data-u="178.0" data-m="8,011.3"/>
+    <circle class="pt" cx="591.4" cy="134.5" r="4" data-v="46" data-u="178.3" data-m="8,202.7"/>
+    <circle class="pt" cx="604.5" cy="133.9" r="4" data-v="47" data-u="178.6" data-m="8,394.1"/>
+    <circle class="pt" cx="617.7" cy="133.3" r="4" data-v="48" data-u="178.9" data-m="8,585.5"/>
+    <circle class="pt" cx="630.8" cy="132.7" r="4" data-v="49" data-u="179.1" data-m="8,776.9"/>
+    <circle class="pt" cx="644.0" cy="132.2" r="4" data-v="50" data-u="179.4" data-m="8,968.3"/>
+    <text class="ax" x="44" y="243.5" text-anchor="end" dy="4">130</text>
+    <text class="ax" x="44" y="198.4" text-anchor="end" dy="4">150</text>
+    <text class="ax" x="44" y="153.3" text-anchor="end" dy="4">170</text>
+    <text class="ax" x="44" y="108.2" text-anchor="end" dy="4">190</text>
+    <text class="ax" x="44" y="63.1" text-anchor="end" dy="4">210</text>
+    <text class="ax" x="44" y="18.0" text-anchor="end" dy="4">230</text>
+    <text class="ax" x="52.0" y="284" text-anchor="middle">5</text>
+    <text class="ax" x="117.8" y="284" text-anchor="middle">10</text>
+    <text class="ax" x="183.6" y="284" text-anchor="middle">15</text>
+    <text class="ax" x="249.3" y="284" text-anchor="middle">20</text>
+    <text class="ax" x="315.1" y="284" text-anchor="middle">25</text>
+    <text class="ax" x="380.9" y="284" text-anchor="middle">30</text>
+    <text class="ax" x="446.7" y="284" text-anchor="middle">35</text>
+    <text class="ax" x="512.4" y="284" text-anchor="middle">40</text>
+    <text class="ax" x="578.2" y="284" text-anchor="middle">45</text>
+    <text class="ax" x="644.0" y="284" text-anchor="middle">50</text>
+      <text class="axtitle" x="12" y="12">円/㎥</text>
+      <text class="axtitle" x="644" y="296" text-anchor="end">月使用量（㎥）</text>
+    </svg>
+    <div id="tip"></div>
+  </div>
+  <p class="tnote">一般汚水・税込。点にカーソルを合わせると各使用量の月額と単価が出ます。月50㎥超は220円/㎥に漸近するため、<strong>月5㎥の世帯（221.8円/㎥）より単価が高い層は存在しません</strong>。</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="secnum">02</span><h2>収入は「基本料金」と「11〜50㎥」の2本柱</h2></div>
+  <div class="scroll">
+    <table>
+      <caption>区分別の収入と従量水量（公共下水道・R7）</caption>
+      <thead><tr><th>区分</th><th class="n">収入(円)</th><th class="n">収入シェア</th><th class="n">従量水量(㎥)</th><th class="n">水量シェア</th></tr></thead>
+      <tbody>
+        <tr class="total"><th>基本使用料（5㎥まで）</th><td class="n">15,864,710</td><td class="n">44.5%</td><td class="n">—</td><td class="n">—</td></tr>
+        <tr class="hi"><th>6〜10㎥</th><td class="n">1,888,236</td><td class="n em">5.3%</td><td class="n">46,394</td><td class="n em">37.9%</td></tr>
+        <tr class="total"><th>11〜50㎥</th><td class="n">12,699,581</td><td class="n">35.7%</td><td class="n">66,351</td><td class="n">54.1%</td></tr>
+        <tr><th>51㎥〜（大口）</th><td class="n">2,156,440</td><td class="n">6.1%</td><td class="n">9,802</td><td class="n">8.0%</td></tr>
+        <tr><th>特殊算定（日割・異動等）</th><td class="n">3,007,563</td><td class="n">8.4%</td><td class="n">—</td><td class="n">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note warn">
+    <p class="lbl">ここが体系の核心</p>
+    <p><strong>6〜10㎥の帯は、従量水量の37.9%を流しているのに収入は5.3%しかありません。</strong>漁集もほぼ同じ構造です（水量33.9%・収入5.5%）。単価40.7円は11㎥以上（191.4円）の4.7分の1で、この区分だけが実質的に「ほぼ無料で流している」状態になっています。</p>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="secnum">03</span><h2>大口が少ないので累進強化では増収できない</h2></div>
+  <div class="scroll">
+    <table>
+      <caption>月使用量帯別の構成（公共下水道）</caption>
+      <thead><tr><th>月使用量帯</th><th>世帯像の目安</th><th class="n">件数</th><th class="n">件数割合</th><th class="n">金額割合</th></tr></thead>
+      <tbody>
+        <tr><th>月5㎥以下</th><td>単身・高齢世帯など</td><td class="n">1,657</td><td class="n">21.7%</td><td class="n">10.3%</td></tr>
+        <tr><th>月6〜10㎥</th><td>2人世帯など</td><td class="n">1,870</td><td class="n">24.5%</td><td class="n">12.8%</td></tr>
+        <tr class="total"><th>月11〜30㎥</th><td>3〜5人世帯など</td><td class="n">3,319</td><td class="n">43.4%</td><td class="n">50.6%</td></tr>
+        <tr><th>月31〜50㎥</th><td>小規模事業所など</td><td class="n">244</td><td class="n">3.2%</td><td class="n">8.6%</td></tr>
+        <tr class="hi"><th>月51㎥〜</th><td>大口（事業所・公共施設）</td><td class="n">64</td><td class="n em">0.8%</td><td class="n">9.3%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>近隣は累進を効かせていますが、階上町の累進度は<strong>1.15倍</strong>と最も緩やかです。</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>市町村</th><th class="n">最初の従量単価</th><th class="n">最上位の従量単価</th><th class="n">累進度</th></tr></thead>
+      <tbody>
+        <tr class="hi"><th>階上町</th><td class="n">191.4</td><td class="n">220.0</td><td class="n em">1.15倍</td></tr>
+        <tr><th>八戸市</th><td class="n">206.8</td><td class="n">355.3</td><td class="n">1.72倍</td></tr>
+        <tr><th>おいらせ町</th><td class="n">148.5</td><td class="n">280.5</td><td class="n">1.89倍</td></tr>
+        <tr><th>五戸町</th><td class="n">132.0</td><td class="n">198.0</td><td class="n">1.50倍</td></tr>
+        <tr><th>三戸町・南部町</th><td class="n">165.0／183.7</td><td class="n">同左</td><td class="n">1.00倍（一律）</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tnote">出典：経営戦略 表2.9（各市町村HP）。経営戦略は「他市町村は累進制で大口需要が多い」と分析していますが、<strong>階上町は大口が64件・収入の6.1%しかないため、累進を強めても増収にはつながりません</strong>。増収は基本使用料か中間層（11〜50㎥）から取るほかない構造です。</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="secnum">04</span><h2>改定レバーは3つ、効き方が違う</h2></div>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>動かす区分</th><th class="n">1円上げたときの増収</th><th>誰に効くか</th></tr></thead>
+      <tbody>
+        <tr><th>基本使用料（月額1円）</th><td class="n">約17,156円</td><td>全世帯に均等。少量世帯ほど負担率が高い</td></tr>
+        <tr><th>6〜10㎥（1円/㎥）</th><td class="n">約56,362円</td><td>月6㎥以上の全世帯。歪みの是正になる</td></tr>
+        <tr class="total"><th>11〜50㎥（1円/㎥）</th><td class="n">約83,913円</td><td>月11㎥以上。<strong>最も効率のよいレバー</strong></td></tr>
+        <tr><th>51㎥〜（1円/㎥）</th><td class="n">約11,671円</td><td>64件＋22件のみ。増収効果は小さい</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="tnote">2事業合計・年額。たとえば全体+10%（約430万円）を11〜50㎥だけで賄うなら+51.2円/㎥、基本使用料だけなら月+250円が必要になります。</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="secnum">05</span><h2>打ち合わせで聞かれそうなこと</h2></div>
+  <ol class="steps">
+    <li><b>なぜ今なのか</b><span>経営戦略が令和8年度＝今年度に10%改定を織り込んでいます。すでに年度途中で、遅れはそのまま計画との乖離になります。</span></li>
+    <li><b>経費回収率は足りているのか</b><span>決算統計32表ベースで公共49.9%・漁集36.9%。経営戦略のR16目標（40%・26%）は既に達成済みです。改定は「目標未達だから」ではなく「一般会計繰入をどこまで減らすか」の判断になります。</span></li>
+    <li><b>改定すれば繰入金は減るのか</b><span>基準内繰入金は減りません。分流式下水道等に要する経費が満額繰入の状態が続くためで、10〜15%の改定ではこの状態は変わりません。減らせるのは基準外繰入金です。</span></li>
+    <li><b>いくら増えるのか</b><span>+5%で約215万円、+10%で約430万円、+15%で約645万円（年額・税込）。</span></li>
+    <li><b>どの世帯が一番影響を受けるのか</b><span>一律改定ならどの世帯も同率です。体系を見直す場合は、月5㎥以下を据え置く代わりに月10〜15㎥層がピーク（+13〜19%）になります。</span></li>
+  </ol>
+</section>
+
+<footer>
+  <p>数値の出典：令和7年度調定簿明細、【R7】使用料集計ブック、令和6年度決算統計（32表・40表）、階上町下水道事業経営戦略（改定）令和7年2月。詳細は現状確認メモ（v4）および試算エビデンス（全20シート）を参照。</p>
+</footer>
+
+</div>
+
+<script>
+(function () {
+  var tip = document.getElementById('tip');
+  var wrap = tip.parentNode;
+  document.querySelectorAll('.pt').forEach(function (p) {
+    p.addEventListener('mouseenter', function () {
+      var r = wrap.getBoundingClientRect();
+      var b = p.getBoundingClientRect();
+      tip.textContent = '月' + p.dataset.v + '㎥　' + p.dataset.m + '円　' + p.dataset.u + '円/㎥';
+      tip.style.left = (b.left + b.width / 2 - r.left) + 'px';
+      tip.style.top = (b.top - r.top) + 'px';
+      tip.style.opacity = 1;
+    });
+    p.addEventListener('mouseleave', function () { tip.style.opacity = 0; });
+  });
+})();
+</script>
