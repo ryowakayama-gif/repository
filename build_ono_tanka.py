@@ -48,8 +48,8 @@ from build_ono_nenpo import load_nenpo
 ROOT = pathlib.Path(__file__).parent / "小野町_引継ぎ_整理済"
 OUT_X = ROOT / "04_算定・見込量"
 OUT_D = ROOT / "10_給付費等分析"
-ASOF = "20260909"
-ASOF_JP = "令和8年9月9日"
+ASOF = "20260914"
+ASOF_JP = "令和8年9月14日"
 
 IN_FILL = PatternFill("solid", fgColor="FFF2CC")
 CALC_FILL = PatternFill("solid", fgColor="EAF1FB")
@@ -171,6 +171,15 @@ YOBO_EXCLUDE = {
 
 # 基準期間の例外。既定は令和5〜7年度の3年平均。
 #   計上の開始が令和6年度からのもの、令和7年度に事業所が撤退したものは個別に扱う。
+# キーは サービス名、または (サービス名, 介護／予防の別)。後者が優先する。
+#
+# 令和7年度単年に切り替える基準（『見込量算定の手引き』手順⑦）
+#   ① 令和5→6→7年度の給付費が単調であること
+#   ② 令和8年度の国保連月報（審査202605〜202607）が同じ向きに続いていること
+#   ③ 3年平均による令和9年度見込が令和7年度実績と10％以上乖離すること
+# 3つそろったものだけを切り替える。訪問介護（令和5→7年度▲17.2％の単調減だが
+# 令和8年度の月報は＋6.5％と反転）、介護予防小規模多機能型居宅介護（令和5→7年度
+# ＋41.4％の単調増だが月報は▲7.7％と反転）は②を満たさないため3年平均のまま置く。
 BASE_OVERRIDE = {
     "特定福祉用具販売": (["令和6年度", "令和7年度"], "令和6年度から様式2に計上。2年平均"),
     "住宅改修": (["令和6年度", "令和7年度"], "令和6年度から様式2に計上。2年平均"),
@@ -180,11 +189,37 @@ BASE_OVERRIDE = {
     "介護医療院": (["令和7年度"], "令和6年度1件から令和7年度14件へ。"
                           "入所が定着したとみて直近年度で置く"),
     "訪問リハビリテーション": (["令和7年度"], "5年間で令和5年度の1件のみ。0で据置"),
+    ("認知症対応型共同生活介護", "介護"):
+        (["令和7年度"], "令和5→7年度で▲13.6％の単調減。令和8年度の月報も月41.3件と"
+                    "さらに低い。3年平均だと令和7年度実績を9.8％上回るため直近年度で置く"),
+    ("認知症対応型共同生活介護", "予防"):
+        (["令和7年度"], "令和6年度3.1件／月から令和7年度1.2件／月へ。令和8年度の月報も"
+                    "月1.0件。3年平均だと直近実績の1.88倍になるため直近年度で置く"),
+    ("福祉用具貸与", "予防"):
+        (["令和7年度"], "令和5→7年度で＋24.6％の単調増。令和8年度の月報も月63.0件と"
+                    "増え続けている。3年平均だと直近実績を13.3％下回るため直近年度で置く"),
 }
 BASE_DEFAULT = ["令和5年度", "令和6年度", "令和7年度"]
 
 # 審査支払手数料の単価（円／件）。決算での確認を要する仮置き。
 TESURYO = 60
+
+# 地域支援事業費の決算額（円）。年報 様式4「５．介護保険特別会計経理状況
+# （1）保険事業勘定」の歳出。令和7年度は年報そのものが未入力のため入っていない。
+# 見える化システムの「3_地域支援事業費」は全項目ゼロで出所にならない。
+CHIIKI_JISSEKI = {
+    "令和3年度": {"介護予防・生活支援サービス事業": 31012973, "一般介護予防事業": 1205754,
+              "包括的支援事業・任意事業": 23310563},
+    "令和4年度": {"介護予防・生活支援サービス事業": 31424125, "一般介護予防事業": 1021360,
+              "包括的支援事業・任意事業": 24832673},
+    "令和5年度": {"介護予防・生活支援サービス事業": 34676718, "一般介護予防事業": 993702,
+              "包括的支援事業・任意事業": 27604458},
+    "令和6年度": {"介護予防・生活支援サービス事業": 29276321, "一般介護予防事業": 5304726,
+              "包括的支援事業・任意事業": 29335189},
+}
+for _y, _d in CHIIKI_JISSEKI.items():
+    _d["総合事業"] = _d["介護予防・生活支援サービス事業"] + _d["一般介護予防事業"]
+    _d["計"] = _d["総合事業"] + _d["包括的支援事業・任意事業"]
 
 # 所得段階別第1号被保険者数と保険者の定める割合（年報 様式1 所得段階別・令和7年度末）
 SHOTOKU_R7 = [("第1段階", 0.285, 525), ("第2段階", 0.486, 297), ("第3段階", 0.685, 272),
@@ -198,6 +233,54 @@ SHOTOKU_R7 = [("第1段階", 0.285, 525), ("第2段階", 0.486, 297), ("第3段�
 KAITEI_R6 = 0.0159
 PRICE_ADJ = {"令和3年度": 1 + KAITEI_R6, "令和4年度": 1 + KAITEI_R6,
              "令和5年度": 1 + KAITEI_R6, "令和6年度": 1.0, "令和7年度": 1.0}
+
+# ------------------------------------------------------------ 保険料算定の前提
+FUTAN_WARIAI = 0.23       # 第1号被保険者負担割合。第9期と同じ23％で置く
+CHOSEI_SOTO = 0.05        # 調整交付金相当割合。国の基本指針による標準
+# 調整交付金見込交付割合は第9期計画の公表値からの逆算値
+#   （3,566,486＋207,260）×23％＋（3,566,486＋110,960）×5％－832,562
+#   ÷（3,566,486＋110,960）＝5.963％
+CHOSEI_MIKOMI = 0.05963
+SHUNORITSU = 0.9935       # 予定保険料収納率。年報 様式3 の令和7年度現年度分
+DAI9_STD3 = 3566486       # 第9期計画の標準給付費見込額（3年計・千円）
+DAI9_CHIIKI3 = 207260     # 同 地域支援事業費（3年計・千円）
+DAI9_SOGO3 = 110960       # 同 うち総合事業費（3年計・千円）
+DAI9_KIJUN = 6600         # 第9期の保険料基準額（月額・円）
+
+
+def hosei_ninzu(pop3):
+    """所得段階別加入割合補正後の第1号被保険者数。
+
+    令和7年度末の段階別構成比（年報 様式1 所得段階別）を、
+    第10期3年分の第1号被保険者数 pop3 に当てて求める。
+    """
+    act_tot = sum(n for _nm, _r, n in SHOTOKU_R7)
+    return sum(r * round(n / act_tot * pop3) for _nm, r, n in SHOTOKU_R7)
+
+
+def premium(std3, chiiki3, sogo3, pop3, kikin=0, futan=FUTAN_WARIAI,
+            wari=CHOSEI_MIKOMI, shuno=SHUNORITSU):
+    """保険料基準額（円／月）と途中の値を返す。
+
+    ①標準給付費見込額 std3
+    ②第1号被保険者負担分相当額＝（①＋地域支援事業費）×第1号被保険者負担割合
+    ③調整交付金相当額＝（①＋総合事業費）×5％
+      ※包括的支援事業・任意事業費には第2号保険料も調整交付金も入らない
+    ④保険料収納必要額＝②＋③－調整交付金見込額－準備基金取崩額
+    ⑤保険料基準額＝④÷予定保険料収納率÷補正後被保険者数÷12
+    """
+    dai1 = (std3 + chiiki3) * futan
+    soto = (std3 + sogo3) * CHOSEI_SOTO
+    mikomi = (std3 + sogo3) * wari
+    need = dai1 + soto - mikomi - kikin
+    hosei = hosei_ninzu(pop3)
+    return {"標準給付費": std3, "地域支援事業費": chiiki3, "総合事業費": sogo3,
+            "第1号負担分相当額": dai1, "調整交付金相当額": soto,
+            "調整交付金見込額": mikomi, "準備基金取崩額": kikin,
+            "保険料収納必要額": need, "賦課総額": need / shuno,
+            "補正後被保険者数": hosei,
+            "年額": need / shuno * 1000 / hosei,
+            "月額": need / shuno * 1000 / hosei / 12}
 
 
 # ================================================================ 抽出
@@ -305,12 +388,20 @@ def unit_per_case(act, svc, kind, year):
     return (tan / ken) if ken else None
 
 
-def base_years(svc):
-    return BASE_OVERRIDE.get(svc, (BASE_DEFAULT, ""))[0]
+def _override(svc, kind=None):
+    if kind is not None and (svc, kind) in BASE_OVERRIDE:
+        return BASE_OVERRIDE[(svc, kind)]
+    return BASE_OVERRIDE.get(svc)
 
 
-def base_note(svc):
-    return BASE_OVERRIDE.get(svc, (None, "令和5〜7年度の3年平均"))[1] or "令和5〜7年度の3年平均"
+def base_years(svc, kind=None):
+    ov = _override(svc, kind)
+    return ov[0] if ov else BASE_DEFAULT
+
+
+def base_note(svc, kind=None):
+    ov = _override(svc, kind)
+    return (ov[1] if ov and ov[1] else "令和5〜7年度の3年平均")
 
 
 def rate(act, gen, svc, kind, den_key, metric="件数"):
@@ -322,7 +413,7 @@ def rate(act, gen, svc, kind, den_key, metric="件数"):
     """
     i = 0 if kind == "予防" else 1
     vals = []
-    for y in base_years(svc):
+    for y in base_years(svc, kind):
         v = act[y][metric].get(svc, (0, 0))[i]
         if metric == "給付費":
             v *= PRICE_ADJ.get(y, 1.0)
@@ -543,8 +634,9 @@ def sheet_intro(wb, act, sub, gen, cv):
         ["■ 基準期間"],
         ["", "既定は令和5〜7年度の3年平均。次のサービスは個別に扱う。"],
     ]
-    for svc, (yrs, note_txt) in BASE_OVERRIDE.items():
-        rows.append(["", svc, "／".join(yrs), note_txt])
+    for key, (yrs, note_txt) in BASE_OVERRIDE.items():
+        label = key if isinstance(key, str) else f"{key[0]}（{key[1]}給付）"
+        rows.append(["", label, "／".join(yrs), note_txt])
     rows += [
         [],
         ["■ この試算で決めていないこと（町・協議会の判断が要るもの）"],
@@ -628,7 +720,8 @@ def sheet_jisseki(wb, name, act, kind, label):
             row += [ken, kyu / 1000.0, u]
         # 単価のある年が2年以上ないと変化率は出せない
         chg = f"{(seen[-1] / seen[0] - 1) * 100:+.1f}％" if len(seen) >= 2 else "―"
-        row += [chg, "／".join(y[2:] for y in base_years(svc)), base_note(svc)]
+        row += [chg, "／".join(y[2:] for y in base_years(svc, kind)),
+                base_note(svc, kind)]
         ws.append(row)
     # 合計
     tot = ["合計", ""]
@@ -678,7 +771,9 @@ def sheet_kiso(wb, act, gen):
             row.append(ken / gen[y]["1号"])
         r_k = rate(act, gen, svc, "介護", "1号")
         r_y = rate(act, gen, svc, "予防", "1号")
-        row += [r_k + r_y, "／".join(y[2:] for y in base_years(svc))]
+        bk = "／".join(y[2:] for y in base_years(svc, "介護"))
+        by = "／".join(y[2:] for y in base_years(svc, "予防"))
+        row += [r_k + r_y, bk if bk == by else f"介護 {bk}／予防 {by}"]
         for y in YS:
             ken = act[y]["件数"].get(svc, (0, 0))[1] + act[y]["件数"].get(svc, (0, 0))[0]
             tan = act[y]["単位数"].get(svc, (0, 0))[1] + act[y]["単位数"].get(svc, (0, 0))[0]
@@ -897,20 +992,17 @@ def sheet_hyojun(wb, act, gen, proj):
     hr = ws.max_row
     # 所得段階別の構成比を第10期3年分の第1号被保険者数に当てる
     pop3 = sum(POP_EST[y]["1号"] for y in PLAN_YEARS)
-    act_tot = sum(n for _n, _r, n in SHOTOKU_R7)
-    hosei = sum(rate_ * round(n / act_tot * pop3) for _nm, rate_, n in SHOTOKU_R7)
-    chiiki3, sogo3 = 207260, 110960          # 第9期計画の見込額（実績未受領）
-    # 調整交付金見込交付割合は第9期計画の公表値からの逆算値
-    #   （3,566,486+207,260）×23％＋（3,566,486+110,960）×5％−832,562
-    #   ÷（3,566,486+110,960）＝5.963％
-    wari = 0.05963
+    hosei = hosei_ninzu(pop3)
+    # 地域支援事業費は年報 様式4 の令和6年度決算を3年度とも据え置いた仮置き
+    chiiki3 = CHIIKI_JISSEKI["令和6年度"]["計"] * 3 / 1000
+    sogo3 = CHIIKI_JISSEKI["令和6年度"]["総合事業"] * 3 / 1000
+    wari = CHOSEI_MIKOMI
     for kikin, lab in ((0, "取崩なし"), (12000, "保有額12,000千円を全額取り崩す"),
                        (35000, "第9期と同じ35,000千円を取り崩す")):
-        need = ((std3 + chiiki3) * 0.23 + (std3 + sogo3) * (0.05 - wari) - kikin)
-        tsuki = need / 99.35 * 100 * 1000 / hosei / 12
-        ws.append([f"保険料基準額（月額）　{lab}", tsuki, "円",
-                   f"（標準給付費{std3:,.0f}＋地域支援事業費{chiiki3:,}）×23％"
-                   f"＋（標準給付費＋総合事業費{sogo3:,}）×（5％−{wari * 100:.3f}％）"
+        res = premium(std3, chiiki3, sogo3, pop3, kikin=kikin)
+        ws.append([f"保険料基準額（月額）　{lab}", res["月額"], "円",
+                   f"（標準給付費{std3:,.0f}＋地域支援事業費{chiiki3:,.0f}）×23％"
+                   f"＋（標準給付費＋総合事業費{sogo3:,.0f}）×（5％−{wari * 100:.3f}％）"
                    f"−取崩{kikin:,}千円　÷収納率99.35％"
                    f"÷補正後被保険者数{hosei:,.0f}人÷12"])
     ws.append(["第9期の保険料基準額（月額）", 6600, "円",
@@ -924,8 +1016,11 @@ def sheet_hyojun(wb, act, gen, proj):
             ws.cell(r, 2).number_format = "#,##0"
             ws.cell(r, 2).fill = KEY_FILL
     notes(ws, [
-        f"※ 地域支援事業費は第9期計画の見込み（3年計{chiiki3:,}千円、"
-        f"うち総合事業費{sogo3:,}千円）を仮置きした。実績は未受領。",
+        f"※ 地域支援事業費は年報 様式4 の令和6年度決算（総合事業"
+        f"{CHIIKI_JISSEKI['令和6年度']['総合事業'] / 1000:,.0f}千円＋包括的支援事業・任意事業"
+        f"{CHIIKI_JISSEKI['令和6年度']['包括的支援事業・任意事業'] / 1000:,.0f}千円）を"
+        f"3年度とも据え置き、3年計{chiiki3:,.0f}千円（うち総合事業費{sogo3:,.0f}千円）"
+        f"とした。令和7年度は年報が未入力のため取れない。",
         "※ 第1号被保険者負担割合は第9期と同じ23％。"
         "**3年の計画期間ごとに政令で定められるもので、第10期の値は確認を要する。1ptで月額303円。**",
         "**※ 調整交付金は標準給付費と総合事業費にのみかかる（包括的支援事業・任意事業費は対象外）。**"
