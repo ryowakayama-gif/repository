@@ -21,6 +21,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import shukei_data as SD
 from shukei_parse_docx import parse
 
+# ⚠ 本スクリプトが参照している調査票は令和8年9月4日版である。
+#   令和8年9月9日の校正版（doc34）で次が変わっているため、校了版の受領後に作り直す。
+#   ・在宅調査の設問番号が全体に＋1（問0→問1）。ZAI_RENUM は不要になる
+#   ・在宅 問10（旧問9）のサービスが12→9。記号もA〜Iに（ZAI_Q9 を差し替える）
+#   ・在宅 問8（旧問7・傷病）に「15.なし」「16.わからない」が追加
+#   ・ニーズ 問1(4)・問4(16) が削除済み、問4(15) は削除の指示
+#   ・ニーズ 問7(5)(8)(10) の選択肢の順序が入れ替わる
 UPLOAD = "/root/.claude/uploads/134138ca-61f7-57d3-9e9b-5f081a1a345d"
 DOCX_NEEDS = os.path.join(UPLOAD, "20085979-0904__10____________________________.docx")
 DOCX_ZAI = os.path.join(UPLOAD, "fdc7d3d0-0904__10____________________1.docx")
