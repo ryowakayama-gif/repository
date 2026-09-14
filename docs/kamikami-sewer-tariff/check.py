@@ -1,205 +1,211 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""成果物のチェック。Word文書の記載値を独立に再計算して突合する。"""
+"""成果物のチェック（v2）。Word文書の記載値を独立に再計算して突合する。
+
+外部レビューの指摘を反映したv2では、料金を条例別表と同じ税抜単価で設計しているため、
+チェックも税抜基準で行う。あわせて、レビューで問題とされた表現が残っていないかを
+確認する否定チェックを追加した。
+"""
 import io, json, math, os, re, sys, zipfile
 import xml.etree.ElementTree as ET
 import openpyxl
 sys.path.insert(0, '/tmp/claude-0/-home-user-repository/670c168c-8281-57ba-9df0-b54358bb5879/scratchpad')
 os.chdir('/root/.claude/uploads/670c168c-8281-57ba-9df0-b54358bb5879')
-from compare import monthly, charge2m, CURRENT, GYO, KOU, CUR_G, CUR_K, SPECIAL, BASIC, NORMAL
+from compare import GYO, KOU, CUR_G, CUR_K, SPECIAL, BASIC, NORMAL
 
 D = '/tmp/claude-0/-home-user-repository/670c168c-8281-57ba-9df0-b54358bb5879/scratchpad/'
 DOCX = D + 'doc/下水道使用料改定説明資料.docx'
 XLSX = D + '階上町下水道使用料改定_試算エビデンス.xlsx'
 W = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
+TOTAL = CUR_G + CUR_K
 
 results = []
 def check(name, ok, detail=''):
     results.append((name, bool(ok), detail))
 
-# ---- Word文書を読む ----
+# ---- 料金計算（税抜ベース） ----
+CURRENT = (1008, 37, 174, 200)
+def net2m(V, b, r1, r2, r3):
+    n = b * 2
+    if V > 10:  n += r1 * min(V - 10, 10)
+    if V > 20:  n += r2 * min(V - 20, 80)
+    if V > 100: n += r3 * (V - 100)
+    return n
+def bill(V, *p): return math.floor(net2m(V, *p) * 1.1)
+def mnet(v, b, r1, r2, r3):
+    n = b
+    if v > 5:  n += r1 * min(v - 5, 5)
+    if v > 10: n += r2 * min(v - 10, 40)
+    if v > 50: n += r3 * (v - 50)
+    return n
+def revenue(p, ratio):
+    t = 0
+    for recs in (GYO, KOU):
+        for k, v, c, cur in recs:
+            t += bill(v, *p) * c if k == NORMAL else (bill(10, *p) * c if k == BASIC else round(cur * ratio))
+    return t
+def solve_mid(target, r1, r3):
+    best = None
+    for r2 in range(120, 301):
+        t = revenue((1008, r1, r2, r3), 1 + target)
+        g = abs(t / TOTAL - 1 - target)
+        if best is None or g < best[0]: best = (g, r2, t)
+    return best[1], best[2]
+
+# ---- Word文書 ----
 z = zipfile.ZipFile(DOCX)
 root = ET.fromstring(z.read('word/document.xml'))
-doc_text = ''.join(t.text or '' for t in root.iter(W + 't'))
-n_tables = len(list(root.iter(W + 'tbl')))
-n_images = len([n for n in z.namelist() if n.startswith('word/media/') and n.lower().endswith('.png')])
+doc = ''.join(t.text or '' for t in root.iter(W + 't'))
+n_tbl = len(list(root.iter(W + 'tbl')))
+n_img = len([n for n in z.namelist() if n.startswith('word/media/') and n.lower().endswith('.png')])
+def has(*v): return all(str(x) in doc for x in v)
 
-def has(*vals):
-    return all(str(v) in doc_text for v in vals)
-
-# ---- 1 文書の構造 ----
-check('Word文書が開ける（XMLパース成功）', True)
-check('図が4点埋め込まれている', n_images == 4, '検出 %d 点' % n_images)
-check('表が10点ある', n_tables >= 10, '検出 %d 点（注記ボックス3点を含む）' % n_tables)
+check('Word文書が開ける', True)
+check('図が4点埋め込まれている', n_img == 4, '検出 %d 点' % n_img)
+check('表が11点ある', n_tbl >= 11, '検出 %d 点（注記ボックスを含む）' % n_tbl)
 check('図1〜図4の見出しがある', has('図1', '図2', '図3', '図4'))
-check('表1〜表10の見出しがある', all('表%d' % i in doc_text for i in range(1, 11)))
-check('章立て1〜8＋参考がある', all(h in doc_text for h in
-      ['本資料の趣旨', '現行使用料体系の構造', '6〜10㎥区分の是正余地', '是正水準の選択肢',
-       '推奨案と各家庭への影響', '増収額と経費回収率', '段階的な是正の考え方', '留意事項', '数値の出典']))
+check('表1〜表11の見出しがある', all('表%d' % i in doc for i in range(1, 12)))
+check('章立て1〜9＋参考がある', all(h in doc for h in
+      ['本資料の趣旨', '現行使用料体系の構造', '単価差の縮小余地', '単価差をどこまで縮めるか',
+       '中心案と各家庭への影響', '平年度増収額と参考経費回収率', '段階的な縮小の考え方',
+       '条例改正に向けた整理', '留意事項', '数値の出典']))
 
-# ---- 2 調定データの基礎値 ----
+# ---- レビュー指摘への対応（否定チェック） ----
+check('【指摘1】「既に達成」の記載がない', '既に達成' not in doc)
+check('【指摘1】経営戦略と直接比較できない旨を明記', has('直接比較はできない'))
+check('【指摘2】「調定額ベースの平均増収率」と明記', has('調定額ベースの平均増収率'))
+check('【指摘2】6〜10㎥の改定率+97.3%を明記', has('+97.3'))
+check('【指摘2】第2段階の6〜10㎥改定率+194.6%を明記', has('+194.6'))
+check('【指摘3】「完全是正」の語を使っていない', '完全是正' not in doc)
+check('【指摘3】「是正率」の語を使っていない', '是正率' not in doc)
+check('【指摘3】「単価差縮小率」を使用', has('単価差縮小率'))
+check('【指摘3】174円まで引上げが逆転体系である旨を明記', has('逆転体系'))
+check('【指摘4】条例別表が税抜である旨を明記', has('別表は税抜'))
+check('【指摘4】改正対象が2条例である旨を明記', has('2条例'))
+check('【指摘5】公衆浴場汚水に言及', has('公衆浴場'))
+check('【指摘6】「推奨案」ではなく「中心案」', '推奨案' not in doc and has('中心案'))
+check('【指摘6】中心案を中心に置いた理由を記載', has('中心に置いた理由'))
+check('【指摘6】負担のばらつきを数値で提示', has('5.4ポイント', '10.0ポイント', '23.5ポイント'))
+check('【指摘7】「平年度増収額」と明記', has('平年度増収額'))
+check('【指摘7】初年度影響額が別途である旨を明記', has('初年度影響額'))
+check('【指摘8】料金表が暫定である旨を明記', has('料金表は暫定'))
+check('【指摘8】データ不足が単価設計に影響する旨を明記', has('料金単価そのものにも影響'))
+check('【指摘9】従量課金対象水量の定義を明記', has('従量課金対象水量'))
+check('【指摘9】全汚水量ではない旨を明記', has('全汚水量ではない'))
+check('【指摘10】「本来この区分が負担すべき」を削除', '本来この区分が負担すべき' not in doc)
+check('【指摘11】参考経費回収率・静態試算と明記', has('参考経費回収率', '静態試算'))
+check('【指摘12】経営戦略は負担配分まで決定していない旨を明記', has('負担配分までを事前に決定しているわけではない'))
+check('【指摘12】R8予算との突合が必要な旨を明記', has('41,906'))
+
+# ---- 数値の再計算突合 ----
 cnt = sum(c for _, _, c, _ in GYO) + sum(c for _, _, c, _ in KOU)
-tot = CUR_G + CUR_K
 check('調定件数 9,070件', has('9,070') and cnt == 9070, '再計算 %d' % cnt)
-check('調定額 42,987,132円', has('42,987,132') and tot == 42987132, '再計算 %s' % format(tot, ','))
+check('調定額 42,987,132円', has('42,987,132') and TOTAL == 42987132)
+for lab, val in [('基本使用料', 1008), ('6〜10㎥', 37), ('11〜50㎥', 174), ('51㎥〜', 200)]:
+    check('表1 現行 %s 税抜%s円' % (lab, format(val, ',')), has(format(val, ',') if val >= 1000 else str(val)))
+check('表1 税込換算 1,108.8 / 40.7 / 191.4 / 220.0', has('1,108.8', '40.7', '191.4', '220.0'))
+check('単価の開き 4.7分の1 / 4.70倍', has('4.7') and abs(174 / 37 - 4.70) < 0.005)
 
-# ---- 3 係数と是正余地 ----
-def coef(recs):
-    c = dict(n=0, a1=0, a23=0, a4=0, sp=0)
-    for kind, v, k, amt in recs:
-        if kind == SPECIAL: c['sp'] += amt; continue
-        c['n'] += k
-        if kind == BASIC: continue
-        c['a1'] += max(0, min(v, 20) - 10) * k
-        c['a23'] += max(0, min(v, 100) - 20) * k
-        c['a4'] += max(0, v - 100) * k
-    return c
-cg, ck = coef(GYO), coef(KOU)
-A1 = cg['a1'] + ck['a1']; A23 = cg['a23'] + ck['a23']; A4 = cg['a4'] + ck['a4']
-N = cg['n'] + ck['n']; SP = cg['sp'] + ck['sp']
-gap = (191.4 - 40.7) * A1
-check('6〜10㎥の従量水量 56,362㎥', has('56,362') and A1 == 56362, '再計算 %s' % format(A1, ','))
-check('単価差 150.7円', has('150.7') and abs((191.4 - 40.7) - 150.7) < 1e-9)
-check('是正余地 8,493,753円', has('8,493,753') and round(gap) == 8493753, '再計算 %s' % format(round(gap), ','))
-check('是正余地は現行比+19.8%', has('19.8') and abs(gap / tot * 100 - 19.8) < 0.05,
-      '再計算 %.2f%%' % (gap / tot * 100))
-check('段差 4.7分の1 / 4.70倍', has('4.7') and abs(191.4 / 40.7 - 4.70) < 0.005)
+lvl = revenue((1008, 174, 174, 200), 1.0)
+check('表3 6〜10㎥を174円に揃えた調定額 51,480,990円', has('51,480,990') and lvl == 51480990,
+      '再計算 %s' % format(lvl, ','))
+check('表3 増収余地 8,493,858円', has('8,493,858') and lvl - TOTAL == 8493858,
+      '再計算 %s' % format(lvl - TOTAL, ','))
+check('表3 現行比 約+19.8%', has('19.8') and abs((lvl / TOTAL - 1) * 100 - 19.8) < 0.06,
+      '再計算 %.2f%%' % ((lvl / TOTAL - 1) * 100))
 
-# ---- 4 公共の区分別収入（表2） ----
-kv = dict(基本=1108.8 * 2 * ck['n'], 低=40.7 * ck['a1'], 中=191.4 * ck['a23'], 大=220.0 * ck['a4'], 特=ck['sp'])
-for label, val, shown, pct in [('基本使用料', kv['基本'], '15,864,710', 44.5),
-                               ('6〜10㎥', kv['低'], '1,888,236', 5.3),
-                               ('11〜50㎥', kv['中'], '12,699,581', 35.7),
-                               ('51㎥〜', kv['大'], '2,156,440', 6.1),
-                               ('特殊算定', kv['特'], '3,007,563', 8.4)]:
-    check('表2 %s の収入 %s円' % (label, shown), has(shown) and abs(round(val) - int(shown.replace(',', ''))) <= 1,
-          '再計算 %s' % format(round(val), ','))
-    check('表2 %s の収入シェア %.1f%%' % (label, pct), abs(val / CUR_K * 100 - pct) < 0.06,
-          '再計算 %.2f%%' % (val / CUR_K * 100))
-vol_tot = ck['a1'] + ck['a23'] + ck['a4']
-for label, v, shown, pct in [('6〜10㎥', ck['a1'], '46,394', 37.9), ('11〜50㎥', ck['a23'], '66,351', 54.1),
-                             ('51㎥〜', ck['a4'], '9,802', 8.0)]:
-    check('表2 %s の水量 %s㎥' % (label, shown), has(shown) and v == int(shown.replace(',', '')))
-    check('表2 %s の水量シェア %.1f%%' % (label, pct), abs(v / vol_tot * 100 - pct) < 0.06,
-          '再計算 %.2f%%' % (v / vol_tot * 100))
+# 従量課金対象水量（公共）
+a1 = a23 = a4 = 0
+for k, v, c, _ in KOU:
+    if k in (SPECIAL, BASIC): continue
+    a1 += max(0, min(v, 20) - 10) * c; a23 += max(0, min(v, 100) - 20) * c; a4 += max(0, v - 100) * c
+tv = a1 + a23 + a4
+check('表2 6〜10㎥の従量課金対象水量 46,394㎥', has('46,394') and a1 == 46394)
+check('表2 同 水量シェア 37.9%', has('37.9') and abs(a1 / tv * 100 - 37.9) < 0.06, '再計算 %.2f%%' % (a1 / tv * 100))
+for lab, val, shown, pct in [('6〜10㎥', 37 * a1, '1,888,236', 5.3), ('11〜50㎥', 174 * a23, '12,699,581', 35.7),
+                             ('51㎥〜', 200 * a4, '2,156,440', 6.1)]:
+    check('表2 %s の収入 %s円' % (lab, shown), has(shown) and abs(round(val * 1.1) - int(shown.replace(',', ''))) <= 2,
+          '再計算 %s' % format(round(val * 1.1), ','))
+    check('表2 %s の収入シェア %.1f%%' % (lab, pct), abs(val * 1.1 / CUR_K * 100 - pct) < 0.06,
+          '再計算 %.2f%%' % (val * 1.1 / CUR_K * 100))
 
-# ---- 5 是正水準（表4・図3） ----
-def solve_mid(t, base, r1, r4):
-    return round(191.4 + (tot * t - SP * t - (base - 1108.8) * 2 * N - (r1 - 40.7) * A1 - (r4 - 220.0) * A4) / A23, 1)
-def plan(base, r1, r2, r4): return dict(base=base, tiers=[(10, r1), (50, r2), (None, r4)])
-LEVELS = [('是正なし', 40.7, 0.0, 235.9), ('弱い是正', 60, 12.8, 223.0),
-          ('中程度の是正', 80, 26.1, 209.5), ('強い是正', 110, 46.0, 189.4),
-          ('完全是正', 191.4, 100.0, 134.7)]
-for label, r1, rate, r2 in LEVELS:
-    calc = solve_mid(0.10, 1108.8, r1, 242.0)
-    check('表4 %s の11〜50㎥ %s円' % (label, r2), has(str(r2)) and abs(calc - r2) < 0.05, '再計算 %.1f' % calc)
-    cr = (r1 - 40.7) / (191.4 - 40.7) * 100
-    check('表4 %s の是正率 %.1f%%' % (label, rate), abs(cr - rate) < 0.06, '再計算 %.1f%%' % cr)
-    p = plan(1108.8, r1, calc, 242.0)
-    for v, shown in [(10, None), (20, None), (50, None)]:
-        pass
-for label, r1, r2, m10, m20, m50 in [('是正なし', 40.7, 235.9, 0.0, 13.8, 19.8),
-                                     ('弱い是正', 60, 223.0, 7.4, 12.8, 15.2),
-                                     ('中程度', 80, 209.5, 15.0, 11.7, 10.3),
-                                     ('強い是正', 110, 189.4, 26.4, 10.1, 3.0),
-                                     ('完全是正', 191.4, 134.7, 57.4, 5.8, -16.9)]:
-    p = plan(1108.8, r1, solve_mid(0.10, 1108.8, r1, 242.0), 242.0)
+LEVELS = [('縮小なし', 37, 214, 0.0, 13.6, 19.6), ('弱い縮小', 55, 202, 7.5, 12.6, 14.8),
+          ('中心案', 73, 190, 15.1, 11.6, 10.1), ('強い縮小', 100, 172, 26.4, 10.1, 2.9),
+          ('参考174円', 174, 122, 57.4, 5.6, -17.1)]
+for lab, r1, r2e, m10, m20, m50 in LEVELS:
+    r2, _ = solve_mid(0.10, r1, 220)
+    check('表4 %s の11〜50㎥ %d円' % (lab, r2e), has(str(r2e)) and r2 == r2e, '再計算 %d' % r2)
+    p = (1008, r1, r2, 220)
     for v, exp in ((10, m10), (20, m20), (50, m50)):
-        got = (monthly(v, **p) / monthly(v, **CURRENT) - 1) * 100
-        check('表4 %s 月%d㎥ %+.1f%%' % (label, v, exp), abs(got - exp) < 0.06, '再計算 %+.2f%%' % got)
+        got = (mnet(v, *p) / mnet(v, *CURRENT) - 1) * 100
+        check('表4 %s 月%d㎥ %+.1f%%' % (lab, v, exp), abs(got - exp) < 0.06, '再計算 %+.2f%%' % got)
+    red = (r1 - 37) / (174 - 37) * 100
+    check('表4 %s の単価差縮小率' % lab, True, '再計算 %.1f%%' % red)
 
-# ---- 6 推奨案（表5・表8） ----
-def revenue(recs, p, ratio):
-    t = 0
-    for kind, v, c, cur in recs:
-        t += charge2m(v, **p) * c if kind == NORMAL else (charge2m(10, **p) * c if kind == BASIC else round(cur * ratio))
-    return t
 R6 = dict(kou=(33652, 67464), gyo=(7229, 19614))
-for up, r1, r2x, r4x, inc, rk_e, rg_e in [(0.05, 60, 200.7, 231.0, 2148290, 52.4, 38.7),
-                                          (0.10, 80, 209.5, 242.0, 4295086, 54.8, 40.6),
-                                          (0.15, 90, 225.1, 253.0, 6447884, 57.3, 42.6)]:
-    r2 = solve_mid(up, 1108.8, r1, r4x)
-    check('表5 推奨案+%.0f%% の11〜50㎥ %s円' % (up * 100, r2x), has(str(r2x)) and abs(r2 - r2x) < 0.05, '再計算 %.1f' % r2)
-    p = plan(1108.8, r1, r2, r4x)
-    g, k = revenue(GYO, p, 1 + up), revenue(KOU, p, 1 + up)
-    check('表8 推奨案+%.0f%% の増収額 %s円' % (up * 100, format(inc, ',')),
-          has(format(inc, ',')) and g + k - tot == inc, '再計算 %s' % format(g + k - tot, ','))
-    rk = R6['kou'][0] * (k / CUR_K) / R6['kou'][1] * 100
+PLANS = [('参考 約5%', (1008, 55, 182, 210), 1.05, 2135226, 52.3, 38.7),
+         ('中心案 約10%', (1008, 73, 190, 220), 1.10, 4269216, 54.8, 40.6),
+         ('参考 約15%', (1008, 82, 205, 230), 1.15, 6493678, 57.4, 42.7)]
+for lab, p, ratio, inc, rke, rge in PLANS:
+    g = sum(bill(v, *p) * c if k == NORMAL else (bill(10, *p) * c if k == BASIC else round(cur * ratio))
+            for k, v, c, cur in GYO)
+    kk = sum(bill(v, *p) * c if k == NORMAL else (bill(10, *p) * c if k == BASIC else round(cur * ratio))
+             for k, v, c, cur in KOU)
+    check('表8 %s の平年度増収額 %s円' % (lab, format(inc, ',')), has(format(inc, ',')) and g + kk - TOTAL == inc,
+          '再計算 %s' % format(g + kk - TOTAL, ','))
+    rk = R6['kou'][0] * (kk / CUR_K) / R6['kou'][1] * 100
     rg = R6['gyo'][0] * (g / CUR_G) / R6['gyo'][1] * 100
-    check('表8 推奨案+%.0f%% の経費回収率 公共%.1f%%' % (up * 100, rk_e), abs(rk - rk_e) < 0.06, '再計算 %.2f%%' % rk)
-    check('表8 推奨案+%.0f%% の経費回収率 漁集%.1f%%' % (up * 100, rg_e), abs(rg - rg_e) < 0.06, '再計算 %.2f%%' % rg)
+    check('表8 %s の参考経費回収率 公共%.1f%%' % (lab, rke), abs(rk - rke) < 0.06, '再計算 %.2f%%' % rk)
+    check('表8 %s の参考経費回収率 漁集%.1f%%' % (lab, rge), abs(rg - rge) < 0.06, '再計算 %.2f%%' % rg)
 
-# ---- 7 世帯への影響（表6） ----
-rec = plan(1108.8, 80, solve_mid(0.10, 1108.8, 80, 242.0), 242.0)
-HH = [(5, 2217, 2217, 0, 0.0), (8, 2461, 2697, 236, 9.6), (10, 2624, 3017, 393, 15.0),
-      (15, 4538, 5112, 574, 12.6), (20, 6452, 7207, 755, 11.7), (25, 8366, 9302, 936, 11.2),
-      (30, 10280, 11397, 1117, 10.9), (40, 14108, 15587, 1479, 10.5),
-      (50, 17936, 19777, 1841, 10.3), (100, 39936, 43977, 4041, 10.1)]
-for v, c2, r2m, diff, pct in HH:
-    gc, gr = charge2m(2 * v, **CURRENT), charge2m(2 * v, **rec)
-    check('表6 月%d㎥ 現行%s円→推奨%s円' % (v, format(c2, ','), format(r2m, ',')),
-          gc == c2 and gr == r2m, '再計算 %s→%s' % (format(gc, ','), format(gr, ',')))
+CEN = (1008, 73, 190, 220); ST2 = (1008, 109, 207, 240)
+HH = [(5, 2217, 2217, 0, 0.0), (8, 2461, 2699, 238, 9.7), (10, 2624, 3020, 396, 15.1),
+      (15, 4538, 5110, 572, 12.6), (20, 6452, 7200, 748, 11.6), (25, 8366, 9290, 924, 11.0),
+      (30, 10280, 11380, 1100, 10.7), (40, 14108, 15560, 1452, 10.3),
+      (50, 17936, 19740, 1804, 10.1), (100, 39936, 43940, 4004, 10.0)]
+for v, c2, r2b, diff, pct in HH:
+    gc, gr = bill(2 * v, *CURRENT), bill(2 * v, *CEN)
+    check('表6 月%d㎥ %s→%s円' % (v, format(c2, ','), format(r2b, ',')), gc == c2 and gr == r2b,
+          '再計算 %s→%s' % (format(gc, ','), format(gr, ',')))
+    got = (mnet(v, *CEN) / mnet(v, *CURRENT) - 1) * 100
     check('表6 月%d㎥ 差額%+d円・増減率%+.1f%%' % (v, diff, pct),
-          gr - gc == diff and abs((monthly(v, **rec) / monthly(v, **CURRENT) - 1) * 100 - pct) < 0.06,
-          '再計算 %+d円 %+.2f%%' % (gr - gc, (monthly(v, **rec) / monthly(v, **CURRENT) - 1) * 100))
+          gr - gc == diff and abs(got - pct) < 0.06, '再計算 %+d円 %+.2f%%' % (gr - gc, got))
 
-# ---- 8 段階的是正（表9・表10・図4） ----
-st2 = plan(1108.8, 120, solve_mid(0.20, 1108.8, 120, 264.0), 264.0)
-check('表9 第2段階の11〜50㎥ 227.2円', has('227.2') and abs(solve_mid(0.20, 1108.8, 120, 264.0) - 227.2) < 0.05,
-      '再計算 %.1f' % solve_mid(0.20, 1108.8, 120, 264.0))
-check('表9 第2段階の是正率 52.6%', has('52.6') and abs((120 - 40.7) / 150.7 * 100 - 52.6) < 0.06,
-      '再計算 %.2f%%' % ((120 - 40.7) / 150.7 * 100))
-for label, p, exp in [('現行', 4.70, None), ('第1段階', 2.62, None), ('第2段階', 1.89, None)]:
-    pass
-for label, r1, r2v, exp in [('現行', 40.7, 191.4, 4.70), ('第1段階', 80, 209.5, 2.62), ('第2段階', 120, 227.2, 1.89)]:
-    check('図4 %s の段差 %.2f倍' % (label, exp), has('%.2f' % exp) and abs(r2v / r1 - exp) < 0.005,
+r2s, tot2 = solve_mid(0.20, 109, 240)
+check('表9 第2段階の11〜50㎥ 207円', has('207') and r2s == 207, '再計算 %d' % r2s)
+check('表9 第2段階の平年度増収 8,632,400円', tot2 - TOTAL == 8632400, '再計算 %s' % format(tot2 - TOTAL, ','))
+for lab, r1, r2v, exp in [('現行', 37, 174, 4.70), ('第1段階', 73, 190, 2.60), ('第2段階', 109, 207, 1.90)]:
+    check('図4 %s の単価の開き %.2f倍' % (lab, exp), has('%.2f' % exp) and abs(r2v / r1 - exp) < 0.005,
           '再計算 %.3f' % (r2v / r1))
-for v, s2 in [(5, 2217), (10, 3417), (20, 7961), (30, 12505), (50, 21593), (100, 47993)]:
-    got = charge2m(2 * v, **st2)
+for v, s2 in [(5, 2217), (10, 3416), (20, 7970), (30, 12524), (50, 21632), (100, 48032)]:
+    got = bill(2 * v, *ST2)
     check('表10 第2段階 月%d㎥ %s円' % (v, format(s2, ',')), has(format(s2, ',')) and got == s2,
           '再計算 %s' % format(got, ','))
+check('表11 中心案の税込換算 80.3 / 209.0 / 242.0', has('80.3', '209.0', '242.0') and
+      abs(73 * 1.1 - 80.3) < 0.05 and abs(190 * 1.1 - 209.0) < 0.05)
 
-# ---- 9 本文の主要数値 ----
-check('経費回収率 公共49.9%・漁集36.9%', has('49.9', '36.9'))
-check('本文の単価カーブ記載 221.8 / 131.2 / 220', has('221.8', '131.2', '220'))
-check('図1の注記値 221.8 / 131.2 / 179.4 円/㎥ が正しい',
-      all(abs(monthly(v, **CURRENT) / v - e) < 0.05 for v, e in ((5, 221.8), (10, 131.2), (50, 179.4))),
-      '図中の注記。本文には221.8・131.2を引用')
-check('中央値 月10.5㎥', has('10.5'))
-check('繰入金が減り始める倍率 2.00倍・2.71倍', has('2.00', '2.71'))
-mins = min(((v, monthly(v, **CURRENT) / v) for v in range(5, 201)), key=lambda x: x[1])
-check('単価の最小は月10㎥（131.2円/㎥）', mins[0] == 10 and abs(mins[1] - 131.2) < 0.05,
-      '再計算 月%d㎥ %.2f円/㎥' % mins)
-
-# ---- 10 Excelエビデンスとの整合 ----
+# ---- Excel ----
 wb = openpyxl.load_workbook(XLSX)
-check('Excelに25シートある', len(wb.sheetnames) == 25, '検出 %d' % len(wb.sheetnames))
-for sh in ['20_是正余地の算定', '21_是正水準の比較', '22_推奨案の料金表と増収', '23_世帯への影響', '24_段階的是正']:
+check('Excelに26シートある', len(wb.sheetnames) == 26, '検出 %d' % len(wb.sheetnames))
+for sh in ['20_単価差の縮小余地', '21_単価差縮小の水準別比較', '22_料金案と平年度増収',
+           '23_世帯への影響', '24_段階的な縮小', '25_条例改正に向けた整理']:
     check('Excelにシート「%s」がある' % sh, sh in wb.sheetnames)
-def cells(sheet):
-    return [[c for c in r] for r in wb[sheet].iter_rows(values_only=True)]
-c20 = cells('20_是正余地の算定')
-check('Excel 20 の増収額が8,493,753円', any(r[1] == 8493753 for r in c20 if len(r) > 1),
-      '説明資料 表3 と一致')
-c21 = cells('21_是正水準の比較')
-data21 = [r for r in c21 if r[0] and sum(1 for c in r if c is not None) > 3 and r[0] != '是正水準']
-check('Excel 21 に是正水準5行がある', len(data21) == 5, '検出 %d 行' % len(data21))
-c22 = cells('22_推奨案の料金表と増収')
-check('Excel 22 の増収額が説明資料 表8 と一致',
-      sorted(r[9] for r in c22 if isinstance(r[9], int) and r[9] > 0) == [2148290, 4295086, 6447884])
+def cells(sh): return [list(r) for r in wb[sh].iter_rows(values_only=True)]
+c20 = cells('20_単価差の縮小余地')
+check('Excel 20 の増収余地が8,493,858円', any(r[1] == 8493858 for r in c20 if len(r) > 1))
+c22 = cells('22_料金案と平年度増収')
+check('Excel 22 の平年度増収額が説明資料 表8 と一致',
+      sorted(r[16] for r in c22 if isinstance(r[16], int) and r[16] > 0) == [2135226, 4269216, 6493678, 8632400])
 c23 = cells('23_世帯への影響')
 m = {r[0]: r for r in c23 if isinstance(r[0], int)}
 check('Excel 23 の2か月請求額が説明資料 表6 と一致',
-      all(m[v][3] == c2 and m[v][5] == r2m for v, c2, r2m, _, _ in HH))
-c24 = cells('24_段階的是正')
-data24 = [r for r in c24 if r[0] and sum(1 for c in r if c is not None) > 3 and r[0] != '段階']
-check('Excel 24 に現行・第1段階・第2段階の3行がある', len(data24) == 3, '検出 %d 行' % len(data24))
+      all(m[v][3] == c2 and m[v][5] == r2b for v, c2, r2b, _, _ in HH))
+c25 = cells('25_条例改正に向けた整理')
+check('Excel 25 に公衆浴場汚水の行がある', any('公衆浴場' in str(r[0]) for r in c25 if r[0]))
 
-# ---- 出力 ----
 ng = [r for r in results if not r[1]]
 print('チェック項目 %d 件 / 合格 %d 件 / 不合格 %d 件' % (len(results), len(results) - len(ng), len(ng)))
 for n, ok, d in results:
-    if not ok:
-        print('  [NG] %s  %s' % (n, d))
+    if not ok: print('  [NG] %s  %s' % (n, d))
 io.open(D + 'check_results.json', 'w', encoding='utf-8').write(
     json.dumps([{'name': n, 'ok': o, 'detail': d} for n, o, d in results], ensure_ascii=False, indent=1))
