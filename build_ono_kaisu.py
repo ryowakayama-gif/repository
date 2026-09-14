@@ -154,6 +154,44 @@ UNIT = {
     "介護療養型医療施設": "人", "介護医療院": "人",
 }
 
+# 計画書に載せるときの正式なサービス名。予防給付は「介護予防」が付く。
+YOBO_NAME = {
+    "特定福祉用具販売": "特定介護予防福祉用具販売",
+    "居宅介護支援・介護予防支援": "介護予防支援",
+}
+KAIGO_NAME = {"居宅介護支援・介護予防支援": "居宅介護支援"}
+
+
+def disp(svc, kind):
+    """計画書に載せるサービス名を返す。"""
+    if kind == "介護":
+        return KAIGO_NAME.get(svc, svc)
+    if svc in YOBO_NAME:
+        return YOBO_NAME[svc]
+    return "介護予防" + svc
+
+
+# 町内の定員（令和7年度。見える化システム Ｄ25〜Ｄ27）
+# 「人」は入所・登録の定員、「人/日」は1日あたりの利用定員。
+TEIIN = {
+    "介護老人福祉施設": (54, "人"),
+    "介護老人保健施設": (0, "人"),
+    "介護療養型医療施設": (0, "人"),
+    "介護医療院": (0, "人"),
+    "地域密着型介護老人福祉施設入所者生活介護": (58, "人"),
+    "認知症対応型共同生活介護": (98, "人"),
+    "特定施設入居者生活介護": (0, "人"),
+    "地域密着型特定施設入居者生活介護": (0, "人"),
+    "通所介護": (139, "人/日"),
+    "地域密着型通所介護": (0, "人/日"),
+    "通所リハビリテーション": (0, "人/日"),
+    "認知症対応型通所介護": (12, "人/日"),
+    "小規模多機能型居宅介護": (30, "人/日（通い）"),
+    "看護小規模多機能型居宅介護": (0, "人/日（通い）"),
+}
+EIGYO = 26          # 通所系の月あたり営業日数の目安
+TESURYO_YEN = T.TESURYO   # 審査支払手数料（円／件）
+
 # 1回あたりの報酬（単位）の目安。日数が回数とみなせるかの確認に用いる。
 TANI_ME = {
     "訪問介護": (396, "身体介護30分以上1時間未満"),
@@ -192,8 +230,8 @@ def read_geppo():
     data = {}
     for zp in sorted(ZDIR.glob("*.zip")):
         z = zipfile.ZipFile(zp)
-        for disp, real in _names(z).items():
-            m = re.search(r"(THRK0[1-5]01)_XLS(\d{6})_", disp)
+        for shown, real in _names(z).items():
+            m = re.search(r"(THRK0[1-5]01)_XLS(\d{6})_", shown)
             if not m:
                 continue
             ws = openpyxl.load_workbook(io.BytesIO(z.read(real)),
@@ -422,7 +460,8 @@ def sheet_jisseki(wb, name, a6, a7, kind, label, n6, n7):
 
 def sheet_mikomi(wb, name, a7, proj, kind, label):
     ws = wb.create_sheet(name)
-    hdr = ["区分", "サービス", "単位", "R7 日数/件", "R7実績 人/月", "R7実績 量/月"]
+    hdr = ["区分", "サービス", "単位", "R7 日数/件", "R7実績 人/月", "R7実績 量/月",
+           "R7 単価(円/件)", "見込単価(円/件)", "単価の乖離"]
     for y in T.PLAN_YEARS:
         hdr += [f"{y[2:]} 人/月", f"{y[2:]} 量/月", f"{y[2:]} 給付費(千円)"]
     hdr += ["R7→R11", "備考"]
@@ -441,8 +480,15 @@ def sheet_mikomi(wb, name, a7, proj, kind, label):
         unit = UNIT.get(svc, "人")
         ken7 = row["_R7件数"]
         # 実績の量は月報の実測日数、実績の人数は年報の件数による（出所が異なる）
-        r = [cat, svc, unit, per if unit != "人" else None,
-             ken7 / 12, (h7 / 12) if unit != "人" else None]
+        g7 = row["_R7給付費"]
+        t7 = (g7 / ken7) if ken7 else 0
+        ken9, kyu9 = row["見込"][1]
+        ti = (kyu9 * 1000 / ken9) if ken9 else 0
+        dev = (ti / t7 - 1) * 100 if t7 else None
+        r = [cat, disp(svc, kind), unit, per if unit != "人" else None,
+             ken7 / 12, (h7 / 12) if unit != "人" else None,
+             t7 or None, ti or None,
+             f"{dev:+.1f}％" if dev is not None else "―"]
         last = None
         for k in range(1, len(T.EST_YEARS)):
             ken, kyu = row["見込"][k]
@@ -453,6 +499,10 @@ def sheet_mikomi(wb, name, a7, proj, kind, label):
         memo = ""
         if unit != "人" and not k7:
             memo = "**月報に実績がないため量は出せない。人数のみ**"
+        elif dev is not None and abs(dev) > 10:
+            memo = ("**見込単価が令和7年度実績から10％を超えて離れる。"
+                    "単価も一方向に動いてきたため、3年平均が実績から離れる。"
+                    "件数と単価が逆方向に動くと給付費では打ち消し合う**")
         elif chg is not None and abs(chg) > 15:
             memo = ("**令和7年度実績から15％を超えて動く。"
                     "基準期間を令和5〜7年度の3年平均としているため、"
@@ -471,14 +521,18 @@ def sheet_mikomi(wb, name, a7, proj, kind, label):
         for c in (5, 6):
             ws.cell(r, c).number_format = "#,##0.0"
             ws.cell(r, c).fill = CALC
+        for c in (7, 8):
+            ws.cell(r, c).number_format = "#,##0"
+            ws.cell(r, c).fill = CALC
         for k in range(len(T.PLAN_YEARS)):
-            ws.cell(r, 7 + k * 3).number_format = "#,##0.0"
-            ws.cell(r, 8 + k * 3).number_format = "#,##0.0"
-            ws.cell(r, 9 + k * 3).number_format = "#,##0"
-            for c in (7 + k * 3, 8 + k * 3, 9 + k * 3):
+            ws.cell(r, 10 + k * 3).number_format = "#,##0.0"
+            ws.cell(r, 11 + k * 3).number_format = "#,##0.0"
+            ws.cell(r, 12 + k * 3).number_format = "#,##0"
+            for c in (10 + k * 3, 11 + k * 3, 12 + k * 3):
                 ws.cell(r, c).fill = CALC
     body(ws, wrap=(n,))
-    widths(ws, [11, 32, 6, 11, 11, 11] + [10, 11, 13] * len(T.PLAN_YEARS) + [10, 38])
+    widths(ws, [11, 34, 6, 11, 11, 11, 12, 12, 11]
+           + [10, 11, 13] * len(T.PLAN_YEARS) + [10, 38])
     ws.freeze_panes = "D2"
     notes(ws, [
         f"※ {label}。「量/月」は単位欄の単位（回・日）による月あたりの量。"
@@ -487,6 +541,9 @@ def sheet_mikomi(wb, name, a7, proj, kind, label):
         "**※ 訪問系の「回」は国保連月報の実日数による。**"
         "1日当たり単位数からみて1日1回が主体だが、厳密には回数は日数を1割程度上回る。",
         "※ 給付費は年報から組んだ試算による。報酬改定率は0.0％で置いている。",
+        "**※ 「見込単価」は見込給付費÷見込件数。件数と給付費をそれぞれ"
+        "令和5〜7年度の平均で置いているため、両者の比である単価は令和7年度実績と一致しない。**"
+        "10％を超えて離れるのは訪問介護（▲13.8％）と短期入所療養介護（老健）（▲12.9％）の2件。",
     ])
     return ws
 
@@ -496,11 +553,13 @@ def sheet_keikaku(wb, a7, proj):
     ws = wb.create_sheet("05_計画書掲載用")
     ws.append(["区分", "サービス", "単位", "令和7年度（実績）"]
               + [f"令和{y[2:]}" for y in T.PLAN_YEARS] + ["備考"])
+    ncol = 4 + len(T.PLAN_YEARS)
     for kind, head in (("介護", "■ 介護給付（要介護1〜5）"),
                        ("予防", "■ 予防給付（要支援1・2）")):
         ws.append([head])
         ws.cell(ws.max_row, 1).font = Font(bold=True, size=10)
         by = {r["サービス"]: r for r in proj[kind]}
+        tot = [0.0] * (1 + len(T.PLAN_YEARS))
         seen = set()
         for cat, svc, _u in T.ORDER_KAIGO:
             if svc in seen or svc not in by:
@@ -512,28 +571,40 @@ def sheet_keikaku(wb, a7, proj):
             per = (h7 / k7) if k7 else 0
             unit = UNIT.get(svc, "人")
             ken7 = row["_R7件数"]
-            if unit == "人" or not per:
-                ws.append([cat, svc, "人/月", round(ken7 / 12, 1)]
-                          + [round(row["見込"][k][0] / 12, 1)
-                             for k in range(1, len(T.EST_YEARS))]
-                          + ["" if per or unit == "人"
-                             else "月報に実績なし。人数のみ"])
+            nin = [ken7 / 12] + [row["見込"][k][0] / 12
+                                 for k in range(1, len(T.EST_YEARS))]
+            for i, v in enumerate(nin):
+                tot[i] += v
+            name = disp(svc, kind)
+            if unit == "人":
+                ws.append([cat, name, "人/月"] + [round(v, 1) for v in nin] + [""])
+            elif per:
+                # 量は月報の実測日数、見込は見込件数×1件当たり日数
+                ryo = [h7 / 12] + [row["見込"][k][0] * per / 12
+                                   for k in range(1, len(T.EST_YEARS))]
+                ws.append([cat, name, f"{unit}/月"] + [round(v) for v in ryo] + [""])
+                ws.append(["", "", "人/月"] + [round(v, 1) for v in nin] + [""])
             else:
-                ws.append([cat, svc, f"{unit}/月", round(h7 / 12)]
-                          + [round(row["見込"][k][0] * per / 12)
-                             for k in range(1, len(T.EST_YEARS))] + [""])
-                ws.append(["", "", "人/月", round(ken7 / 12, 1)]
-                          + [round(row["見込"][k][0] / 12, 1)
-                             for k in range(1, len(T.EST_YEARS))] + [""])
+                # 月報に実績がないサービスも、単位は計画書の表記のままにする
+                ws.append([cat, name, f"{unit}/月"] + [0] * (1 + len(T.PLAN_YEARS))
+                          + ["**月報に実績がない。量は0**"])
+                ws.append(["", "", "人/月"] + [round(v, 1) for v in nin] + [""])
+        ws.append([f"{kind}給付　利用者数の合計", "", "人/月"]
+                  + [round(v, 1) for v in tot] + ["延べ利用者数。重複を含む"])
+        for c in range(1, ncol + 2):
+            ws.cell(ws.max_row, c).font = Font(bold=True, size=9)
+            ws.cell(ws.max_row, c).fill = KEY
     style_header(ws)
     for r in range(2, ws.max_row + 1):
-        for c in range(4, 4 + 1 + len(T.PLAN_YEARS)):
+        for c in range(4, ncol + 1):
             v = ws.cell(r, c).value
             if isinstance(v, (int, float)):
-                ws.cell(r, c).number_format = "#,##0.0" if isinstance(v, float) else "#,##0"
-                ws.cell(r, c).fill = CALC
-    body(ws, wrap=(8,))
-    widths(ws, [11, 32, 9, 14, 12, 12, 12, 34])
+                ws.cell(r, c).number_format = ("#,##0.0" if isinstance(v, float)
+                                               else "#,##0")
+                if not ws.cell(r, c).fill.fgColor.rgb == KEY.fgColor.rgb:
+                    ws.cell(r, c).fill = CALC
+    body(ws, wrap=(ncol + 1,))
+    widths(ws, [11, 34, 9, 14, 12, 12, 12, 34])
     ws.freeze_panes = "D2"
     notes(ws, [
         "※ 計画書の見込量表にそのまま載せられる形にしたもの。"
@@ -543,6 +614,68 @@ def sheet_keikaku(wb, a7, proj):
         "**※ 令和7年度（実績）は、量が国保連月報の実測日数÷12、"
         "人数が年報の件数÷12である。**出所が異なるため、"
         "量÷人数は1件当たり日数と厳密には一致しない（件数が年報628件 対 月報642件で2.2％違う）。",
+        "※ サービス名は計画書の正式名称による（予防給付は「介護予防」を冠する）。",
+    ])
+    return ws
+
+
+def sheet_teiin(wb, a7, proj):
+    """見込量と町内の定員を突き合わせる（手引き手順9 供給実現性）。"""
+    ws = wb.create_sheet("06_定員との突合")
+    ws.append(["区分", "サービス", "町内定員", "単位",
+               "R11見込（人/月）", "R11見込（1日あたり）", "充足率", "判定", "見方"])
+    by = {(r["サービス"], k): r for k in ("介護", "予防") for r in proj[k]}
+    for svc, (cap, unit) in TEIIN.items():
+        nin = sum(by[(svc, k)]["見込"][-1][0] / 12
+                  for k in ("介護", "予防") if (svc, k) in by)
+        if not nin and not cap:
+            continue
+        if unit == "人":
+            per_day, base = None, nin
+        else:
+            # 通所系は延べ日数を営業日数で割って1日あたりの利用者数にする
+            tot = 0.0
+            for k in ("介護", "予防"):
+                if (svc, k) not in by:
+                    continue
+                d = a7.get((svc, k), {})
+                p_ = (d["日数"] / d["件数"]) if d.get("件数") else 0
+                tot += by[(svc, k)]["見込"][-1][0] * p_ / 12
+            per_day, base = tot / EIGYO, tot / EIGYO
+        rate = (base / cap * 100) if cap else None
+        if not cap:
+            judge, how = "町内になし", "町外の事業所の利用による。見込量は残す"
+        elif rate > 100:
+            judge, how = "**超過**", "町外の事業所の利用による。自給率の分析と整合させる"
+        elif rate > 85:
+            judge, how = "ほぼ満床", "**整備がなければこれ以上増やせない。見込量の上限になる**"
+        else:
+            judge, how = "余力あり", "定員は上限として働いていない"
+        ws.append(["施設・居住系" if unit == "人" else "通所系", svc, cap or None, unit,
+                   nin, per_day, rate, judge, how])
+    style_header(ws)
+    for r in range(2, ws.max_row + 1):
+        ws.cell(r, 3).number_format = "#,##0"
+        for c in (5, 6):
+            ws.cell(r, c).number_format = "#,##0.0"
+            ws.cell(r, c).fill = CALC
+        ws.cell(r, 7).number_format = "0.0％"
+        j = ws.cell(r, 8).value
+        f = WARN if j in ("**超過**", "ほぼ満床") else CALC
+        ws.cell(r, 8).fill = f
+        ws.cell(r, 7).fill = f
+    body(ws, wrap=(9,))
+    widths(ws, [14, 34, 10, 14, 15, 17, 10, 12, 44])
+    notes(ws, [
+        "※ 定員は見える化システムのＤ25〜Ｄ27（令和7年度）による。出典は介護サービス情報公表システム。",
+        f"※ 通所系は、見込延べ日数を月{EIGYO}日の営業日で割って1日あたりの利用者数にしている。",
+        "**※ 介護老人福祉施設は町内定員54人に対し見込み67.6人/月で、13.6人が町外の施設の利用にあたる。**"
+        "第9期の自給率の分析と整合させる。",
+        "**※ 小規模多機能型居宅介護は登録定員が29人以下と定められている。**"
+        "見込み31.3人/月は登録者数にあたるため、1事業所であれば上限を超える。"
+        "事業所数と登録定員を町に確認する。",
+        "※ 認知症対応型共同生活介護の定員は令和5年度71人から令和6年度98人へ増えている。"
+        "第9期が「新規整備を原則行わない」方針であったこととの整合を、第9期評価で整理する。",
     ])
     return ws
 
@@ -584,6 +717,66 @@ def sheet_check(wb, chk, a7, proj):
     return ws
 
 
+def plan_rows():
+    """計画素案の見込量表に載せる行を返す。
+
+    [(区分, サービス名, 単位, [R7実績, R9, R10, R11]), …] を介護・予防の別に。
+    """
+    data = read_geppo()
+    _n7, a7, _raw = aggregate(data, 2025)
+    act, _sub, gen = T.extract()
+    proj = T.project(act, gen, "1号", "1号", 0.0)
+    for kind in ("介護", "予防"):
+        i = 1 if kind == "介護" else 0
+        for row in proj[kind]:
+            row["_R7件数"] = act["令和7年度"]["件数"].get(row["サービス"], (0, 0))[i]
+    out = {}
+    for kind in ("介護", "予防"):
+        by = {r["サービス"]: r for r in proj[kind]}
+        rows, seen = [], set()
+        for cat, svc, _u in T.ORDER_KAIGO:
+            if svc in seen or svc not in by:
+                continue
+            seen.add(svc)
+            r = by[svc]
+            d7 = a7.get((svc, kind), {})
+            k7, h7 = d7.get("件数", 0), d7.get("日数", 0)
+            per = (h7 / k7) if k7 else 0
+            unit = UNIT.get(svc, "人")
+            ken7 = r["_R7件数"]
+            nin = [ken7 / 12] + [r["見込"][k][0] / 12
+                                 for k in range(1, len(T.EST_YEARS))]
+            ryo = ([h7 / 12] + [r["見込"][k][0] * per / 12
+                                for k in range(1, len(T.EST_YEARS))]) if per else None
+            rows.append((cat, disp(svc, kind), unit, nin, ryo,
+                         [r["見込"][k][1] for k in range(1, len(T.EST_YEARS))]))
+        out[kind] = rows
+    # 給付費の集計（千円）。計画素案の表に使う。
+    agg = {"区分": {}, "給付": {}, "計": [0.0] * len(T.PLAN_YEARS)}
+    for kind in ("介護", "予防"):
+        v = [0.0] * len(T.PLAN_YEARS)
+        for r in proj[kind]:
+            for k in range(len(T.PLAN_YEARS)):
+                v[k] += r["見込"][k + 1][1]
+                agg["区分"].setdefault(r["区分"], [0.0] * len(T.PLAN_YEARS))[k] \
+                    += r["見込"][k + 1][1]
+        agg["給付"][kind] = v
+        for k in range(len(T.PLAN_YEARS)):
+            agg["計"][k] += v[k]
+    ratios = T.kasan_ratios(gen)
+    ken = [sum(r["見込"][k + 1][0] for kk in ("介護", "予防") for r in proj[kk])
+           for k in range(len(T.PLAN_YEARS))]
+    agg["特定入所"] = [agg["計"][k] * ratios["特定入所"] for k in range(len(T.PLAN_YEARS))]
+    agg["高額"] = [agg["計"][k] * ratios["高額"] for k in range(len(T.PLAN_YEARS))]
+    agg["高額合算"] = [agg["計"][k] * ratios["高額合算"] for k in range(len(T.PLAN_YEARS))]
+    agg["手数料"] = [ken[k] * TESURYO_YEN / 1000 for k in range(len(T.PLAN_YEARS))]
+    agg["標準給付費"] = [agg["計"][k] + agg["特定入所"][k] + agg["高額"][k]
+                    + agg["高額合算"][k] + agg["手数料"][k]
+                    for k in range(len(T.PLAN_YEARS))]
+    out["集計"] = agg
+    return out
+
+
 # ================================================================ main
 
 def main():
@@ -597,6 +790,7 @@ def main():
         i = 1 if kind == "介護" else 0
         for row in proj[kind]:
             row["_R7件数"] = act["令和7年度"]["件数"].get(row["サービス"], (0, 0))[i]
+            row["_R7給付費"] = act["令和7年度"]["給付費"].get(row["サービス"], (0, 0))[i]
 
     NENPO = {}
     for fy, lab in ((2024, "令和6年度"), (2025, "令和7年度")):
@@ -619,6 +813,7 @@ def main():
     sheet_mikomi(wb, "03_見込量_介護", a7, proj, "介護", "介護給付（要介護1〜5）")
     sheet_mikomi(wb, "04_見込量_予防", a7, proj, "予防", "予防給付（要支援1・2）")
     sheet_keikaku(wb, a7, proj)
+    sheet_teiin(wb, a7, proj)
     sheet_check(wb, chk, a7, proj)
     OUT.mkdir(parents=True, exist_ok=True)
     p = OUT / f"小野町_第10期_回数日数ベース見込量_{ASOF}.xlsx"
