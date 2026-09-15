@@ -523,14 +523,14 @@ def fig_2_20():
     # 右：参加者数と参加率
     ax2.bar(x, [281, 123], width=0.5, color=[K["l"], K["d"]],
             edgecolor=K["m"], linewidth=0.9, hatch=["", "///"])
-    for xi, v, r in zip(x, [281, 123], ["12.2%", "5.3%"]):
+    for xi, v, r in zip(x, [281, 123], ["27.8%", "12.2%"]):
         ax2.annotate(f"{v}人\n（参加率{r}）", (xi, v), xytext=(0, 4),
                      textcoords="offset points", ha="center", fontsize=9.5, fontweight="bold")
     ax2.set_xticks(x); ax2.set_xticklabels(["全体", "週1回以上\n開催"], fontsize=9)
     ax2.set_ylim(0, 350)
     style_ax(ax2, ylab="参加者数（人）")
     ax2.set_title("参加者数", loc="left", fontsize=10.5, pad=6)
-    fig.suptitle("図2-20　住民主体の通いの場の状況（令和6年度）",
+    fig.suptitle("図2-20　住民主体の通いの場の状況（令和6年度）　※参加率の分母は65歳以上人口1,009人",
                  x=0.02, ha="left", fontsize=12, y=1.02)
     save(fig, "fig2-20_通いの場.png")
 
