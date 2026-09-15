@@ -28,6 +28,7 @@ import openpyxl
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
+import build_ono_tanka as T
 from build_ono_tanka import POP_DAI10 as TANKA_POP
 from build_ono_kaisu import chiiki_plan, sogo_jisseki
 from build_ono_tanka import CHIIKI_JISSEKI, TESURYO, build_mikomi_input
@@ -727,12 +728,15 @@ def sheet_hokenryo(wb, hyojun_rows, chiiki):
         (6, "第1号被保険者負担分相当額", "=C5*C6/100", "千円", "④×⑤", "calc"),
         (7, "調整交付金相当割合", 5.0, "％", "国の基本指針による。標準は5％", "in"),
         (8, "調整交付金相当額", "=(C2+C4)*C8/100", "千円", "（①＋③）×⑦", "calc"),
-        (9, "調整交付金見込交付割合", 5.963, "％",
+        (9, "調整交付金見込交付割合", round(T.CHOSEI_MIKOMI * 100, 4), "％",
          "**第9期計画の公表値から逆算した小野町の実績値。**"
-         "（①＋③）×23％＋（①＋③）×5％－保険料収納必要額832,562千円 より5.963％。"
+         "（①＋②）×23％＋（①＋③）×5％－保険料収納必要額832,562千円＝219,272千円。"
+         "これを①で割って6.148％。**基数に総合事業費を含めない**"
+         "（見える化システムの算式。含めると5.963％で、見込額そのものは変わらない）。"
          "後期高齢者加入割合が高く低所得層が厚い保険者ほど5％を上回る。"
          "**第10期の値は見える化システムの係数シート（全国値）で確認する**", "in"),
-        (10, "調整交付金見込額", "=(C2+C4)*C10/100", "千円", "（①＋③）×⑨", "calc"),
+        (10, "調整交付金見込額", "=C2*C10/100", "千円",
+         "**①×⑨。⑧と違い基数に③総合事業費を含めない（見える化システムの算式）**", "calc"),
         (11, "財政安定化基金拠出金見込額", 0, "千円", "県の設定による。第9期は0円", "in"),
         (12, "財政安定化基金償還金", 0, "千円", "借入がある場合。第9期は0円", "in"),
         (13, "準備基金取崩額", None, "千円",
