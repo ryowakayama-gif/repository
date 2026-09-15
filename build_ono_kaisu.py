@@ -902,7 +902,7 @@ def sheet_zentei(wb, plan):
          "令和7年9月審査分で961人から862人へ99人減っているが、"
          "同じ月の給付件数は1,303件から1,365件へ増えている。"
          "計上方法の変更の有無が確認できていない",
-         "分母を認定者数にすると3年計で10.2％低く出る",
+         "見える化の3段連鎖（第1号×認定率×利用率）に組み替えると3年計で1.0％低く出る（月額59円）。基準期間が断層をまたぐ場合は10.5％低く出る",
          "認定システムの計上方法（町）"),
         ("訪問介護の基準期間", "令和5〜7年度の3年平均",
          "令和5年度958件→令和6年度843件→令和7年度628件と減っているが、"
@@ -1064,6 +1064,67 @@ def chiiki_plan():
                  "生活支援体制整備・認知症総合支援・地域ケア会議・任意事業の合計で、"
                  "事業別の内訳は様式4にない**"))
     return rows
+
+
+def nintei_juri():
+    """月次の認定者数と受給者数を国保連月報から取り出す。
+
+    THRF0101（受給者の状況その1）  認定者数
+    THRG0101（受給者の状況その2）  居宅／地域密着型／施設／総合事業／合計の受給者数
+    いずれも印刷帳票の男女計＝行26の列4を採る。
+
+    見える化システムの見込量算定は
+        第1号被保険者数 × 認定率 × 利用率
+    の3段で、利用率の分母は認定者数（在宅サービスは認定者数−施設・居住系利用者数）である。
+    令和7年9月審査分の認定者数の断層が、この連鎖のどこに効くかを確かめるために使う。
+
+    返り値 [(審査年月, 認定者数, 居宅, 地域密着型, 施設, 総合事業, 受給者計)]
+    """
+    import io
+    res = {}
+    for form in ("THRF0101", "THRG0101"):
+        for zp in sorted(ZDIR.glob("*.zip")):
+            z = zipfile.ZipFile(zp)
+            for shown, real in _names(z).items():
+                if form not in shown or not shown.lower().endswith(".xlsx"):
+                    continue
+                m = re.search(r"XLS(20\d{4})", shown.upper())
+                if not m:
+                    continue
+                wb = openpyxl.load_workbook(io.BytesIO(z.read(real)), data_only=True)
+                res.setdefault(m.group(1), {})[form] = wb
+    out = []
+    for ym in sorted(res):
+        d = res[ym]
+        if "THRF0101" not in d or "THRG0101" not in d:
+            continue
+        n = d["THRF0101"]["印刷帳票1"].cell(26, 4).value
+        g = [d["THRG0101"][f"印刷帳票{i}"].cell(26, 4).value for i in (1, 2, 3, 4, 5)]
+        out.append((ym, n, *g))
+    return out
+
+
+BREAK_YM = "202509"      # 認定者数に段差が生じた審査年月
+
+
+def nintei_break():
+    """認定者数の段差が、認定率と利用率のどちらに効いているかを要約する。"""
+    rows = nintei_juri()
+    pre = [r for r in rows if r[0] < BREAK_YM]
+    post = [r for r in rows if r[0] >= BREAK_YM]
+
+    def av(rs, i):
+        return sum(r[i] for r in rs) / len(rs)
+
+    return {
+        "rows": rows,
+        "前": {"期間": (pre[0][0], pre[-1][0]), "月数": len(pre),
+              "認定者": av(pre, 1), "受給者": av(pre, 6),
+              "利用率": av(pre, 6) / av(pre, 1)},
+        "後": {"期間": (post[0][0], post[-1][0]), "月数": len(post),
+              "認定者": av(post, 1), "受給者": av(post, 6),
+              "利用率": av(post, 6) / av(post, 1)},
+    }
 
 
 def check_base(verbose=True):
