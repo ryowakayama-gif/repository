@@ -81,7 +81,10 @@ ALL12 = list(range(12))
 
 def parse(biz, cols=ALL12):
     """(種別, 月あたり水量, 月数, 件数, 現行額) に分解。
-    種別 N=通常算定 / B=基本水量内 / SP=日割・異動等"""
+    種別 N=通常算定 / B=基本水量内 / SPH=基本水量未満の日割 / SP=その他（異動等）
+
+    SPH は第18条第4項（漁集は第20条第4項）の日割であり、基本使用料を日数で
+    按分した額である。基本使用料を据え置く料金案では改定後も変わらない。"""
     fn = {'公共下水道': 'R7_使用料集計ブック_公共.csv',
           '漁業集落排水': 'R7_使用料集計ブック_漁集.csv'}[biz]
     _, _, avg = hiwari()[biz if biz in hiwari() else '公共下水道']
@@ -94,8 +97,8 @@ def parse(biz, cols=ALL12):
         cnt = sum(int(r[2 + i]) for i in cols if r[2 + i] not in ('', None))
         if not cnt:
             continue
-        if amt is None:                      # 「〜2,216」＝日割
-            out.append(('SP', None, None, cnt, avg * cnt))
+        if amt is None:                      # 「〜2,216」＝基本水量未満の日割
+            out.append(('SPH', None, None, cnt, avg * cnt))
             continue
         if vol is not None:
             # 水量欄の意味は行によって異なるため3通りを照合する
@@ -124,7 +127,7 @@ def apply_gyo_hiwari(recs):
                 out.append((k, v, m, c - take, cur * (c - take) / c))
         else:
             out.append((k, v, m, c, cur))
-    out.append(('SP', None, None, n, float(amt)))
+    out.append(('SPH', None, None, n, float(amt)))
     return out
 
 
@@ -134,34 +137,48 @@ def load():
 
 
 def decompose(recs):
-    """区分別の収入（税込・未丸めの成分で按分）と従量課金対象水量"""
-    inc = dict(base=0.0, low=0.0, mid=0.0, high=0.0, sp=0.0)
+    """区分別の収入（税込）と従量課金対象水量。
+
+    各記録の成分（基本・6〜10㎥・11〜50㎥・51㎥〜）は税抜額に1.1を乗じた
+    未丸め値だが、実際の請求額は1円未満を切り捨てた額である。区分別収入の
+    合計が調定額の実額と一致するよう、記録ごとに切捨て差を成分へ比例配分する。"""
+    inc = dict(base=0.0, low=0.0, mid=0.0, high=0.0, hiwari=0.0, sp=0.0)
     vol = dict(low=0.0, mid=0.0, high=0.0)
     for k, v, m, c, cur in recs:
+        if k == 'SPH':
+            inc['hiwari'] += cur
+            continue
         if k == 'SP':
             inc['sp'] += cur
             continue
         if k == 'B':
-            inc['base'] += 1008 * 2 * 1.1 * c
+            inc['base'] += bill(5, 2) * c          # 2,217円（切捨て後）
             continue
-        inc['base'] += 1008 * m * 1.1 * c
+        part = {'base': 1008 * m}
         for key, q, rate in (('low',  max(0.0, min(v, 10) - 5),  37),
                              ('mid',  max(0.0, min(v, 50) - 10), 174),
                              ('high', max(0.0, v - 50),          200)):
             vol[key] += q * m * c
-            inc[key] += rate * 1.1 * q * m * c
+            part[key] = rate * q * m
+        net = sum(part.values())
+        f = bill(v, m) / (net * 1.1) if net else 0.0   # 切捨て差の比例配分
+        for key, x in part.items():
+            inc[key] += x * 1.1 * f * c
     return inc, vol
 
 
 def revenue(recs, plan, sp_ratio):
+    """料金案planでの調定額。SPH（基本水量未満の日割）は基本使用料を据え置く
+    限り改定の影響を受けないため据置とし、SP（異動等）のみ平均改定率で連動させる。"""
     return sum(bill(v, m, *plan) * c if k == 'N'
                else bill(5, 2, *plan) * c if k == 'B'
+               else cur if k == 'SPH'
                else cur * sp_ratio
                for k, v, m, c, cur in recs)
 
 
 def solve(groups, plan, iters=80):
-    """日割・異動等は平均改定率で連動させる（不動点）"""
+    """異動等（SP）は平均改定率で連動させる（不動点）。日割（SPH）は据置。"""
     base = sum(sum(x[4] for x in g) for g in groups)
     r = 1.0
     for _ in range(iters):
@@ -178,14 +195,17 @@ if __name__ == '__main__':
     base = sum(x[4] for x in K) + sum(x[4] for x in G)
     cnt = sum(x[3] for x in K) + sum(x[3] for x in G)
     met = I['low'] + I['mid'] + I['high']
+    comp = sum(I.values())
     tv = sum(V.values())
-    tot, rate, _ = solve([K, G], (1008, 73, 190, 220))
+    tot, rate, _ = solve([K, G], (1008, 73, 191, 220))
     print('入力ディレクトリ : %s' % data_dir())
     print('調定件数         : %s 件' % format(cnt, ','))
     print('調定額（税込）   : %s 円' % format(round(base), ','))
+    print('区分別収入の合計 : %s 円（実額との差 %s 円）'
+          % (format(round(comp), ','), format(round(comp - base), ',')))
     print('従量収入         : %s 円' % format(round(met), ','))
     print('従量課金対象水量 : %s ㎥' % format(round(tv), ','))
     print('6〜10㎥ 従量収入比 %.1f%% / 水量比 %.1f%%'
           % (I['low'] / met * 100, V['low'] / tv * 100))
-    print('中心案 平年度増収 : %s 円（%+.2f%%）'
+    print('B案 平年度増収  : %s 円（%+.2f%%）'
           % (format(round(tot - base), ','), (rate - 1) * 100))
