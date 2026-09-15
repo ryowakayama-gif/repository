@@ -67,36 +67,33 @@ def fig1():
 
 # ---------- 図2 収入シェアと水量シェアの乖離 ----------
 def fig2():
-    rows = [('基本使用料（5㎥まで）', 44.5, None), ('6〜10㎥', 5.3, 37.9),
-            ('11〜50㎥', 35.7, 54.1), ('51㎥〜（大口）', 6.1, 8.0),
-            ('特殊算定（日割等）', 8.4, None)]
-    W, H, L, R, T = 880, 356, 190, 130, 52
-    rowh, barh = 52, 17
+    """区分別の従量収入シェアと従量課金対象水量シェア（同一分母で対比）"""
+    rows = [('6〜10㎥', 10.0, 34.9), ('11〜50㎥', 70.5, 52.5), ('51㎥〜（大口）', 19.5, 12.7)]
+    W, H, L, R, T = 880, 300, 190, 130, 78
+    rowh, barh = 60, 19
     out = svg_open(W, H)
-    out.append(txt(L, 26, '収入シェア', 13, TEAL, 'start', '700'))
-    out.append('<rect x="%d" y="16" width="14" height="14" fill="%s"/>' % (L - 22, TEAL))
-    out.append(txt(L + 112, 26, '従量課金対象水量シェア', 13, RUST, 'start', '700'))
-    out.append('<rect x="%d" y="16" width="14" height="14" fill="%s"/>' % (L + 90, RUST))
+    out.append(txt(L - 22, 24, '2事業合計・令和7年度（12か月・全件）', 12.5, MUTED, 'start'))
+    out.append(txt(L, 50, '従量収入シェア', 13, TEAL, 'start', '700'))
+    out.append('<rect x="%d" y="40" width="14" height="14" fill="%s"/>' % (L - 22, TEAL))
+    out.append(txt(L + 132, 50, '従量課金対象水量シェア', 13, RUST, 'start', '700'))
+    out.append('<rect x="%d" y="40" width="14" height="14" fill="%s"/>' % (L + 110, RUST))
 
-    scale = (W - L - R) / 60.0
+    scale = (W - L - R) / 75.0
     for i, (lab, rev, vol) in enumerate(rows):
         y = T + i * rowh
-        out.append(txt(L - 14, y + 13, lab, 13, INK, 'end'))
+        out.append(txt(L - 14, y + 15, lab, 13, INK, 'end'))
         out.append('<rect x="%d" y="%.1f" width="%.1f" height="%d" fill="%s" rx="3"/>' % (L, y, rev * scale, barh, TEAL))
-        out.append(txt(L + rev * scale + 8, y + 13, '%.1f%%' % rev, 12.5, INK, 'start', '700'))
-        if vol is not None:
-            out.append('<rect x="%d" y="%.1f" width="%.1f" height="%d" fill="%s" rx="3"/>'
-                       % (L, y + barh + 2, vol * scale, barh, RUST))
-            out.append(txt(L + vol * scale + 8, y + barh + 15, '%.1f%%' % vol, 12.5, INK, 'start', '700'))
-        else:
-            out.append(txt(L + 6, y + barh + 15, '（従量課金対象水量なし）', 11.5, MUTED))
-    out.append(txt(24, H - 12, '※従量課金対象水量＝基本使用料に含まれる水量（2か月10㎥）を除いた水量。全汚水量ではない',
+        out.append(txt(L + rev * scale + 8, y + 15, '%.1f%%' % rev, 12.5, INK, 'start', '700'))
+        out.append('<rect x="%d" y="%.1f" width="%.1f" height="%d" fill="%s" rx="3"/>'
+                   % (L, y + barh + 3, vol * scale, barh, RUST))
+        out.append(txt(L + vol * scale + 8, y + barh + 18, '%.1f%%' % vol, 12.5, INK, 'start', '700'))
+    out.append(txt(24, H - 14, '※いずれも従量部分のみを分母とする。従量課金対象水量＝基本水量（1か月5㎥）を超える水量',
                    11.5, MUTED))
-    y = T + rowh
+    y = T
     out.append('<rect x="%d" y="%.1f" width="%d" height="%d" fill="none" stroke="%s" stroke-width="2" rx="4"/>'
-               % (L - 176, y - 8, W - R - L + 250, barh * 2 + 18, RUST))
-    out.append(txt(W - R + 66, y + 20, '対象水量の37.9%に', 12.5, RUST, 'end', '700'))
-    out.append(txt(W - R + 66, y + 37, '対し従量収入は5.3%', 12.5, RUST, 'end', '700'))
+               % (L - 176, y - 8, W - R - L + 250, barh * 2 + 20, RUST))
+    out.append(txt(W - R + 66, y + 22, '対象水量の34.9%に対し', 12.5, RUST, 'end', '700'))
+    out.append(txt(W - R + 66, y + 39, '従量収入は10.0%', 12.5, RUST, 'end', '700'))
     out.append('</svg>')
     return '\n'.join(out)
 
