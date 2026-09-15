@@ -9,22 +9,42 @@
 import io, json, math, os, re, sys, zipfile
 import xml.etree.ElementTree as ET
 import openpyxl
-sys.path.insert(0, '/tmp/claude-0/-home-user-repository/670c168c-8281-57ba-9df0-b54358bb5879/scratchpad')
-os.chdir('/root/.claude/uploads/670c168c-8281-57ba-9df0-b54358bb5879')
-from compare import GYO, KOU, CUR_G, CUR_K, SPECIAL, BASIC, NORMAL
+
+# 実行場所に依存しないよう、すべてスクリプトからの相対で解決する。
+# 別の配置で動かす場合は環境変数で上書きできる。
+#   KAMIKAMI_DATA  入力データ（00_入力データ）のディレクトリ
+#   KAMIKAMI_OUT   成果物（docx/xlsx）のディレクトリ
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
 import recompute as RC
+
+
+def _find(rels, marker):
+    for rel in rels:
+        d = os.path.normpath(os.path.join(HERE, rel))
+        if os.path.exists(os.path.join(d, marker)):
+            return d + os.sep
+    raise SystemExit('%s が見つかりません。KAMIKAMI_OUT で指定してください。' % marker)
+
+
+DOCX_NAME = '下水道使用料改定説明資料.docx'
+XLSX_NAME = '階上町下水道使用料改定_試算エビデンス.xlsx'
+OUTDIR = (os.environ.get('KAMIKAMI_OUT', '').rstrip(os.sep) + os.sep
+          if os.environ.get('KAMIKAMI_OUT')
+          else _find(['01_成果物', '../01_成果物', '.', '..', 'doc', '../doc'], DOCX_NAME))
 RK, RG = RC.load()                                        # 年間全件（12か月・漁集の日割補正済み）
 INC_K, VOL_K = RC.decompose(RK)
 INC_G, VOL_G = RC.decompose(RG)
+ANNUAL = sum(x[4] for x in RK) + sum(x[4] for x in RG)
 INC = {k: INC_K[k] + INC_G[k] for k in INC_K}
 VOL = {k: VOL_K[k] + VOL_G[k] for k in VOL_K}
-ANNUAL = sum(x[4] for x in RK) + sum(x[4] for x in RG)
 
-D = '/tmp/claude-0/-home-user-repository/670c168c-8281-57ba-9df0-b54358bb5879/scratchpad/'
-DOCX = D + 'doc/下水道使用料改定説明資料.docx'
-XLSX = D + '階上町下水道使用料改定_試算エビデンス.xlsx'
+D = OUTDIR
+DOCX = OUTDIR + DOCX_NAME
+XLSX = (OUTDIR + XLSX_NAME if os.path.exists(OUTDIR + XLSX_NAME)
+        else _find(['01_成果物', '../01_成果物', '.', '..'], XLSX_NAME) + XLSX_NAME)
 W = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
-TOTAL = CUR_G + CUR_K
+TOTAL = ANNUAL  # 漁集の日割補正後（RK/RG と同一基準）
 
 results = []
 def check(name, ok, detail=''):
@@ -46,16 +66,14 @@ def mnet(v, b, r1, r2, r3):
     if v > 50: n += r3 * (v - 50)
     return n
 def revenue(p, ratio):
-    t = 0
-    for recs in (GYO, KOU):
-        for k, v, c, cur in recs:
-            t += bill(v, *p) * c if k == NORMAL else (bill(10, *p) * c if k == BASIC else round(cur * ratio))
-    return t
+    """確定モデル（recompute）で料金案pの調定額を再計算する。"""
+    return RC.revenue(RK, p, ratio) + RC.revenue(RG, p, ratio)
 def solve_mid(target, r1, r3):
+    """平均増収率がtargetに最も近くなる11〜50㎥の税抜単価を探す。"""
     best = None
     for r2 in range(120, 301):
-        t = revenue((1008, r1, r2, r3), 1 + target)
-        g = abs(t / TOTAL - 1 - target)
+        t, _, base = RC.solve([RK, RG], (1008, r1, r2, r3))
+        g = abs(t / base - 1 - target)
         if best is None or g < best[0]: best = (g, r2, t)
     return best[1], best[2]
 
@@ -264,7 +282,7 @@ check('分母の違いを注記している', has('直接対比してはなら�
 
 LEVELS = [('縮小なし', 37, 214, 0.0, 13.6, 19.6), ('弱い縮小', 55, 202, 7.5, 12.6, 14.8),
           ('中心案', 73, 190, 15.1, 11.6, 10.1), ('強い縮小', 100, 172, 26.4, 10.1, 2.9),
-          ('参考174円', 174, 122, 57.4, 5.6, -17.1)]
+          ('参考174円', 174, 123, 57.4, 6.0, -16.6)]
 for lab, r1, r2e, m10, m20, m50 in LEVELS:
     r2, _ = solve_mid(0.10, r1, 220)
     check('表4 %s の11〜50㎥ %d円' % (lab, r2e), has(str(r2e)) and r2 == r2e, '再計算 %d' % r2)
@@ -307,7 +325,10 @@ for v, c2, r2b, diff, pct in HH:
 
 r2s, tot2 = solve_mid(0.20, 109, 240)
 check('表9 第2段階の11〜50㎥ 207円', has('207') and r2s == 207, '再計算 %d' % r2s)
-check('表9 第2段階の平年度増収 8,632,400円', tot2 - TOTAL == 8632400, '再計算 %s' % format(tot2 - TOTAL, ','))
+check('表9 第2段階の平年度増収 8,956,581円', abs(tot2 - TOTAL - 8956581) < 2,
+      '再計算 %s' % format(round(tot2 - TOTAL), ','))
+check('表9 第2段階の平均増収率 +20.10%', has('+20.10') and abs((tot2 / TOTAL - 1) * 100 - 20.10) < 0.006,
+      '再計算 %+.2f%%' % ((tot2 / TOTAL - 1) * 100))
 for lab, r1, r2v, exp in [('現行', 37, 174, 4.70), ('第1段階', 73, 190, 2.60), ('第2段階', 109, 207, 1.90)]:
     check('図4 %s の単価の開き %.2f倍' % (lab, exp), has('%.2f' % exp) and abs(r2v / r1 - exp) < 0.005,
           '再計算 %.3f' % (r2v / r1))
@@ -335,7 +356,7 @@ check('Excel 20 の増収余地が9,015,721円', 9015721 in n20)
 check('Excel 20 に従量部分のみ 8,518,401円がある', 8518401 in n20)
 check('Excel 20 に同一分母の対比がある', 10.0 in n20 and 34.9 in n20)
 check('Excel 20 の区分別収入・水量', {2300568, 16262110, 4508900, 56525, 84964, 20495} <= n20)
-check('漁集の日割補正 11件・13,189円', has('13,189', '11,198') and RC.gyo_hiwari() == (11, 13189))
+check('漁集の日割補正 11件・13,189円', has('13,189', '11,198') and RC.hiwari()['漁業集落排水'][:2] == (11, 13189.0))
 n32 = {str(c) for r in wb['32_料金収入算定の精査'].iter_rows(values_only=True)
        for c in r if c is not None}
 check('Excel 32 に精査7項目がある', all(str(i) in n32 for i in range(1, 8)))

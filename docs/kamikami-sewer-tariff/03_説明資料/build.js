@@ -6,7 +6,17 @@ const {
   Header, Footer, PageNumber, convertMillimetersToTwip,
 } = d;
 
-const DIR = '/tmp/claude-0/-home-user-repository/670c168c-8281-57ba-9df0-b54358bb5879/scratchpad/';
+// 図の読み込み元。環境変数 KAMIKAMI_FIGDIR で上書きできる。
+const OUTDIR = process.env.KAMIKAMI_DOCOUT
+  ? process.env.KAMIKAMI_DOCOUT.replace(/\/?$/, '/') : __dirname + '/';
+const DIR = (() => {
+  if (process.env.KAMIKAMI_FIGDIR) return process.env.KAMIKAMI_FIGDIR.replace(/\/?$/, '/');
+  for (const rel of ['figures', '.', '../02_図', '../figures']) {
+    const d = require('path').resolve(__dirname, rel) + '/';
+    if (require('fs').existsSync(d + 'fig1.png')) return d;
+  }
+  throw new Error('fig1.png が見つかりません。KAMIKAMI_FIGDIR を指定してください。');
+})();
 const FONT = 'MS Pゴシック';
 const TEAL = '12939E', RUST = 'CF5B1A', INK = '1A1A1A', MUTED = '5F6F74';
 const HEAD_BG = 'DCEBED', ACCENT_BG = 'FBEAE0', ZEBRA = 'F4F7F7';
@@ -210,13 +220,13 @@ kids.push(table([1750, 1150, 1050, 1300, 1350, 1000, 1000, 1000],
    ['弱い縮小', '55円', '+48.6%', '13.1%', '202円', '+7.5%', '+12.6%', '+14.8%'],
    ['中心案', '73円', '+97.3%', '26.3%', '190円', '+15.1%', '+11.6%', '+10.1%'],
    ['強い縮小', '100円', '+170.3%', '46.0%', '172円', '+26.4%', '+10.1%', '+2.9%'],
-   ['参考：174円まで引上げ', '174円', '+370.3%', '100%', '122円', '+57.4%', '+5.6%', '−17.1%']], { highlight: [2] }));
+   ['参考：174円まで引上げ', '174円', '+370.3%', '100%', '123円', '+57.4%', '+6.0%', '−16.6%']], { highlight: [2] }));
 kids.push(CAPNOTE('いずれも平均増収率 約10%・基本使用料は1,008円で据置・51㎥〜は220円。単価差縮小率は、現行の11〜50㎥単価174円への到達率。'));
 kids.push(IMG('fig3.png', 620, 268));
 kids.push(FIGTITLE('図3　単価差の縮小水準別の負担増減率（月使用量別）'));
 kids.push(NOTE('「174円まで引上げ」は実施案ではない', [
-  '6〜10㎥を174円に揃えると、平均増収率を約10%に保つために11〜50㎥が122円まで下がり、6〜10㎥より安くなる逆転体系となる。',
-  'また月10㎥の世帯は+57.4%となる一方、月30㎥以上は減額（月50㎥で−17.1%）となる。',
+  '6〜10㎥を174円に揃えると、平均増収率を約10%に保つために11〜50㎥が123円まで下がり、6〜10㎥より安くなる逆転体系となる。',
+  'また月10㎥の世帯は+57.4%となる一方、月30㎥以上は減額（月50㎥で−16.6%）となる。',
   'したがって表4の最下段は実施案ではなく、比較の端点として示すものである。',
 ]));
 
@@ -302,7 +312,7 @@ kids.push(table([2100, 1300, 1350, 1300, 1300, 1150, 1100],
   ['段階', '6〜10㎥', '同 改定率', '単価差縮小率', '11〜50㎥', '単価の開き', '平均増収率'],
   [['現行', '37円', '±0%', '0%', '174円', '4.70倍', '—'],
    ['第1段階（令和8年度）', '73円', '+97.3%', '26.3%', '190円', '2.60倍', '+9.94%'],
-   ['第2段階（令和13年度）', '109円', '+194.6%', '52.6%', '207円', '1.90倍', '+20.08%']], { highlight: [1] }));
+   ['第2段階（令和13年度）', '109円', '+194.6%', '52.6%', '207円', '1.90倍', '+20.10%']], { highlight: [1] }));
 kids.push(CAPNOTE('基本使用料はいずれの段階も1,008円で据置、51㎥〜は第1段階220円・第2段階240円。'));
 kids.push(IMG('fig4.png', 620, 254));
 kids.push(FIGTITLE('図4　段階的な縮小による単価の開きの縮小'));
@@ -445,6 +455,6 @@ const doc = new Document({
   }],
 });
 Packer.toBuffer(doc).then(b => {
-  fs.writeFileSync(DIR + 'doc/下水道使用料改定説明資料.docx', b);
+  fs.writeFileSync(OUTDIR + '下水道使用料改定説明資料.docx', b);
   console.log('docx written:', b.length, 'bytes');
 });

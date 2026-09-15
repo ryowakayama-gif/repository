@@ -6,8 +6,24 @@ import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
 
-EV = '/tmp/claude-0/-home-user-repository/670c168c-8281-57ba-9df0-b54358bb5879/scratchpad/evidence/data'
-OUT = '/tmp/claude-0/-home-user-repository/670c168c-8281-57ba-9df0-b54358bb5879/scratchpad/階上町下水道使用料改定_試算エビデンス.xlsx'
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def _find(rels, marker):
+    for rel in rels:
+        d = os.path.normpath(os.path.join(HERE, rel))
+        if os.path.exists(os.path.join(d, marker)):
+            return d
+    raise SystemExit('%s が見つかりません。KAMIKAMI_EVIDENCE で指定してください。' % marker)
+
+
+EV = os.environ.get('KAMIKAMI_EVIDENCE') or _find(
+    ['03_根拠データ', '../03_根拠データ', 'evidence/data', '../evidence/data', '.'],
+    '01_現行使用料体系.csv')
+OUT = os.environ.get('KAMIKAMI_XLSX') or os.path.join(
+    os.path.normpath(os.path.join(HERE, '..', '01_成果物'))
+    if os.path.isdir(os.path.normpath(os.path.join(HERE, '..', '01_成果物'))) else HERE,
+    '階上町下水道使用料改定_試算エビデンス.xlsx')
 
 BASE   = Font(name='Arial', size=10)
 BOLD   = Font(name='Arial', size=10, bold=True)

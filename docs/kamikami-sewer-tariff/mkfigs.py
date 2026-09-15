@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """説明資料に貼る図（PNG）を生成する。HTML+SVGで描いてブラウザで撮影する。"""
 import io, json, math, os, sys
-sys.path.insert(0, '/tmp/claude-0/-home-user-repository/670c168c-8281-57ba-9df0-b54358bb5879/scratchpad')
-os.chdir('/root/.claude/uploads/670c168c-8281-57ba-9df0-b54358bb5879')
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
 from compare import monthly, CURRENT
 
 TEAL, RUST = '#12939E', '#CF5B1A'          # 検証済みの2色（validate_palette.js）
@@ -163,5 +163,5 @@ html = ['<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=N
         '.f{display:inline-block;background:#fff}</style>']
 for k, v in FIGS.items():
     html.append('<div class="f" id="%s">%s</div>' % (k, v))
-io.open('/tmp/claude-0/-home-user-repository/670c168c-8281-57ba-9df0-b54358bb5879/scratchpad/figs.html', 'w', encoding='utf-8').write('\n'.join(html))
+io.open(os.environ.get('KAMIKAMI_FIGS') or os.path.join(HERE, 'figs.html'), 'w', encoding='utf-8').write('\n'.join(html))
 print('figs.html written')

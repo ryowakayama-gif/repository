@@ -5,8 +5,8 @@ import csv, hashlib, io, math, os, shutil, sys
 from collections import Counter
 import openpyxl
 
-SRC = '/root/.claude/uploads/670c168c-8281-57ba-9df0-b54358bb5879'
-OUT = '/tmp/claude-0/-home-user-repository/670c168c-8281-57ba-9df0-b54358bb5879/scratchpad/evidence'
+SRC = os.environ.get('KAMIKAMI_SRC', '.')  # 旧版。原本xlsxのディレクトリ
+OUT = os.environ.get('KAMIKAMI_EVOUT', 'evidence')
 FILES = {
     'shukei':   ('90c4df88-__R7________.xlsx', '【R7】使用料集計ブック'),
     'gyoshu_a': ('b7fef742-R7__.xlsx',        'R7漁集 調定簿明細（集計シート付）'),
