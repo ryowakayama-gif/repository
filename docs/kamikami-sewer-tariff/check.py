@@ -87,9 +87,9 @@ def has(*v): return all(str(x) in doc for x in v)
 
 check('Word文書が開ける', True)
 check('図が4点埋め込まれている', n_img == 4, '検出 %d 点' % n_img)
-check('表が15点ある', n_tbl >= 15, '検出 %d 点（注記ボックスを含む）' % n_tbl)
+check('表が19点ある', n_tbl >= 19, '検出 %d 点（注記ボックスを含む）' % n_tbl)
 check('図1〜図4の見出しがある', has('図1', '図2', '図3', '図4'))
-check('表1〜表13の見出しがある', all('表%d' % i in doc for i in range(1, 14)))
+check('表1〜表17の見出しがある', all('表%d' % i in doc for i in range(1, 18)))
 check('章立て1〜10＋参考がある', all(h in doc for h in
       ['本資料の趣旨', '現行使用料体系の構造', '単価差の縮小余地', '改善レンジと単価差の縮小水準',
        '2案の比較と各家庭への影響', '平年度増収額と経費回収率', '段階的な縮小の考え方',
@@ -186,17 +186,17 @@ PLANS = [('約5%改善', (1008, 55, 182, 210), 2190879, 4.92, 51.9, 52.3, 38.6),
 for lab, p, inc, rt, rec, rke, rge in PLANS:
     tot, r, _ = RC.solve([RK, RG], p)
     nk, ng = RC.revenue(RK, p, r), RC.revenue(RG, p, r)
-    check('表9 %s の平年度増収額 %s円' % (lab, format(inc, ',')),
+    check('表13 %s の平年度増収額 %s円' % (lab, format(inc, ',')),
           has(format(inc, ',')) and round(tot - ANNUAL) == inc,
           '再計算 %s' % format(round(tot - ANNUAL), ','))
-    check('表9 %s の平均増収率 %+.2f%%' % (lab, rt),
+    check('表13 %s の平均増収率 %+.2f%%' % (lab, rt),
           has('%.2f' % rt) and abs((tot / ANNUAL - 1) * 100 - rt) < 0.006)
     check('表4 %s の経費回収率 %.1f%%' % (lab, rec),
           has('%.1f%%' % rec) and abs(49.5 * tot / ANNUAL - rec) < 0.06,
           '再計算 %.2f%%' % (49.5 * tot / ANNUAL))
     rk = (R6['kou'][0] + (nk - BK) / 1.1 / 1000) / R6['kou'][1] * 100
     rg = (R6['gyo'][0] + (ng - BG) / 1.1 / 1000) / R6['gyo'][1] * 100
-    check('表9 %s の経費回収率 公共%.1f%% 漁集%.1f%%' % (lab, rke, rge),
+    check('表13 %s の経費回収率 公共%.1f%% 漁集%.1f%%' % (lab, rke, rge),
           abs(rk - rke) < 0.06 and abs(rg - rge) < 0.06,
           '再計算 %.2f%% / %.2f%%' % (rk, rg))
 check('改善幅がポイント表記で併記されている', has('+2.4ポイント', '+5.0ポイント', '+7.4ポイント'))
@@ -288,16 +288,16 @@ check('正確な言い換えを明記', has('最低使用量帯（月5㎥以下�
 # ---- 表10・表11（段階的縮小） ----
 S2 = (1008, 109, 207, 240)
 t2, _, _ = RC.solve([RK, RG], S2)
-check('表10 第2段階の平年度増収 8,860,468円', round(t2 - ANNUAL) == 8860468,
+check('表14 第2段階の平年度増収 8,860,468円', round(t2 - ANNUAL) == 8860468,
       '再計算 %s' % format(round(t2 - ANNUAL), ','))
-check('表10 第2段階の平均増収率 +19.88%', has('+19.88') and abs((t2 / ANNUAL - 1) * 100 - 19.88) < 0.006)
-check('表10 第2段階の経費回収率 59.3%', has('59.3') and abs(49.5 * t2 / ANNUAL - 59.3) < 0.06)
+check('表14 第2段階の平均増収率 +19.88%', has('+19.88') and abs((t2 / ANNUAL - 1) * 100 - 19.88) < 0.006)
+check('表14 第2段階の経費回収率 59.3%', has('59.3') and abs(49.5 * t2 / ANNUAL - 59.3) < 0.06)
 for lab, r1, r2v, exp in [('現行', 37, 174, 4.70), ('第1段階', 73, 191, 2.62), ('第2段階', 109, 207, 1.90)]:
     check('図4 %s の単価の開き %.2f倍' % (lab, exp), has('%.2f' % exp) and abs(r2v / r1 - exp) < 0.005)
 for v, cur, s1, s2v, d1, d2 in [(5, 2217, 2217, 2217, 0.0, 0.0), (10, 2624, 3020, 3416, 15.1, 30.2),
                                 (20, 6452, 7222, 7970, 11.9, 23.5), (30, 10280, 11424, 12524, 11.1, 21.8),
                                 (50, 17936, 19828, 21632, 10.5, 20.6)]:
-    check('表11 月%d㎥ 第1段階%s円 第2段階%s円' % (v, format(s1, ','), format(s2v, ',')),
+    check('表15 月%d㎥ 第1段階%s円 第2段階%s円' % (v, format(s1, ','), format(s2v, ',')),
           RC.bill(v, 2, *B) == s1 and RC.bill(v, 2, *S2) == s2v)
 
 # ---- 第9章（参考・経営戦略との関係） ----
@@ -321,13 +321,17 @@ check('R7普及指導費90千円を明記', has('90千円'))
 
 # ---- Excel ----
 wb = openpyxl.load_workbook(XLSX)
-check('Excelに34シートある', len(wb.sheetnames) == 34, '検出 %d' % len(wb.sheetnames))
+check('Excelに35シートある', len(wb.sheetnames) == 35, '検出 %d' % len(wb.sheetnames))
 for sh in ['20_単価差の縮小余地', '21_単価差縮小の水準別比較', '22_料金案と平年度増収',
            '23_世帯への影響', '24_段階的な縮小', '25_条例改正に向けた整理',
            '26_R8予算差異ブリッジ', '27_経営戦略の税込検証', '28_調定実績の集計範囲',
            '29_R7決算書による検証', '30_R8当初予算書による確定', '31_決算統計の税区分',
-           '32_料金収入算定の精査', '33_条例との整合確認']:
+           '32_料金収入算定の精査', '33_条例との整合確認', '34_一律改定との比較']:
     check('Excelにシート「%s」がある' % sh, sh in wb.sheetnames)
+n34 = {c for r in wb['34_一律改定との比較'].iter_rows(values_only=True)
+       for c in r if isinstance(c, (int, float))}
+check('Excel 34 に一律改定の単価がある', {1058, 39, 183, 210, 1109, 41, 191, 220, 1159, 43, 200, 230} <= n34)
+check('Excel 34 に3案の増収額がある', {4441559, 4481621, 4478920} <= n34)
 def cells(sh): return [list(r) for r in wb[sh].iter_rows(values_only=True)]
 c20 = cells('20_単価差の縮小余地')
 v20 = [c for r in wb['20_単価差の縮小余地'].iter_rows(values_only=True) for c in r if c is not None]
@@ -349,7 +353,7 @@ check('Excel 33 に条例の各条項がある',
       all(v in n33 for v in ['第17条ただし書', '第18条第3項', '第18条第4項', '別表（第17条関係）']))
 c22 = cells('22_料金案と平年度増収')
 c22n = {c for r in c22 for c in r if isinstance(c, (int, float))}
-check('Excel 22 の平年度増収額が説明資料 表9 と一致',
+check('Excel 22 の平年度増収額が説明資料 表13 と一致',
       {2190879, 4481621, 4478920, 6671497, 8860468} <= c22n)
 check('Excel 22 に税抜の平年度増収額がある', {4074201, 4071745} <= c22n)
 def nums(sh): return {c for r in wb[sh].iter_rows(values_only=True) for c in r
@@ -415,6 +419,57 @@ check('水量帯と世帯属性の対応が未確認である旨を明記',
 
 # ---- 表3 の差引が表示値で成立 ----
 check('表3 の差引が表示値どうしで成立', 53583231 - 44567510 == 9015721)
+
+# ---- 表9〜表12（一律改定・全体改定率） ----
+def rev_uniform(recs, plan, r):
+    """一律改定：基本使用料も上がるため日割（SPH）・異動等（SP）とも改定率で連動"""
+    return sum(RC.bill(v, m, *plan) * c if k == 'N'
+               else RC.bill(5, 2, *plan) * c if k == 'B'
+               else cur * r
+               for k, v, m, c, cur in recs)
+UNI = {r: tuple(round(x * (1 + r)) for x in CURRENT) for r in (0.05, 0.10, 0.15)}
+check('表9 一律改定の税抜単価が現行×(1+改定率)の四捨五入',
+      UNI[0.05] == (1058, 39, 183, 210) and UNI[0.10] == (1109, 41, 191, 220)
+      and UNI[0.15] == (1159, 43, 200, 230)
+      and has('1,058円', '1,109円', '1,159円'))
+for r, rate, inc, net, rec in ((0.05, 5.07, 2258063, 2052785, 52.0),
+                               (0.10, 9.97, 4441559, 4037780, 54.4),
+                               (0.15, 15.03, 6698369, 6089426, 56.9)):
+    p = UNI[r]
+    t = rev_uniform(RK, p, 1 + r) + rev_uniform(RG, p, 1 + r)
+    check('表9 一律+%d%% の平均増収率 %+.2f%%' % (r * 100, rate),
+          has('%.2f' % rate) and abs((t / ANNUAL - 1) * 100 - rate) < 0.006,
+          '再計算 %+.3f%%' % ((t / ANNUAL - 1) * 100))
+    check('表9 一律+%d%% の平年度増収額 %s円' % (r * 100, format(inc, ',')),
+          has(format(inc, ',')) and round(t - ANNUAL) == inc,
+          '再計算 %s' % format(round(t - ANNUAL), ','))
+    check('表9 一律+%d%% の税抜増収額 %s円' % (r * 100, format(net, ',')),
+          has(format(net, ',')) and round((t - ANNUAL) / 1.1) == net)
+    check('表9 一律+%d%% の経費回収率 %.1f%%' % (r * 100, rec),
+          has('%.1f%%' % rec) and abs(49.5 * t / ANNUAL - rec) < 0.06)
+UNI_HH = [(5, 2217, 2327, 5.0, 2439, 10.0, 2549, 15.0),
+          (8, 2461, 2585, 5.0, 2710, 10.1, 2833, 15.1),
+          (10, 2624, 2756, 5.0, 2890, 10.1, 3022, 15.2),
+          (15, 4538, 4769, 5.1, 4991, 10.0, 5222, 15.1),
+          (20, 6452, 6782, 5.1, 7092, 9.9, 7422, 15.0),
+          (30, 10280, 10808, 5.1, 11294, 9.9, 11822, 15.0),
+          (50, 17936, 18860, 5.2, 19698, 9.8, 20622, 15.0),
+          (100, 39936, 41960, 5.1, 43898, 9.9, 45922, 15.0)]
+for v, cur, b5, d5, b10, d10, b15, d15 in UNI_HH:
+    for r, b, d in ((0.05, b5, d5), (0.10, b10, d10), (0.15, b15, d15)):
+        check('表10 一律+%d%% 月%d㎥ %s円 %+.1f%%' % (r * 100, v, format(b, ','), d),
+              RC.bill(v, 2, *UNI[r]) == b and abs((b / cur - 1) * 100 - d) < 0.06,
+              '再計算 %d円' % RC.bill(v, 2, *UNI[r]))
+check('表11 一律改定の単価の開きが4.66倍', has('4.66倍') and abs(191 / 41 - 4.66) < 0.005)
+check('表11 3案の増収額がほぼ同じ', has('4,441,559', '4,481,621', '4,478,920'))
+check('表12 使用量帯別の件数が表8と整合',
+      has('1,934件', '2,167件', '2,889件', '1,188件', '324件', '120件', '598件'))
+check('表12 月11〜20㎥が2,889件31.3%',
+      CN_K['月11〜20㎥'] + CN_G['月11〜20㎥'] == 2889 and has('31.3%'))
+check('一律改定でも経費回収率は同水準である旨を明記', has('選択の論点は収入額ではなく負担の配分にある'))
+check('一律改定では月5㎥以下も改定率どおり増える旨を明記',
+      has('月5㎥以下の1,934件（全体の21.0%）も改定率どおり増える'))
+check('5%・15%でも同じ関係が成り立つ旨を明記', has('2,258千円', '2,191千円', '6,698千円', '6,671千円'))
 
 ng = [r for r in results if not r[1]]
 print('チェック項目 %d 件 / 合格 %d 件 / 不合格 %d 件' % (len(results), len(results) - len(ng), len(ng)))
