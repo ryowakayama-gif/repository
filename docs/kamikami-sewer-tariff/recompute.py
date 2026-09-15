@@ -8,8 +8,9 @@
 """
 import math, statistics, openpyxl
 
-BOOK  = '90c4df88-__R7________.xlsx'      # 【R7】使用料集計ブック
-DETAIL = '6ff71ec0-R8.3_.xlsx'            # 令和7年度3月分 調定簿明細表
+BOOK   = '90c4df88-__R7________.xlsx'     # 【R7】使用料集計ブック
+DETAIL = '6ff71ec0-R8.3_.xlsx'            # 令和7年度3月分 調定簿明細表（公共）
+DETAIL_G = '37ccc0e0-R7___.xlsx'          # 令和7年度 調定簿明細表（漁業集落排水・5月〜3月）
 CURRENT = (1008, 37, 174, 200)            # 条例別表（税抜・1か月）
 
 def month_net(v, b=1008, r1=37, r2=174, r3=200):
@@ -94,3 +95,32 @@ def solve(groups, plan, iters=80):
     for _ in range(iters):
         r = sum(revenue(g, plan, r) for g in groups) / base
     return sum(revenue(g, plan, r) for g in groups), r, base
+
+
+def gyo_hiwari():
+    """漁集の日割（基本水量未満）の実額。集計ブックは日割を基本使用料2,217円に
+    切り上げて基本料金帯の行に含めているため、明細から実額を採って補正する。"""
+    wb = openpyxl.load_workbook(DETAIL_G, data_only=True)
+    v = [r[6] for sn in wb.sheetnames for r in wb[sn].iter_rows(values_only=True)
+         if len(r) > 6 and r[1] == '階上漁集排'
+         and isinstance(r[6], (int, float)) and r[6] < bill(5, 2)]
+    return len(v), sum(v)
+
+def apply_gyo_hiwari(recs, n=None, amt=None):
+    """基本料金帯から日割n件を抜き、実額amtの日割（SP）として計上し直す。"""
+    if n is None:
+        n, amt = gyo_hiwari()
+    out, left = [], n
+    for k, v, m, c, cur in recs:
+        if k == 'B' and left:
+            take = min(c, left); left -= take
+            if c - take:
+                out.append((k, v, m, c - take, cur * (c - take) / c))
+        else:
+            out.append((k, v, m, c, cur))
+    out.append(('SP', None, None, n, float(amt)))
+    return out
+
+def load():
+    """確定データ（公共・漁集）。漁集は日割の実額補正を適用する。"""
+    return parse('R7公共'), apply_gyo_hiwari(parse('R7漁集'))

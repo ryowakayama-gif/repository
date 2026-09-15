@@ -13,7 +13,7 @@ sys.path.insert(0, '/tmp/claude-0/-home-user-repository/670c168c-8281-57ba-9df0-
 os.chdir('/root/.claude/uploads/670c168c-8281-57ba-9df0-b54358bb5879')
 from compare import GYO, KOU, CUR_G, CUR_K, SPECIAL, BASIC, NORMAL
 import recompute as RC
-RK, RG = RC.parse('R7公共'), RC.parse('R7漁集')          # 年間全件（12か月）
+RK, RG = RC.load()                                        # 年間全件（12か月・漁集の日割補正済み）
 INC_K, VOL_K = RC.decompose(RK)
 INC_G, VOL_G = RC.decompose(RG)
 INC = {k: INC_K[k] + INC_G[k] for k in INC_K}
@@ -97,7 +97,7 @@ check('【指摘6】負担のばらつきを数値で提示', has('5.4ポイン�
 check('【指摘7】「平年度増収額」と明記', has('平年度増収額'))
 check('【指摘7】初年度影響額が別途である旨を明記', has('初年度影響額'))
 check('【指摘8】料金表が暫定である旨を明記', has('料金表は暫定'))
-check('【指摘8】残る日割・異動等の件数と金額を明記', has('587件', '2,445千円'))
+check('【指摘8】残る日割・異動等の件数と金額を明記', has('598件', '2,458千円'))
 check('【指摘9】従量課金対象水量の定義を明記', has('従量課金対象水量'))
 check('【指摘9】全汚水量ではない旨を明記', has('全汚水量ではない'))
 check('【指摘10】「本来この区分が負担すべき」を削除', '本来この区分が負担すべき' not in doc)
@@ -147,12 +147,18 @@ check('セグメント分離の検算が成立', 40586357 - 6792472 == 33793885 
 check('経費回収率の定義が32表と一致', abs(40881245 / 87078000 * 100 - 47.0) < 0.15)
 check('経営戦略の経費回収率は資本費を含む旨を明記', has('資本費を含む分母'))
 check('水量予測の過大 7.6% を明記', has('7.6') and abs(272275 / 252955 - 1 - 0.076) < 0.001)
-check('増収試算の基礎3種を税抜で提示', has('40,526', '40,586', '38,096'))
-for b, a, g in [(44578708 / 1.1 / 1000, 44550, 4024)]:
+check('増収試算の基礎3種を税抜で提示', has('40,516', '40,586', '38,096'))
+_t, _r, _base = RC.solve([RK, RG], (1008, 73, 190, 220))
+RATE = _t / _base                                    # 確定モデルの平均増収率
+for b, a, g in [(44567510 / 1.1 / 1000, 44541, 4025)]:
     check('基礎%s → 改定後%d・増収%d' % (format(round(b), ','), a, g),
-          has(format(a, ','), format(g, ',')) and round(b * 1.0993) == a and round(b * 0.0993) == g)
-check('年間全件調定と決算が0.15%一致（税抜）',
-      has('0.15') and abs(44578708 / 1.1 / 1000 / 40586.357 - 1) < 0.0016)
+          has(format(a, ','), format(g, ',')) and round(b * RATE) == a
+          and round(b * (RATE - 1)) == g,
+          '再計算 %d / %d' % (round(b * RATE), round(b * (RATE - 1))))
+check('平均増収率が+9.94%である', has('+9.94') and abs((RATE - 1) * 100 - 9.94) < 0.006,
+      '再計算 %.3f%%' % ((RATE - 1) * 100))
+check('年間全件調定と決算が0.17%一致（税抜）',
+      has('0.17') and abs(44567510 / 1.1 / 1000 / 40586.357 - 1) < 0.0018)
 check('R7決算 下水道使用料 40,586,357円（再掲）', has('40,586'))
 check('経営戦略を税込ベースと明記', has('税込ベース'))
 check('単価173.9円がR1〜R4実績平均である旨を明記',
@@ -162,10 +168,10 @@ check('ケース①「5年毎に10%ずつ」を明記', has('5年毎に10%ずつ
 check('二重計上の注意は削除（予算も税込のため不要）', '二重に見込む' not in doc)
 
 # ---- 調定データ範囲の補正 ----
-check('年間全件の調定額 44,578,708円を明記', has('44,578,708'))
+check('年間全件の調定額 44,567,510円を明記', has('44,567,510'))
 check('年間全件の件数 9,220件を明記', has('9,220'))
-check('年間全件ベースの平年度増収額 4,427千円／4,024千円',
-      has('4,427', '4,024') and round(44578708 * 0.0993) == 4426666)
+check('年間全件ベースの平年度増収額 4,428千円／4,025千円',
+      has('4,428', '4,025') and abs(44567510 * 0.09935 - 4427782) < 400)
 check('特殊算定の実額 71件64,144円を明記', has('64,144', '903'))
 check('日割の実測平均で評価している旨を明記', has('実測平均で評価'))
 check('41,906千円が税込（3条予算）である旨を明記', has('3条予算') and has('税込'))
@@ -195,7 +201,7 @@ check('目標管理を税抜へ統一する旨を明記', has('42,944', '47,521'
 # ---- 数値の再計算突合（年間全件・確定モデル） ----
 cnt = sum(x[3] for x in RK) + sum(x[3] for x in RG)
 check('調定件数 9,220件（12か月・全件）', has('9,220') and cnt == 9220, '再計算 %d' % cnt)
-check('調定額 44,578,708円', has('44,578,708') and round(ANNUAL) == 44578708,
+check('調定額 44,567,510円', has('44,567,510') and round(ANNUAL) == 44567510,
       '再計算 %s' % format(round(ANNUAL), ','))
 for lab, val in [('基本使用料', 1008), ('6〜10㎥', 37), ('11〜50㎥', 174), ('51㎥〜', 200)]:
     check('表1 現行 %s 税抜%s円' % (lab, format(val, ',')), has(format(val, ',') if val >= 1000 else str(val)))
@@ -218,9 +224,9 @@ check('条例第18条第4項（基本水量未満は日割）に言及', has('�
 lvl, _, base = RC.solve([RK, RG], (1008, 174, 174, 200))
 core = (RC.revenue(RK, (1008, 174, 174, 200), 1.0)
         + RC.revenue(RG, (1008, 174, 174, 200), 1.0)) - base
-check('表3 6〜10㎥を174円に揃えた調定額 53,591,475円',
-      has('53,591,475') and round(lvl) == 53591475, '再計算 %s' % format(round(lvl), ','))
-check('表3 増収余地 9,012,766円', has('9,012,766') and round(lvl - base) == 9012766,
+check('表3 6〜10㎥を174円に揃えた調定額 53,583,231円',
+      has('53,583,231') and round(lvl) == 53583231, '再計算 %s' % format(round(lvl), ','))
+check('表3 増収余地 9,015,721円', has('9,015,721') and round(lvl - base) == 9015721,
       '再計算 %s' % format(round(lvl - base), ','))
 check('表3 うち従量部分のみ 8,518,401円', has('8,518,401') and round(core) == 8518401,
       '再計算 %s' % format(round(core), ','))
@@ -233,11 +239,11 @@ check('表2 従量収入計 23,071,577円', abs(MET - 23071577) < 2, '再計算 
 check('表2 従量課金対象水量計 161,984㎥', has('161,984') and abs(TV - 161984) < 1,
       '再計算 %s' % format(round(TV), ','))
 for lab, key, shown, p_tot, p_met, vshown, p_vol in [
-        ('基本使用料', 'base', '19,065,816', 42.8, None, None, None),
+        ('基本使用料', 'base', '19,041,422', 42.7, None, None, None),
         ('6〜10㎥',   'low',  '2,300,568',  5.2, 10.0, '56,525', 34.9),
         ('11〜50㎥',  'mid',  '16,262,110', 36.5, 70.5, '84,964', 52.5),
         ('51㎥〜',    'high', '4,508,900',  10.1, 19.5, '20,495', 12.7),
-        ('日割・異動等', 'sp',  '2,445,216',  5.5, None, None, None)]:
+        ('日割・異動等', 'sp',  '2,458,405',  5.5, None, None, None)]:
     v = INC[key]
     check('表2 %s の収入 %s円' % (lab, shown),
           has(shown) and abs(round(v) - int(shown.replace(',', ''))) <= 2,
@@ -270,9 +276,9 @@ for lab, r1, r2e, m10, m20, m50 in LEVELS:
     check('表4 %s の単価差縮小率' % lab, True, '再計算 %.1f%%' % red)
 
 R6 = dict(kou=(33652, 67464), gyo=(7229, 19614))
-PLANS = [('参考 約5%', (1008, 55, 182, 210), 2213919, 52.4, 38.6),
-         ('中心案 約10%', (1008, 73, 190, 220), 4426499, 54.8, 40.3),
-         ('参考 約15%', (1008, 82, 205, 230), 6741656, 57.4, 42.3)]
+PLANS = [('参考 約5%', (1008, 55, 182, 210), 2214645, 52.4, 38.6),
+         ('中心案 約10%', (1008, 73, 190, 220), 4427950, 54.8, 40.4),
+         ('参考 約15%', (1008, 82, 205, 230), 6743866, 57.4, 42.3)]
 BK = sum(x[4] for x in RK); BG = sum(x[4] for x in RG)
 for lab, p, inc, rke, rge in PLANS:
     tot, r, _ = RC.solve([RK, RG], p)
@@ -325,10 +331,11 @@ def cells(sh): return [list(r) for r in wb[sh].iter_rows(values_only=True)]
 c20 = cells('20_単価差の縮小余地')
 v20 = [c for r in wb['20_単価差の縮小余地'].iter_rows(values_only=True) for c in r if c is not None]
 n20 = {c for c in v20 if isinstance(c, (int, float))}
-check('Excel 20 の増収余地が9,012,766円', 9012766 in n20)
+check('Excel 20 の増収余地が9,015,721円', 9015721 in n20)
 check('Excel 20 に従量部分のみ 8,518,401円がある', 8518401 in n20)
 check('Excel 20 に同一分母の対比がある', 10.0 in n20 and 34.9 in n20)
 check('Excel 20 の区分別収入・水量', {2300568, 16262110, 4508900, 56525, 84964, 20495} <= n20)
+check('漁集の日割補正 11件・13,189円', has('13,189', '11,198') and RC.gyo_hiwari() == (11, 13189))
 n32 = {str(c) for r in wb['32_料金収入算定の精査'].iter_rows(values_only=True)
        for c in r if c is not None}
 check('Excel 32 に精査7項目がある', all(str(i) in n32 for i in range(1, 8)))
@@ -339,8 +346,8 @@ check('Excel 33 に条例の各条項がある',
 c22 = cells('22_料金案と平年度増収')
 c22n = {c for r in c22 for c in r if isinstance(c, (int, float))}
 check('Excel 22 の平年度増収額が説明資料 表8 と一致',
-      {2213919, 4426499, 6741656, 8953646} <= c22n)
-check('Excel 22 に税抜の平年度増収額がある', 4024090 in c22n)
+      {2214645, 4427950, 6743866, 8956581} <= c22n)
+check('Excel 22 に税抜の平年度増収額がある', 4025409 in c22n)
 def nums(sh): return {c for r in wb[sh].iter_rows(values_only=True) for c in r
                       if isinstance(c, (int, float))}
 n26 = nums('26_R8予算差異ブリッジ')
