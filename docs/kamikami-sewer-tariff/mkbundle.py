@@ -27,6 +27,8 @@ LAYOUT = [
     ('02_図',                                          '03_説明資料/figures'),
     ('03_根拠データ',                                  'evidence/data'),
     ('04_スクリプト/recompute.py',                     'recompute.py'),
+    ('04_スクリプト/structure.py',                     'structure.py'),
+    ('04_スクリプト/mk_structure_csv.py',              'mk_structure_csv.py'),
     ('04_スクリプト/check.py',                         'check.py'),
     ('04_スクリプト/build_xlsx.py',                    'build_xlsx.py'),
     ('04_スクリプト/mkfigs.py',                        'mkfigs.py'),
