@@ -375,16 +375,78 @@ check('Excel 27 に4データ点の実績単価がある',
       all(v in n27s for v in ['176.9', '176.7', '175.1', '175.6']))
 check('Excel 27 に相殺の説明がある', {-669, 622, -47} <= n27)
 n28 = nums('28_調定実績の集計範囲')
-check('Excel 28 に年間全件の調定額がある', {44578708, 9220, 40526099} <= n28)
+check('Excel 28 に年間全件の調定額がある', {44567510, 9220, 40515919} <= n28)
 check('Excel 28 に公表値との対比がある', {42987132, 42472607, 9070} <= n28)
 check('Excel 28 の年間全件増収額が再計算と一致',
-      4426666 in n28 and round(44578708 * 0.0993) == 4426666)
+      4427950 in n28 and round(44567510 * (RATE - 1)) == 4427950)
+check('Excel 28 に漁集の日割補正がある', {24387, 13189} <= n28 or
+      {'11件 × 2,217円 = 24,387円'} <= {str(c) for r in wb['28_調定実績の集計範囲']
+                                        .iter_rows(values_only=True) for c in r if c is not None})
 c23 = cells('23_世帯への影響')
 m = {r[0]: r for r in c23 if isinstance(r[0], int)}
 check('Excel 23 の2か月請求額が説明資料 表6 と一致',
       all(m[v][3] == c2 and m[v][5] == r2b for v, c2, r2b, _, _ in HH))
 c25 = cells('25_条例改正に向けた整理')
 check('Excel 25 に公衆浴場汚水の行がある', any('公衆浴場' in str(r[0]) for r in c25 if r[0]))
+
+# ---- Red Teamレビュー（v13）への対応 ----
+check('P1 要点②が最新値（約9,016千円・+20.2%）', has('約9,016千円', '約+20.2%') and '8,493千円' not in doc)
+check('P1 要点②に従量部分のみを併記', has('約8,518千円'))
+check('P1 の旧留保（偶数月・毎月検針の欠落）を削除',
+      '偶数月調定および毎月検針者の一部が含まれていない' not in doc)
+check('P1 位置づけが年間全件と整合', has('年間全件調定9,220件・44,567,510円'))
+check('「月額の2倍」という表現を使っていない', '月額の2倍となる' not in doc and '請求額はこの2倍' not in doc)
+check('2か月請求の算定を条例どおり説明', has('2か月分の税抜使用料を算定したうえで消費税等を加算'))
+check('増収率の適用が近似である旨を明記', has('近似適用') and 'そのまま適用できる' not in doc)
+check('増収率が加重平均である旨を明記', has('利用構成から導いた加重平均'))
+check('世帯像の断定を削除', '単身・高齢世帯' not in doc and '3〜4人世帯' not in doc)
+check('水量帯と世帯属性の対応が未確認である旨を明記',
+      has('世帯人数・年齢の対応関係は調定データから確認できない'))
+
+# ---- 表7（年間全件で再集計） ----
+BANDS7 = [('月5㎥以下', lambda v: v <= 5), ('月6〜10㎥', lambda v: 5 < v <= 10),
+          ('月11〜20㎥', lambda v: 10 < v <= 20), ('月21〜30㎥', lambda v: 20 < v <= 30),
+          ('月31〜50㎥', lambda v: 30 < v <= 50), ('月51㎥〜', lambda v: v > 50)]
+def band7(recs):
+    cn = {b[0]: 0 for b in BANDS7}; am = {b[0]: 0.0 for b in BANDS7}
+    cn['日割・異動等'] = 0; am['日割・異動等'] = 0.0
+    for k, v, m, c, cur in recs:
+        if k == 'SP':
+            cn['日割・異動等'] += c; am['日割・異動等'] += cur; continue
+        vv = 5.0 if k == 'B' else v
+        for l, fn in BANDS7:
+            if fn(vv):
+                cn[l] += c; am[l] += cur; break
+    return cn, am
+CN_K, AM_K = band7(RK); CN_G, AM_G = band7(RG)
+T7K = sum(CN_K.values()); A7K = sum(AM_K.values())
+T7G = sum(CN_G.values()); A7G = sum(AM_G.values())
+check('表7 の公共件数合計が7,784件', T7K == 7784, '再計算 %d' % T7K)
+check('表7 の漁集件数合計が1,436件', T7G == 1436, '再計算 %d' % T7G)
+check('表7 の合計が年間全件9,220件と一致', T7K + T7G == 9220)
+for lab, ck_, pk, ak_, cg_, pg, ag_ in [
+        ('月5㎥以下', 1657, 21.3, 9.9, 277, 19.3, 8.3),
+        ('月6〜10㎥', 1870, 24.0, 12.3, 297, 20.7, 9.7),
+        ('月11〜20㎥', 2384, 30.6, 27.9, 505, 35.2, 29.9),
+        ('月21〜30㎥', 938, 12.1, 20.6, 250, 17.4, 27.8),
+        ('月31〜50㎥', 255, 3.3, 8.4, 69, 4.8, 12.4),
+        ('月51㎥〜', 96, 1.2, 14.4, 24, 1.7, 11.4),
+        ('日割・異動等', 584, 7.5, 6.5, 14, 1.0, 0.5)]:
+    check('表7 %s 公共 %d件 %.1f%% 金額%.1f%%' % (lab, ck_, pk, ak_),
+          has(format(ck_, ',')) and CN_K[lab] == ck_
+          and abs(CN_K[lab] / T7K * 100 - pk) < 0.06
+          and abs(AM_K[lab] / A7K * 100 - ak_) < 0.06,
+          '再計算 %d件 %.2f%% %.2f%%' % (CN_K[lab], CN_K[lab] / T7K * 100, AM_K[lab] / A7K * 100))
+    check('表7 %s 漁集 %d件 %.1f%% 金額%.1f%%' % (lab, cg_, pg, ag_),
+          CN_G[lab] == cg_ and abs(CN_G[lab] / T7G * 100 - pg) < 0.06
+          and abs(AM_G[lab] / A7G * 100 - ag_) < 0.06,
+          '再計算 %d件 %.2f%% %.2f%%' % (CN_G[lab], CN_G[lab] / T7G * 100, AM_G[lab] / A7G * 100))
+check('表7 の旧9,070件ベースの値が残っていない',
+      not has('21.7%') and not has('24.5%') and '0.8%' not in doc)
+check('本文の少量利用者の構成比が表7と同期', has('公共で件数の21.3%'))
+
+# ---- 表3 の差引が表示値で成立 ----
+check('表3 の差引が表示値どうしで成立', 53583231 - 44567510 == 9015721)
 
 ng = [r for r in results if not r[1]]
 print('チェック項目 %d 件 / 合格 %d 件 / 不合格 %d 件' % (len(results), len(results) - len(ng), len(ng)))
