@@ -49,8 +49,8 @@ OUT = ROOT / "04_算定・見込量"
 WS_FILE = (OUT / "原本_見える化ワークシート"
            / "【受領】第10期介護保険事業計画策定に向けたワークシート_将来推計1_20260914.xlsx")
 NENPO = ROOT / "18_年報・国保連データ" / "原本_年報"
-ASOF = "20260914"
-ASOF_JP = "令和8年9月14日"
+ASOF = "20260915"
+ASOF_JP = "令和8年9月15日"
 
 HEAD = PatternFill("solid", fgColor="1F3864")
 SUB = PatternFill("solid", fgColor="D9E2F3")

@@ -29,11 +29,12 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 from build_ono_tanka import POP_DAI10 as TANKA_POP
+from build_ono_kaisu import chiiki_plan, sogo_jisseki
 from build_ono_tanka import CHIIKI_JISSEKI, TESURYO, build_mikomi_input
 
 ROOT = pathlib.Path(__file__).parent
 OUT = ROOT / "小野町_引継ぎ_整理済" / "04_算定・見込量"
-ASOF = "20260914"
+ASOF = "20260915"
 
 IN_FILL = PatternFill("solid", fgColor="FFF2CC")      # 入力欄
 CALC_FILL = PatternFill("solid", fgColor="EAF1FB")    # 算式
@@ -175,7 +176,7 @@ def sheet_howto(wb):
          "人口・認定者数・所得段階別被保険者数・収納率は実績を投入済みです（11_実績（年報）参照）。"],
         ["残る入力欄は、地域支援事業費の事業別内訳（07）と基金取崩額（09）です。"
          "**地域支援事業費の総額は年報 様式4 の令和6年度決算を投入済みです"
-         "（令和8年9月14日）。**"],
+         "（令和8年9月15日）。**"],
         [],
         ["■ セルの色"],
         ["黄色", "入力欄。町からの受領データ、見える化システムの出力、政策判断による設定値を入れます"],
@@ -544,73 +545,49 @@ def sheet_chiiki(wb):
     """07_地域支援事業。
 
     地域支援事業費の決算額は年報 様式4「５．介護保険特別会計経理状況」の歳出で
-    令和3〜6年度が確認できる（令和7年度は年報そのものが未入力）。ただし様式4が
-    持つのは3科目の合計だけで、訪問型サービスAといった事業別の内訳はない。
-    そこで実績（様式4）と第10期の見込み（事業別・入力欄）を2つの表に分け、
-    見込みの総合事業計・包括的支援事業等計を実績と並べて確かめられるようにする。
+    令和3〜6年度が確認できる（令和7年度は年報そのものが未入力）。様式4が持つのは
+    3科目の合計だけだが、うち総合事業の事業別内訳は国保連月報の総合事業コード
+    （A1〜AF）で割り付けられる。一般介護予防事業と包括的支援事業・任意事業は
+    月報に載らないため、様式4 の額を区分の合計のまま置く。
+
+    第10期の見込みは令和6年度決算の据え置き。令和7年度は年報が未入力で決算額が
+    取れず、月報でみると総合事業は令和6年度の98.5％とやや低い。高齢者人口も
+    第10期の3年間でほぼ横ばいであり、据え置きは安全側の置き方になる。
     """
     ws = wb.create_sheet("07_地域支援事業")
     J = JISSEKI_YEARS
-    ws.append(["区分", "事業"] + [f"{y}（実績）" for y in J] + YEARS + ["備考"])
+    ws.append(["区分", "事業"] + [f"{y}（実績）" for y in J] + YEARS
+              + ["置き方・出所"])
     cols = [get_column_letter(3 + i) for i in range(len(J) + 3)]
     jcols, ecols = cols[:len(J)], cols[len(J):]      # 実績列／見込列
 
-    items = [
-        ("総合事業", "介護予防・生活支援サービス事業（訪問型）", "介護予防・生活支援サービス事業", ""),
-        ("総合事業", "介護予防・生活支援サービス事業（通所型）", "介護予防・生活支援サービス事業", ""),
-        ("総合事業", "その他の生活支援サービス", "介護予防・生活支援サービス事業", ""),
-        ("総合事業", "介護予防ケアマネジメント", "介護予防・生活支援サービス事業", ""),
-        ("総合事業", "一般介護予防事業", "一般介護予防事業",
-         "**令和6年度に993千円から5,305千円へ5.3倍。通いの場の展開が始まったとみられる。"
-         "何の事業を始めたかを町に確認し、第10期はこの水準を出発点に置く**"),
-        ("包括的支援事業", "地域包括支援センターの運営", "包括的支援事業・任意事業", ""),
-        ("包括的支援事業", "在宅医療・介護連携推進事業", "包括的支援事業・任意事業", ""),
-        ("包括的支援事業", "生活支援体制整備事業", "包括的支援事業・任意事業", ""),
-        ("包括的支援事業", "認知症総合支援事業", "包括的支援事業・任意事業", ""),
-        ("包括的支援事業", "地域ケア会議推進事業", "包括的支援事業・任意事業", ""),
-        ("任意事業", "介護給付等費用適正化事業", "包括的支援事業・任意事業", ""),
-        ("任意事業", "家族介護支援事業", "包括的支援事業・任意事業", ""),
-        ("任意事業", "その他の任意事業", "包括的支援事業・任意事業", ""),
-    ]
-    # 事業別の内訳が町から届くまでの仮置き行。見込みの計が実績の水準になるよう、
-    # 令和6年度決算をそのまま置く。内訳が判明したらこの行を0にして事業別に入れる。
-    KARIOKI = "（事業別の内訳が届くまでの仮置き）"
-    items.insert(5, ("総合事業", KARIOKI, "",
-                     "**令和6年度決算34,581千円を3年度とも据え置いた仮置き。"
-                     "事業別の内訳が届いたらこの行を0にする**"))
-    items.append(("包括的支援事業・任意事業", KARIOKI, "",
-                  "**令和6年度決算29,335千円を3年度とも据え置いた仮置き。"
-                  "事業別の内訳が届いたらこの行を0にする**"))
-    start = 2
-    for cat, ev, src, note_txt in items:
-        note = note_txt or f"実績は年報 様式4 の「{src}」に合算されている"
-        ws.append([cat, ev] + [None] * (len(J) + 3) + [note])
-    end = start + len(items) - 1
-    sogo_end = start + 5                      # 総合事業5事業＋仮置き1行
+    plan = chiiki_plan()
+    start = ws.max_row + 1
+    sogo_rows, hok_rows = [], []
+    for ku, ev, jis, mik, note in plan:
+        ws.append([ku, ev] + [None] * len(J) + [round(mik / 1000)] * 3 + [note])
+        ws[f"{jcols[-1]}{ws.max_row}"] = round(jis / 1000)   # 令和6年度の実績
+        (sogo_rows if ku == "総合事業" else hok_rows).append(ws.max_row)
+    end = ws.max_row
+
     ws.append(["総合事業 計", ""]
-              + [f"=SUM({c}{start}:{c}{sogo_end})" for c in cols] + [""])
+              + [f"=SUM({c}{sogo_rows[0]}:{c}{sogo_rows[-1]})" for c in cols] + [""])
     r_sogo = ws.max_row
     ws.append(["包括的支援事業・任意事業 計", ""]
-              + [f"=SUM({c}{sogo_end + 1}:{c}{end})" for c in cols] + [""])
+              + [f"=SUM({c}{hok_rows[0]}:{c}{hok_rows[-1]})" for c in cols] + [""])
     r_hok = ws.max_row
     ws.append(["合計", ""] + [f"={c}{r_sogo}+{c}{r_hok}" for c in cols] + [""])
     r_tot = ws.max_row
 
-    # 実績（年報 様式4）。事業別の内訳がないため、計の行にだけ入れる。
-    for i, y in enumerate(J):
+    # 令和3〜5年度の実績は3科目の合計しか取れないため、計の行にだけ入れる。
+    for i, y in enumerate(J[:-1]):
         d = CHIIKI_JISSEKI[y]
         ws[f"{jcols[i]}{r_sogo}"] = round(d["総合事業"] / 1000)
         ws[f"{jcols[i]}{r_hok}"] = round(d["包括的支援事業・任意事業"] / 1000)
-        ws[f"{jcols[i]}{r_tot}"] = f"={jcols[i]}{r_sogo}+{jcols[i]}{r_hok}"
-    # 第10期の仮置き（令和6年度決算の水準を3年度とも据え置く）
-    r6 = CHIIKI_JISSEKI["令和6年度"]
-    for c in ecols:
-        ws[f"{c}{sogo_end}"] = round(r6["総合事業"] / 1000)
-        ws[f"{c}{end}"] = round(r6["包括的支援事業・任意事業"] / 1000)
 
     style_header(ws)
     for r in range(start, end + 1):
-        for c in jcols:                       # 実績は事業別の内訳がない
+        for c in jcols:
             ws[f"{c}{r}"].fill = CALC_FILL
             ws[f"{c}{r}"].number_format = "#,##0"
         for c in ecols:
@@ -623,20 +600,30 @@ def sheet_chiiki(wb):
             ws[f"{c}{r}"].font = Font(bold=True, size=9)
         ws[f"A{r}"].font = Font(bold=True, size=9)
     body_style(ws, wrap_cols=(len(cols) + 3,))
-    widths(ws, [22, 36] + [13] * len(J) + [13, 13, 13, 52])
+    widths(ws, [22, 30] + [13] * len(J) + [13, 13, 13, 62])
     ws.freeze_panes = "C2"
     ws.append([])
+    sg = sogo_jisseki()
     ws.append(["※ 単位：千円。実績は年報 様式4「５．介護保険特別会計経理状況"
                "（1）保険事業勘定」の歳出の決算額。"])
     ws.append(["※ **令和7年度は年報そのものが未入力（様式4の全科目が0）。**"
                "町に令和7年度の決算額を確認します。"])
-    ws.append(["※ 様式4が持つのは3科目（介護予防・生活支援サービス事業費／"
-               "一般介護予防事業費／包括的支援事業・任意事業）の合計だけです。"
-               "訪問型サービスAといった事業別の内訳は町の事業実績が要ります。"])
+    ws.append([f"※ 総合事業の事業別内訳は国保連月報の令和6年度による。"
+               f"月報の合計{sg['令和6年度']['月報計'] / 1000:,.0f}千円に対し"
+               f"様式4の決算は{CHIIKI_JISSEKI['令和6年度']['介護予防・生活支援サービス事業'] / 1000:,.0f}千円で、"
+               f"差{sg['令和6年度']['差'] / 1000:,.0f}千円を「その他（審査支払手数料等）」に置いた。"])
+    ws.append([f"※ 月報でみた総合事業は令和6年度{sg['令和6年度']['月報計'] / 1000:,.0f}千円→"
+               f"令和7年度{sg['令和7年度']['月報計'] / 1000:,.0f}千円（98.5％）。"
+               f"令和8年度は3か月で{sg['令和8年度']['月報計'] / 1000:,.0f}千円"
+               f"（年換算{sg['令和8年度']['月報計'] * 4 / 1000:,.0f}千円）。"
+               "**第10期は令和6年度決算を据え置いており、実勢をやや上回る安全側です。**"])
+    ws.append(["※ **一般介護予防事業費と包括的支援事業・任意事業費は事業別の内訳が"
+               "様式4になく、月報にも載りません。**事業別に置くには町の事業実績が要ります。"])
     ws.append(["※ **見える化システムの「3_地域支援事業費」シートは全項目ゼロで、出所になりません。**"])
     ws.append(["※ 総合事業には上限額（前年度実績×高齢者人口の伸び率）が設定されます。"
-               "上限を超える場合は町と協議します。"])
-    return ws, {"cols": ecols, "sogo": (start, sogo_end), "total": r_tot,
+               "第10期の第1号被保険者数は令和9年度3,438人→令和11年度3,418人とほぼ横ばいであり、"
+               "据え置きでも上限に収まります。"])
+    return ws, {"cols": ecols, "sogo": (start, sogo_rows[-1]), "total": r_tot,
                 "sogo_row": r_sogo, "hokatsu_row": r_hok}
 
 

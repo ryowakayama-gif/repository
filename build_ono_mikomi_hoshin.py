@@ -38,8 +38,8 @@ import build_ono_tanka as T
 ROOT = pathlib.Path(__file__).parent / "小野町_引継ぎ_整理済"
 OUT_X = ROOT / "04_算定・見込量"
 OUT_R = ROOT / "16_町データ依頼"
-ASOF = "20260914"
-ASOF_JP = "令和8年9月14日"
+ASOF = "20260915"
+ASOF_JP = "令和8年9月15日"
 
 JP_FONT = "游明朝"
 JP_GOTHIC = "游ゴシック"
