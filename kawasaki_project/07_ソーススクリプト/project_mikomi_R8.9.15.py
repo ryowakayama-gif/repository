@@ -46,10 +46,12 @@ NIN = {
     "令和6年度": nintei(4), "令和7年度": nintei(5), "令和8年度": nintei(6),
     "令和9年度": nintei(7), "令和10年度": nintei(8), "令和11年度": nintei(9),
     "令和12年度": nintei(11), "令和17年度": nintei(13),
+    "令和22年度": nintei(15),
 }
 RATIO = {y: [NIN[y][i] / NIN["令和8年度"][i] if NIN["令和8年度"][i] else 0.0
              for i in range(7)]
-         for y in ["令和9年度", "令和10年度", "令和11年度", "令和12年度", "令和17年度"]}
+         for y in ["令和9年度", "令和10年度", "令和11年度", "令和12年度",
+                   "令和17年度", "令和22年度"]}
 
 
 # ══════════════════════════════════ 2. 年報からの実績抽出
@@ -218,7 +220,8 @@ def build():
             rec["R7給付費"] = sum(g7[i] for i in idx) / 1000.0
             rec["R7人数"] = sum(nyear[i] for i in idx) / 12.0
             rec["R7量"] = (sum(qyear[i] for i in idx) / 12.0) if qyear else None
-            for y in ["令和9年度", "令和10年度", "令和11年度", "令和12年度", "令和17年度"]:
+            for y in ["令和9年度", "令和10年度", "令和11年度", "令和12年度",
+                      "令和17年度", "令和22年度"]:
                 rt = RATIO[y]
                 rec[y + "給付費"] = proj(g7, rt, idx) / 1000.0
                 rec[y + "人数"] = proj(nyear, rt, idx) / 12.0
@@ -246,7 +249,24 @@ CHIIKI = {  # 地域支援事業費（現行値。令和11年度は入力漏れ3
 KOFU = {"令和9年度": 0.0614, "令和10年度": 0.0593, "令和11年度": 0.0569}
 HOKENSHA = {"令和9年度": 3231, "令和10年度": 3203, "令和11年度": 3177}
 SHUNORITSU = 0.96
-HOSEI = 0.964047          # 所得段階別加入割合×標準料率（現行の分布）
+
+# 所得段階別第1号被保険者数（13段階）
+# 出所：介護保険事業状況報告（年報）様式1「所得段階別」列20「年度末現在被保険者数」
+RYORITSU = [0.455, 0.685, 0.690, 0.90, 1.00, 1.20, 1.30, 1.50, 1.70,
+            1.90, 2.10, 2.30, 2.40]
+KEIGEN = {0: 0.285, 1: 0.485, 2: 0.685}          # 公費による軽減後の乗率
+NINZU_R7 = [383, 298, 305, 343, 679, 410, 427, 232, 85, 26, 17, 7, 28]
+NINZU_R6 = [412, 308, 304, 383, 699, 375, 419, 218, 67, 25, 13, 7, 31]
+
+
+def hosei_n(ninzu):
+    """所得段階別加入割合による補正係数（＝加重計÷被保険者数計）。"""
+    return sum(n * r for n, r in zip(ninzu, RYORITSU)) / sum(ninzu)
+
+
+HOSEI_SYS = 0.964047      # 見える化システムに登録されている値（第10〜13段階が0人）
+HOSEI_R6 = hosei_n(NINZU_R6)
+HOSEI = hosei_n(NINZU_R7)  # 採用値（令和7年度末の実績分布）
 
 G7_TOTAL = sum(sum(kyu(s[1])) for s in SV)
 
@@ -288,7 +308,8 @@ P("作成：ビズアップ公共コンサルティング 札幌事業所／令�
 P("")
 P("■ 基礎となる認定者数（総括表・見える化システムの推計）")
 P(f"{'年度':<10}" + "".join(f"{d:>9}" for d in D7) + f"{'計':>9}")
-for y in ["令和7年度", "令和8年度"] + YEARS + ["令和12年度", "令和17年度"]:
+for y in ["令和7年度", "令和8年度"] + YEARS + ["令和12年度", "令和17年度",
+                                              "令和22年度"]:
     P(f"{y:<10}" + "".join(f"{v:>9,.0f}" for v in NIN[y]) + f"{sum(NIN[y]):>9,.0f}")
 P("")
 P("■ 令和8年度を1.000とした要介護度別の伸び率")
@@ -339,53 +360,40 @@ print("\n".join(L))
 
 
 # ══════════════════════════════════ 5. 感度分析（所得段階・準備基金）
-RYORITSU = [0.455, 0.685, 0.685, 0.90, 1.00, 1.20, 1.30, 1.50, 1.70,
-            1.90, 2.10, 2.30, 2.40]
-WARIAI_NOW = [0.1398, 0.0933, 0.0949, 0.1239, 0.2033, 0.1391, 0.1190,
-              0.0598, 0.0267, 0.0, 0.0, 0.0, 0.0]
-WARIAI_ZENKOKU = [0.1749, 0.0967, 0.0864, 0.1074, 0.1405, 0.1333, 0.1361,
-                  0.0610, 0.0241, 0.0115, 0.0061, 0.0039, 0.0181]
+def premium(h, torikuzushi=0.0):
+    return (shuno3 / SHUNORITSU / 12.0 / (hihoken3 * h)
+            - torikuzushi / (12.0 * hihoken3 * h))
 
 
-def hosei(w):
-    return sum(a * b for a, b in zip(w, RYORITSU))
-
-
-# ケースB：第9段階に一括計上されているとみて、全国の比率で第9〜13段階に分解
-tail = sum(WARIAI_ZENKOKU[8:])
-wb_b = WARIAI_NOW[:]
-for i in range(8, 13):
-    wb_b[i] = WARIAI_NOW[8] * WARIAI_ZENKOKU[i] / tail
-# ケースC：全国並みに第10〜13段階が存在し、その分が第5段階から移る
-wb_c = WARIAI_NOW[:]
-move = sum(WARIAI_ZENKOKU[9:])
-for i in range(9, 13):
-    wb_c[i] = WARIAI_ZENKOKU[i]
-wb_c[4] = WARIAI_NOW[4] - move
-
-
-def premium(h):
-    return shuno3 / SHUNORITSU / 12.0 / (hihoken3 * h)
-
-
-CASES = [("基本：現在の所得段階分布のまま", hosei(WARIAI_NOW)),
-         ("ケースB：第9段階を全国比で第9〜13段階に分解", hosei(wb_b)),
-         ("ケースC：全国並みに第10〜13段階が存在（第5段階から移動）", hosei(wb_c))]
+CASES = [("見える化システムの現在の登録値（第10〜13段階が0人）", HOSEI_SYS),
+         ("令和6年度末の実績分布（13段階）", HOSEI_R6),
+         ("令和7年度末の実績分布（13段階）★採用", HOSEI)]
 
 L2 = []
 Q = L2.append
 Q("")
-Q("■ 所得段階別被保険者数の感度（第10〜13段階が0人である影響）")
-Q(f"{'ケース':<46}{'補正係数':>10}{'保険料基準額':>14}{'基本との差':>12}")
-base = premium(hosei(WARIAI_NOW))
+Q("■ 所得段階別第1号被保険者数（令和7年度末・年報 様式1 所得段階別）")
+Q(f"{'段階':<10}{'乗率':>8}{'人数':>8}{'構成比':>9}{'加重':>10}")
+_tot = sum(NINZU_R7)
+for i, (n, rt) in enumerate(zip(NINZU_R7, RYORITSU), 1):
+    Q(f"{'第' + str(i) + '段階':<10}{rt:>8.3f}{n:>8,}"
+      f"{n / _tot * 100:>8.1f}%{n * rt:>10.1f}")
+Q(f"{'計':<10}{'':>8}{_tot:>8,}{100.0:>8.1f}%"
+  f"{sum(n * r for n, r in zip(NINZU_R7, RYORITSU)):>10.1f}")
+Q("")
+Q("■ 所得段階別の分布のとり方による保険料基準額")
+Q(f"{'分布':<44}{'補正係数':>10}{'補正後被保険者数':>18}{'保険料基準額':>14}")
+base = premium(HOSEI)
 for nm, h in CASES:
-    Q(f"{nm:<46}{h:>10.4f}{premium(h):>14,.2f}{premium(h) - base:>12,.2f}")
+    Q(f"{nm:<44}{h:>10.6f}{hihoken3 * h:>18,.1f}{premium(h):>14,.2f}")
+Q(f"　登録値→令和7年度末の実績に改めた場合の差　{base - premium(HOSEI_SYS):+,.1f} 円／月")
 Q("")
 Q("■ 準備基金を取り崩す場合の換算")
-Q(f"　取崩額1,000万円あたり　月額 ▲{10_000_000 / (12 * hihoken3 * hosei(WARIAI_NOW)):,.1f} 円")
-Q(f"　第9期と同額（78,000千円）を取り崩す場合　月額 ▲"
-  f"{78_000_000 / (12 * hihoken3 * hosei(WARIAI_NOW)):,.1f} 円"
-  f" → {base - 78_000_000 / (12 * hihoken3 * hosei(WARIAI_NOW)):,.0f} 円")
+Q(f"　取崩額1,000万円あたり　月額 ▲{10_000_000 / (12 * hihoken3 * HOSEI):,.1f} 円")
+for t, nm in ((76_250_000, "50％取崩し"), (152_500_000, "全額取崩し"),
+              (78_000_000, "第9期と同額")):
+    Q(f"　{nm}（{t // 1000:,}千円）　月額 ▲"
+      f"{t / (12 * hihoken3 * HOSEI):,.1f} 円 → {premium(HOSEI, t):,.0f} 円")
 Q("")
 Q("■ 見える化システムの現行推計（令和8年9月11日出力）との比較")
 Q(f"{'項目':<24}{'当社の独立算定':>18}{'見える化システム':>18}{'差':>14}")
@@ -414,7 +422,7 @@ GF = PatternFill("solid", fgColor="D9D9D9")
 TH = Side(style="thin", color="A6A6A6")
 BX = Border(left=TH, right=TH, top=TH, bottom=TH)
 YS = ["令和9年度", "令和10年度", "令和11年度"]
-YL = YS + ["令和12年度", "令和17年度"]
+YL = YS + ["令和12年度", "令和17年度", "令和22年度"]
 
 bk = openpyxl.Workbook()
 bk.remove(bk.active)
@@ -592,7 +600,8 @@ for k in KEYS:
     r += 1
 r += 1
 for lab, v, fm in [("第1号被保険者数（3か年計）", hihoken3, "#,##0"),
-                   ("所得段階別加入割合による補正係数", HOSEI, "0.0000"),
+                   ("所得段階別加入割合による補正係数（令和7年度末実績・13段階）",
+                    HOSEI, "0.000000"),
                    ("補正後被保険者数（3か年計）", hihoken3 * HOSEI, "#,##0.0"),
                    ("予定保険料収納率", SHUNORITSU, "0.0%"),
                    ("保険料基準額（月額）", premium(HOSEI), "#,##0.00")]:
@@ -600,26 +609,61 @@ for lab, v, fm in [("第1号被保険者数（3か年計）", hihoken3, "#,##0")
     ws.cell(r, 2).number_format = fm
     r += 1
 r += 2
-ws.cell(r, 1, "【感度分析】所得段階別被保険者数（第10〜13段階が0人である影響）").font = Font(bold=True)
+ws.cell(r, 1, "【内訳】所得段階別第1号被保険者数"
+              "（令和7年度末・年報 様式1 所得段階別 列20）").font = Font(bold=True)
 r += 1
-hrow(ws, r, ["ケース", "補正係数", "保険料基準額（月額）", "基本との差"])
+hrow(ws, r, ["段階", "基準額に対する乗率", "被保険者数（人）", "構成比",
+             "加重（人×乗率）"])
+r += 1
+_tot = sum(NINZU_R7)
+for i, (n, rt) in enumerate(zip(NINZU_R7, RYORITSU), 1):
+    lab = f"第{i}段階"
+    if i - 1 in KEIGEN:
+        lab += f"（軽減後 {KEIGEN[i - 1]:.3f}）"
+    brow(ws, r, [lab, rt, n, n / _tot, n * rt], "#,##0.0")
+    ws.cell(r, 2).number_format = "0.000"
+    ws.cell(r, 3).number_format = "#,##0"
+    ws.cell(r, 4).number_format = "0.0%"
+    r += 1
+brow(ws, r, ["計", "", _tot, 1.0,
+             sum(n * rt for n, rt in zip(NINZU_R7, RYORITSU))], "#,##0.0",
+     bold=True)
+ws.cell(r, 3).number_format = "#,##0"
+ws.cell(r, 4).number_format = "0.0%"
+r += 2
+
+ws.cell(r, 1, "【比較】所得段階別の分布のとり方による保険料基準額").font = Font(bold=True)
+r += 1
+hrow(ws, r, ["分布", "補正係数", "補正後被保険者数", "保険料基準額（月額）",
+             "採用との差"])
 r += 1
 for nm, h in CASES:
-    brow(ws, r, [nm, h, premium(h), premium(h) - premium(HOSEI)], "#,##0.00")
-    ws.cell(r, 2).number_format = "0.0000"
+    brow(ws, r, [nm, h, hihoken3 * h, premium(h), premium(h) - premium(HOSEI)],
+         "#,##0.00")
+    ws.cell(r, 2).number_format = "0.000000"
+    ws.cell(r, 3).number_format = "#,##0.0"
     r += 1
+r += 1
+ws.cell(r, 1, "※ 見える化システムには第10〜13段階が0人として登録されているため、"
+              "補正係数が実績より 0.0497 低く出て、保険料が 352円／月 高く算定される。")
 r += 2
-ws.cell(r, 1, "【感度分析】準備基金の取崩し").font = Font(bold=True)
+
+ws.cell(r, 1, "【感度分析】介護給付費準備基金の取崩し").font = Font(bold=True)
 r += 1
-hrow(ws, r, ["取崩額（千円）", "月額換算（円）", "保険料基準額（月額）", ""])
+hrow(ws, r, ["取崩額（千円）", "月額換算（円）", "保険料基準額（月額）",
+             "第9期6,500円との差"])
 r += 1
-for t in [0, 10000, 30000, 50000, 78000]:
-    d = t * 1000 / (12 * hihoken3 * HOSEI)
-    brow(ws, r, [t, -d, premium(HOSEI) - d, ""], "#,##0.00")
+for t in [0, 30000, 50000, 76250, 78000, 100000, 152500]:
+    v = premium(HOSEI, t * 1000)
+    brow(ws, r, [t, v - premium(HOSEI), v, v - 6500], "#,##0.00")
     ws.cell(r, 1).number_format = "#,##0"
     r += 1
 r += 2
-ws.cell(r, 1, "※ 第9期は78,000千円（月額698.59円相当）を取り崩し、条例上の基準額を6,508.33円としている。")
+ws.cell(r, 1, "※ 基金残高は令和8年度末見込み152,500千円（町財政担当に確定値を照会中）。"
+              "76,250千円は50％取崩し、152,500千円は全額取崩し。")
+r += 1
+ws.cell(r, 1, "※ 第9期は78,000千円（月額698.59円相当）を取り崩し、"
+              "条例上の基準額を6,508.33円としている。")
 
 bk.save(XL)
 print("\n保存しました：", XL)
