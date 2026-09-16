@@ -20,7 +20,9 @@ import pypdf
 sys.path.insert(0, "07_ソーススクリプト")
 from fix_soan_v111 import set_tc  # noqa: E402
 
-DOCX = "01_第10期_最新版成果品/川崎町_計画書素案_v1.17_中長期推計反映版.docx"
+import sys as _s
+DOCX = (_s.argv[1] if len(_s.argv) > 1 else
+        "01_第10期_最新版成果品/川崎町_計画書素案_v1.18_認知症施策是正版.docx")
 FOOT = re.compile(r"[─－―‐\-]\s*(\d+)\s*[─－―‐\-]")
 
 
