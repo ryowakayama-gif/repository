@@ -30,10 +30,38 @@ OUT_PATH = os.path.join(OUT_DIR, "営業活動ログ_分析_20260917.xlsx")
 AS_OF = dt.date(2026, 9, 17)          # 分析基準日
 THIS_WEEK = dt.date(2026, 9, 14)      # 今週（月曜起算）
 
+# 移動圏（活動の止まり方がこの単位で揃うため、エリアを3圏に束ねる）
+ZONE = {
+    "北海道": "北海道",
+    "青森県": "北東北", "秋田県": "北東北",
+    "岩手県": "南東北・岩手", "宮城県": "南東北・岩手",
+    "山形県": "南東北・岩手", "福島県": "南東北・岩手",
+}
+ZONES = ["北海道", "北東北", "南東北・岩手"]
+
+# 北海道の担当者（営業会議ブック 20260904㉜!J162「※基本は長戸・村田・林・吉野」）
+HOKKAIDO_MEMBERS = ["長戸", "村田", "林", "吉野"]
+
+# 営業会議ブック 20260904㉜ からの転記値（比較・裏取り用）
+BOOK = {
+    "見積今期":   {"北海道": ("H172", 1),  "東北": ("H186", 2)},
+    "見積来期":   {"北海道": ("I172", 44), "東北": ("I186", 57)},
+    "累計営業":   {"北海道": ("G172", 288), "東北": ("G186", 275)},
+    "9月入札見込": {"北海道": ("E63", 3),  "東北": ("E75", 3)},
+    "9月入札確定": {"北海道": ("E64", 0),  "東北": ("E76", 1)},
+    "公会計現状":  {"北海道": ("E240", 138), "東北": ("E241", 75)},
+    "精緻化":     {"北海道": ("E259", 39), "東北": ("E260", 11)},
+    "会計支援対象": {"北海道": ("D270", 29), "東北": ("D271", 24)},
+    "決算報告書":  {"北海道": ("I270", 10), "東北": ("I271", 6)},
+    "消費税計算":  {"北海道": ("G270", 4),  "東北": ("G271", 8)},
+    "自治体数":   {"北海道": ("D52", 179), "東北": ("D53", 227)},
+}
+
 FONT = "游ゴシック"
 COLORS = {
     "header": "1F3864", "subhead": "2E75B6", "band": "DDEBF7",
     "alt": "F7FAFC", "total": "FFF2CC", "warn": "FCE4E4", "good": "E2EFDA",
+    "note": "FFF9E6",
 }
 THIN = Side(border_style="thin", color="BFBFBF")
 BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
@@ -46,7 +74,7 @@ DATA_SHEET = "データ"
 COL = {
     "入力者": 1, "訪問日": 2, "週ラベル": 3, "エリア": 4, "団体名": 5, "テーマ": 6,
     "結果": 7, "次回アクション": 8, "前回策定": 9, "改定時期": 10,
-    "アプローチ時期": 11, "状態": 12, "契約予定": 13, "要因": 14, "備考": 15,
+    "アプローチ時期": 11, "状態": 12, "契約予定": 13, "要因": 14, "圏": 15, "備考": 16,
 }
 HDR_ROW = 1
 BLANK = "(未記入)"
@@ -60,9 +88,10 @@ def load() -> pd.DataFrame:
     df["訪問日"] = pd.to_datetime(df["訪問日"], errors="coerce")
     monday = df["訪問日"] - pd.to_timedelta(df["訪問日"].dt.weekday, unit="D")
     df["週ラベル"] = monday.dt.strftime("%Y-%m-%d").fillna(BLANK)
+    df["圏"] = df["エリア"].map(ZONE).fillna(BLANK)
     df = activity_factor_rules.add_factors(df)
     for c in ("入力者", "エリア", "団体名", "テーマ", "結果", "次回アクション",
-              "前回策定", "改定時期", "アプローチ時期", "状態", "契約予定"):
+              "前回策定", "改定時期", "アプローチ時期", "状態", "契約予定", "圏"):
         df[c] = df[c].fillna(BLANK).astype(str).str.strip().replace("", BLANK)
     df["要因"] = df["要因"].replace("", "")
     df["備考"] = df["備考"].fillna("").astype(str).str.replace("\n", "／", regex=False)
@@ -156,7 +185,8 @@ def build_data(wb, df):
     order = sorted(COL, key=lambda k: COL[k])
     for name in order:
         head(ws, HDR_ROW, COL[name], name,
-             width=11 if name not in ("備考", "団体名", "要因") else (60 if name == "備考" else 24))
+             width=11 if name not in ("備考", "団体名", "要因", "圏") else
+                   (60 if name == "備考" else (14 if name == "圏" else 24)))
     for i, rec in enumerate(df.itertuples(index=False), start=HDR_ROW + 1):
         d = rec._asdict()
         for name in order:
@@ -578,6 +608,236 @@ def build_summary(ws, df, ref, sheets):
 
 
 # ============================================================
+# Sheet: ⑤ 北海道の活動停止 要因分析
+# ============================================================
+def build_hokkaido(ws, df, ref):
+    ws.sheet_view.showGridLines = False
+    ws.column_dimensions["A"].width = 2
+    ws.column_dimensions["B"].width = 30
+    for col in "CDEFG":
+        ws.column_dimensions[col].width = 14
+    ws.column_dimensions["H"].width = 62
+
+    title(ws, "B2", "⑤ 北海道の活動が止まっている要因")
+    note(ws, "B3", "活動ログで特定できるのは「いつ・何が」まで。「なぜ」は営業会議ブックの構造要因と突き合わせた推論を含む。支持度欄を参照。")
+
+    # --- 1. 止まり方は圏単位で揃っている ---
+    r = 5
+    title(ws, f"B{r}", "1. 止まったのは北海道だけではない（移動圏単位で揃っている）", size=12)
+    r += 1
+    weeks = [w for w in sorted(df["週ラベル"].unique()) if w != BLANK][-5:]
+    head(ws, r, 2, "移動圏")
+    for j, wk in enumerate(weeks):
+        head(ws, r, 3 + j, wk[5:].replace("-", "/") + "週",
+             fill="header" if wk == f"{THIS_WEEK:%Y-%m-%d}" else "subhead")
+    head(ws, r, 3 + len(weeks), "最終活動日")
+    ws.row_dimensions[r].height = 28
+    zfirst = r + 1
+    for i, z in enumerate(ZONES):
+        rr = zfirst + i
+        sub = df[df["圏"] == z]
+        fill = "warn" if z != "南東北・岩手" else "good"
+        label(ws, rr, 2, z, bold=True, fill=fill)
+        for j, wk in enumerate(weeks):
+            body(ws, rr, 3 + j, ref.countifs(圏=z, 週ラベル=wk), NUM, fill=fill)
+        body(ws, rr, 3 + len(weeks), sub["訪問日"].max().date(), "yyyy/mm/dd",
+             fill=fill, align="center", src=True)
+    r = zfirst + len(ZONES) + 1
+    note(ws, f"B{r}", "→ 北東北（青森・秋田）は9/07週から、北海道は9/14週からゼロ。南東北・岩手の3名（相澤・角張・高橋）のみ継続。"
+                      "個人の問題ではなく圏単位で止まっている。")
+
+    # --- 2. 担当者ごとの最終活動 ---
+    r += 2
+    title(ws, f"B{r}", "2. 北海道担当4名の最終活動（営業会議ブック J162「※基本は長戸・村田・林・吉野」）", size=12)
+    r += 1
+    for col, text in [(2, "担当者"), (3, "活動件数"), (4, "最終活動日"), (5, "経過日数"),
+                      (6, "最終日の件数"), (7, "最終日のアクション")]:
+        head(ws, r, col, text)
+    mfirst = r + 1
+    for i, p in enumerate(HOKKAIDO_MEMBERS):
+        rr = mfirst + i
+        sub = df[(df["入力者"] == p) & (df["圏"] == "北海道")]
+        last_day = sub["訪問日"].max()
+        lastrows = sub[sub["訪問日"] == last_day]
+        fill = "alt" if i % 2 else None
+        label(ws, rr, 2, p, bold=True, fill=fill)
+        body(ws, rr, 3, ref.countifs(入力者=p, 圏="北海道"), NUM, fill=fill)
+        body(ws, rr, 4, last_day.date(), "yyyy/mm/dd", fill=fill, align="center", src=True)
+        body(ws, rr, 5, (AS_OF - last_day.date()).days, NUM, fill=fill)
+        body(ws, rr, 6, len(lastrows), NUM, fill=fill, src=True)
+        label(ws, rr, 7, "／".join(f"{k}{v}件" for k, v in
+                                  lastrows["次回アクション"].value_counts().items()), fill=fill)
+    r = mfirst + len(HOKKAIDO_MEMBERS) + 1
+    note(ws, f"B{r}", "→ 4名とも最終記録は「見積提示」または「再アプローチ」。投げ出しではなく、訪問から見積・提案フェーズへ移った形で記録が途絶えている。")
+
+    # --- 3. 北海道 vs 東北 の指標比較 ---
+    r += 2
+    title(ws, f"B{r}", "3. 北海道と東北の違い（なぜ北海道から先に枯れたか）", size=12)
+    r += 1
+    for col, text in [(2, "指標"), (3, "北海道"), (4, "東北"), (5, "単位"), (6, "出所"), (7, ""), (8, "読み方")]:
+        head(ws, r, col, text)
+    TOH = [z for z in ZONES if z != "北海道"]
+    PIPE_ACTIONS = ["再アプローチ", "同行依頼、再訪"]
+
+    def zsum(zones, **c):
+        """指定した圏の COUNTIFS を合算した式を返す。"""
+        return "=" + "+".join(ref.countifs(圏=z, **c)[1:] for z in zones)
+
+    def pipe(zones, **c):
+        """残パイプライン（再アプローチ＋同行依頼、再訪）の合算式。"""
+        terms = [ref.countifs(圏=z, 次回アクション=a, **c)[1:]
+                 for z in zones for a in PIPE_ACTIONS]
+        return "=" + "+".join(terms)
+
+    tsum = lambda **c: zsum(TOH, **c)
+    metrics = [
+        ("活動件数", ref.countifs(圏="北海道"), tsum(), "件", "活動ログ",
+         "母数はほぼ同等。活動量そのものの差ではない"),
+        ("訪問済み団体数", None, None, "団体", "活動ログ",
+         "北海道108／道内179自治体（60%）。未訪問は約71団体残っている"),
+        ("再訪不要", ref.countifs(圏="北海道", 次回アクション="再訪不要"),
+         tsum(次回アクション="再訪不要"), "件", "活動ログ", ""),
+        ("再訪不要率（対 活動件数）", "=IFERROR(C{r0}/C{r1}*100,0)",
+         "=IFERROR(D{r0}/D{r1}*100,0)", "%", "活動ログ",
+         "北海道は3件に1件が案件化せず終了。東北の2.4倍"),
+        ("残パイプライン（再アプローチ＋同行依頼）",
+         pipe(["北海道"]), pipe(TOH), "件", "活動ログ",
+         "次がある前提の案件。件数では東北のほうが多い"),
+        ("うちアプローチ時期＝今年度",
+         pipe(["北海道"], アプローチ時期="今年度"),
+         pipe(TOH, アプローチ時期="今年度"), "件", "活動ログ",
+         "今すぐ訪ねる理由のある案件。北海道は残パイプの40%、東北は66%"),
+        ("アプローチ時期＝再来年度",
+         ref.countifs(圏="北海道", アプローチ時期="再来年度"),
+         tsum(アプローチ時期="再来年度"), "件", "活動ログ",
+         "先送り案件。北海道に偏って積み上がっている"),
+    ]
+    xfirst = r + 1
+    cnt_row, base_row = xfirst + 2, xfirst
+    for i, (name, hk, tk, unit, srcname, read) in enumerate(metrics):
+        rr = xfirst + i
+        fill = "alt" if i % 2 else None
+        label(ws, rr, 2, name, fill=fill)
+        if name == "訪問済み団体数":
+            body(ws, rr, 3, df[df["圏"] == "北海道"]["団体名"].nunique(), NUM, fill=fill, src=True)
+            body(ws, rr, 4, df[df["圏"].isin(TOH)]["団体名"].nunique(), NUM, fill=fill, src=True)
+        elif "率" in name:
+            body(ws, rr, 3, hk.format(r0=cnt_row, r1=base_row), PCT1, fill=fill)
+            body(ws, rr, 4, tk.format(r0=cnt_row, r1=base_row), PCT1, fill=fill)
+        else:
+            body(ws, rr, 3, hk, NUM, fill=fill)
+            body(ws, rr, 4, tk, NUM, fill=fill)
+        label(ws, rr, 5, unit, fill=fill)
+        label(ws, rr, 6, srcname, fill=fill)
+        body(ws, rr, 7, None, fill=fill)
+        label(ws, rr, 8, read, fill=fill)
+
+    # 営業会議ブック側の指標
+    r = xfirst + len(metrics)
+    book_rows = [
+        ("見積提示済（今期分）", "見積今期", "件", "成果が今期に落ちていない"),
+        ("見積提示済（来期分）", "見積来期", "件", "北海道の成果は44件すべて来期。今期に刈る玉がない"),
+        ("9月入札見込", "9月入札見込", "件", ""),
+        ("9月入札確定", "9月入札確定", "件", "北海道は9月の確定ゼロ。5〜8月は毎月2〜4件確定していた"),
+        ("公会計 現状件数（納品）", "公会計現状", "件", "全国最多。納品側の母数が大きい"),
+        ("固定資産台帳 精緻化", "精緻化", "件", "全国55件中39件が北海道。9月決算期の作業負荷が集中"),
+        ("会計支援 対象", "会計支援対象", "件", ""),
+        ("うち決算報告書", "決算報告書", "件", "9月は自治体の決算期。納品と営業が同じ人員なら営業は後回しになる"),
+    ]
+    for i, (name, key, unit, read) in enumerate(book_rows):
+        rr = r + i
+        fill = "band"
+        label(ws, rr, 2, name, fill=fill)
+        body(ws, rr, 3, BOOK[key]["北海道"][1], NUM, fill=fill, src=True)
+        body(ws, rr, 4, BOOK[key]["東北"][1], NUM, fill=fill, src=True)
+        label(ws, rr, 5, unit, fill=fill)
+        label(ws, rr, 6, "会議ブック", fill=fill)
+        label(ws, rr, 7, BOOK[key]["北海道"][0], fill=fill)
+        label(ws, rr, 8, read, fill=fill)
+    r = r + len(book_rows) + 1
+    note(ws, f"B{r}", "※ 「会議ブック」出所の値は営業会議ブック 20260904㉜ からの転記（青字）。G列に参照セルを記載。")
+    return r + 2
+
+
+FACTORS_HOK = [
+    ("① 今期に動かせる案件の枯渇", "強い（ログ・会議ブック双方が一致）",
+     "残パイプ109件中 今年度分は44件（40%）。東北は141件中93件（66%）。"
+     "再来年度案件19件が北海道に偏在。8/31週は38件訪問して22件（57.9%）が再訪不要。"
+     "会議ブックでも見積提示済は今期1件・来期44件、9月入札は見込3件→確定0件。"),
+    ("② 納品業務のピークと人員の重複", "中（構造は事実／投入の直接記録はなし）",
+     "9月は自治体の決算期。北海道は公会計138件・精緻化39件（全国55件の7割）・"
+     "決算報告書10件を抱え全国最多。札幌14名で最大拠点だが採用は一旦中止。"
+     "営業と納品を同じ人員が担う場合、9月は納品が優先される。"),
+    ("③ 広域ゆえの移動コスト", "中（効率差はログで確認できる）",
+     "1実訪問日あたり 北海道2.4団体 vs 南東北・岩手3.9団体。"
+     "未訪問の約71団体は道内に散在。今期案件が薄い先へ長距離移動する費用対効果は低く、①と重なって足が止まる。"),
+    ("④ テーマ構成の偏り", "中（ログで確認できる）",
+     "北海道は福祉計画が71件（31%）で東北11件（5%）と大きく異なる。"
+     "福祉計画は全体でも再訪不要率28%と高く、自前作成・他計画への一体化が起きやすい領域。"),
+    ("⑤ セミナー準備", "弱い（時期は一致するが担当が合わない）",
+     "全国セミナーは9/25〜10/23開催、テキスト期限9/18〜9/22で今週が締切直前。"
+     "ただし講師は川崎・北城・南澤・若山・山田・さいとう/おの・大窪で、"
+     "北海道担当4名（長戸・村田・林・吉野）は含まれない。若山の停止（最終8/24）は説明できる。"),
+]
+
+UNKNOWNS = [
+    ("記録漏れか活動停止かは区別できない",
+     "活動ログに作成日時・更新日時の列がないため、「訪問していない」のか「訪問したが未入力」なのかを判定できない。"
+     "9/4時点で会議ブックの累計営業件数は北海道288件・東北275件に対し、活動ログは北海道214件・東北176件。"
+     "ログは北海道で26%、東北で36%少ない。記録漏れは全社的に存在し、むしろ東北のほうが大きい。"),
+    ("個人の事情は一切データにない",
+     "休暇・異動・体調・他案件へのアサインなどは活動ログにも会議ブックにも現れない。"
+     "4名が同時期に止まっている点は、個別事情より①〜③の共通要因を示唆するが、確認は本人・上長への確認が必要。"),
+    ("②③④は相関であって因果ではない",
+     "納品件数・移動効率・テーマ構成はいずれも北海道の特徴だが、"
+     "これらが今回の停止を引き起こしたことをログだけでは証明できない。"),
+]
+
+
+def build_hokkaido_factors(ws, r):
+    title(ws, f"B{r}", "4. 要因の候補と根拠", size=12)
+    r += 1
+    head(ws, r, 2, "要因")
+    head(ws, r, 3, "データでの支持度")
+    head(ws, r, 5, "根拠")
+    for c in (4, 6, 7, 8):
+        head(ws, r, c, "")
+    ffirst = r + 1
+    for i, (name, strength, basis) in enumerate(FACTORS_HOK):
+        rr = ffirst + i
+        fill = "warn" if strength.startswith("強い") else ("alt" if i % 2 else None)
+        label(ws, rr, 2, name, bold=True, fill=fill)
+        c = label(ws, rr, 3, strength, fill=fill)
+        c.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
+        for cc in (4,):
+            body(ws, rr, cc, None, fill=fill)
+        c = label(ws, rr, 5, basis, fill=fill)
+        c.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
+        for cc in (6, 7, 8):
+            body(ws, rr, cc, None, fill=fill)
+        ws.row_dimensions[rr].height = 14 * (1 + len(basis) // 60)
+
+    r = ffirst + len(FACTORS_HOK) + 1
+    title(ws, f"B{r}", "5. このデータでは判定できないこと", size=12)
+    r += 1
+    head(ws, r, 2, "論点")
+    head(ws, r, 5, "内容")
+    for c in (3, 4, 6, 7, 8):
+        head(ws, r, c, "")
+    ufirst = r + 1
+    for i, (name, text) in enumerate(UNKNOWNS):
+        rr = ufirst + i
+        label(ws, rr, 2, name, bold=True, fill="note")
+        for cc in (3, 4):
+            body(ws, rr, cc, None, fill="note")
+        c = label(ws, rr, 5, text, fill="note")
+        c.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
+        for cc in (6, 7, 8):
+            body(ws, rr, cc, None, fill="note")
+        ws.row_dimensions[rr].height = 14 * (1 + len(text) // 60)
+
+
+# ============================================================
 # Sheet: 前提・注記
 # ============================================================
 def build_notes(ws, df):
@@ -636,6 +896,7 @@ def main():
     ws_p = wb.create_sheet("②個人別案件数")
     ws_f = wb.create_sheet("③再訪不要_要因分析")
     ws_d = wb.create_sheet("④再訪不要_明細")
+    ws_h = wb.create_sheet("⑤北海道_活動停止要因")
     ws_n = wb.create_sheet("前提・注記")
     build_data(wb, df)
 
@@ -643,6 +904,7 @@ def main():
     pfirst, plast = build_person(ws_p, df, ref)
     ffirst = build_factor(ws_f, df, ref)
     build_detail(ws_d, df)
+    build_hokkaido_factors(ws_h, build_hokkaido(ws_h, df, ref))
     build_summary(ws_sum, df, ref, {
         "週次": {"name": ws_w.title},
         "個人": {"name": ws_p.title, "first": pfirst, "last": plast},
@@ -652,6 +914,7 @@ def main():
 
     for ws in (ws_sum, ws_w, ws_p, ws_n):
         page_setup(ws, one_page=True)
+    page_setup(ws_h)
     # 要因分析は行数が多く1ページ圧縮すると縮小率が大きいため自然な改ページにする
     page_setup(ws_f)
     page_setup(ws_d, freeze="B6")
