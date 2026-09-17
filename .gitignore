@@ -1,1 +1,3 @@
 kawasaki_project/07_ソーススクリプト/tmp/
+__pycache__/
+*.pyc

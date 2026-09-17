@@ -29,7 +29,8 @@ for blk in iter_block_items(doc):
         t = blk.text.strip().replace("\n", "⏎")
         has = blk._p.findall('.//' + qn('w:drawing'))
         if t:
-            out.append(f"[P{pi}]{'[図]' if has else ''}<{blk.style.name}> {t}")
+            _st = blk.style.name if blk.style is not None else "?"
+            out.append(f"[P{pi}]{chr(91)+chr(22259)+chr(93) if has else chr(34)[0:0]}<{_st}> {t}")
         elif has:
             out.append(f"[P{pi}][図（キャプションなし）]")
     else:
