@@ -43,12 +43,105 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
+import runpy as _runpy
+import sys as _sys
+
 import data_survey2025 as S
 import data_survey_cross as C
 import data_mieruka_km as MK
 import data_hokkaido_roster as R
 import data_hokkaido_shitei as H
 import repo_paths as RP
+
+
+class _Sink(object):
+    """標準出力の捨て場。sys.stdout.buffer を包み直す側にも耐える。"""
+
+    closed = False
+    encoding = "utf-8"
+    errors = "strict"
+    newlines = None
+    line_buffering = False
+    name = "<sink>"
+    mode = "w"
+
+    def __init__(self):
+        self.buffer = self
+
+    def write(self, *_a, **_k):
+        return 0
+
+    def writelines(self, _lines):
+        pass
+
+    def flush(self):
+        pass
+
+    def close(self):
+        pass
+
+    def fileno(self):
+        raise OSError("sink")
+
+    def isatty(self):
+        return False
+
+    def readable(self):
+        return False
+
+    def writable(self):
+        return True
+
+    def seekable(self):
+        return False
+
+    def detach(self):
+        return self
+
+    def reconfigure(self, **_k):
+        pass
+
+
+def _load(name):
+    """別のビルドスクリプトの算定結果を読み込む（標準出力は捨てる）。
+
+    見込量を本報告書に固定値で書き写すと、算定を改めたときに
+    計画素案と本報告書とで別の答えが並ぶ。
+    （令和8年9月17日の点検で、第５章第５節の見込量が
+      将来推計 第2段階の値のままであり、
+      計画素案 第6章（第1次概算による値）と食い違っていたことが分かった。）
+    """
+    old = _sys.stdout
+    _sys.stdout = _Sink()
+    try:
+        return _runpy.run_path(RP.ROOT + "/" + name)
+    finally:
+        _sys.stdout = old
+
+
+_M = _load("build_mikomiryo_santei.py")      # サービス見込量 第1次概算
+_X = _load("build_survey_jisseki_cross.py")  # 調査結果と年報実績の突合
+
+_JIS, _SOG = _M["JISSEKI"], _M["sogaku"]
+_SHI_LAB = [l for l in _M["SHISETSU_LAB"] if l.startswith("施設サービス")]
+_KYO_LAB = [l for l in _M["SHISETSU_LAB"] if l.startswith("居住系サービス")]
+SHI_R7 = sum(sum(_JIS[l]) for l in _SHI_LAB)
+SHI_R11 = sum(_SOG(l, "2029") for l in _SHI_LAB)
+KYO_R7 = sum(sum(_JIS[l]) for l in _KYO_LAB)
+KYO_R11 = sum(_SOG(l, "2029") for l in _KYO_LAB)
+
+_TEIIN = _M["TEIIN_MAP"]
+_CHITOKU_LAB = "施設サービス 地域密着型介護老人福祉施設入所者生活介護"
+CHITOKU_R11 = _SOG(_CHITOKU_LAB, "2029")
+CHITOKU_CAP = _TEIIN[_CHITOKU_LAB][0]
+
+CHI = _X["CU_CHI"]
+CHI_1P = _X["CHI_1"]
+CU_DO_OBS, CU_DO_EXP = _X["CU_DO"], _X["CU_EXP"]
+ZAISEKI_VS = [(nm, _X["zaiseki"](nm), _X["nenpo_kei"](keys))
+              for nm, keys in _X["TAIO"] if keys]
+ROKEN_Z, ROKEN_J = [(z, j) for nm, z, j in ZAISEKI_VS
+                    if nm == "介護老人保健施設"][0]
 
 OUT = (RP.ROOT + "/output/"
        "第10期計画_実施済み調査_結果報告書.docx")
@@ -656,8 +749,8 @@ NOTE("「サービス付き高齢者向け住宅」は本文・表で略記し�
 P("")
 SUB("（５） 調査結果とサービス見込量の関係")
 P("サービス見込量は、要介護度別の認定者数に給付実績から求めた利用率と"
-  "受給者1人当たりの利用日数・回数を乗じて算定します"
-  "（別冊「将来推計 第2段階　サービス見込量」）。"
+  "１人１月当たり給付費を乗じて算定します"
+  "（別冊「サービス見込量の算定　第１次概算」。令和8年9月16日）。"
   "本報告書の調査結果は、この算定の直接の入力値ではありません。")
 P("調査結果は、①施策の必要性の根拠、②見込量の上振れ・下振れを"
   "検討する際の材料、③代表KPIの基準値（第８章第２節（２））の3つに用います。"
@@ -764,6 +857,23 @@ P("調査対象99人のうち本設問の有効回答は98人で、"
   "この割合を区域内の在宅利用者全体の割合として読むことはできません。"
   "計画本文でも「調査対象99人のうち本設問の有効回答98人において」と"
   "母集団と分母を明記します。")
+P("")
+P("令和8年9月に介護保険事業状況報告（年報）令和7年度の"
+  "要介護度別の明細を収めたことにより、"
+  "この偏りの大きさと向きを数値で示せるようになりました。"
+  "本調査の回答者の要介護度の分布は、"
+  "在宅の認定者（認定者数から施設・居住系サービスの利用者を差し引いたもの）"
+  "の分布と食い違います（χ二乗＝%.1f。自由度6の1%%点は%.2f）。"
+  "要介護3は期待%.1f人に対し%d人（%.1f倍）、"
+  "要支援1は期待%.1f人に対し%d人（%.2f倍）で、"
+  "中重度の在宅利用者に寄った構成です。"
+  "本報告書の①の結果は「在宅で困難を抱える方の状況」として引き、"
+  "在宅の認定者全体の割合としては引きません。"
+  % (CHI, CHI_1P, CU_DO_EXP[4], CU_DO_OBS[4],
+     CU_DO_OBS[4] / CU_DO_EXP[4],
+     CU_DO_EXP[0], CU_DO_OBS[0], CU_DO_OBS[0] / CU_DO_EXP[0]))
+NOTE("別冊「調査結果と年報実績の突合クロス集計」（令和8年9月11日）に"
+     "要介護度別の実測値と期待値を掲げています。")
 P("")
 P("主な介護者の就労継続が困難になっているとされた方は41人（41.8%）です。"
   "介護離職の防止は、"
@@ -1900,24 +2010,52 @@ NOTE("介護老人保健施設は３施設すべてが回答して77人である
 
 H2("第５節　供給と需要の対照")
 TBL(["区分", "令和7年度実績", "令和11年度見込み", "区域内定員", "定員に対する割合"],
-    [["施設サービス", "336人", "339人",
+    [["施設サービス", "%.1f人" % SHI_R7, "%.1f人" % SHI_R11,
       "%d人" % (CAP_TOKUYO + CAP_CHITOKU + CAP_ROKEN),
-      "%.1f%%" % (339 / (CAP_TOKUYO + CAP_CHITOKU + CAP_ROKEN) * 100)],
-     ["居住系サービス", "144人", "145人", "%d人" % (CAP_GH + CAP_TOKUTEI),
-      "%.1f%%" % (145 / (CAP_GH + CAP_TOKUTEI) * 100)]],
+      "%.1f%%" % (SHI_R11 / (CAP_TOKUYO + CAP_CHITOKU + CAP_ROKEN) * 100)],
+     ["居住系サービス", "%.1f人" % KYO_R7, "%.1f人" % KYO_R11,
+      "%d人" % (CAP_GH + CAP_TOKUTEI),
+      "%.1f%%" % (KYO_R11 / (CAP_GH + CAP_TOKUTEI) * 100)]],
     [4.0, 3.0, 3.2, 3.0, 3.4])
 GBAR("f_teiin_mikomi", "見込量と区域内定員の対照（令和11年度）",
      ["施設サービス", "居住系サービス"],
-     [("令和11年度の見込み", [339, 145]),
+     [("令和11年度の見込み", [round(SHI_R11, 1), round(KYO_R11, 1)]),
       ("区域内定員", [CAP_TOKUYO + CAP_CHITOKU + CAP_ROKEN,
                     CAP_GH + CAP_TOKUTEI])], unit="人", ncol=2, ylabel="人")
-NOTE("見込みは別冊「将来推計 第２段階　サービス見込量」によります。"
-     "利用率と受給者１人当たりの利用日数・回数を"
-     "令和7年度の値で固定した基本ケースの値です。")
-P("施設・居住系の見込量はいずれも区域内定員の範囲内に収まります。"
-  "ただし、区域内の施設には住所地特例により他の保険者の被保険者も"
-  "入居しており、定員と見込量の差がそのまま空きを示すものではありません。"
-  "特定施設は定員156人に対し入居者154人（98.7%）でほぼ満室です。")
+NOTE("見込みは別冊「サービス見込量の算定　第１次概算」（令和8年9月16日）"
+     "によります。計画素案 第６章に反映済みの値と同じです。"
+     "要介護度別の利用率と１人１月当たり給付費を"
+     "令和7年度の値で固定した算定であり、前提は確定していません。"
+     "実績は介護保険事業状況報告（年報）令和7年度の月平均で、"
+     "保険者（広域連合）を単位として当広域連合の被保険者を数えたものです。")
+P("施設・居住系の見込量は、合計では区域内定員の範囲内に収まります。"
+  "ただし種別ごとにみると、地域密着型介護老人福祉施設は"
+  "令和11年度に%.1f人となり、定員%d人の%.1f%%に達します。"
+  "また、区域内の施設には他の保険者の被保険者も入居しており"
+  "（住所地特例を含む）、定員と見込量の差がそのまま空きを示すものでは"
+  "ありません。特定施設は定員156人に対し入居者154人（98.7%%）で"
+  "ほぼ満室です。"
+  % (CHITOKU_R11, CHITOKU_CAP, CHITOKU_R11 / CHITOKU_CAP * 100))
+P("")
+P("なお、施設の側から数えた在籍者と、保険者の側から数えた受給者は、"
+  "数える対象が異なるため一致しません。"
+  "年報は施設の所在地を問わず当広域連合の被保険者を数えるのに対し、"
+  "居所変更実態調査は保険者を問わず区域内の施設の在籍者を数えています。")
+TBL(["区分", "居所変更実態調査の在籍者", "年報の受給者（月平均）",
+     "差（在籍−受給）"],
+    [[nm, "%d人" % z, "%.1f人" % j, "%+.1f人" % (z - j)]
+     for nm, z, j in ZAISEKI_VS],
+    [4.6, 4.2, 4.0, 3.2])
+NOTE("介護老人保健施設だけが在籍%d人＞受給%.1f人（＋%.1f人）で、"
+     "他の３区分は受給が在籍を上回ります。"
+     "特別養護老人ホーム等は受給%.1f人が回答施設の定員152人を上回り、"
+     "区域外の施設の利用が含まれています。"
+     "このため、区域内の施設の定員は必要利用定員総数の上限ではなく、"
+     "定員に対する割合が100%%を超えることも誤りではありません。"
+     "必要利用定員総数は、区域内の施設の定員とは別に整理します"
+     "（第８章第３節）。"
+     % (ROKEN_Z, ROKEN_J, ROKEN_Z - ROKEN_J,
+        [j for nm, z, j in ZAISEKI_VS if nm == "特養・地域密着型特養"][0]))
 P("")
 TBL(["区分", "令和7年度の利用率", "認定者1,984人に適用した推計人数",
      "利用率の出典・時点"],
@@ -1937,8 +2075,8 @@ NOTE("本表・本図は、認定者数1,984人（令和8年3月末）に"
      "令和7年度の合計利用率（見える化D45系列）を乗じて算定した推計人数であり、"
      "各区分の実際の月平均利用者数を集計したものではありません。"
      "利用率は年度の平均、認定者数は年度末の値であり、時点が異なります。"
-     "月平均の受給者実績（在宅1,013人、居住系144人、施設336人）とは"
-     "算定の方法が異なるため、両者は一致しません。")
+     "月平均の受給者実績（在宅1,013人、居住系%.1f人、施設%.1f人）とは"
+     "算定の方法が異なるため、両者は一致しません。" % (KYO_R7, SHI_R7))
 P("認定を受けている1,984人に令和7年度の利用率を適用すると、"
   "在宅サービスの利用者は1,016人（51.2%）、"
   "居住系は145人（7.3%）、施設は337人（17.0%）で、"
@@ -2299,6 +2437,12 @@ for head, items in [
 
 P("")
 P("以上", align=WD_ALIGN_PARAGRAPH.RIGHT, space_after=0)
+
+# 既定のテンプレートの w:zoom は必須属性 w:percent を欠いており、
+# スキーマ検証の誤りとなるため補う（CLAUDE.md §4）。
+_zoom = doc.settings.element.find(qn("w:zoom"))
+if _zoom is not None and _zoom.get(qn("w:percent")) is None:
+    _zoom.set(qn("w:percent"), "100")
 
 doc.save(OUT)
 print("saved:", OUT)

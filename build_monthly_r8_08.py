@@ -10,7 +10,17 @@ from docx import Document
 import repo_paths as RP
 import sys
 sys.path.insert(0, RP.ROOT)
-from data_progress import PROGRESS, overall_pct, KIJUNBI   # noqa: E402
+import data_progress as G                                  # noqa: E402
+
+# 本報告書は令和8年8月分であり、当該時点で報告した値を用いる。
+# data_progress.PROGRESS（現時点の値）を直接読むと、
+# PROGRESS を更新するたびに8月分の報告の数値が書き換わってしまう。
+KIJUNBI = "令和8年8月31日"
+PROGRESS = G.snapshot(KIJUNBI)
+
+
+def overall_pct():
+    return G.overall_pct(KIJUNBI)
 from docx.shared import Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_ALIGN_VERTICAL
@@ -246,7 +256,7 @@ TBL(["区分", "内容"],
       "第2段階（サービス見込量）、需要3シナリオ感度表。"
       "住民基本台帳の年齢5歳階級別人口により人口推計の補正案を作成"],
      ["計画書",
-      "計画素案を協議用素案（令和8年8月時点）へ改訂（%s）。" % RP.draft_label() +
+      "計画素案を協議用素案（令和8年8月時点）へ改訂（%s）。" % RP.draft_label_at(KIJUNBI) +
       "概要版の構成案を作成"],
      ["提出物",
       "仕様書５の令和8年8月の工程末の提出物として、"
@@ -380,7 +390,7 @@ SEC = [
       "人口推計の補正の反映",
       "概要版の構成案の作成（A4判8頁・2版構成）",
       "修正指示書（令和8年8月の改訂）の作成"],
-     ["協議用素案（令和8年8月時点）（%s）" % RP.draft_label(),
+     ["協議用素案（令和8年8月時点）（%s）" % RP.draft_label_at(KIJUNBI),
       "概要版の構成案（9シート）",
       "修正指示書 令和8年8月の改訂（7シート）",
       "発注者確認事項一覧（3シート）"],
