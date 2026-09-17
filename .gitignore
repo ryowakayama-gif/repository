@@ -1,0 +1,7 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Excel の一時ファイル
+~$*.xlsx
+.~lock.*#
