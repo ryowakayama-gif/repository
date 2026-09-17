@@ -4,7 +4,7 @@
 骨子案 修正版ジェネレータ
 
 入力: source/北塩原村_骨子案_原本_20260731.docx（他担当者作成の骨子案）
-出力: output/北塩原村_骨子案_修正版.docx
+出力: output/北塩原村_計画素案.docx
 
 比較レビュー（docs/北塩原村_骨子案_計画素案第9稿_比較レビュー.md）で
 「骨子案を正本とし、計画素案第9稿から移植する」と整理した項目のうち、
@@ -32,7 +32,7 @@ from docx.text.paragraph import Paragraph
 
 SRC_FILE = "/home/user/repository/source/北塩原村_骨子案_原本_20260731.docx"
 OUT_DIR = "/home/user/repository/output"
-OUT_FILE = f"{OUT_DIR}/北塩原村_骨子案_修正版.docx"
+OUT_FILE = f"{OUT_DIR}/北塩原村_計画素案.docx"
 
 FONT = "BIZ UDPゴシック"
 TABLE_W = 9638          # 原本の表幅（dxa）
@@ -2278,6 +2278,69 @@ def add_yougo_kaisetsu(doc):
     changes.append(f"第8章4：用語解説を新設（{len(YOUGO)}語）")
 
 
+# ---------------------------------------------------------------------------
+# 表題の「骨子案」→「素案」への差し替え
+# 原本は作業用ドラフトとして作られているが、第1章〜第8章の内容が揃い、
+# 村へ提示できる段階になったため、村の指示により表題を素案に改める。
+# ---------------------------------------------------------------------------
+
+# 文字列単位の置換（同じ語が本文の別の文脈で使われていないことを確認済み）
+TITLE_EDITS = [
+    ("骨子案", "素案"),          # 表紙。原本では前後の全角空白が別ランになっている
+    ("本ドラフトの取り扱いについて", "本素案の取り扱いについて"),
+    ("策定を支援するための作業用ドラフトです", "策定に向けた素案です"),
+    ("本ドラフト", "本素案"),
+    ("編集：北塩原村　住民課（ドラフト作成支援）", "編集：北塩原村　保健福祉課　福祉係"),
+]
+
+# 段落全体が一致したときだけ置換する（本文中の「令和８年７月７日の打合せ」
+# 「法定雇用率2.7％への引上げ（令和８年７月）」を巻き込まないため）
+DATE_EDITS = [
+    ("令和８年７月", "令和８年９月"),
+    ("作成日：令和８年７月", "作成日：令和８年９月"),
+]
+
+
+def iter_all_paragraphs(doc):
+    """本文・表中を問わず、すべての段落を返す。"""
+    for child in doc.element.body.iterchildren():
+        if child.tag == qn("w:p"):
+            yield Paragraph(child, doc)
+        elif child.tag == qn("w:tbl"):
+            for row in Table(child, doc).rows:
+                for cell in row.cells:
+                    for para in cell.paragraphs:
+                        yield para
+
+
+def fix_title(doc):
+    """表紙・前書き・奥付の「骨子案」「ドラフト」の表記を「素案」に改める。"""
+    hits = {old: 0 for old, _ in TITLE_EDITS}
+    hits.update({old: 0 for old, _ in DATE_EDITS})
+
+    for para in iter_all_paragraphs(doc):
+        full = para.text.strip()
+        for old, new in DATE_EDITS:
+            if full == old:
+                for run in para.runs:
+                    if old in run.text:
+                        run.text = run.text.replace(old, new)
+                        hits[old] += 1
+                break
+        for old, new in TITLE_EDITS:
+            for run in para.runs:
+                if old in run.text:
+                    run.text = run.text.replace(old, new)
+                    hits[old] += 1
+
+    missing = [old for old, n in hits.items() if n == 0]
+    if missing:
+        raise LookupError(f"表題の置換対象が見つかりません: {missing}")
+
+    changes.append("表紙・前書き・奥付：表題を「骨子案」から「素案」に変更し、"
+                   "作成年月を令和８年９月、編集所管課を保健福祉課福祉係に更新")
+
+
 def verify_service_names():
     """体系表のサービス名が管理ブックの区分から外れていないかを確かめる。"""
     from kitashiobara_common import SERVICES_ADULT, SERVICES_CHILD, SERVICES_ZERO
@@ -2341,6 +2404,7 @@ def main():
     add_service_taikei(doc)
     add_hyoki_note(doc)
     add_yougo_kaisetsu(doc)
+    fix_title(doc)
     doc.save(OUT_FILE)
 
     print(f"作成: {OUT_FILE}")

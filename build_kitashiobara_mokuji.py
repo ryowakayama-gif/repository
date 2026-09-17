@@ -3,7 +3,7 @@
 北塩原村 第8期障がい福祉計画・第4期障がい児福祉計画
 計画素案の目次整理・ページ番号付与ジェネレータ
 
-入出力: output/北塩原村_骨子案_修正版.docx（上書き更新）
+入出力: output/北塩原村_計画素案.docx（上書き更新）
 
 背景
   build_kitashiobara_kosshi_rev.py が原本（令和8年7月版）に章節を追加してきた結果、
@@ -40,7 +40,7 @@ from docx import Document
 from docx.oxml.ns import nsmap, qn
 from docx.oxml import OxmlElement
 
-SRC = "/home/user/repository/output/北塩原村_骨子案_修正版.docx"
+SRC = "/home/user/repository/output/北塩原村_計画素案.docx"
 OUT = SRC
 
 # 目次に載せる見出しの階層（1=章のみ、2=章＋節、3=章＋節＋小見出し）
