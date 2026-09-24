@@ -40,6 +40,7 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.styles.borders import Border, Side
 
 import build_ono_tanka as T
+import ono_kaigodo as K
 
 OUT = pathlib.Path(__file__).parent / "小野町_引継ぎ_整理済" / "04_算定・見込量"
 ASOF = "20260915"
@@ -76,6 +77,28 @@ def load():
     return g, den
 
 
+# 要介護度の区分を予防給付・介護給付に振り分ける。
+# 様式2は1行で予防（要支援1・2の列）と介護（要介護1〜5の列）の双方を持つ。
+KD_KIND = {"予防": ["要支援1", "要支援2"],
+           "介護": ["要介護1", "要介護2", "要介護3", "要介護4", "要介護5"]}
+
+
+def load_kaigodo():
+    """川崎町方式のもと。{(サービス, 給付の別): {年度: {要介護度: 千円}}} と認定者数。
+
+    価格水準は load() と同じ調整をかけ、比較できるようにする。
+    """
+    kyufu, nintei, _chk = K.read()
+    out = {}
+    for y in YS:
+        adj = T.PRICE_ADJ.get(y, 1.0)
+        for svc, v in kyufu[y].items():
+            for kind, ds in KD_KIND.items():
+                ser = out.setdefault((svc, kind), {})
+                ser[y] = {d: v[d] / 1000 * adj for d in ds}
+    return out, nintei
+
+
 def cagr(ser, years):
     """年平均変化率。始点か終点が0なら0を返す。"""
     a, b = ser.get(years[0], 0), ser.get(years[-1], 0)
@@ -86,10 +109,18 @@ def cagr(ser, years):
 
 
 def predict(g, den, den_key, t0, h, method, phi=0.5, cap=0.03, win=3,
-            base_years=None):
+            base_years=None, kd=None, nintei=None, kd_kind="総数"):
     """起点 t0 から h 年先を予測した給付費を返す。"""
     i0 = YS.index(t0)
     tgt = YS[i0 + h]
+    if method == "度別":
+        gr = K.growth(nintei, t0, tgt, kd_kind)
+        out = {}
+        for k, ser in g.items():
+            base = kd.get(k, {}).get(t0)
+            out[k] = (sum(base[d] * gr[d] for d in base) if base
+                      else ser[t0])
+        return out, tgt
     d = den[den_key]
     gn = cagr(d, YS[max(0, i0 - win + 1):i0 + 1])
     out = {}
@@ -131,7 +162,26 @@ COMBOS = [("令和5年度", 1), ("令和5年度", 2), ("令和6年度", 1)]
 
 def run():
     g, den = load()
+    kd, nintei = load_kaigodo()
     rows = []
+    # 川崎町方式（要介護度別の認定者数の伸び）。分母を1つ選ぶ方式ではないため
+    # 分母の総当たりの外で1回だけ測る。認定者数は総数と第1号の2系列で見る。
+    for kind in ("総数", "1号"):
+        svc_e, tot_e = [], []
+        for t0, h in COMBOS:
+            p_, tgt = predict(g, den, "第1号被保険者数", t0, h, "度別",
+                              kd=kd, nintei=nintei, kd_kind=kind)
+            a, b = score(p_, g, tgt)
+            svc_e.append(a)
+            tot_e.append(b)
+        rows.append({
+            "分母": f"要介護度別の認定者数（{kind}）", "方法": "度別",
+            "φ": None, "上限": None, "窓": None,
+            "サービス別": sum(svc_e) / len(svc_e),
+            "総給付費": sum(tot_e) / len(tot_e),
+            "内訳": list(zip([f"{t0[2:]}+{h}" for t0, h in COMBOS],
+                           [round(x * 100, 2) for x in tot_e])),
+        })
     for den_key in den:
         for method in ("据置", "一律", "補正", "利用率"):
             grid = ([(None, None, None)] if method in ("据置", "一律", "利用率")
@@ -322,6 +372,94 @@ def main():
         "**サービス別の趨勢は分母の伸びとは別物で、"
         "一律の伸びで置くとその差がそのまま対計画比の開きになります**"
         "（手引き第5章1）。",
+    ])
+
+    # ---- 04 要介護度別（川崎町方式）
+    kd, nintei = load_kaigodo()
+    ws = wb.create_sheet("04_要介護度別（川崎町方式）")
+    ws.append(["川崎町 第10期で用いている方式を小野町のデータで測る"])
+    ws.cell(1, 1).font = Font(bold=True, size=13)
+    for t in [
+        "方式：基準年度の要介護度別給付費（年報 様式2）に、"
+        "要介護度別の認定者数の伸び（年報 様式1の5）を乗じて足し上げる。"
+        "1人当たりの水準は基準年度で据え置く。",
+        "当方の方式が第1号被保険者1人当たりの利用率を延ばすのに対し、"
+        "こちらは要介護度の構成の変化だけを織り込む。",
+    ]:
+        ws.append([t])
+    ws.append([])
+    ws.append(["■ 要介護度別の認定者数（年報 様式1の5・総数・年度末）"])
+    ws.cell(ws.max_row, 1).font = Font(bold=True, size=10)
+    ws.append(["年度"] + K.KAIGODO + ["計"])
+    hr = ws.max_row
+    for y in YS:
+        n = nintei[y]["総数"]
+        ws.append([y] + [n[d] for d in K.KAIGODO] + [sum(n.values())])
+    style_head(ws, hr)
+    ws.append([])
+    ws.append(["■ 伸び率（基準年度＝1.000）"])
+    ws.cell(ws.max_row, 1).font = Font(bold=True, size=10)
+    ws.append(["起点→予測先"] + K.KAIGODO + ["全体"])
+    hr2 = ws.max_row
+    pairs = [(t0, YS[YS.index(t0) + h]) for t0, h in COMBOS]
+    for t0, tgt in pairs:
+        gr = K.growth(nintei, t0, tgt)
+        tot = (sum(nintei[tgt]["総数"].values())
+               / sum(nintei[t0]["総数"].values()))
+        ws.append([f"{t0}→{tgt}"] + [round(gr[d], 3) for d in K.KAIGODO]
+                  + [round(tot, 3)])
+    style_head(ws, hr2)
+    for r in range(hr2 + 1, ws.max_row + 1):
+        for c in range(2, len(K.KAIGODO) + 3):
+            ws.cell(r, c).number_format = "0.000"
+            v = ws.cell(r, c).value
+            if isinstance(v, float) and v < 0.90:
+                ws.cell(r, c).fill = WARN
+    ws.append([])
+    ws.append(["■ 総給付費の予測（価格調整後・千円）"])
+    ws.cell(ws.max_row, 1).font = Font(bold=True, size=10)
+    ws.append(["起点→予測先", "実績", "要介護度別（川崎町方式）", "誤差",
+               "利用率・第1号・窓3年（当方）", "誤差", "断層をまたぐか"])
+    hr3 = ws.max_row
+    for (t0, h), (_t, tgt) in zip(COMBOS, pairs):
+        act = sum(ser[tgt] for ser in g.values())
+        pk, _ = predict(g, den, "第1号被保険者数", t0, h, "度別",
+                        kd=kd, nintei=nintei)
+        pu, _ = predict(g, den, "第1号被保険者数", t0, h, "利用率", win=3)
+        vk, vu = sum(pk.values()), sum(pu.values())
+        ws.append([f"{t0}→{tgt}", round(act), round(vk), vk / act - 1,
+                   round(vu), vu / act - 1,
+                   "またぐ" if tgt == "令和7年度" else "またがない"])
+    style_head(ws, hr3)
+    for r in range(hr3 + 1, ws.max_row + 1):
+        for c in (2, 3, 5):
+            ws.cell(r, c).number_format = "#,##0"
+        for c in (4, 6):
+            ws.cell(r, c).number_format = "+0.00%;-0.00%"
+            v = ws.cell(r, c).value
+            if isinstance(v, float):
+                ws.cell(r, c).fill = WARN if abs(v) > 0.05 else OK
+        if ws.cell(r, 7).value == "またぐ":
+            ws.cell(r, 7).fill = WARN
+    body(ws, first=hr, wrap=(1,))
+    widths(ws, [24, 13, 13, 13, 13, 13, 13, 13, 16])
+    notes(ws, [
+        "**※ 川崎町方式は、断層をまたがない令和5年度→令和6年度では"
+        "▲1.06％と全方式のなかで最も良い。**"
+        "いっぽう令和7年度を予測先に置く2通りでは▲14.66％・▲13.47％となり、"
+        "3通りの平均では50設定中49位に落ちる。",
+        "**※ 理由は伸び率の表にある。**令和6年度→令和7年度の認定者数は"
+        "要介護4が0.755倍、要介護5が0.626倍であるのに対し、"
+        "給付費の実績は7.4％しか下がっていない。"
+        "令和7年9月の断層で重度の認定者が「減った」のは計上の変更であって、"
+        "その方々がサービスを使わなくなったわけではない。"
+        "要介護度別の伸びをそのまま給付費に乗せると、この差がそのまま誤差になる。",
+        "※ したがって本方式は、**断層の原因が町の確認で解消するまでは"
+        "小野町には用いない。**"
+        "解消した場合は、要介護度の構成の変化を織り込める点で当方の方式より"
+        "優れる可能性があり、そのときに採り直す。",
+        "※ 認定者数を総数で見るか第1号で見るかによる差は小さい"
+        "（総給付費の誤差9.73％と9.82％）。",
     ])
 
     OUT.mkdir(parents=True, exist_ok=True)
