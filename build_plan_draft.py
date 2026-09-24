@@ -53,7 +53,10 @@ def _jsa(v):
 with _ctx.redirect_stdout(_io.StringIO()):
     _S = _runpy.run_path(RP.ROOT + "/build_mikomiryo_santei.py")
 
-_SVC, _Y3, _YL = _S["SVC"], _S["Y3"], _S["YLONG"]
+# 計画本文に掲げる中長期は令和17年度・令和22年度である（確認事項No.114）。
+# 算定は令和12・27・32年度まで広げたが（同No.157）、
+# これは見える化システムへの入力のためであり、本文の表には掲げない。
+_SVC, _Y3, _YL = _S["SVC"], _S["Y3"], _S["YLONG_HON"]
 _short, _kubun = _S["short"], _S["kubun"]
 _MIK, _JIS = _S["MIKOMI"], _S["JISSEKI"]
 _kaisu, _kyufu_do = _S["kaisu_mikomi"], _S["kyufu_do"]
