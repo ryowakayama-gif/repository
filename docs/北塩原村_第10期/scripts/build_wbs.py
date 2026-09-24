@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """第10期北塩原村高齢者福祉計画・介護保険事業計画策定業務 WBS／進捗管理表（Ver.2）
    wbs_data.W（仕様書の分解）＋ wbs_progress.P（実績反映）＋ wbs_kakunin.K（村への確認事項）から生成。
-   基準日：令和8年8月31日"""
+   基準日：wbs_progress.BASE_DATE"""
 import os, sys, datetime
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from openpyxl import Workbook
@@ -10,7 +10,13 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 from wbs_data import W
 from wbs_progress import P, BASE_DATE
+
+def wareki(ymd):
+    y, m, d = (int(v) for v in ymd.split("/"))
+    return f"令和{y-2018}年{m}月{d}日"
+BD_JP = None
 from wbs_kakunin import K, SOLVED
+from spec_data import S, SHIEN, GAIBU
 
 OUT = "/home/user/repository/output/05_北塩原村第10期_WBS進捗管理表.xlsx"
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
@@ -22,6 +28,7 @@ C = {"header":"1F3864","sub":"2E75B6","band":"DDEBF7","alt":"F7FAFC",
 THIN = Side(border_style="thin", color="BFBFBF")
 BD = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
 D = lambda s: datetime.datetime.strptime(s, "%Y/%m/%d") if s else None
+BD_JP = wareki(BASE_DATE)
 TANTO = {"受":"受託者","村":"北塩原村","双":"双方"}
 
 def title_bar(ws, rng, text, size=14, h=30):
@@ -63,8 +70,8 @@ WID  = [9,16,17,42,11,9,26,34,11,12,12,12,12,8,10,52]
 title_bar(ws, "A1:P1", "第10期北塩原村高齢者福祉計画・第10期北塩原村介護保険事業計画　策定業務　WBS／進捗管理表")
 sub_bar(ws, "A2:P2",
     "委託第27号／業務期間：契約締結の日〜令和9年3月31日／計画期間：令和9〜11年度　"
-    "｜　出典：仕様書（8北保福第483号 別紙）4「業務の内容」を作業レベルに分解　"
-    f"｜　進捗基準日：令和8年8月31日")
+    "｜　出典：仕様書（8北保福第483号 別紙）を作業レベルに分解（対応は「仕様書対照」シート）　"
+    f"｜　進捗基準日：{BD_JP}")
 
 HR = 4
 head_row(ws, HR, HEAD, WID)
@@ -72,8 +79,7 @@ head_row(ws, HR, HEAD, WID)
 r = HR + 1
 prev_major = None
 rows_by_no = {}
-for major, mid, task, spec, tanto, deliv, dep, timing in W:
-    no = f"{major.split()[0]}-{r-HR:02d}"
+for no, major, mid, task, spec, tanto, deliv, dep, timing in W:
     st, pct, s_st, s_ed, note = P.get(task, ("未着手", 0.0, None, None, ""))
     vals = [no, major, mid, task, spec, TANTO[tanto], deliv, dep, timing,
             None, None, D(s_st), D(s_ed), pct, st, note]
@@ -122,7 +128,7 @@ ws.sheet_view.zoomScale = 90
 wk = wb.create_sheet("村への確認事項")
 KH = ["優先度","区分","確認事項","なぜ必要か／影響","関連WBS No.","出所","状況","回答内容・回答日"]
 KW = [8, 12, 46, 56, 14, 16, 10, 30]
-title_bar(wk, "A1:H1", "北塩原村への確認事項　一覧（基準日：令和8年8月31日）")
+title_bar(wk, "A1:H1", f"北塩原村への確認事項　一覧（基準日：{BD_JP}）")
 sub_bar(wk, "A2:H2",
     "優先度S＝9月3日の調査票第1稿提出・9月9日の校了・9月18日の発送を守るために決着が必要（キックオフ議事録で未決着のもの）／"
     "A＝令和8年9月中に確定が必要／B＝第1回策定委員会（11月）まで／C＝第2回以降　"
@@ -171,11 +177,101 @@ wk.freeze_panes = "C5"
 wk.auto_filter.ref = f"A{KHR}:H{KLAST}"
 wk.sheet_view.zoomScale = 90
 
+# ══════════════════ Sheet3: 仕様書対照 ══════════════════
+wv = wb.create_sheet("仕様書対照")
+VH = ["区分", "条項", "仕様書が求めていること", "担当", "対応WBS No.", "対応する作業項目", "状況", "備考"]
+VW = [13, 15, 50, 7, 14, 44, 8, 44]
+title_bar(wv, "A1:H1", "仕様書（委託第27号／8北保福第483号 別紙）とWBSの対照")
+sub_bar(wv, "A2:H2",
+    "仕様書の側から「求められていること」を列挙し、WBSのどの作業がそれを担うかを示したもの。"
+    "状況の「○」は対応する作業がWBSにあること、「村」は村が実施し受託者の作業を伴わないことを表す　"
+    "｜　突合は scripts/verify_wbs.py で機械的に行い、漏れがあれば終了コード1を返す")
+VHR = 4
+head_row(wv, VHR, VH, VW)
+
+IDX = {w[0]: w for w in W}
+def kubun_of(c):
+    if c.startswith("通知"): return "見積徴取通知"
+    if c.startswith("仕様書4Ⅰ"): return "4Ⅰ ニーズ調査"
+    if c.startswith("仕様書4Ⅱ"): return "4Ⅱ 計画策定"
+    if c.startswith("仕様書4Ⅲ"): return "4Ⅲ 打合せ等"
+    if c.startswith("仕様書5"): return "5 業務成果品"
+    if c.startswith("仕様書6"): return "6 その他"
+    if c.startswith("仕様書3"): return "3 業務期間"
+    if c.startswith("仕様書2"): return "2 業務の目的"
+    return "1 委託業務名"
+
+vr = VHR + 1
+prev_k = None
+for cond, req, tanto, refs, note in S:
+    kubun = kubun_of(cond)
+    sts = "○" if refs else "村"
+    vals = [kubun, cond, req, TANTO.get(tanto, "―"), "\n".join(refs) or "―",
+            "\n".join(IDX[i][3] for i in refs) or "―", sts, note]
+    for i, v in enumerate(vals, 1):
+        c = wv.cell(row=vr, column=i, value=v)
+        c.font = Font(name=F, size=9)
+        c.border = BD
+        c.alignment = Alignment(vertical="top", wrap_text=(i in (3, 5, 6, 8)),
+                                horizontal="center" if i in (2, 4, 7) else "left")
+    if note.startswith("★"):
+        for i in range(1, 9):
+            wv.cell(row=vr, column=i).fill = PatternFill("solid", fgColor=C["note"])
+    elif not refs:
+        for i in range(1, 9):
+            wv.cell(row=vr, column=i).fill = PatternFill("solid", fgColor=C["vill"])
+    elif kubun != prev_k:
+        pass
+    if kubun != prev_k:
+        wv.cell(row=vr, column=1).font = Font(name=F, size=9, bold=True, color=C["header"])
+        prev_k = kubun
+    wv.row_dimensions[vr].height = 30
+    vr += 1
+VLAST = vr - 1
+
+# 仕様書に根拠を持たない作業
+vr += 1
+sub_bar(wv, f"A{vr}:H{vr}", "■ 仕様書に直接の根拠を持たない作業（何に基づき、どの条項の履行を支えるか）", fill=C["sub"])
+wv[f"A{vr}"].font = Font(name=F, size=10, bold=True, color=C["white"])
+vr += 1
+wv.merge_cells(f"F{vr}:H{vr}")
+for j, h in enumerate(["根拠の種別", "WBS No.", "作業項目", "担当", "支える条項", "位置づけ"], 1):
+    c = wv.cell(row=vr, column=j, value=h)
+    c.font = Font(name=F, size=9, bold=True, color=C["white"])
+    c.fill = PatternFill("solid", fgColor=C["sub"]); c.border = BD
+    c.alignment = Alignment(horizontal="center")
+vr += 1
+for w in W:
+    if w[4] not in GAIBU:
+        continue
+    clause, why = SHIEN[w[0]]
+    wv.merge_cells(f"F{vr}:H{vr}")
+    vals = [w[4], w[0], w[3], TANTO[w[5]], clause, why]
+    for i, v in enumerate(vals, 1):
+        c = wv.cell(row=vr, column=i, value=v)
+        c.font = Font(name=F, size=9)
+        for j2 in range(1, 9): wv.cell(row=vr, column=j2).border = BD
+        for j2 in range(1, 9): wv.cell(row=vr, column=j2).fill = PatternFill("solid", fgColor=C["solved"])
+        c.alignment = Alignment(vertical="top", wrap_text=(i in (3, 6)),
+                                horizontal="center" if i in (1, 2, 4, 5) else "left")
+    wv.row_dimensions[vr].height = 30
+    vr += 1
+vr += 1
+for k, v in GAIBU.items():
+    wv.cell(row=vr, column=1, value=f"※ {k}").font = Font(name=F, size=8, bold=True)
+    wv.merge_cells(f"B{vr}:H{vr}")
+    wv.cell(row=vr, column=2, value=v).font = Font(name=F, size=8)
+    vr += 1
+
+wv.freeze_panes = "C5"
+wv.auto_filter.ref = f"A{VHR}:H{VLAST}"
+wv.sheet_view.zoomScale = 90
+
 # ══════════════════ Sheet3: 受領資料・データ管理 ══════════════════
 wd = wb.create_sheet("受領資料・データ管理")
 DH = ["区分","資料・データ名","内容・数量","受領日","整理先","状況"]
 DW = [16, 44, 46, 12, 40, 10]
-title_bar(wd, "A1:F1", "受領資料・データ管理（基準日：令和8年8月31日）")
+title_bar(wd, "A1:F1", f"受領資料・データ管理（基準日：{BD_JP}）")
 sub_bar(wd, "A2:F2", "仕様書4Ⅲ「資料授受の管理」に対応。★＝未受領で業務進行に影響するもの")
 DHR = 4
 head_row(wd, DHR, DH, DW, h=24)
@@ -297,7 +393,7 @@ for i, hh in enumerate(hdr):
     c.fill = PatternFill("solid", fgColor=C["sub"]); c.border = BD
     c.alignment = Alignment(horizontal="center")
 majors = []
-for m, *_ in W:
+for _, m, *_ in W:
     if m not in majors: majors.append(m)
 rw = SUM_R + 2
 for m in majors:
@@ -389,9 +485,11 @@ for day, cont, note, mark in MILESTONES:
 
 notes = [
  "※「仕様書該当」欄の凡例：仕様書＝8北保福第483号 別紙／手引き＝厚生労働省の実施の手引き（令和7年8月版）／確認＝本業務での確認事項",
+ "※ No. は行の位置によらない固定値です。作業を追加しても既存の No. は変わりません（追加分は101以降）。確認事項シートの「関連WBS No.」はこの No. を参照します。",
+ "※ 仕様書の要求事項と本WBSの対応は「仕様書対照」シートにあります。漏れと過剰の点検は scripts/verify_wbs.py で機械的に行っています。",
  "※ 想定時期は仕様書の履行期限（令和9年3月31日）から逆算した目安です。村との協議結果により確定します。",
  "※ 令和8年9月19日（土）〜23日（水）は5連休（敬老の日9/21・国民の休日9/22・秋分の日9/23）です。発送・回収工程に影響します。",
- "※ 進捗基準日は令和8年9月2日（キックオフ議事録の反映後）です。備考欄の doc番号は docs/北塩原村_第10期/ 配下の分析資料に対応します。",
+ f"※ 進捗基準日は{BD_JP}です。備考欄の doc番号は docs/北塩原村_第10期/ 配下の分析資料に対応します。",
  "※ マイルストーンの★印は、遅れると後続工程が連鎖的に破綻する項目です。",
  "※ 第1回策定委員会は受託前に開催済みのため、関連する2作業はステータス「対象外」としています。全体進捗率は対象外を除いて算出しています。",
 ]
