@@ -166,6 +166,47 @@ def main():
         p(f'  {m_yen:,}円を取り崩す：月額 ▲{m_yen/denom:,.0f}円')
     p('  第9期計画は24,000,000円の取崩しを見込んでいた（年額か3年計かは確認中。doc22 K-74）。')
 
+    # ── 年度別の必要額 ────────────────────────
+    #   保険料基準額は計画期間の3か年で同一に定めるが、必要額は年度により異なる。
+    #   どの年度で余り、どの年度で足りないかは、準備基金の動きを説明するのに要る。
+    p('')
+    p('■ 年度別の保険料収納必要額と月額（α23％・基金取崩なし）')
+    p(f"  {'年度':<9}{'サービス諸費':>13}{'①標準給付費':>13}{'第1号':>8}"
+      f"{'分母(人･月)':>12}{'④必要額':>13}{'月額':>9}")
+    FG = ((hi + lo) / 2) / ALPHA_K9          # F×G ＝ 限界率 ÷ α
+    year_rows = []
+    for y, svc in SVC_10.items():
+        std = svc + HOJO_R5                          # ①
+        d = INS_10[y] * g_k9 * 12 * K9['予定収納率']   # 分母
+        need = ALPHA_K9 * ((std + CHIIKI_R5) + (std + SOGO_R5) * (FG - 1))
+        p(f"  {y+'度':<9}{svc/1000:>12,.0f}{std/1000:>12,.0f}{INS_10[y]:>7,}人"
+          f"{d:>12,.0f}{need/1000:>12,.0f}{need/d:>8,.0f}円")
+        year_rows.append((y, svc, std, INS_10[y], d, need, need / d))
+    avg = sum(r[5] for r in year_rows) / sum(r[4] for r in year_rows)
+    p(f"  {'3か年計':<9}{sum(SVC_10.values())/1000:>12,.0f}"
+      f"{(sum(SVC_10.values())+HOJO_R5*3)/1000:>12,.0f}{sum(INS_10.values()):>7,}人"
+      f"{sum(r[4] for r in year_rows):>12,.0f}{sum(r[5] for r in year_rows)/1000:>12,.0f}"
+      f"{avg:>8,.0f}円")
+    p('  単位：千円（必要額・給付費）')
+    lo_y, hi_y = year_rows[0][6], year_rows[-1][6]
+    p(f'  年度別の月額は{lo_y:,.0f}円から{hi_y:,.0f}円へ{hi_y-lo_y:,.0f}円上がる。')
+    p('  保険料基準額は3か年で同一に定めるため、初年度は余り、最終年度は足りない。')
+    p('  差は介護給付費準備基金で均す。第10期末の基金残高を見込むには、この年度別の')
+    p('  必要額と、条例で定める基準額との差を年度ごとに積み上げる必要がある。')
+    for y, svc, std, ins_y, d, need, m in year_rows:
+        diff = (avg - m) * d
+        p(f'　　{y}度：条例基準額（3か年平均{avg:,.0f}円）との差 月額{avg-m:+,.0f}円'
+          f'　年間{diff/1000:+,.0f}千円')
+
+    path3 = os.path.join(DATA, '第10期_保険料の年度別必要額.csv')
+    with open(path3, 'w', encoding='utf-8-sig', newline='') as f:
+        w = csv.writer(f)
+        w.writerow(['年度', 'サービス諸費(千円)', '標準給付費見込額(千円)', '第1号被保険者数(人)',
+                    '分母(人・月)', '保険料収納必要額(千円)', '月額(円)', '3か年平均との差(円)'])
+        for y, svc, std, ins_y, d, need, m in year_rows:
+            w.writerow([y, round(svc / 1000), round(std / 1000), ins_y, round(d),
+                        round(need / 1000), round(m), round(avg - m)])
+
     # ── 複数パターンの算定 ──────────────────────
     p('')
     p('■ 保険料基準額のパターン（α×基金取崩×給付費の水準）')
