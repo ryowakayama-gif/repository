@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""交付金獲得状況（対象6団体）の一覧表を作成する.
+"""交付金獲得状況（対象7団体）の一覧表を作成する.
 
-出力 output/05_交付金獲得状況_6団体.xlsx
+出力 output/05_交付金獲得状況_7団体.xlsx
      総括 / 3か年の得点と順位 / 条件を揃えた比較 / 令和6年度の交付額 /
      目標別内訳 / 取り戻す指標
 """
@@ -11,11 +11,11 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
-import data_kofukin_6dantai as D
+import data_kofukin_7dantai as D
 
 OUT_DIR = "/home/user/repository/output"
 os.makedirs(OUT_DIR, exist_ok=True)
-OUT = os.path.join(OUT_DIR, "05_交付金獲得状況_6団体.xlsx")
+OUT = os.path.join(OUT_DIR, "05_交付金獲得状況_7団体.xlsx")
 
 COLORS = {
     "header":  "1F3864",
@@ -29,7 +29,8 @@ COLORS = {
 THIN = Side(border_style="thin", color="BFBFBF")
 BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
 
-NAMES = ["平取町", "西会津町", "矢祭町", "富良野市", "北広島市", "音威子府村"]
+# 令和8年度の得点順
+NAMES = ["平取町", "西会津町", "矢祭町", "富良野市", "北広島市", "奥尻町", "音威子府村"]
 MOKUHYO = ["推進Ⅰ", "推進Ⅱ", "推進Ⅲ", "推進Ⅳ", "支援Ⅰ", "支援Ⅱ", "支援Ⅲ", "支援Ⅳ"]
 
 
@@ -76,14 +77,13 @@ wb = Workbook()
 # ── 1 総括 ────────────────────────────────────────────────
 ws = wb.active
 ws.title = "総括"
-title(ws, "交付金の獲得状況　対象6団体の総括", 9,
+title(ws, "交付金の獲得状況　対象7団体の総括", 11,
       "出典 厚生労働省 保険者機能強化推進交付金及び介護保険保険者努力支援交付金"
       "（市町村分）に係る全国集計結果（令和6〜8年度）／母数1,741市町村／800点満点")
 head(ws, 4, ["団体", "都道府県", "第1号\n被保険者", "規模\n区分", "過疎",
-             "令和8年度\n得点", "全国順位", "同規模・同条件\n順位", "令和6年度\n交付額消化率"],
-     [12, 9, 10, 6, 7, 10, 10, 15, 14])
-COND = {"平取町": "9位/355", "西会津町": "26位/355", "矢祭町": "63位/355",
-        "富良野市": "115位/285", "北広島市": "321位/380", "音威子府村": "332位/355"}
+             "令和8年度\n得点", "全国順位", "同規模・同条件\n順位", "県内順位",
+             "令和6年度\n交付額消化率", "令和6年度\n1人当たり(円)"],
+     [12, 9, 10, 6, 7, 10, 10, 15, 11, 14, 14])
 r = 5
 for nm in NAMES:
     e = D.DANTAI[nm]
@@ -91,16 +91,27 @@ for nm in NAMES:
     rate = k["合計確定"] / k["合計案"] * 100
     fill = COLORS["warn"] if rate < 99.5 else (COLORS["alt"] if r % 2 else COLORS["white"])
     put(ws, r, [nm, e["都道府県"], e["第1号被保険者"], e["規模区分"], e["過疎"],
-                e["R8"]["合計"], e["R8"]["順位"], COND[nm], f"{rate:.1f}％"],
-        fill=fill, bolds=(1, 6, 9))
+                e["R8"]["合計"], e["R8"]["順位"],
+                f'{e["同条件"]["順位"]}位/{e["同条件"]["団体数"]}',
+                f'{e["県内"]["順位"]}位/{e["県内"]["団体数"]}',
+                f"{rate:.1f}％", k["1人当たり"]],
+        fill=fill, bolds=(1, 6, 10, 11))
+    # 1人当たりが全国平均795円を大きく下回る場合は色を変える
+    if k["1人当たり"] < 700:
+        ws.cell(r, 11).fill = PatternFill("solid", fgColor=COLORS["warn"])
     r += 1
-put(ws, r, ["全国平均", "", "", "", "", D.ZEN["R8"]["合計"], "", "", "100.0％"], fill=COLORS["band"], bolds=(1, 6))
+put(ws, r, ["全国平均", "", "", "", "", D.ZEN["R8"]["合計"], "", "", "", "100.0％", 795],
+    fill=COLORS["band"], bolds=(1, 6))
+ws.cell(r, 6).number_format = "0.0"
 r += 2
 for line in [
     "■ 赤の行は令和6年度に交付見込額（案）を満額受け取れていない団体です。",
     "　 全国1,741団体のうち案を下回ったのは24団体（1.4％）で、音威子府村は消化率が最も低く、平取町は3番目です。",
     "■ 同規模・同条件は、規模区分と過疎地域該当がいずれも同じ団体の中での順位です。",
     "　 富良野市は全国866位ですが同条件では115位／285位に上がり、北広島市は全国1,218位から321位／380位に下がります。",
+    "■ 1人当たりの赤は全国平均795円を大きく下回るものです。",
+    "　 奥尻町は消化率100％ですが1人当たり552円で全国1,664位／1,741、区分1の447団体では412位です。",
+    "　 平取町・音威子府村は受け取れなかった額があり、奥尻町は配分そのものが小さいという別の問題です。",
 ]:
     ws.cell(r, 1, line).font = Font(size=10)
     r += 1
@@ -119,9 +130,11 @@ for nm in NAMES:
     put(ws, r, [nm, e["R6"]["合計"], e["R6"]["順位"], e["R7"]["合計"], e["R7"]["順位"],
                 e["R8"]["合計"], e["R8"]["順位"], d], fill=fill, bolds=(1, 6, 8))
     r += 1
+# 全国平均は 422.35 / 434.99 / 455.13 の丸め値。増減は丸め前の差（32.8）を用いる。
 put(ws, r, ["全国平均", D.ZEN["R6"]["合計"], "", D.ZEN["R7"]["合計"], "",
-            D.ZEN["R8"]["合計"], "", round(D.ZEN["R8"]["合計"] - D.ZEN["R6"]["合計"], 1)],
-    fill=COLORS["band"], bolds=(1,))
+            D.ZEN["R8"]["合計"], "", 32.8], fill=COLORS["band"], bolds=(1,))
+for j in (2, 4, 6, 8):
+    ws.cell(r, j).number_format = "0.0"
 r += 2
 ws.cell(r, 1, "■ 全国平均は3年で32.8点上がっています。平均が上がる中で順位を保つには同じだけ伸ばす必要があります。").font = Font(size=10)
 
@@ -134,7 +147,7 @@ BAND = {1: "3千人未満", 2: "3千〜1万人未満", 3: "1万〜5万人未満"
         4: "5万〜10万人未満", 5: "10万人以上"}
 r = 5
 for k in [1, 2, 3, 4, 5]:
-    v = D.KUBUN[str(k)]
+    v = D.KUBUN[k]
     put(ws, r, [f"区分{k}", BAND[k], v["団体数"], v["平均"], v["中央値"]],
         fill=COLORS["alt"] if r % 2 else COLORS["white"])
     r += 1
