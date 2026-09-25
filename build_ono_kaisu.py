@@ -675,6 +675,71 @@ def teiin_plan(plan=None):
     return out
 
 
+def sheet_shizentai(wb, plan):
+    """令和8年度の置き方と、令和8年度を基点とした第10期（自然体推計）。"""
+    import ono_shizentai as SZ
+    ws = wb.create_sheet("12_令和8年度の置き方")
+    opt, r7 = SZ.r8_options()
+    ws.append(["令和8年度の置き方", "対令和7年度", "令和8年度（千円）", "考え方"])
+    for k in SZ.R8_CASES:
+        v, amt, memo = opt[k]
+        ws.append([k, round(v, 4), round(amt), memo])
+    style_header(ws)
+    body(ws, wrap=(1, 4))
+    widths(ws, [24, 14, 18, 96])
+    for r in range(2, ws.max_row + 1):
+        ws.cell(r, 2).number_format = "0.0000"
+        ws.cell(r, 3).number_format = "#,##0"
+        if ws.cell(r, 1).value == "月報の実績":
+            for c in range(1, 5):
+                ws.cell(r, c).fill = WARN
+    ws.append([])
+    ws.append(["■ 令和8年度を基点とした第10期（自然体推計）"])
+    ws.cell(ws.max_row, 1).font = Font(bold=True, size=10)
+    ws.append(["区分", "現行（令和5〜7年度の利用率平均）",
+               "自然体推計（令和8年度基点）", "差"])
+    hr = ws.max_row
+    A = plan["集計"]
+    pl, sm = SZ.plan(), SZ.summary()
+    ws.append(["令和8年度の総給付費（千円）", None, round(pl["令和8年度"]), None])
+    for i, y in enumerate(T.PLAN_YEARS):
+        ws.append([f"{y}の総給付費（千円）", round(A["計"][i]), round(pl[y]),
+                   round(pl[y] - A["計"][i])])
+    ws.append(["総給付費 3年計（千円）", round(sum(A["計"])),
+               round(sm["自然体"]["総給付費3年計"]),
+               round(sm["自然体"]["総給付費3年計"] - sum(A["計"]))])
+    ws.append(["標準給付費 3年計（千円）", round(sum(A["標準給付費"])),
+               round(sm["自然体"]["標準給付費"]),
+               round(sm["自然体"]["標準給付費"] - sum(A["標準給付費"]))])
+    ws.append(["保険料基準額（月額・円）", round(sm["現行"]["月額"]),
+               round(sm["自然体"]["月額"]),
+               round(sm["自然体"]["月額"] - sm["現行"]["月額"])])
+    ws.append(["　100円未満切上げ", -(-int(sm["現行"]["月額"]) // 100) * 100,
+               -(-int(sm["自然体"]["月額"]) // 100) * 100, None])
+    style_header(ws, hr)
+    for r in range(hr + 1, ws.max_row + 1):
+        for c in (2, 3, 4):
+            ws.cell(r, c).number_format = "#,##0"
+    notes(ws, [
+        "**※ 見える化システムのワークシートは、1人1月あたり給付費の実績値を"
+        "令和8年度に置いている。令和8年度の列は1か月分であり、"
+        "その1か月の水準が第10期の3年間に効く。**",
+        "**※ 国保連月報で確かめられる。**"
+        "令和8年度の提供分は審査202605〜202607の3か月あり、"
+        "前年の同じ提供月と比べると96.0％である。"
+        "当方の現行方式は実績より6.0％高い。"
+        "令和5〜7年度の3年平均が、下がり続けている系列を上に引いているため。",
+        "※ 自然体推計は、令和8年度を基点とし第1号被保険者1人当たりの給付費を"
+        "据え置いて人口で延ばしたもの。"
+        "**見える化システムの自然体推計（利用率・1人1月あたり給付費の変化を0とする）と"
+        "同じ構造である。**",
+        "**※ どちらを採るかは協議会にお諮りする。**"
+        "現行は完結年度（令和7年度）を基準年度とする原則に沿う。"
+        "自然体推計は令和8年度3か月の実績に裏づけられ、見える化の構造とも合うが、"
+        "令和8年度は完結年度ではない。",
+    ])
+
+
 def sheet_chiiki_ryo(wb):
     """地域支援事業の量の見込み（介護保険法117条2項2号）。計画の必須記載事項。"""
     ws = wb.create_sheet("11_地域支援事業の量")
@@ -1518,6 +1583,7 @@ def main():
     sheet_zentei(wb, plan)
     sheet_hotei_teiin(wb, plan)
     sheet_chiiki_ryo(wb)
+    sheet_shizentai(wb, plan)
     sheet_check(wb, chk, a7, proj)
     OUT.mkdir(parents=True, exist_ok=True)
     p = OUT / f"小野町_第10期_サービス見込量_{ASOF}.xlsx"
