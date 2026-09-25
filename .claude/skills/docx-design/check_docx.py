@@ -20,6 +20,8 @@ import sys
 import docx
 from docx.shared import Cm
 from docx.oxml.ns import qn
+from docx.table import Table
+from docx.text.paragraph import Paragraph
 
 BODY_W = 17.0                       # 本文幅（cm）A4縦・左右余白2.0cm
 PALETTE = {'#C00000', '#2E75B6', '#BDD7EE', '#ED7D31', '#A6A6A6', '#1F3864',
@@ -67,6 +69,47 @@ def check_figs(doc, name, ng):
     if n_img != len(caps):
         ng.append('%s 画像%d点に対しキャプション%d点' % (name, n_img, len(caps)))
     return caps
+
+
+def _body(doc):
+    """本文と表を、文書に現れる順で返す。"""
+    for ch in doc.element.body.iterchildren():
+        if ch.tag == qn('w:p'):
+            yield Paragraph(ch, doc)
+        elif ch.tag == qn('w:tbl'):
+            yield Table(ch, doc)
+
+
+def check_fig_table(doc, name, ng):
+    """図は、表・その出典行・他の図の直後に置く（本文段落の直後に置かない）。
+
+    　数値は表で示し、図はその表を読みやすくするために添える、という規則による。
+    """
+    prev = None          # 'tbl' / 'src' / 'fig' / 'body' / 'head'
+    for el in _body(doc):
+        if isinstance(el, Table):
+            prev = 'tbl'
+            continue
+        t = el.text.strip()
+        if el.style.name.startswith('Heading'):
+            prev = 'head'
+            continue
+        m = re.match(r'^【図(\d+)】(.+)$', t)
+        if m:
+            if prev not in ('tbl', 'src', 'fig'):
+                ng.append('%s 図%s　表の直後に置かれていない　「%s」'
+                          % (name, m.group(1), m.group(2)[:30]))
+            prev = 'figcap'
+            continue
+        if prev == 'figcap':
+            prev = 'figimg'
+            continue
+        if prev == 'figimg':
+            prev = 'fig'          # 図の出典行
+            continue
+        if not t:
+            continue
+        prev = 'src' if _is_src(el) else 'body'
 
 
 def check_tables(doc, name, ng):
@@ -215,6 +258,7 @@ def main(argv):
         name = path.split('/')[-1].replace('.docx', '')
         caps = check_figs(d, name, ng)
         check_tables(d, name, ng)
+        check_fig_table(d, name, ng)
         check_marks(d, name, ng)
         check_sums(d, name, ng)
         check_words(d, name, ng)

@@ -33,7 +33,66 @@ OUT = 'out/fig'
 os.makedirs(OUT, exist_ok=True)
 
 
+ISSUES = []          # 図の重なりの指摘。__main__ で表示する
+
+
+def LEG(ax, handles=None, labels=None, ncol=None, gap=0.16, fontsize=9):
+    """凡例はプロット領域の外（軸の下）に中央揃えで置く。
+
+    　棒・線・値ラベルと重ならないようにするための規則である。
+    """
+    if handles is None:
+        handles, labels = ax.get_legend_handles_labels()
+    if ncol is None:
+        ncol = min(len(labels), 4)
+    return ax.legend(handles, labels, loc='upper center',
+                     bbox_to_anchor=(0.5, -gap), ncol=ncol,
+                     frameon=False, fontsize=fontsize,
+                     handlelength=1.4, columnspacing=1.4)
+
+
+def LEGF(fig, ax, ncol=None, fontsize=9, y=-0.01):
+    """2段組みの図では、図全体の下に凡例を置く。"""
+    h, l = ax.get_legend_handles_labels()
+    if ncol is None:
+        ncol = min(len(l), 4)
+    return fig.legend(h, l, loc='upper center', bbox_to_anchor=(0.5, y),
+                      ncol=ncol, frameon=False, fontsize=fontsize,
+                      handlelength=1.4, columnspacing=1.4)
+
+
+def _overlap(fig, name):
+    """凡例が棒・線・値ラベルと重なっていないかを確かめる。"""
+    fig.canvas.draw()
+    r = fig.canvas.get_renderer()
+    for ax in fig.axes:
+        leg = ax.get_legend()
+        if leg is None:
+            continue
+        lb = leg.get_window_extent(r)
+        for t in ax.texts:
+            if t.get_text() and lb.overlaps(t.get_window_extent(r)):
+                ISSUES.append('%s　凡例が値ラベル「%s」と重なっている'
+                              % (name, t.get_text()[:16]))
+        for q in ax.patches:
+            try:
+                if lb.overlaps(q.get_window_extent(r)):
+                    ISSUES.append('%s　凡例が棒と重なっている' % name)
+                    break
+            except Exception:
+                pass
+        for ln in ax.lines:
+            try:
+                bb = ln.get_window_extent(r)
+            except Exception:
+                continue
+            if bb.width and bb.height and lb.overlaps(bb):
+                ISSUES.append('%s　凡例が線と重なっている' % name)
+                break
+
+
 def _save(fig, name):
+    _overlap(fig, name)
     p = '%s/%s.png' % (OUT, name)
     fig.savefig(p, dpi=200, bbox_inches='tight', facecolor='white')
     plt.close(fig)
@@ -62,7 +121,7 @@ def f_suii():
         _lab(ax, i, v - 20, '%.1f' % v, ORANGE, ha='center', sz=9)
     ax.set_ylim(360, 490)
     ax.set_ylabel('合計得点（800点満点）')
-    ax.legend(loc='lower right', frameon=False, fontsize=9, ncol=3)
+    LEG(ax, ncol=3)
     return _save(fig, 'f1_suii')
 
 
@@ -116,7 +175,7 @@ def f_mokuhyo():
     ax.set_xlabel('得点（各目標100点満点）')
     ax.xaxis.grid(True, color='#E6E6E6', lw=0.8); ax.set_axisbelow(True)
     hd, lb = ax.get_legend_handles_labels()
-    ax.legend(hd[::-1], lb[::-1], loc='upper right', frameon=False, fontsize=9)
+    LEG(ax, hd[::-1], lb[::-1], ncol=3)
     return _save(fig, 'f3_mokuhyo')
 
 
@@ -145,7 +204,7 @@ def f_ninchi():
     ax.text(28.7, -0.62, '▲は全国平均を下回る項目', color=RED, ha='right', fontsize=8)
     ax.xaxis.grid(True, color='#E6E6E6', lw=0.8); ax.set_axisbelow(True)
     hd, lb = ax.get_legend_handles_labels()
-    ax.legend(hd[::-1], lb[::-1], loc='upper right', frameon=False, fontsize=9)
+    LEG(ax, hd[::-1], lb[::-1], ncol=3, gap=0.20)
     return _save(fig, 'f4_ninchi')
 
 
@@ -190,7 +249,7 @@ def f_nintei():
     _lab(ax, 4.05, kg[-1], '%.1f％' % kg[-1], RED, sz=10)
     ax.set_ylim(15.0, 21.5); ax.set_xlim(-0.3, 4.9)
     ax.set_ylabel('要支援・要介護認定率（％）')
-    ax.legend(loc='center left', frameon=False, fontsize=9)
+    LEG(ax, ncol=3, gap=0.20)
     return _save(fig, 'f6_nintei')
 
 
@@ -231,5 +290,11 @@ def f_chiiki():
 ALL = [f_suii, f_bunpu, f_mokuhyo, f_ninchi, f_nancho, f_nintei, f_judoka, f_chiiki]
 
 if __name__ == '__main__':
+    import sys
     for f in ALL:
         print(f())
+    if ISSUES:
+        print('\n図の指摘　%d件' % len(ISSUES))
+        for x in sorted(set(ISSUES)):
+            print('  ・' + x)
+        sys.exit(1)

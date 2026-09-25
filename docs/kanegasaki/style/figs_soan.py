@@ -5,7 +5,7 @@
 """
 import matplotlib.pyplot as plt
 
-from figs import RED, BLUE, PALE, ORANGE, GREY, NAVY, _save, _lab
+from figs import RED, BLUE, PALE, ORANGE, GREY, NAVY, _save, _lab, LEG, LEGF
 
 
 # ══════════════ 第2章 ══════════════
@@ -31,7 +31,7 @@ def s1_jinko():
         ax.text(i, w + x / 2, '{:,}'.format(x), color=NAVY,
                 ha='center', va='center', fontsize=9)
     ax.set_ylim(0, 17600); ax.set_ylabel('人口（人）')
-    ax.legend(loc='lower center', frameon=False, fontsize=9, ncol=3)
+    LEGF(fig, ax, ncol=3)
     ax2.plot(yr, rate, '-o', color=RED, lw=2.4, ms=6)
     for i, v in enumerate(rate):
         ax2.text(i, v + 0.16, '%.1f％' % v, color=RED, ha='center',
@@ -59,7 +59,7 @@ def s2_uchiwake():
         ax.text(i, a[i] + b[i] + c[i] / 2, '{:,}'.format(c[i]), ha='center',
                 va='center', color='white', fontsize=9)
     ax.set_ylim(0, 5600); ax.set_ylabel('第1号被保険者数（人）')
-    ax.legend(loc='upper center', frameon=False, fontsize=9, ncol=3)
+    LEG(ax, ncol=3)
     return _save(fig, 's2_uchiwake')
 
 
@@ -78,8 +78,7 @@ def s3_gyoseiku():
                 va='center', fontsize=10, fontweight='bold')
     ax.invert_yaxis(); ax.set_xlim(0, 100)
     ax.set_xlabel('構成比（％）')
-    ax.legend(loc='lower center', bbox_to_anchor=(0.5, -0.62), frameon=False,
-              fontsize=9, ncol=2)
+    LEG(ax, ncol=2, gap=0.42)
     return _save(fig, 's3_gyoseiku')
 
 
@@ -106,8 +105,7 @@ def s4_nintei_suii():
         ax.text(i, t + 14, '計%d人' % t, ha='center', color=NAVY,
                 fontsize=9, fontweight='bold')
     ax.set_ylim(0, 960); ax.set_ylabel('認定者数（人）')
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.08), frameon=False,
-              fontsize=9, ncol=7, handlelength=1.2, columnspacing=0.9)
+    LEG(ax, ncol=7, gap=0.10, fontsize=8)
     return _save(fig, 's4_nintei_suii')
 
 
@@ -166,8 +164,7 @@ def s7_suikei():
         ax.text(i, t + 12, '%d人' % t, ha='center', color=NAVY,
                 fontsize=10, fontweight='bold')
     ax.set_ylim(0, 950); ax.set_ylabel('認定者数（第1号被保険者・人）')
-    ax.legend(loc='lower center', bbox_to_anchor=(0.5, -0.30), frameon=False,
-              fontsize=9, ncol=4, handlelength=1.2, columnspacing=1.0)
+    LEG(ax, ncol=4, gap=0.12)
     return _save(fig, 's7_suikei')
 
 
@@ -188,7 +185,7 @@ def s8_choki():
     ax.set_xticks(xs); ax.set_xticklabels(yr)
     ax.set_xlim(11.2, 34.0); ax.set_ylim(92, 132)
     ax.set_ylabel('令和12年度＝100とした指数')
-    ax.legend(loc='upper left', frameon=False, fontsize=9)
+    LEG(ax, ncol=4, gap=0.14)
     return _save(fig, 's8_choki')
 
 
@@ -256,7 +253,7 @@ def s11_chiiki():
     ax.set_yticks(list(y)); ax.set_yticklabels(lab, fontsize=9)
     ax.invert_yaxis(); ax.set_xlim(0, 1.32)
     ax.set_xlabel('全国を1.00とした指数（性・年齢調整後）')
-    ax.legend(loc='lower right', frameon=False, fontsize=9)
+    LEG(ax, ncol=2, gap=0.24)
     return _save(fig, 's11_chiiki')
 
 
@@ -335,7 +332,7 @@ def s15_seikatsu():
     ax.set_xlabel('提供時間の構成比（％）')
     ax.text(51, 4.55, '60歳以上　身体介護52.4％／生活援助71.4％', color=RED,
             ha='right', fontsize=9, fontweight='bold')
-    ax.legend(loc='lower right', frameon=False, fontsize=9)
+    LEG(ax, ncol=2, gap=0.24)
     return _save(fig, 's15_seikatsu')
 
 
@@ -357,13 +354,12 @@ def s16_jinzai():
     ax.set_yticks(list(y)); ax.set_yticklabels(lab, fontsize=9)
     ax.invert_yaxis(); ax.set_xlim(0, 62)
     ax.set_xlabel('令和7年度の人数（人）')
-    ax.legend(loc='lower right', frameon=False, fontsize=9)
-    ax2.barh(list(y), hi, height=0.5,
-             color=[RED if x < 100 else BLUE for x in hi])
+    LEG(ax, ncol=2, gap=0.26)
+    ax2.barh(list(y), hi, height=0.5, color=PALE)
     for i, x in enumerate(hi):
-        _lab(ax2, x + 0.4, i, '%.1f％' % x, RED if x < 100 else NAVY, sz=9)
-    ax2.axvline(100, color='#808080', ls='--', lw=1.4)
-    ax2.text(88.6, -0.72, '赤は前年を下回る系統', color=RED, fontsize=8)
+        _lab(ax2, x + 0.4, i, '%.1f％%s' % (x, '　▲' if x < 100 else ''), NAVY, sz=9)
+    ax2.axvline(100, color=ORANGE, ls='--', lw=1.6)
+    ax2.text(109.6, -0.74, '▲は前年を下回る系統', color=NAVY, ha='right', fontsize=8)
     ax2.set_yticks(list(y)); ax2.set_yticklabels([])
     ax2.invert_yaxis(); ax2.set_xlim(88, 110)
     ax2.set_xlabel('職員数の昨年比（％）')
@@ -392,8 +388,7 @@ def s17_kanno():
     ax.invert_yaxis(); ax.set_xlim(-660, 400)
     ax.set_xlabel('基準額（月額）に与える影響（円）')
     hs = [plt.Rectangle((0, 0), 1, 1, color=col[k]) for k in ('町', '国', '事')]
-    ax.legend(hs, ['町のご判断', '国が決める', '事実の確認'],
-              loc='lower left', frameon=False, fontsize=9)
+    LEG(ax, hs, ['町のご判断', '国が決める', '事実の確認'], ncol=3, gap=0.14)
     return _save(fig, 's17_kanno')
 
 
@@ -402,5 +397,12 @@ ALL = [s1_jinko, s2_uchiwake, s3_gyoseiku, s4_nintei_suii, s5_ninchi_jiritsu,
        s12_risk, s13_fukugo, s14_shisaku, s15_seikatsu, s16_jinzai, s17_kanno]
 
 if __name__ == '__main__':
+    import sys
+    import figs
     for f in ALL:
         print(f())
+    if figs.ISSUES:
+        print('\n図の指摘　%d件' % len(figs.ISSUES))
+        for x in sorted(set(figs.ISSUES)):
+            print('  ・' + x)
+        sys.exit(1)
