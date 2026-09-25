@@ -56,7 +56,7 @@ import repo_paths as RP
 
 OUT = (RP.ROOT + "/output/"
        "第10期計画_アンケート分析_点検箇所と手順.docx")
-KIJUNBI = "令和8年9月24日"
+KIJUNBI = "令和8年9月25日"
 FONT = "游ゴシック"
 NAVY = RGBColor(0x1F, 0x38, 0x64)
 

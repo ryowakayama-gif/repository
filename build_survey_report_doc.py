@@ -319,8 +319,10 @@ def H2(text):
 
 
 def SUB(text):
-    """（１）〜 の太字小見出し。"""
-    return P(text, bold=True, space_after=3)
+    """（１）〜 の太字小見出し。次の段落と同じページに置く。"""
+    p = P(text, bold=True, space_after=3)
+    p.paragraph_format.keep_with_next = True
+    return p
 
 
 def NOTE(text):
@@ -354,8 +356,16 @@ def cell_text(cell, text, size=9, bold=False, align=None):
         r._element.rPr.rFonts.set(qn("w:eastAsia"), BODY)
 
 
-def _keep_table(t, limit=14):
-    """行の途中で改ページさせない。短い表は表全体を同じページに収める。"""
+def _keep_table(t, limit=22):
+    """表が紙面の途中で切れないようにする。
+
+    ・行の途中で改ページさせない（`w:cantSplit`）。
+    ・1ページに収まる表は、最後の行を除く全ての段落を次と離さないことで
+      表全体を同じページに収める。
+    ・それでも分割される長い表のために、見出し行を繰り返す
+      （`w:tblHeader`）。
+    """
+    t.rows[0]._tr.get_or_add_trPr().append(OxmlElement("w:tblHeader"))
     whole = len(t.rows) <= limit
     for i, row in enumerate(t.rows):
         trPr = row._tr.get_or_add_trPr()
@@ -369,7 +379,8 @@ def _keep_table(t, limit=14):
 TEXTW = 21.0 - 1.9 * 2                   # 本文幅 17.2cm
 
 
-def TBL(head, rows, widths=None, size=9, num_from=1):
+def TBL(head, rows, widths=None, size=9, num_from=1, bold=None):
+    """bold は太字にする列の番号。None なら見出しから決める（下記）。"""
     t = doc.add_table(rows=0, cols=len(head))
     t.style = "Table Grid"
     t.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -378,11 +389,20 @@ def TBL(head, rows, widths=None, size=9, num_from=1):
         cell_text(hr[i], h, size=size, bold=True,
                   align=WD_ALIGN_PARAGRAPH.CENTER)
         shade(hr[i], HEADFILL)
-    for row in rows:
+    # 表の中の重要な値を本文と同じ太字にする。
+    # 指定がなければ、見出しに「割合」「率」「差」を含む列を太字とする
+    # （表の中だけ一律の太さだと、どこが要点か分からないため）。
+    if bold is None:
+        bold = {i for i, h in enumerate(head)
+                if i > 0 and any(k in str(h) for k in ("割合", "率", "差"))}
+    for n_, row in enumerate(rows):
         c = t.add_row().cells
+        # 「合計」「計」の行は行ごと太字にする。
+        sum_row = str(row[0]).strip().startswith(("合計", "計", "総計"))
         for i, v in enumerate(row):
             al = WD_ALIGN_PARAGRAPH.RIGHT if i >= num_from else None
-            cell_text(c[i], v, size=size, align=al)
+            cell_text(c[i], v, size=size, align=al,
+                      bold=sum_row or i in bold)
     if widths:
         tot = sum(widths)
         if tot > TEXTW:                  # 本文幅に収まるよう比例配分する
