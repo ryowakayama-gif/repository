@@ -42,15 +42,19 @@ from openpyxl.styles.borders import Border, Side
 import build_ono_nenpo as N
 import build_ono_tanka as T
 from build_ono_tanka import CHIIKI_JISSEKI  # noqa: F401
-from build_ono_kaisu import plan_rows
+import ono_shizentai as SZ
+
+# **標準は自然体推計（令和8年度基点）である。**
+# ワークシートとの突合は、素案に載る値で行う。
+plan_rows = SZ.plan_rows
 
 ROOT = pathlib.Path(__file__).parent / "小野町_引継ぎ_整理済"
 OUT = ROOT / "04_算定・見込量"
 WS_FILE = (OUT / "原本_見える化ワークシート"
            / "【受領】第10期介護保険事業計画策定に向けたワークシート_将来推計1_20260914.xlsx")
 NENPO = ROOT / "18_年報・国保連データ" / "原本_年報"
-ASOF = "20260915"
-ASOF_JP = "令和8年9月15日"
+ASOF = "20260925"
+ASOF_JP = "令和8年9月25日"
 
 HEAD = PatternFill("solid", fgColor="1F3864")
 SUB = PatternFill("solid", fgColor="D9E2F3")

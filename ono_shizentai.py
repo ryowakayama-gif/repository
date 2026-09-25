@@ -62,7 +62,10 @@ R7_SHINSA = ["202505", "202506", "202507"]
 
 # 令和8年度の置き方の候補。値は令和7年度の実績に対する比。
 #   ① 据え置き ② 令和6→令和7の動きを1年延長 ③ 当方の現行方式 ④ 月報の実績
-R8_CASES = ["据え置き", "令和6→令和7を延長", "現行方式", "月報の実績"]
+#   ⑤ 認定者数の伸び＋サービス別趨勢の半分（月報を使わない独立の置き方）
+# ④を標準とする。⑤は④の検算にあたり、出所が重ならない。
+R8_CASES = ["据え置き", "令和6→令和7を延長", "現行方式", "月報の実績",
+            "認定者数＋趨勢半分"]
 
 _CACHE = {}
 
@@ -93,10 +96,16 @@ def geppo_ratio():
 
 
 def r8_options(act=None, gen=None, proj=None):
-    """令和8年度の置き方4通りを、令和7年度に対する比で返す。
+    """令和8年度の置き方5通りを、令和7年度に対する比で返す。
 
     返り値 {名称: (比, 令和8年度の総給付費（千円）, 根拠)}
+
+    年報の読み取りと推計が重いため、引数なしで呼ばれたときは結果を残す。
+    素案・見込量・点検のいずれも同じ値を使うので、1回で足りる。
     """
+    if act is None and gen is None and proj is None and "r8" in _CACHE:
+        return _CACHE["r8"]
+    cached = act is None and gen is None and proj is None
     if act is None:
         act, _sub, gen = T.extract()
     r7 = sum(sum(act["令和7年度"]["給付費"].get(s, (0, 0)))
@@ -108,7 +117,7 @@ def r8_options(act=None, gen=None, proj=None):
     i8 = T.EST_YEARS.index("令和8年度")
     cur = sum(r["見込"][i8][1] for k in ("介護", "予防") for r in proj[k])
     g, ga, gb = geppo_ratio()
-    return {
+    out = ({
         "据え置き": (1.0, r7,
                  "令和7年度の実績をそのまま置く（変化0）"),
         "令和6→令和7を延長": (r7 / r6, r7 * r7 / r6,
@@ -120,7 +129,41 @@ def r8_options(act=None, gen=None, proj=None):
         "月報の実績": (g, r7 * g,
                   f"国保連月報の令和8年度4〜6月提供分{gb:,.0f}円と"
                   f"前年の同じ月{ga:,.0f}円の比。**3か月分の実績による**"),
-    }, r7
+        "認定者数＋趨勢半分": blend(act, r7, r6),
+    }, r7)
+    if cached:
+        _CACHE["r8"] = out
+    return out
+
+
+# 他町村の案件で用いている置き方。サービス別の趨勢をそのまま延ばすと外れやすいため
+# 半分だけ織り込み、一律の伸びからの乖離に上限を置く。
+BLEND_HANEI = 0.50      # 趨勢の反映割合
+BLEND_JOGEN = 0.20      # 一律の伸びからの乖離の上限（ポイント）
+NINTEI_R7_1GO = 783     # 年報 様式1の5 第1号・令和8年3月末
+
+
+def blend(act, r7, r6, hanei=BLEND_HANEI, jogen=BLEND_JOGEN):
+    """一律の伸び（認定者数）にサービス別の趨勢を半分だけ織り込む置き方。
+
+    一律の伸び ＝ 第1号認定者数 令和8年度÷令和7年度
+    採用伸び ＝ MEDIAN(一律−上限, 一律＋反映割合×(サービス別趨勢−一律), 一律＋上限)
+    """
+    ichiritsu = T.NINTEI_EST["令和8年度"] / NINTEI_R7_1GO
+    tot = 0.0
+    for _c, s, _u in T.ORDER_KAIGO:
+        v7 = sum(act["令和7年度"]["給付費"].get(s, (0, 0))) / 1000
+        v6 = sum(act["令和6年度"]["給付費"].get(s, (0, 0))) / 1000
+        if v7 <= 0:
+            continue
+        susei = v7 / v6 if v6 > 0 else ichiritsu
+        cand = ichiritsu + hanei * (susei - ichiritsu)
+        tot += v7 * min(max(cand, ichiritsu - jogen), ichiritsu + jogen)
+    return (tot / r7, tot,
+            f"第1号認定者数の伸び{(ichiritsu - 1) * 100:+.2f}％に、"
+            f"サービス別の趨勢を{hanei * 100:.0f}％だけ織り込む"
+            f"（乖離の上限{jogen * 100:.0f}ポイント）。"
+            "**他町村の案件で用いている置き方。月報を使わずに置ける**")
 
 
 def plan(base="月報の実績"):
@@ -141,25 +184,96 @@ def plan(base="月報の実績"):
 def premium(base="月報の実績", chi3=None, sogo3=None, **kw):
     """自然体推計（令和8年度基点）による保険料。
 
-    標準給付費は、現行の算定の総給付費に対する比をそのまま当てる
-    （特定入所者・高額・高額医療合算・審査支払手数料は総給付費に比例する）。
+    標準給付費は plan_rows の系列をそのまま合計する。
+    **素案・見込量の表に載る値と、保険料の基数を同じものにするため。**
+    （従前は現行の算定の標準給付費に総給付費の比を当てていたが、
+    審査支払手数料は給付費でなく件数に比例するため21千円ずれていた。）
     """
-    from build_ono_kaisu import chiiki_plan, plan_rows
-    A = plan_rows()["集計"]
+    from build_ono_kaisu import chiiki_plan, plan_rows as base_rows
+    A = plan_rows(base)["集計"]
     cp = chiiki_plan()
     if chi3 is None:
         chi3 = sum(v[3] for v in cp) * 3 / 1000
     if sogo3 is None:
         sogo3 = sum(v[3] for v in cp if v[0] == "総合事業") * 3 / 1000
     pop3 = sum(T.POP_DAI10[y]["1号"] for y in T.PLAN_YEARS)
-    p = plan(base)
-    new3 = sum(p[y] for y in T.PLAN_YEARS)
-    scale = new3 / sum(A["計"])
-    std3 = sum(A["標準給付費"]) * scale
+    new3 = sum(A["計"])
+    std3 = sum(A["標準給付費"])
     res = T.premium(std3, chi3, sogo3, pop3, **kw)
     res["総給付費3年計"] = new3
-    res["倍率"] = scale
+    res["倍率"] = new3 / sum(base_rows()["集計"]["計"])
     return res
+
+
+def factors(base="月報の実績"):
+    """第10期の各年度に乗じる係数（令和7年度の実績に対する比）。
+
+    令和8年度 ＝ 令和7年度 × 比、第10期 ＝ 令和8年度 × 人口比、なので
+        係数(y) ＝ 比 × 第1号被保険者数(y) ÷ 第1号被保険者数(令和8年度)
+    """
+    opts, _r7 = r8_options()
+    ratio = opts[base][0]
+    p8 = T.POP_DAI10["令和8年度"]["1号"]
+    return [ratio * T.POP_DAI10[y]["1号"] / p8 for y in T.PLAN_YEARS]
+
+
+def plan_rows(base="月報の実績"):
+    """自然体推計によるサービス別の見込量。build_ono_kaisu.plan_rows と同じ形。
+
+    令和7年度の実績（各行の先頭）に係数を乗じたもので置き換える。
+    **人数・量・給付費のすべてに同じ係数を当てる。**
+    総額を月報で裏づけるのが目的であり、サービスの構成と1人当たりの水準は
+    令和7年度のまま動かさない（見える化システムの自然体推計と同じ置き方）。
+
+    なお月報でみると、給付額の前年同期比0.9598に対し受給者計は0.9648で、
+    0.5ポイントの差がある。すべてに給付額の比を当てているため、
+    1人1月あたり給付費は令和7年度から0.5％下がる形になる。
+    """
+    if base in _CACHE.get("rows", {}):
+        return _CACHE["rows"][base]
+    from build_ono_kaisu import plan_rows as base_rows
+    P = base_rows()
+    f = factors(base)
+    act, _sub, gen = T.extract()
+    out = {}
+    for kind in ("介護", "予防"):
+        i = 1 if kind == "介護" else 0
+        rows = []
+        for cat, name, unit, nin, ryo, _kyu in P[kind]:
+            from build_ono_kaisu import _svc_of
+            svc = _svc_of(name, kind)
+            k7 = act["令和7年度"]["給付費"].get(svc, (0, 0))[i] / 1000
+            rows.append((cat, name, unit,
+                         [nin[0]] + [nin[0] * x for x in f],
+                         ([ryo[0]] + [ryo[0] * x for x in f]) if ryo else None,
+                         [k7 * x for x in f]))
+        out[kind] = rows
+    # 集計。加算4項目の比は現行と同じものを使う
+    n = len(T.PLAN_YEARS)
+    agg = {"区分": {}, "給付": {}, "計": [0.0] * n}
+    for kind in ("介護", "予防"):
+        v = [0.0] * n
+        for cat, _nm, _u, _nin, _ryo, kyu in out[kind]:
+            for k in range(n):
+                v[k] += kyu[k]
+                agg["区分"].setdefault(cat, [0.0] * n)[k] += kyu[k]
+        agg["給付"][kind] = v
+        for k in range(n):
+            agg["計"][k] += v[k]
+    ratios = T.kasan_ratios(gen)
+    for key in ("特定入所", "高額", "高額合算"):
+        agg[key] = [agg["計"][k] * ratios[key] for k in range(n)]
+    # 審査支払手数料は件数に比例する。件数も同じ係数で動かす
+    ken7 = sum(act["令和7年度"]["件数"].get(s, (0, 0))[0]
+               + act["令和7年度"]["件数"].get(s, (0, 0))[1]
+               for _c, s, _u in T.ORDER_KAIGO)
+    from build_ono_kaisu import TESURYO_YEN
+    agg["手数料"] = [ken7 * f[k] * TESURYO_YEN / 1000 for k in range(n)]
+    agg["標準給付費"] = [agg["計"][k] + agg["特定入所"][k] + agg["高額"][k]
+                    + agg["高額合算"][k] + agg["手数料"][k] for k in range(n)]
+    out["集計"] = agg
+    _CACHE.setdefault("rows", {})[base] = out
+    return out
 
 
 def summary():

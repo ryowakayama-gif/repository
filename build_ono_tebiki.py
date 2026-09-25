@@ -47,11 +47,16 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 import build_ono_tanka as T
-from build_ono_kaisu import chiiki_ryo, nintei_juri, plan_rows, teiin_plan
+import ono_shizentai as SZ
+from build_ono_kaisu import chiiki_ryo, nintei_juri, teiin_plan
+
+# **標準は自然体推計（令和8年度基点）である。**
+# 点検は標準の算定に当てなければ意味がない。
+plan_rows = SZ.plan_rows
 
 OUT = pathlib.Path(__file__).parent / "小野町_引継ぎ_整理済" / "04_算定・見込量"
-ASOF = "20260924"
-ASOF_JP = "令和8年9月24日"
+ASOF = "20260925"
+ASOF_JP = "令和8年9月25日"
 
 YS = ["令和3年度", "令和4年度", "令和5年度", "令和6年度", "令和7年度"]
 KAITEI_YEAR = "令和6年度"          # 介護報酬改定（＋1.59％）のあった年度

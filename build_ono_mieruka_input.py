@@ -48,14 +48,21 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 import build_ono_tanka as T
-from build_ono_kaisu import chiiki_plan, chiiki_ryo, plan_rows, sogo_jisseki
+import ono_shizentai as SZ
+from build_ono_kaisu import (chiiki_plan, chiiki_ryo, sogo_jisseki,
+                             plan_rows as riyoritsu_rows)
+
+# **標準は自然体推計（令和8年度基点）である。**
+# 見える化システムに入れる値は素案と同じ系列でなければ、
+# システムの出力と素案の数値が食い違う。
+plan_rows = SZ.plan_rows
 
 ROOT = pathlib.Path(__file__).parent
 OUT = ROOT / "小野町_引継ぎ_整理済" / "11_見える化出力依頼"
 WS_FILE = (ROOT / "小野町_引継ぎ_整理済" / "04_算定・見込量" / "原本_見える化ワークシート"
            / "【受領】第10期介護保険事業計画策定に向けたワークシート_将来推計1_20260914.xlsx")
-ASOF = "20260924"
-ASOF_JP = "令和8年9月24日"
+ASOF = "20260925"
+ASOF_JP = "令和8年9月25日"
 JP_MIN = "游明朝"
 JP_GO = "游ゴシック"
 
@@ -309,7 +316,8 @@ def build_xlsx(F):
                f"令和6・7年度は12分の1単位の小数（年間延べ÷12）である。"
                f"**国保連月報でみると、令和8年度4〜6月提供分の給付額は"
                f"前年の同じ月の96.0％である。**"
-               f"令和8年度を自然体推計に置き換えるときは、この水準が目安になる"])
+               f"**本件の算定は令和8年度をこの水準（0.9598）で置いている。"
+               f"入力値もこれにそろえている**"])
     ws.append([2, "認定率の伸び（4_施策反映 13行）",
                "令和6年度→令和7年度", "**断層の確認が取れるまで保留する**",
                "**見える化の認定者数は各年9月末の値である。**"

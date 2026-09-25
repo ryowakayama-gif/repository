@@ -69,8 +69,8 @@ import ono_mieruka_ws as W
 ROOT = pathlib.Path(__file__).parent / "小野町_引継ぎ_整理済"
 ZDIR = ROOT / "18_年報・国保連データ" / "原本_国保連月報"
 OUT = ROOT / "04_算定・見込量"
-ASOF = "20260915"
-ASOF_JP = "令和8年9月15日"
+ASOF = "20260925"
+ASOF_JP = "令和8年9月25日"
 
 HEAD = PatternFill("solid", fgColor="1F3864")
 KEY = PatternFill("solid", fgColor="FCE4E4")
@@ -729,6 +729,14 @@ def sheet_shizentai(wb, plan):
         "前年の同じ提供月と比べると96.0％である。"
         "当方の現行方式は実績より6.0％高い。"
         "令和5〜7年度の3年平均が、下がり続けている系列を上に引いているため。",
+        f"**※ 月報を使わない置き方でも同じところに来る。**"
+        f"他町村の案件で用いている「認定者数の伸びにサービス別の趨勢を半分だけ"
+        f"織り込む」置き方（乖離の上限20ポイント）で計算すると"
+        f"{opt['認定者数＋趨勢半分'][0]:.4f}となり、"
+        f"月報の実績{opt['月報の実績'][0]:.4f}との差は"
+        f"{(opt['認定者数＋趨勢半分'][0] / opt['月報の実績'][0] - 1) * 100:.1f}％である。"
+        f"**出所の異なる2つの置き方が近い値を示す一方、"
+        f"現行方式{opt['現行方式'][0]:.4f}はどちらからも離れている。**",
         "※ 自然体推計は、令和8年度を基点とし第1号被保険者1人当たりの給付費を"
         "据え置いて人口で延ばしたもの。"
         "**見える化システムの自然体推計（利用率・1人1月あたり給付費の変化を0とする）と"
@@ -1576,12 +1584,15 @@ def main():
     sheet_mikomi(wb, "03_見込量_介護", a7, proj, "介護", "介護給付（要介護1〜5）")
     sheet_mikomi(wb, "04_見込量_予防", a7, proj, "予防", "予防給付（要支援1・2）")
     plan = plan_rows()
-    sheet_keikaku(wb, plan)
-    sheet_teiin(wb, plan)
+    import ono_shizentai as SZ
+    plan_sz = SZ.plan_rows()
+    sheet_keikaku(wb, plan_sz)
+    sheet_teiin(wb, plan_sz)
     sheet_kijun(wb, check_base(verbose=False))
     sheet_sogo(wb)
-    sheet_zentei(wb, plan)
-    sheet_hotei_teiin(wb, plan)
+    # 据え置いた前提の感度は標準の算定に当てる。素案の感度表と同じ値になる。
+    sheet_zentei(wb, plan_sz)
+    sheet_hotei_teiin(wb, plan_sz)
     sheet_chiiki_ryo(wb)
     sheet_shizentai(wb, plan)
     sheet_check(wb, chk, a7, proj)
@@ -1590,7 +1601,7 @@ def main():
     wb.save(p)
 
     print(f"生成: {p.name}（{len(wb.sheetnames)}シート）")
-    A = plan["集計"]
+    A = plan_sz["集計"]
     std3 = sum(A["標準給付費"])
     chi3 = sum(v[3] for v in chiiki_plan()) * 3 / 1000
     sogo3 = sum(v[3] for v in chiiki_plan() if v[0] == "総合事業") * 3 / 1000
@@ -1605,7 +1616,7 @@ def main():
           f"{T.premium(std3, chi3, sogo3, pop3, futan=0.24)['月額']:>8,.0f}円")
     print("\n令和11年度の見込量（月あたり・主なもの）")
     for kind in ("介護", "予防"):
-        for _cat, name, unit, nin, ryo, _k in plan[kind]:
+        for _cat, name, unit, nin, ryo, _k in plan_sz[kind]:
             if name not in ("訪問介護", "通所介護", "短期入所生活介護",
                             "介護老人福祉施設", "認知症対応型共同生活介護"):
                 continue

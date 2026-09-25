@@ -23,11 +23,16 @@ from docx.shared import Pt
 
 import build_ono_tanka as T
 import ono_mieruka_ws as W
-from build_ono_kaisu import chiiki_plan, nintei_break, plan_rows
+import ono_shizentai as SZ
+from build_ono_kaisu import chiiki_plan, nintei_break
+
+# **標準は自然体推計（令和8年度基点）である。**
+# レビューの入力は素案と同じ系列でなければ突き合わせにならない。
+plan_rows = SZ.plan_rows
 
 OUT = pathlib.Path(__file__).parent / "小野町_引継ぎ_整理済" / "04_算定・見込量"
-ASOF = "20260915"
-ASOF_JP = "令和8年9月15日"
+ASOF = "20260925"
+ASOF_JP = "令和8年9月25日"
 JP_MIN, JP_GO = "游明朝", "游ゴシック"
 
 PLAN = plan_rows()
