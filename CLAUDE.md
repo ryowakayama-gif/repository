@@ -2,7 +2,9 @@
 
 ## 金ケ崎町　高齢者福祉計画・第10期介護保険事業計画・認知症施策推進計画
 
-記録は `docs/kanegasaki/` にある。**成果品（計画素案・策定委員会資料・別冊・照会文書）を作成・修正する前に、`docs/kanegasaki/委員会資料のデザインルール.md` を読むこと。**体裁・図・文章・構成の規則をそこに集約している。
+記録は `docs/kanegasaki/` にある。**成果品（計画素案・策定委員会資料・別冊・照会文書）を作成・修正するときは、スキル `docx-design` を使うこと**（`.claude/skills/docx-design/SKILL.md`）。体裁・図・文章・構成の規則は `docs/kanegasaki/委員会資料のデザインルール.md` に集約している。
+
+**提示前に必ず `python3 .claude/skills/docx-design/check_docx.py <docx...> --figs figs.py figs_soan.py` を実行し、指摘を0件にすること。**
 
 ### 必ず守る事項
 

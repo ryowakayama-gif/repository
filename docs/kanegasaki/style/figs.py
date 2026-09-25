@@ -71,7 +71,7 @@ def f_bunpu():
     lab = ['県内最大', '全国平均', '県内第3四分位', '金ケ崎町', '岩手県平均',
            '県内中央値', '県内第1四分位', '県内最小']
     val = [615, 455.1, 452.0, 434, 406.3, 390.0, 347.5, 305]
-    col = [PALE, GREY, PALE, RED, ORANGE, BLUE, PALE, PALE]
+    col = [PALE, GREY, PALE, RED, ORANGE, PALE, PALE, PALE]
     y = range(len(lab))
     fig, ax = plt.subplots(figsize=(7.0, 3.4))
     ax.barh(list(y), val, height=0.58, color=col)
@@ -100,12 +100,12 @@ def f_mokuhyo():
     y = range(len(lab))
     fig, ax = plt.subplots(figsize=(7.4, 5.2))
     h = 0.26
-    ax.barh([i + h for i in y], kg, height=h,
-            color=[RED if k < w else BLUE for k, w in zip(kg, iw)], label='金ケ崎町')
+    ax.barh([i + h for i in y], kg, height=h, color=RED, label='金ケ崎町')
     ax.barh(list(y), iw, height=h, color=ORANGE, label='岩手県平均')
     ax.barh([i - h for i in y], nat, height=h, color=GREY, label='全国平均')
     for i, v in enumerate(kg):
-        _lab(ax, v + 1, i + h, '%d' % v, RED if v < iw[i] else NAVY, sz=9)
+        _lab(ax, v + 1, i + h, '%d%s' % (v, '　▲県平均を下回る' if v < iw[i] else ''),
+             RED, sz=9)
     for i, v in enumerate(iw):
         _lab(ax, v + 1, i, '%.1f' % v, ORANGE, sz=8)
     for i, v in enumerate(nat):
@@ -116,8 +116,7 @@ def f_mokuhyo():
     ax.set_xlabel('得点（各目標100点満点）')
     ax.xaxis.grid(True, color='#E6E6E6', lw=0.8); ax.set_axisbelow(True)
     hd, lb = ax.get_legend_handles_labels()
-    ax.legend(hd[::-1], lb[::-1], loc='lower right', frameon=False, fontsize=9,
-              bbox_to_anchor=(1.0, -0.02))
+    ax.legend(hd[::-1], lb[::-1], loc='upper right', frameon=False, fontsize=9)
     return _save(fig, 'f3_mokuhyo')
 
 
@@ -132,11 +131,10 @@ def f_ninchi():
     y = range(len(lab))
     fig, ax = plt.subplots(figsize=(7.4, 4.4))
     ax.barh(list(y), hai, height=0.62, color='#F2F2F2', edgecolor='#D9D9D9', label='配点')
-    ax.barh([i + 0.15 for i in y], kg, height=0.3,
-            color=[RED if k < n else BLUE for k, n in zip(kg, nat)], label='金ケ崎町')
+    ax.barh([i + 0.15 for i in y], kg, height=0.3, color=RED, label='金ケ崎町')
     ax.barh([i - 0.17 for i in y], nat, height=0.3, color=GREY, label='全国平均')
     for i, v in enumerate(kg):
-        _lab(ax, v + 0.4, i + 0.15, '%d' % v, RED if v < nat[i] else NAVY, sz=9)
+        _lab(ax, v + 0.4, i + 0.15, '%d%s' % (v, '　▲' if v < nat[i] else ''), RED, sz=9)
     for i, v in enumerate(nat):
         _lab(ax, v + 0.4, i - 0.17, '%.1f' % v, GREY, sz=8)
     for i, v in enumerate(hai):
@@ -144,6 +142,7 @@ def f_ninchi():
     ax.set_yticks(list(y)); ax.set_yticklabels(lab, fontsize=9)
     ax.invert_yaxis(); ax.set_xlim(0, 29)
     ax.set_xlabel('得点（介護保険保険者努力支援交付金 目標Ⅱ　計100点）')
+    ax.text(28.7, -0.62, '▲は全国平均を下回る項目', color=RED, ha='right', fontsize=8)
     ax.xaxis.grid(True, color='#E6E6E6', lw=0.8); ax.set_axisbelow(True)
     hd, lb = ax.get_legend_handles_labels()
     ax.legend(hd[::-1], lb[::-1], loc='upper right', frameon=False, fontsize=9)

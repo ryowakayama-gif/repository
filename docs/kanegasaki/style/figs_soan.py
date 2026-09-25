@@ -224,7 +224,7 @@ def s10_seika():
            '⑧介護職員就職支援助成金（累計）', '⑥認知症サポーター養成（累計）',
            '④シルバー人材センター受託件数', '②オレンジカフェ箇所数']
     v = [150.0, 103.8, 90.3, 89.2, 76.4, 74.6]
-    col = [BLUE if x >= 100 else (ORANGE if x >= 85 else RED) for x in v]
+    col = [BLUE if x >= 100 else RED for x in v]      # 達成＝青／未達＝赤
     fig, ax = plt.subplots(figsize=(7.2, 3.0))
     ax.barh(lab, v, height=0.54, color=col)
     for i, x in enumerate(v):
@@ -245,11 +245,10 @@ def s11_chiiki():
     iw = [1.06, 0.95, 1.02, 1.04]
     y = range(len(lab))
     fig, ax = plt.subplots(figsize=(7.0, 3.0))
-    ax.barh([i + 0.17 for i in y], kg, height=0.32,
-            color=[RED if x < 0.9 else BLUE for x in kg], label='金ケ崎町')
+    ax.barh([i + 0.17 for i in y], kg, height=0.32, color=RED, label='金ケ崎町')
     ax.barh([i - 0.17 for i in y], iw, height=0.32, color=ORANGE, label='岩手県')
     for i, x in enumerate(kg):
-        _lab(ax, x + 0.012, i + 0.17, '%.2f' % x, RED if x < 0.9 else NAVY, sz=9)
+        _lab(ax, x + 0.012, i + 0.17, '%.2f' % x, RED, sz=9)
     for i, x in enumerate(iw):
         _lab(ax, x + 0.012, i - 0.17, '%.2f' % x, ORANGE, sz=9)
     ax.axvline(1.00, color=GREY, ls='--', lw=1.6)
@@ -326,14 +325,11 @@ def s15_seikatsu():
     y = range(len(age))
     fig, ax = plt.subplots(figsize=(7.0, 2.9))
     ax.barh([i + 0.18 for i in y], sin, height=0.34, color=BLUE, label='身体介護')
-    ax.barh([i - 0.18 for i in y], sei, height=0.34,
-            color=[RED if a in ('60歳代', '70歳以上') else PALE for a in age],
-            label='生活援助')
+    ax.barh([i - 0.18 for i in y], sei, height=0.34, color=RED, label='生活援助')
     for i, x in enumerate(sin):
-        _lab(ax, x + 0.6, i + 0.18, '%.1f％' % x, NAVY, sz=9)
+        _lab(ax, x + 0.6, i + 0.18, '%.1f％' % x, BLUE, sz=9)
     for i, x in enumerate(sei):
-        _lab(ax, x + 0.6, i - 0.18, '%.1f％' % x,
-             RED if i >= 3 else NAVY, sz=9)
+        _lab(ax, x + 0.6, i - 0.18, '%.1f％' % x, RED, sz=9)
     ax.set_yticks(list(y)); ax.set_yticklabels(age, fontsize=10)
     ax.invert_yaxis(); ax.set_xlim(0, 52)
     ax.set_xlabel('提供時間の構成比（％）')
@@ -367,6 +363,7 @@ def s16_jinzai():
     for i, x in enumerate(hi):
         _lab(ax2, x + 0.4, i, '%.1f％' % x, RED if x < 100 else NAVY, sz=9)
     ax2.axvline(100, color='#808080', ls='--', lw=1.4)
+    ax2.text(88.6, -0.72, '赤は前年を下回る系統', color=RED, fontsize=8)
     ax2.set_yticks(list(y)); ax2.set_yticklabels([])
     ax2.invert_yaxis(); ax2.set_xlim(88, 110)
     ax2.set_xlabel('職員数の昨年比（％）')
