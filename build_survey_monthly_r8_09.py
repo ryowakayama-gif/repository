@@ -421,9 +421,26 @@ def P(text="", size=10.5, bold=False, align=None, indent=0.0, after=4):
     return p
 
 
-def H1(text):
+# 節の先頭で改ページする節の番号。
+# 改ページの目的は「表が紙面の途中で切れないようにすること」及び
+# 「節が紙面の末尾から数行だけで始まらないようにすること」である。
+# どの節に入れるかは実際の紙面で確かめて決める
+# （`tools/check_pages.py` で、紙面をまたぐ表と中身の少ないページを数える）。
+# 全ての節に入れると、直前の節の本文があふれた1〜2行だけのページができる。
+# 既定値は実際の紙面で確かめて決めたもの。
+# 第4・5・7節は直前の節の本文があふれるため改ページしない。
+BRK = set(os.environ.get("BRK", "1,2,3,6,8,9,10,11").split(",")) - {""}
+_SEC = [0]
+
+
+def H1(text, brk=None):
+    """節の見出し。brk で改ページする（節が紙面の途中で始まらない）。"""
+    _SEC[0] += 1
+    if brk is None:
+        brk = str(_SEC[0]) in BRK
     p = doc.add_paragraph()
-    p.paragraph_format.space_before = Pt(14)
+    p.paragraph_format.page_break_before = brk
+    p.paragraph_format.space_before = Pt(0 if brk else 14)
     p.paragraph_format.space_after = Pt(6)
     p.paragraph_format.keep_with_next = True
     r = p.add_run(text)
@@ -478,8 +495,17 @@ def CAP(text):
     r.element.rPr.rFonts.set(qn("w:eastAsia"), FONT)
 
 
-def TBL(head, rows, widths, size=9, center=None, first_bold=False):
+# 表を紙面で分割しない上限（行数）。これを超える表は分割を許す
+# （1ページに収まらないため、押し出すと空白が大きくなる）。
+KEEP_MAX = 13
+
+
+def TBL(head, rows, widths, size=9, center=None, first_bold=False,
+        bold=None, keep=None):
+    """bold は太字にする列の番号（重要な値を本文と同じ太字で示す）。
+    keep=True で表全体を同じページに収める（既定は行数で決める）。"""
     center = center or set()
+    bold = bold or set()
     t = doc.add_table(rows=1 + len(rows), cols=len(head))
     t.style = "Table Grid"
     t.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -518,7 +544,15 @@ def TBL(head, rows, widths, size=9, center=None, first_bold=False):
             if j in center:
                 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             _runs(p, "" if v is None else v, size,
-                  bold=(first_bold and j == 0))
+                  bold=(first_bold and j == 0) or j in bold)
+    # 表を紙面で分割しない（最後の行を除く全ての段落を次と離さない）。
+    # 行そのものの分割は w:cantSplit で、見出し行の繰返しは w:tblHeader で
+    # 防いでいる。ここでは表全体が1ページに収まるようにする。
+    if keep if keep is not None else (1 + len(rows) <= KEEP_MAX):
+        for tr in t.rows[:-1]:
+            for c in tr.cells:
+                for pp in c.paragraphs:
+                    pp.paragraph_format.keep_with_next = True
     return t
 
 
@@ -581,7 +615,7 @@ TBL(["時期", "行ったこと", "成果物", "結果"],
       "所見%d件のうち%d件を反映済みとした。"
       "決定を要しないものはすべて反映した" % (len(SHOKEN),
                                              SHOKEN_ST.get("反映済", 0))]],
-    [2.0, 4.0, 4.2, 6.8], first_bold=True)
+    [2.0, 4.0, 4.2, 6.8], first_bold=True, bold={3})
 
 NOTE("4調査を横断したクロス集計は、令和8年8月5日のご意向により行いません。"
      "利用者票の所在地区の記入形式が9種類に分かれ、"
@@ -632,7 +666,7 @@ CAP("仕様書４（3）の作業項目と本報告の対応")
 TBL(["作業項目", "状態", "成果品", "本報告での扱い"],
     [[s, _JOKYO[s][0], _JOKYO[s][1], _JOKYO[s][2]]
      for s in SAGYO],
-    [4.8, 1.4, 4.6, 6.2], center={1}, first_bold=True)
+    [4.8, 1.4, 4.6, 6.2], center={1}, first_bold=True, bold={1})
 
 P("")
 P("**集計・クロス集計・分析は4調査とも完了しています。**"
@@ -661,7 +695,7 @@ TBL(["調査・票種", "受領件数", "母数（公表データ等）", "回�
      "母数についての注記"],
     [[str(r[0]), str(r[1]), str(r[2] or "―"), str(r[3] or "―"),
       str(r[5] or "―")] for r in KAISHU],
-    [3.6, 1.8, 3.8, 3.6, 4.4], first_bold=True)
+    [3.6, 1.8, 3.8, 3.6, 4.4], first_bold=True, bold={1})
 
 P("")
 P("**母数の置き方で特にご留意いただきたいもの**")
@@ -714,7 +748,7 @@ TBL(["調査", "前回（第9期）", "今回（第10期）", "比較の可否"]
       "回収4,798票・回収率67.4％（分析対象4,729票）",
       "**割合の比較ができる**（下表）。"
       "母数が違うため実数では比べない"]],
-    [3.4, 5.0, 4.6, 4.2], first_bold=True)
+    [3.4, 5.0, 4.6, 4.2], first_bold=True, bold={3})
 
 P("")
 P("④健康とくらしの調査は、前回と同じ様式の指標について"
@@ -724,7 +758,7 @@ P("④健康とくらしの調査は、前回と同じ様式の指標につい�
 CAP("④健康とくらしの調査　前回調査との比較（計画素案 第2章第4節）")
 TBL([str(c) for c in ZENKAI_HYO[0]],
     [[str(c) for c in row] for row in ZENKAI_HYO[1:]],
-    [4.2, 1.8, 1.8, 2.2, 7.2], first_bold=True)
+    [4.2, 1.8, 1.8, 2.2, 7.2], first_bold=True, bold={2})
 
 P("")
 P("**①②③は内容の経年比較ができません。**"
@@ -792,7 +826,7 @@ TBL(["要介護度", "調査①（人）", "在宅の認定者の分布による
     [[DO[i], "%d" % CU_DO[i], "%.1f" % CU_EXP[i],
       "%.2f倍" % (CU_DO[i] / CU_EXP[i])] for i in range(7)]
     + [["計", "%d" % sum(CU_DO), "%.1f" % sum(CU_EXP), "―"]],
-    [3.0, 3.0, 6.0, 3.0], center={1, 2, 3}, first_bold=True)
+    [3.0, 3.0, 6.0, 3.0], center={1, 2, 3}, first_bold=True, bold={3})
 
 P("**重い方に偏り、軽い方が少ない**という形です。"
   "要介護3は在宅の認定者の割合から見込まれる%.1f人に対し%d人（%.1f倍）、"
@@ -856,7 +890,8 @@ TBL(["区分", "調査② 在籍（人）", "年報 受給（人／月）", "差
      "見方"],
     [[str(r[0]), str(r[1]), str(r[2]), str(r[3]), str(r[5])]
      for r in ZAISEKI],
-    [3.4, 2.2, 2.4, 2.2, 7.0], center={1, 2, 3}, first_bold=True)
+    [3.4, 2.2, 2.4, 2.2, 7.0], center={1, 2, 3}, first_bold=True,
+    bold={3})
 
 P("**介護老人保健施設だけが在籍が受給を上回ります。**"
   "他保険者の被保険者を受け入れているためです（新規205人・退去213人で"
@@ -892,7 +927,8 @@ TBL(["区分", "令和7年度（実績）", "令和11年度（見込み）", "�
         "%.1f％" % ((grp("施設サービス", "2029")
                      + grp("居住系サービス", "2029"))
                     / (int(KYOKYU[0][3]) + int(KYOKYU[1][3])) * 100)]],
-    [3.4, 3.2, 3.4, 2.4, 3.0], center={1, 2, 3, 4}, first_bold=True)
+    [3.4, 3.2, 3.4, 2.4, 3.0], center={1, 2, 3, 4}, first_bold=True,
+    bold={4})
 
 P("**合計では定員に収まる見込みですが、種別ごとに見ると様子が違います。**")
 BUL("**地域密着型介護老人福祉施設入所者生活介護は令和11年度に"
@@ -936,7 +972,7 @@ CAP("認定者の利用状況（令和7年度）　推計")
 TBL(["区分", "推計人数", "認定者に対する割合", "見方"],
     [[str(r[0]), "{:,}人".format(int(r[1])), str(r[2]), str(r[5])]
      for r in RIYO_JOKYO],
-    [3.6, 2.2, 3.0, 8.2], center={1, 2}, first_bold=True)
+    [3.6, 2.2, 3.0, 8.2], center={1, 2}, first_bold=True, bold={2})
 
 P("**推計では、認定を受けながらいずれのサービスも利用していない方が"
   "認定者の4分の1を占めます。**"
@@ -956,7 +992,7 @@ H2("2　調査で示されたことと、供給構造の側から見えること
 CAP("調査結果と供給構造の接続")
 TBL(["調査で示されたこと", "供給構造の側から見えること", "計画での扱い"],
     [[str(r[0]), str(r[2]), str(r[5])] for r in SETSUZOKU],
-    [5.0, 5.4, 6.8])
+    [5.0, 5.4, 6.8], bold={2})
 
 P("")
 P("**課題は、量の不足だけではなく、供給の偏りと担い手の把握範囲にあります。**"
@@ -973,7 +1009,8 @@ TBL(["課題", "所見", "根拠（数値）", "計画素案の反映先", "状�
     [[nm, "No.%s" % no, str(_shoken(no)[2]),
       str(_shoken(no)[3]).replace("\n", "・"), str(_shoken(no)[5])]
      for nm, no in KADAI],
-    [3.2, 1.2, 6.4, 3.6, 1.6], center={1, 4}, first_bold=True)
+    [3.2, 1.2, 6.4, 3.6, 1.6], center={1, 4}, first_bold=True,
+    bold={4})
 
 NOTE("所見・根拠・反映先・状態は集計分析報告書 12シートによります。"
      "課題の名は本報告で付けたものです。"
@@ -1004,7 +1041,7 @@ TBL(["状態", "件数", "内容"],
      ["決定待ち", "%d件" % SHOKEN_ST["決定待ち"],
       "点検事項No.1・No.2・No.13・No.25・No.31・No.32の取扱いが"
       "決まってから反映します（確認事項No.8）"]],
-    [2.2, 2.0, 11.0], center={0, 1}, first_bold=True)
+    [2.2, 2.0, 11.0], center={0, 1}, first_bold=True, bold={1})
 
 P("")
 P("**点検事項の取扱いの決定を要しない所見は、すべて計画素案へ反映しました。**"
@@ -1041,9 +1078,9 @@ TBL(["区分", "件数", "意味"],
        "決定待ち": "点検事項の取扱いの決定による",
        "決定済": "取扱いが決まっており記述しない"}.get(k, "―")]
      for k, v in sorted(RYUHO_KB.items(), key=lambda x: -x[1])],
-    [3.0, 2.2, 9.0], center={0, 1}, first_bold=True)
+    [3.0, 2.2, 9.0], center={0, 1}, first_bold=True, bold={1})
 
-H2("公表データにより解消した留保と、大きさを測定できた留保")
+H2("留保のうち、解消したものと大きさを数値で示せたもの")
 
 P("介護サービス情報公表システム・国勢調査・北海道の名簿・"
   "年報（令和7年度）の要介護度別の明細により、"
@@ -1059,7 +1096,7 @@ TBL(["状態", "件数", "内容"],
        "公表待ち": "公表を待つ",
        "決定待ち": "取扱いの決定を待つ"}.get(k, "―")]
      for k, v in sorted(HOKAN_ST.items(), key=lambda x: -x[1])],
-    [3.0, 2.2, 9.0], center={0, 1}, first_bold=True)
+    [3.0, 2.2, 9.0], center={0, 1}, first_bold=True, bold={1})
 
 P("**「測定済み」は令和8年9月に新たに設けた区分です。**"
   "留保そのものは残りますが、どちらへどれだけ偏っているかを"
@@ -1099,7 +1136,7 @@ TBL(["確認事項", "件名", "内容", "決着しない場合の扱い"],
       "個票はご指示により保管していない。"
       "集計・分析は完了しており、現時点で不足はない",
       "再提供は依頼しない。集計をやり直す必要が生じたときだけ依頼する"]],
-    [2.0, 3.4, 6.4, 5.0], first_bold=True)
+    [2.0, 3.4, 6.4, 5.0], first_bold=True, bold={3})
 
 # ============================================================ 第8節
 H1("第11節　成果品")
@@ -1128,10 +1165,8 @@ TBL(["成果品", "規模", "内容"],
       "令和8年9月の作業工程"],
      ["本報告書", "全11節",
       "令和8年9月の業務報告"]],
-    [5.2, 2.4, 8.2], first_bold=True)
+    [5.2, 2.4, 8.2], first_bold=True, bold={1})
 
-P("")
-P("本報告についてのお尋ねは、受託者までお願いします。", size=10)
 
 # ============================================================ 自己点検
 chk(1, "成果品の実物からシート数を読んでいること",
