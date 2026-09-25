@@ -246,6 +246,38 @@ def main():
         chk(18, '2-8 目標別の内訳と交付金の算定の一致', not bad,
             '・'.join(bad[:4]) if bad else f'8目標×5項目すべて一致')
 
+    # ── 19　6-3 の取得をめざす評価指標の表が61点で、対応先が実在すること ──
+    t63 = None
+    for sec in ch['第6章']['sections']:
+        if sec['no'] == '6-3':
+            for b in sec['blocks']:
+                if b['t'] == 'table' and b['head'][0] == '交付金・指標':
+                    t63 = b
+    if t63 is None:
+        chk(19, '6-3 取得をめざす評価指標の表', False, '表がない')
+    else:
+        rows, last = t63['rows'][:-1], t63['rows'][-1]
+        tot = sum(int(r[1].replace('点', '')) for r in rows)
+        # 「本計画での対応」に挙げた節・施策がすべて実在すること
+        nos = set()
+        for c in SC.CH:
+            for sec in c['sections']:
+                nos.add(sec['no'])
+        miss = sorted({x.strip() for r in rows for x in r[4].split('・')} - nos)
+        chk(19, '6-3 取得をめざす評価指標の表',
+            tot == 61 and last[1] == '61点' and not miss,
+            f'合計{tot}点／表記{last[1]}' + (f'・対応先が不明 {miss}' if miss else '')
+            if (tot != 61 or last[1] != '61点' or miss) else f'{len(rows)}項目・61点、対応先すべて実在')
+
+    # ── 20　交付金の11項目が第4章・第5章に書かれていること ────────────
+    md = t
+    key20 = [('4つの場面ごとの目指すべき姿', '施策4-3'), ('難聴高齢者の早期発見・早期介入（普及啓発）', '施策4-4'),
+             ('成年後見制度利用支援事業の実施要綱', '施策4-7'),
+             ('村外施設入居者の実態把握', '5-8')]
+    bad20 = [f'{k}（{w}）' for k, w in key20 if k not in md]
+    chk(20, '交付金で取得をめざす記述が本文にあること', not bad20,
+        '欠落: ' + '・'.join(bad20) if bad20 else f'{len(key20)}件すべて記載')
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
