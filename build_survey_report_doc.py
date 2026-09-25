@@ -773,7 +773,7 @@ P("")
 SUB("（５） 調査結果とサービス見込量の関係")
 P("サービス見込量は、要介護度別の認定者数に給付実績から求めた利用率と"
   "１人１月当たり給付費を乗じて算定します"
-  "（別冊「サービス見込量の算定　第１次概算」。令和8年9月16日）。"
+  "（別冊「サービス見込量の算定　第１次概算」）。"
   "本報告書の調査結果は、この算定の直接の入力値ではありません。")
 P("調査結果は、①施策の必要性の根拠、②見込量の上振れ・下振れを"
   "検討する際の材料、③代表KPIの基準値（第８章第２節（２））の3つに用います。"
@@ -895,7 +895,7 @@ P("介護保険事業状況報告（年報）令和7年度の"
   % (CHI, CHI_1P, CU_DO_EXP[4], CU_DO_OBS[4],
      CU_DO_OBS[4] / CU_DO_EXP[4],
      CU_DO_EXP[0], CU_DO_OBS[0], CU_DO_OBS[0] / CU_DO_EXP[0]))
-NOTE("別冊「調査結果と年報実績の突合クロス集計」（令和8年9月11日）に"
+NOTE("別冊「調査結果と年報実績の突合クロス集計」に"
      "要介護度別の実測値と期待値を掲げています。")
 P("")
 P("主な介護者の就労継続が困難になっているとされた方は41人（41.8%）です。"
@@ -2064,7 +2064,7 @@ GBAR("f_teiin_mikomi", "見込量と区域内定員の対照（令和11年度）
      [("令和11年度の見込み", [round(SHI_R11, 1), round(KYO_R11, 1)]),
       ("区域内定員", [CAP_TOKUYO + CAP_CHITOKU + CAP_ROKEN,
                     CAP_GH + CAP_TOKUTEI])], unit="人", ncol=2, ylabel="人")
-NOTE("見込みは別冊「サービス見込量の算定　第１次概算」（令和8年9月16日）"
+NOTE("見込みは別冊「サービス見込量の算定　第１次概算」"
      "によります。計画素案 第６章に反映済みの値と同じです。"
      "要介護度別の利用率と１人１月当たり給付費を"
      "令和7年度の値で固定した算定であり、前提は確定していません。"
@@ -2483,8 +2483,77 @@ P("")
 P("以上", align=WD_ALIGN_PARAGRAPH.RIGHT, space_after=0)
 
 
+# ================================================================ 自己点検
+# 発注者へ送付する成果品であり、数値の出所と体裁を機械で確かめる。
+import re as _re
+# 1件でも不適合があれば終了コード1で終わる。
+CHECKS = []
+
+
+def chk(no, naiyo, kekka, ok):
+    CHECKS.append((no, naiyo, kekka, "適合" if ok else "不適合"))
+
+
+_PARA = [x.text for x in doc.paragraphs] + [
+    c.text for t in doc.tables for r in t.rows for c in r.cells]
+# 半角の％と全角の％が混在するため、突合の前にそろえる。
+_PARA = [x.replace("%", "\uff05") for x in _PARA]
+_TXT = "".join(_PARA)
+
+chk(1, "利用者票の票数が原典と一致すること",
+    "%d票" % S.RIYO["件数"], ("%d票" % S.RIYO["件数"]) in _TXT)
+chk(2, "在宅生活の維持が困難な者の割合が設問別の有効回答によること",
+    "%d人÷%d票＝%.1f％" % (KP.H06_BUNSHI, KP.H06_YUKO, KP.H06),
+    ("%.1f％" % KP.H06) in _TXT
+    and ("%.1f％" % (KP.H06_BUNSHI / KP.RIYO_N * 100)) not in _TXT)
+chk(3, "H12の分母が当該設問の有効回答であること",
+    "%d票÷%d票＝%.1f％" % (KP.H12_BUNSHI, KP.H12_BUNBO, KP.H12),
+    ("%.1f％" % KP.H12) in _TXT and "20.4％" not in _TXT)
+# 代表KPI H12の割合に設問番号を添えない（番号が資料により食い違うため。
+# 確認事項No.158）。報告書自身の「問○」の見出しは調査票の構成であり別である。
+_h12_para = [x for x in _PARA if ("%.1f\uff05" % KP.H12) in x]
+_h12_mon = [x for x in _h12_para
+            if _re.search(r"\u554f\s*[0-9\uff10-\uff19]", x)]
+chk(4, "H12の割合を示す記述に設問番号を添えていないこと",
+    "該当段落 %d件のうち設問番号のあるもの %d件"
+    % (len(_h12_para), len(_h12_mon)),
+    bool(_h12_para) and not _h12_mon)
+chk(5, "Markdownの強調記号が残っていないこと",
+    "** の件数 %d" % _TXT.count("*" + "*"), ("*" + "*") not in _TXT)
+_NG_WORDS = ["に由来する", "と整合する", "1件も", "有意差がないため関係がない",
+             "全国トップ級"]
+_ng = [w for w in _NG_WORDS if w in _TXT]
+chk(6, "禁止表現が残っていないこと",
+    "残り %s" % ("なし" if not _ng else "・".join(_ng)), not _ng)
+_NAIBU_GO = ["固定値", "実物から", "章節ごとに", "判定している",
+             "読んで判定", "スクリプト", "runpy", ".py", "再実行",
+             "書き写して", "個票がなくても"]
+_naibu = [w for w in _NAIBU_GO if w in _TXT]
+chk(7, "受託者の内部の仕組み・作業経過の語が残っていないこと",
+    "残り %s" % ("なし" if not _naibu else "・".join(_naibu)), not _naibu)
+_PII = [(r"[\w.+-]+@[\w.-]+", "メールアドレス"),
+        (r"0[789]0-?\d{4}-?\d{4}", "携帯電話番号")]
+_pii = [nm for pat, nm in _PII if _re.search(pat, _TXT)]
+chk(8, "個人情報らしき値が残っていないこと",
+    "残り %s" % ("なし" if not _pii else "・".join(_pii)), not _pii)
+_split = [i + 1 for i, t in enumerate(doc.tables)
+          if len(t.rows) > 1
+          and t.rows[0]._tr.find(qn("w:trPr")) is None]
+chk(9, "すべての表に行の分割の制御が入っていること",
+    "制御のない表 %d件" % len(_split), not _split)
+chk(10, "特定施設の入居率を施設別に示していること",
+    "98.3％・97.0％を掲げ、合計は参考値",
+    "98.3％" in _TXT and "97.0％" in _TXT and "参考値" in _TXT)
+
 # OOXML の順序と w:zoom の必須属性を直す（CLAUDE.md §4）
 docx_fix.fix(doc)
 doc.save(OUT)
 print("saved:", OUT)
 print("段落 %d / 表 %d" % (len(doc.paragraphs), len(doc.tables)))
+_ngc = [c for c in CHECKS if c[3] != "適合"]
+print("自己点検 %d件：適合%d件・不適合%d件"
+      % (len(CHECKS), len(CHECKS) - len(_ngc), len(_ngc)))
+for c in _ngc:
+    print("  不適合 No.%s %s → %s" % (c[0], c[1], c[2]))
+if _ngc:
+    _sys.exit(1)
