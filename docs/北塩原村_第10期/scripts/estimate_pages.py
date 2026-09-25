@@ -93,6 +93,62 @@ K9 = [
 # 前付（build_soan_docx.js が生成するもの）
 FRONT = [("表紙", 1), ("本書の見方", 1), ("目次", 2)]
 
+
+# ══════ 第2回策定委員会 資料（build_shiryo_docx.js のレイアウト値） ══════
+# A4縦 11906×16838／余白 上下左右とも1134 → 本文 9638×14570 twip
+SH_W, SH_H = 11906 - 1134 * 2, 16838 - 1134 * 2
+SH_FIGDIR = "/home/user/repository/output/figures"
+
+
+def shiryo_block_h(b):
+    def para(text, pt=10.5, line=300, after=120):
+        n = max(1, math.ceil(len(text) / ((SH_W / 20) / pt)))
+        return n * line + after
+    t = b["t"]
+    if t == "p":
+        return para(b["v"])
+    if t == "h3":
+        return para(b["v"], after=100)
+    if t == "key":
+        return para(b["v"], line=300, after=160) + 200
+    if t == "note":
+        return para(b["v"], pt=9.5, line=280, after=160) + 100
+    if t == "bullets":
+        return sum(para(x, after=60) for x in b["v"])
+    if t == "fig":
+        w, hh = png_size(os.path.join(SH_FIGDIR, b["file"]))
+        return 160 + (b.get("width", 6.3) * hh / w) * 1440 + 60 + 18 * 20 + 40 + 200
+    if t == "table":
+        cols = len(b["head"])
+        wid = b.get("widths") or [100 / cols] * cols
+        tot = sum(wid)
+        h = 0
+        for row in [b["head"]] + [list(map(str, r)) for r in b["rows"]]:
+            lines = 1
+            for i, cell in enumerate(row):
+                cw = (wid[i] / tot) * (SH_W - 90 * 2 * cols) / 20 / 8.5
+                lines = max(lines, math.ceil(len(str(cell)) / max(1, cw)))
+            h += lines * 240 + 120
+        return h + 160
+    return 0
+
+
+def shiryo():
+    import shiryo_content as SH
+    rows = []
+    for c in SH.CH:
+        h = 300 + 30 * 20
+        nt = nf = 0
+        for sec in c["sections"]:
+            h += 320 + 24 * 20 + 180
+            for b in sec["blocks"]:
+                nt += b["t"] == "table"
+                nf += b["t"] == "fig"
+                h += shiryo_block_h(b)
+        rows.append((c["no"], c["title"], len(c["sections"]), nt, nf, h / SH_H))
+    return rows
+
+
 if __name__ == "__main__":
     rows, total, nt, nf = run()
     print("■ 第10期 計画素案の分量（build_soan_docx.js のレイアウト値から積算）\n")
@@ -150,3 +206,20 @@ if __name__ == "__main__":
     print("※ 設問数は第10期の80＋26＝106設問（doc25）。第9期も同程度とみなしている。")
     print("※ 採用案Bは調査票の再掲・単純集計表・自由記述全文を電子媒体に移し、"
           "浮いた頁を集計編に戻したもの（doc24§1-1）。")
+
+    print("\n\n■ 第2回策定委員会 資料\n")
+    sr = shiryo()
+    print(f"{'資料':6s} {'見出し':34s} {'節':>3s} {'表':>4s} {'図':>3s} {'推定頁':>7s}")
+    print("─" * 62)
+    for no, ti, ns, nt, nf, pg in sr:
+        print(f"{no:6s} {ti[:32]:34s} {ns:3d} {nt:4d} {nf:3d} {pg:7.1f}")
+    print("─" * 62)
+    body = sum(math.ceil(r[5]) for r in sr)
+    print(f"{'合計':6s} {'':34s} {sum(r[2] for r in sr):3d} {sum(r[3] for r in sr):4d} "
+          f"{sum(r[4] for r in sr):3d} {sum(r[5] for r in sr):7.1f}")
+    print(f"\n  資料単位で切り上げ　{body}頁")
+    print("  ＋ 資料1（次第・委員名簿）3頁／資料3（調査結果速報）12頁／資料8（スケジュール）2頁"
+          f" ＝ 全体 約{body + 17}頁")
+    print("\n  ※ この積算は下限値である。資料単位でしか切り上げておらず、節の途中で表が"
+          "入りきらずに次頁へ送られる余りを見ていない。表57点を抱えるため実際は"
+          "これより増える。doc26 の手計算（資料2〜7で48頁）との差はこの余りにあたる。")

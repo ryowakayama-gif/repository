@@ -278,6 +278,15 @@ def main():
     chk(20, '交付金で取得をめざす記述が本文にあること', not bad20,
         '欠落: ' + '・'.join(bad20) if bad20 else f'{len(key20)}件すべて記載')
 
+    # ── 21　3-4 の施策体系図が登録され、ファイルが実在すること ──────────
+    from figures_map import FIGS
+    f21 = [x for x in FIGS if x[0] == "第3章|3-4"]
+    fp = "/home/user/repository/output/figures/fig3-1_施策体系図.png"
+    chk(21, "3-4 施策体系図の登録とファイルの実在",
+        len(f21) == 1 and os.path.exists(fp),
+        "図表マップに未登録" if len(f21) != 1 else ("PNGがない（build_figure_taikei.py を実行）"
+                                              if not os.path.exists(fp) else "図3-1 を登録・実在"))
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')

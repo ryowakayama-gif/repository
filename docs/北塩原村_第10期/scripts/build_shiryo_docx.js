@@ -3,7 +3,31 @@ const fs = require('fs');
 const d = require('/tmp/node_modules/docx');
 const {Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBreak,
        Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, LevelFormat,
-       TableOfContents, Footer, PageNumber} = d;
+       TableOfContents, Footer, PageNumber, ImageRun} = d;
+const path = require('path');
+
+const FIGDIR = '/home/user/repository/output/figures';
+function pngSize(buf) {              // PNG IHDR: 幅=16..19 / 高さ=20..23（ビッグエンディアン）
+  return {w: buf.readUInt32BE(16), h: buf.readUInt32BE(20)};
+}
+function figure(b) {
+  const buf = fs.readFileSync(path.join(FIGDIR, b.file));
+  const dim = pngSize(buf);
+  const wIn = b.width || 6.3, hIn = wIn * dim.h / dim.w;
+  const out = [new Paragraph({
+    alignment: AlignmentType.CENTER, spacing: {before: 160, after: 60},
+    children: [new ImageRun({type: 'png', data: buf,
+               transformation: {width: Math.round(wIn * 96), height: Math.round(hIn * 96)}})],
+  }), new Paragraph({
+    alignment: AlignmentType.CENTER, spacing: {after: b.source ? 40 : 200},
+    children: [new TextRun({text: b.caption, font: FONTG, size: 18, bold: true, color: NAVY})],
+  })];
+  if (b.source) out.push(new Paragraph({
+    alignment: AlignmentType.CENTER, spacing: {after: 200},
+    children: [new TextRun({text: '出典：' + b.source, font: FONTG, size: 15, color: GREY})],
+  }));
+  return out;
+}
 
 const C = JSON.parse(fs.readFileSync('/tmp/shiryo.json', 'utf8'));
 const FONT = '游明朝', FONTG = '游ゴシック';
@@ -117,6 +141,7 @@ C.chapters.forEach((ch, ci) => {
         children: [new TextRun({text: '※ ' + b.v, font: FONTG, size: 18, color: GREY})],
       }));
       else if (b.t === 'table') { kids.push(table(b.head, b.rows, b.widths)); kids.push(p('', {after: 160})); }
+      else if (b.t === 'fig') { figure(b).forEach(x => kids.push(x)); }
     });
   });
 });
