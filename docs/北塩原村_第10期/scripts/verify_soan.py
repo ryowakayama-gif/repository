@@ -192,6 +192,30 @@ def main():
     # ── 16　据え置き項目の一覧があること ───────────────────
     chk(16, '5-12 据え置き項目と確定の条件の一覧', in_md(t, '現時点で据え置いた項目と確定の条件'))
 
+    # ── 17　3-5 施策体系の対応表が第4章の施策と一致すること ────────
+    import soan_content as SC
+    ch = {c["no"]: c for c in SC.CH}
+    sis = []
+    for sec in ch["第4章"]["sections"]:
+        if sec["no"].startswith("施策"):
+            ti = sec["title"]
+            sis.append((f'{sec["no"].replace("施策", "")} {ti.split("　【")[0]}',
+                        ti.split("【")[1].rstrip("】")))
+        elif sec["no"] == "4-5":
+            for b in sec["blocks"]:
+                if b["t"] == "table":
+                    sis += [(r[0], "新設") for r in b["rows"]]
+    t35 = [x for x in ch["第3章"]["sections"] if x["no"] == "3-5"]
+    if not t35:
+        chk(17, '3-5 施策体系の対応表と第4章の施策の一致', False, '3-5 がない')
+    else:
+        rows = t35[0]["blocks"][1]["rows"]
+        bad = [f'{a}≠{r[0]}' for (a, k), r in zip(sis, rows) if r[0] != a or r[1] != k]
+        chk(17, '3-5 施策体系の対応表と第4章の施策の一致',
+            len(rows) == len(sis) and not bad,
+            f'件数 {len(rows)}／{len(sis)}・' + '・'.join(bad[:3]) if (bad or len(rows) != len(sis))
+            else f'施策{len(sis)}本すべて一致')
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
