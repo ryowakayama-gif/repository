@@ -177,10 +177,13 @@ def FIG(path, caption, width=15.5, src=None):
     FIGNO[0] += 1
     p = doc.add_paragraph(); pf = p.paragraph_format
     pf.space_before = Pt(10); pf.space_after = Pt(2)
+    pf.keep_with_next = True          # キャプションと図を離さない
     _f(p.add_run('【図%d】%s' % (FIGNO[0], caption)), sz=11, b=True, color=C_H3)
     q = doc.add_paragraph(); q.alignment = WD_ALIGN_PARAGRAPH.CENTER
     q.paragraph_format.space_before = Pt(0)
     q.paragraph_format.space_after = Pt(2 if src else 8)
+    q.paragraph_format.keep_together = True
+    q.paragraph_format.keep_with_next = bool(src)   # 図と出典を離さない
     q.add_run().add_picture(path, width=Cm(width))
     if src:
         SRC(src)
