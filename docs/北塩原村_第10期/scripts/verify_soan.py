@@ -216,6 +216,36 @@ def main():
             f'件数 {len(rows)}／{len(sis)}・' + '・'.join(bad[:3]) if (bad or len(rows) != len(sis))
             else f'施策{len(sis)}本すべて一致')
 
+    # ── 18　2-8 目標別の内訳が交付金の集計表の算定と一致すること ──────
+    import csv as _csv
+    f18 = '/home/user/repository/docs/北塩原村_第10期/data/交付金_目標別の県内比較_令和8年度.csv'
+    if not os.path.exists(f18):
+        chk(18, '2-8 目標別の内訳と交付金の算定の一致', False, 'CSVがない（parse_kofukin_shichoson.py を実行）')
+    else:
+        D = {r['区分']: r for r in _csv.DictReader(open(f18, encoding='utf-8-sig'))}
+        t28 = None
+        for sec in ch['第2章']['sections']:
+            if sec['no'] == '2-8':
+                for b in sec['blocks']:
+                    if b['t'] == 'table' and b['head'] == ['交付金・目標', '本村', '県平均', '県内順位', '全国平均', '全国順位']:
+                        t28 = b
+        bad = []
+        if t28 is None:
+            bad.append('2-8の目標別表がない')
+        else:
+            for row in t28['rows']:
+                kf = ('推進' if row[0].startswith('推進') else '支援') + row[0].split('目標')[1][0]
+                d = D.get(kf)
+                if not d:
+                    bad.append(f'{kf}が算定にない'); continue
+                for i, k in ((1, '本村'), (2, '県平均'), (3, '県内順位'), (4, '全国平均'), (5, '全国順位')):
+                    got = row[i].replace('点', '').replace('位', '').replace(',', '')
+                    exp = str(d[k])
+                    if float(got) != float(exp):
+                        bad.append(f'{kf} {k} 素案{row[i]}≠算定{d[k]}')
+        chk(18, '2-8 目標別の内訳と交付金の算定の一致', not bad,
+            '・'.join(bad[:4]) if bad else f'8目標×5項目すべて一致')
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
