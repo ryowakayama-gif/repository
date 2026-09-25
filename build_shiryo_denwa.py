@@ -42,6 +42,7 @@
   output/第10期計画_見込量算定に要する資料と電話照会の進め方.docx
 """
 
+import docx_fix
 import ast
 import io
 import os
@@ -851,12 +852,10 @@ NOTE("本書の数値は、給付費データ集計の集計値、"
      "固定値で書き写していないため、"
      "算定を改めれば本書の数値も追随します。")
 
-# 既定のテンプレートの w:zoom は必須属性 w:percent を欠くため補う。
-_zoom = doc.settings.element.find(qn("w:zoom"))
-if _zoom is not None and _zoom.get(qn("w:percent")) is None:
-    _zoom.set(qn("w:percent"), "100")
 
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
+# OOXML の順序と w:zoom の必須属性を直す（CLAUDE.md §4）
+docx_fix.fix(doc)
 doc.save(OUT)
 
 _ng = [c for c in CHECKS if not c[3]]

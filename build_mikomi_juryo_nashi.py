@@ -38,6 +38,7 @@
   output/第10期計画_資料を受領できない場合のサービス見込量.docx
 """
 
+import docx_fix
 import os
 import runpy
 import sys
@@ -635,7 +636,7 @@ TBL(["サービス", "区域内定員", "令和7年度実績", "令和11年度�
      "定員に対する割合", "定員の出所"],
     _ti, [7.0, 2.6, 3.0, 3.2, 3.0, 7.4],
     right={1, 2, 3, 4}, first_bold=True)
-NOTE("地域密着型介護老人福祉施設は令和11年度に定員の99.9％に達します。"
+NOTE("地域密着型介護老人福祉施設は令和11年度に定員の99.9％に達する見込みです。"
      "認知症対応型共同生活介護の定員は99人に［要確認］を併記しています"
      "（東川町の1事業所が介護サービス情報公表システムに掲載されておらず"
      "定員を確認できないため。確認事項No.88）。"
@@ -784,11 +785,10 @@ NOTE("本書の数値は「サービス見込量の算定 第1次概算」から
      "固定値で書き写していません。算定を改めれば本書も追随します。"
      "同算定の自己点検は22件で、1件でも不適合があると算定が止まります。")
 
-_zoom = doc.settings.element.find(qn("w:zoom"))
-if _zoom is not None and _zoom.get(qn("w:percent")) is None:
-    _zoom.set(qn("w:percent"), "100")
 
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
+# OOXML の順序と w:zoom の必須属性を直す（CLAUDE.md §4）
+docx_fix.fix(doc)
 doc.save(OUT)
 
 _ng = [c for c in CHECKS if not c[3]]

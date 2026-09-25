@@ -6,6 +6,7 @@
 令和8年8月中の作業内容、成果物、進捗、未了の理由を報告する。
 """
 
+import docx_fix
 from docx import Document
 import repo_paths as RP
 import sys
@@ -647,6 +648,7 @@ P("令和8年8月末を「全資料の受領日」ではなく、"
   "運用させていただきたいと考えております。"
   "これにより、資料の到着を待って全体が停止することを避けられます。", bold=True)
 
+docx_fix.fix(doc)          # OOXML の順序と w:zoom を直す
 doc.save(OUT)
 print("saved:", OUT)
 print("段落 %d / 表 %d" % (len(doc.paragraphs), len(doc.tables)))

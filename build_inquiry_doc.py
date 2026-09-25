@@ -5,6 +5,7 @@
 発注者への確認依頼として整理したもの。
 """
 
+import docx_fix
 from docx import Document
 from docx.shared import Pt, Cm
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -765,5 +766,6 @@ P("なお、図表のレイアウト・体裁につきましては、"
   "第9期計画の体裁を維持する方針でご確認をお願いしております。"
   "ご確認の結果をいただき次第、全図表へ反映いたします。", space_after=8)
 
+docx_fix.fix(doc)          # OOXML の順序と w:zoom を直す
 doc.save(RP.ROOT + "/output/第10期計画_確認依頼書.docx")
 print("saved")

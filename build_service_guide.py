@@ -30,6 +30,7 @@
   output/第10期計画_介護高齢者福祉サービスガイド_構成案.docx
 """
 
+import docx_fix
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -814,6 +815,7 @@ TBL(["区分", "担うこと", "窓口"],
 HENSHU("地域包括支援センターの設置形態（直営・委託、設置箇所）を"
        "3町へ照会して記載します。")
 
+docx_fix.fix(doc)          # OOXML の順序と w:zoom を直す
 doc.save(OUT)
 print("saved:", OUT)
 print("段落 %d / 表 %d" % (len(doc.paragraphs), len(doc.tables)))

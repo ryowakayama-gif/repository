@@ -37,6 +37,7 @@
   output/第10期計画_ケアプラン点検実施要領（案）.docx
 """
 
+import docx_fix
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -1020,12 +1021,9 @@ NOTE("本要領に記載した交付金の評価結果・全国該当率は、"
      "給付実績は大雪地区広域連合の給付費データ集計の集計値による。"
      "個人が特定される情報は収録していない。")
 
-# 既定のテンプレートの w:zoom は必須属性 w:percent を欠いており、
-# スキーマ検証の誤りとなるため補う。
-_zoom = doc.settings.element.find(qn("w:zoom"))
-if _zoom is not None and _zoom.get(qn("w:percent")) is None:
-    _zoom.set(qn("w:percent"), "100")
 
+# OOXML の順序と w:zoom の必須属性を直す（CLAUDE.md §4）
+docx_fix.fix(doc)
 doc.save(OUT)
 print("saved:", OUT)
 print("段落 %d / 表 %d" % (len(doc.paragraphs), len(doc.tables)))

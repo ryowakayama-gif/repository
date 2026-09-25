@@ -14,6 +14,7 @@ KPIの枠組み・算定の枠組みを抽出し、確定した数値の裏づ�
 体裁（フォント・見出し・表・単位／資料の右寄せ1行）は素案と同じとする。
 """
 
+import docx_fix
 import os
 
 from docx import Document
@@ -796,6 +797,7 @@ NOTE("時期・作業は仕様書5の業務スケジュールによります。"
 
 # ================================================================== 保存
 OUT = RP.ROOT + "/output/第10期介護保険事業計画_骨子案.docx"
+docx_fix.fix(doc)          # OOXML の順序と w:zoom を直す
 doc.save(OUT)
 print("saved:", OUT)
 print("段落 %d / 表 %d" % (len(doc.paragraphs), len(doc.tables)))

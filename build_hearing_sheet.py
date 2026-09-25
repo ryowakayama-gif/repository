@@ -10,6 +10,7 @@
   決まらない場合の影響／出所
 """
 
+import docx_fix
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -728,6 +729,7 @@ P("※ 本シートの16項目は、別冊「必要事項の一覧」に登録�
 P("※ ご記入いただいた内容は、業務工程管理表03シート（確認事項一覧）及び"
   "必要事項の一覧に反映し、以後の進捗管理に用います。", size=9, space_after=0)
 
+docx_fix.fix(doc)          # OOXML の順序と w:zoom を直す
 doc.save(OUT)
 print("saved:", OUT)
 print("項目 %d件 / 段落 %d / 表 %d"

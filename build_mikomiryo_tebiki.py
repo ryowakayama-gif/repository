@@ -33,6 +33,7 @@
 値は成果品と一致することを末尾で点検し、一致しないと終了コード1で終わる。
 """
 
+import docx_fix
 import io
 import os
 import runpy
@@ -995,6 +996,7 @@ if _zoom is not None and _zoom.get(qn("w:percent")) is None:
     _zoom.set(qn("w:percent"), "100")
 
 os.makedirs(ODIR, exist_ok=True)
+docx_fix.fix(doc)          # 順序と w:zoom の点検を兼ねる
 doc.save(OUT)
 
 # ---------------------------------------------------------------- 点検

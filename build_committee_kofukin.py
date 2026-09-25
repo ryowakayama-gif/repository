@@ -24,6 +24,7 @@
   output/第10期計画_策定委員会資料_交付金評価結果.docx
 """
 
+import docx_fix
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -566,12 +567,8 @@ NOTE("交付金の評価結果は計画本文には掲載していません。"
      "計画本文には、毎年度本委員会へ報告し検証する手順のみを"
      "第1章第6節に定めています。")
 
-# 既定のテンプレートの w:zoom は必須属性 w:percent を欠くため補う
-# （CLAUDE.md §4。従前は validate.py に不適合であった）。
-_zoom = doc.settings.element.find(qn("w:zoom"))
-if _zoom is not None and _zoom.get(qn("w:percent")) is None:
-    _zoom.set(qn("w:percent"), "100")
 
+docx_fix.fix(doc)          # OOXML の順序と w:zoom を直す
 doc.save(OUT)
 print("saved:", OUT)
 print("段落 %d / 表 %d" % (len(doc.paragraphs), len(doc.tables)))

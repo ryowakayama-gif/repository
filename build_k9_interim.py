@@ -13,6 +13,7 @@
 ものである。
 """
 
+import docx_fix
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -892,6 +893,7 @@ TBL(["成果品", "内容", "本報告との関係"],
       "本報告の内容を計画本文に反映したもの"]],
     [5.0, 7.2, 5.0], first_bold=True)
 
+docx_fix.fix(doc)          # OOXML の順序と w:zoom を直す
 doc.save(OUT)
 print("saved:", OUT)
 print("段落 %d / 表 %d" % (len(doc.paragraphs), len(doc.tables)))

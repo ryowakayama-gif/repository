@@ -26,6 +26,7 @@
   output/第10期計画_チェック依頼_確認箇所と手順.docx
 """
 
+import docx_fix
 import ast
 import glob
 import io
@@ -965,14 +966,10 @@ P("")
 P("本書についてのお尋ねは、受託者までお願いします。", size=10)
 
 
-# ============================================================ 出力
-# 既定のテンプレートの w:zoom は必須属性 w:percent を欠くため補う
-# （CLAUDE.md §4）。
-_zoom = doc.settings.element.find(qn("w:zoom"))
-if _zoom is not None and _zoom.get(qn("w:percent")) is None:
-    _zoom.set(qn("w:percent"), "100")
 
 os.makedirs(RP.OUTPUT, exist_ok=True)
+# OOXML の順序と w:zoom の必須属性を直す（CLAUDE.md §4）
+docx_fix.fix(doc)
 doc.save(OUT)
 
 _ng = [c for c in CHECKS if c[3] != "適合"]

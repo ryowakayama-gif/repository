@@ -23,6 +23,7 @@
   output/第10期計画_3町ヒアリング資料.docx
 """
 
+import docx_fix
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -764,6 +765,7 @@ P("")
 P("以上です。ご不明な点は、ヒアリングの場又はメールにて"
   "お知らせください。", size=10)
 
+docx_fix.fix(doc)          # OOXML の順序と w:zoom を直す
 doc.save(OUT)
 print("saved:", OUT)
 print("段落 %d / 表 %d" % (len(doc.paragraphs), len(doc.tables)))

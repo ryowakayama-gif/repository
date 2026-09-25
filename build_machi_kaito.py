@@ -28,6 +28,7 @@
   output/第10期計画_構成町の意見への回答と工程の前倒し案.docx
 """
 
+import docx_fix
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -736,6 +737,7 @@ NOTE("本書に示した数値は、令和8年9月9日時点の算定による�
 NOTE("東川町のご回答が得られた段階で、本書の第6節と"
      "工程表の10月の欄を更新します。")
 
+docx_fix.fix(doc)          # OOXML の順序と w:zoom を直す
 doc.save(OUT)
 print("saved:", OUT)
 print("段落 %d / 表 %d" % (len(doc.paragraphs), len(doc.tables)))

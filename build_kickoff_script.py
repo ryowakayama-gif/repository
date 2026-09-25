@@ -24,6 +24,7 @@
 議論の分岐は別冊「キックオフ会議 ファシリテーションの分岐」による。
 """
 
+import docx_fix
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -594,6 +595,7 @@ NOTE("上記の仮置きは、ご確認の結果によって変わります。"
 
 OUT = (RP.ROOT + "/output/"
        "第10期計画_キックオフ会議_トークスクリプト_60分.docx")
+docx_fix.fix(doc)          # OOXML の順序と w:zoom を直す
 doc.save(OUT)
 print("saved:", OUT)
 print("段落 %d / 表 %d" % (len(doc.paragraphs), len(doc.tables)))

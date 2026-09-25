@@ -26,6 +26,7 @@
   移行2   表9 確認したい事項、表14 レビューの基本ルール → ヒアリングシート
 """
 
+import docx_fix
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -785,6 +786,7 @@ BUL("キックオフ資料を第6稿から更新し、"
 P("")
 P("以上", align=WD_ALIGN_PARAGRAPH.RIGHT, space_after=0)
 
+docx_fix.fix(doc)          # OOXML の順序と w:zoom を直す
 doc.save(OUT)
 print("saved:", OUT)
 print("段落 %d / 表 %d" % (len(doc.paragraphs), len(doc.tables)))
