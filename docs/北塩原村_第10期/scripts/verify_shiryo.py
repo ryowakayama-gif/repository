@@ -293,6 +293,58 @@ chk(16, "doc26 §18-5 の節数・表数が資料と一致", not bad16 and not m
     ("・".join(bad16[:3]) + ("／一覧にない " + str(miss16) if miss16 else ""))
     if (bad16 or miss16) else f"全8資料と合計（{real['合計'][0]}節・{real['合計'][1]}表）が一致")
 
+# 17 資料5-2 の認定者数の系列が計画素案 5-3 と一致すること
+#    他案件（金ケ崎町）で「同じ指標の推計が資料ごとに別系列だった」ことに倣う。
+S52 = [sc for sc in {c["no"]: c for c in SH.CH}["資料5"]["sections"] if sc["no"] == "5-2"][0]
+t_sh = [b for b in S52["blocks"] if b["t"] == "table"
+        and b["rows"] and b["rows"][0][0] == "第1号被保険者数"]
+S53 = [sc for sc in {c["no"]: c for c in SO.CH}["第5章"]["sections"] if sc["no"] == "5-3"][0]
+t_so = [b for b in S53["blocks"] if b["t"] == "table" and b["head"][0] == ""
+        and any(r[0].startswith("令和9") for r in b["rows"])]
+LV = ["要支援1", "要支援2", "要介護1", "要介護2", "要介護3", "要介護4", "要介護5"]
+bad17 = []
+if not t_sh or not t_so:
+    bad17.append("資料5-2または素案5-3の表がない")
+else:
+    sh, so = t_sh[0], t_so[0]
+    soan = {r[0].replace("（実績）", ""): r for r in so["rows"]}
+    for j, y in enumerate(sh["head"][1:], start=1):
+        key = y.replace("（実績）", "")
+        if key not in soan:
+            continue
+        for lv in LV:
+            row = [r for r in sh["rows"] if r[0] == lv]
+            if not row:
+                bad17.append(f"資料に{lv}の行がない"); continue
+            a = str(row[0][j])
+            b = str(soan[key][LV.index(lv) + 1])
+            if a != b:
+                bad17.append(f"{key} {lv} 資料{a}≠素案{b}")
+        kei = [r for r in sh["rows"] if r[0] == "認定者計"]
+        if kei and str(kei[0][j]).replace("人", "") != str(soan[key][8]):
+            bad17.append(f'{key} 計 資料{kei[0][j]}≠素案{soan[key][8]}')
+        nri = [r for r in sh["rows"] if r[0] == "認定率"]
+        if nri and str(nri[0][j]) != str(soan[key][9]):
+            bad17.append(f"{key} 認定率 資料{nri[0][j]}≠素案{soan[key][9]}")
+chk(17, "資料5-2 の認定者数が計画素案 5-3 と一致", not bad17,
+    "・".join(bad17[:3]) if bad17 else "令和8〜11年の要介護度別・計・認定率が一致")
+
+# 18 委員会資料の本文に受託者の内部の仕組みの語がないこと
+NAIGO = ["scripts/", ".py", "verify_", ".csv", "doc2", "doc4", "doc1", "Python"]
+hit18 = []
+for c in SH.CH:
+    for sc in c["sections"]:
+        for b in sc["blocks"]:
+            for v in ([str(b.get("v", ""))]
+                      + [str(x) for r in b.get("rows", []) for x in r]
+                      + [str(x) for x in b.get("head", [])]
+                      + [str(b.get("caption", "")), str(b.get("source", ""))]):
+                for g in NAIGO:
+                    if g in v:
+                        hit18.append(f'{c["no"]}{sc["no"]}:{g}')
+chk(18, "委員会資料の本文に内部の仕組みの語がないこと", not hit18,
+    "・".join(sorted(set(hit18))[:4]) if hit18 else f"{len(NAIGO)}語のいずれも本文にない")
+
 w = max(len(n) for _, n, _, _ in R)
 print("■ 第2回策定委員会 資料の自己点検")
 ng = 0

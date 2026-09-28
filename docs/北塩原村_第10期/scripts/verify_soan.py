@@ -342,6 +342,118 @@ def main():
     chk(24, '第1号被保険者数の3つの出所に時点の断りがあること', not bad24,
         '断りがない: ' + '・'.join(bad24) if bad24 else '4件とも時点を明記')
 
+    # ── 25　2-3 の認定者数（各年3月末）が見える化の実データと一致すること ──
+    #    他案件（金ケ崎町）で「推計の系列が3通りあった」ことに倣い、
+    #    素案に載せた実績は必ず原典の系列から引く。
+    MI = os.path.join(DATA, 'mieruka_tidy.csv')
+    b3 = {}
+    if os.path.exists(MI):
+        for r in csv.DictReader(open(MI, encoding='utf-8-sig')):
+            if (r['code'] == 'B3-a' and r['indicator'] == '合計認定者数'
+                    and r['region'] == '北塩原村'):
+                b3[r['period'].replace('時点', '')] = int(float(r['value']))
+    t23 = None
+    for sec in SC.CH[1]['sections']:
+        if sec['no'] == '2-3':
+            for b in sec['blocks']:
+                if b['t'] == 'table' and b['head'][0] == '時点' and '合計' in b['head']:
+                    t23 = b
+    bad25 = []
+    if not b3 or t23 is None:
+        bad25.append('原典または2-3の表がない')
+    else:
+        for r in t23['rows']:
+            k, v = r[0], int(r[-1])
+            if k not in b3:
+                bad25.append(f'{k}が原典にない')
+            elif b3[k] != v:
+                bad25.append(f'{k} 素案{v}≠原典{b3[k]}')
+    chk(25, '2-3 の認定者数が見える化 B3-a と一致すること', not bad25,
+        '・'.join(bad25[:3]) if bad25 else f'{len(t23["rows"]) if t23 else 0}時点すべて一致')
+
+    # ── 26　5-3 の要介護度別認定者数が再計算と一致し、計が四捨五入前の和であること ──
+    S53 = {sec['no']: sec for sec in SC.CH[4]['sections']}['5-3']
+    tr = [b for b in S53['blocks'] if b['t'] == 'table' and b['head'][0] == '']
+    trate = None
+    for sec in SC.CH[4]['sections']:
+        for b in sec['blocks']:
+            if (b['t'] == 'table' and b['head'][:3] == ['区分', '前期高齢者', '後期高齢者']
+                    and any(r[0] == '要支援1' for r in b['rows'])):
+                trate = b
+    import shihyo_dict as SD2
+    BAN = SD2.HIHOKENSHA_BAN
+    LV = ['要支援1', '要支援2', '要介護1', '要介護2', '要介護3', '要介護4', '要介護5']
+    bad26 = []
+    if not tr or trate is None:
+        bad26.append('5-3の表または認定率の表がない')
+    else:
+        rate = {r[0]: (num(r[1]) / 100, num(r[2]) / 100) for r in trate['rows'] if r[0] in LV}
+        tb = tr[0]
+        for yi, y in enumerate(tb['head'][1:], start=1):
+            if y not in BAN:
+                continue
+            zen, kou, _tot = BAN[y]
+            raw = {lv: zen * rate[lv][0] + kou * rate[lv][1] for lv in LV}
+            row = [r for r in tb['rows'] if r[0] == y]
+            if not row:
+                continue
+            got = row[0]
+            for i, lv in enumerate(LV, start=1):
+                if int(got[i]) != round(raw[lv]):
+                    bad26.append(f'{y} {lv} 素案{got[i]}≠再計算{round(raw[lv])}')
+            if int(got[8]) != round(sum(raw.values())):
+                bad26.append(f'{y} 計 素案{got[8]}≠四捨五入前の和{round(sum(raw.values()))}')
+    ok26 = not bad26 and in_md(t, '四捨五入する前に合計')
+    chk(26, '5-3 の認定者数が認定率×人口の再計算と一致すること', ok26,
+        '・'.join(bad26[:3]) if bad26 else '令和9〜22年の要介護度別と計が再計算と一致（端数の断りあり）')
+
+    # ── 27　5-4 の（参考）認定者数が各年度末の値で、年率が再計算と一致すること ──
+    t27 = None
+    for sec in SC.CH[4]['sections']:
+        for b in sec['blocks']:
+            if b['t'] == 'table' and b['head'][:2] == ['サービス', '令和2年度']:
+                t27 = b
+    bad27 = []
+    if t27 is None or not b3:
+        bad27.append('5-4の表または原典がない')
+    else:
+        row = [r for r in t27['rows'] if '認定者数' in r[0]]
+        if not row:
+            bad27.append('（参考）認定者数の行がない')
+        else:
+            a, b_ = int(row[0][1]), int(row[0][2])
+            gs = str(row[0][3]).replace('＋', '').replace('%', '')
+            g = float(gs)
+            # 令和2年度末＝令和3年3月末、令和7年度末＝令和8年3月末
+            wa, wb = b3.get('令和3年3月末'), b3.get('令和8年3月末')
+            if (a, b_) != (wa, wb):
+                bad27.append(f'素案{a}／{b_} ≠ 年度末{wa}／{wb}')
+            else:
+                r5 = ((b_ / a) ** (1 / 5) - 1) * 100
+                if abs(r5 - g) > 0.01:
+                    bad27.append(f'年率 素案{g}%≠再計算{r5:.2f}%')
+                if f'＋{gs}%' not in t:
+                    bad27.append('本文の年率が表と一致しない')
+    chk(27, '5-4 の認定者数の伸びが年度末の系列と一致すること', not bad27,
+        '・'.join(bad27[:3]) if bad27 else '令和2年度末186人→令和7年度末214人・年率＋2.84%')
+
+    # ── 28　成果品の本文に受託者の内部の仕組みの語がないこと ─────────
+    #    他案件（大雪地区広域連合）で発注者に提供する文章から内部の仕組み・
+    #    作業経過の語を落とす是正があったことに倣う。
+    NAIGO = ['scripts/', '.py', 'verify_', '.csv', 'Python', 'GitHub', 'コミット']
+    hit28 = []
+    for c in SC.CH:
+        for sec in c['sections']:
+            for b in sec['blocks']:
+                for v in ([str(b.get('v', ''))] +
+                          [str(x) for r in b.get('rows', []) for x in r] +
+                          [str(x) for x in b.get('head', [])]):
+                    for g in NAIGO:
+                        if g in v:
+                            hit28.append(f'{sec["no"]}:{g}')
+    chk(28, '素案の本文に内部の仕組みの語がないこと', not hit28,
+        '・'.join(sorted(set(hit28))[:4]) if hit28 else f'{len(NAIGO)}語のいずれも本文にない')
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
