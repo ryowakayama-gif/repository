@@ -33,6 +33,8 @@ ITEMS = [
  # 算定に用いた計算表
  ('02_calculation/adopted_calc.xlsx', '09_interim_report/onagawa_adopted_calc.xlsx',
   '★採用計算表。中間報告書の数値はこの1冊から再現できる（07_本文照合表で対応を確認）'),
+ ('02_calculation/scenario_calc.xlsx', '09_interim_report/onagawa_scenario_calc.xlsx',
+  '★試算条件切替計算表。01_設定の黄色いセルを変えると改定率まで再計算される'),
  ('02_calculation/construction_cost_survey_R8toR17.xlsx',
   '06_capital_plan_update/construction_cost_survey_R8toR17.xlsx',
   '建設改良費調査票（女川町回答）'),
@@ -122,6 +124,10 @@ HEAD = """# ファイル名対応表
 中間報告書の数値を再現できるのは **`02_calculation/adopted_calc.xlsx`（採用計算表）** だけです。
 同表の `07_本文照合表` に、報告書の各数値と計算表の対応を載せています。
 
+前提を変えて改定率を確かめたいときは **`02_calculation/scenario_calc.xlsx`（試算条件切替計算表）**
+をお使いください。`01_設定` の黄色いセルを変えると、総括原価から必要改定率、
+利用者の月額までが自動で計算し直されます。Excelで開いてご利用ください。
+
 `09_old_do_not_use/` のファイルは、中間報告書より前の前提で作成した旧版です。
 数値が報告書と一致しないため、**計算根拠として使用しないでください**。
 経緯を追えるように同梱していますが、町への説明や条例化の根拠には用いません。
@@ -137,7 +143,7 @@ FOOT = """
 | フォルダ | 内容 | 使い方 |
 |---|---|---|
 | `01_report/` | 中間報告書・指摘事項対応表・工程表・WBS | 本体 |
-| `02_calculation/` | 採用計算表と作成用ファイル、建設改良費調査票 | **数値の根拠はここ** |
+| `02_calculation/` | 採用計算表・試算条件切替計算表・建設改良費調査票 | **数値の根拠はここ** |
 | `03_billing_analysis/` | 調定データの集計（前提の影響を受けない実績の整理） | 参考 |
 | `04_reference/` | 県内料金体系統一化の検討資料 | 参考 |
 | `05_source/` | 算定の根拠とした受領資料 | 原票 |

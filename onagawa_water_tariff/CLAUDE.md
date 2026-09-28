@@ -63,6 +63,12 @@ B14 の値と整合しているか必ず確認する（現に 02シートの注�
 `09_interim_report/onagawa_adopted_calc.xlsx`（採用計算表）が本文の根拠。
 `build/make_calc.py` で再生成でき、`07_本文照合表` が本文18項目との一致を検算する。
 数値を変えたら必ずこの照合が通ることを確認する。
+
+前提を変えて改定率を確かめるのは `09_interim_report/onagawa_scenario_calc.xlsx`
+（試算条件切替計算表・`build/make_scenario.py`）。こちらは Excel の数式で組んであるので、
+`01_設定` の黄色いセルを変えると全体が再計算される。
+数式を直したら `pip install formulas` で数式を評価して検算すること
+（LibreOffice はこの環境で動かない）。
 `02_deliverables/` の旧Excelは前提が古く一致しない。計算根拠として配らない
 （受け渡し用zipでは `09_old_do_not_use/` に分離している）。
 
