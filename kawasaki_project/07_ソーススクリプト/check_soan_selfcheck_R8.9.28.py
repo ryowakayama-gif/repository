@@ -168,6 +168,25 @@ def main(path):
     else:
         ok += 1
 
+    # ══════════ 検査4　柱別の事業数の内訳が、素案の掲げる合計と一致するか
+    #   第4章の表42は柱ごとに「（n節m項k事業）」を記している。
+    #   k の合計が、冒頭・第4章本文が掲げる総事業数と一致しなければならない。
+    uchiwake = [int(m.group(3)) for m in
+                re.finditer(r"（(\d+)節(\d+)項(\d+)事業）", body)]
+    # 項のみの柱（柱7）は「（9項9事業）」の形なので別に拾う
+    uchiwake += [int(m.group(2)) for m in
+                 re.finditer(r"（(\d+)項(\d+)事業）", body)]
+    goukei = {int(m.group(3)) for m in
+              re.finditer(r"全7章(\d+)節(\d+)項(\d+)事業", body)}
+    if uchiwake and goukei:
+        if len(goukei) > 1:
+            ng.append(f"検査4　総事業数に2つ以上の値がある: {sorted(goukei)}")
+        elif sum(uchiwake) != list(goukei)[0]:
+            ng.append(f"検査4　柱別の事業数の合計 {sum(uchiwake)} が"
+                      f"、掲げている総事業数 {list(goukei)[0]} と一致しない")
+        else:
+            ok += 1
+
     print(f"自己点検 {path}")
     print(f"  適合 {ok}件／不適合 {len(ng)}件")
     for m in ng:
