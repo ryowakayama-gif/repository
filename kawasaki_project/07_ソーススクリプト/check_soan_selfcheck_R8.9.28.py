@@ -23,6 +23,8 @@ import openpyxl
 
 XLSX = ("09_元資料/交付金評価/③令和８年度交付金評価指標等（市町村分・公表版）/"
         "001732614_令和８年度全国集計（市町村）.xlsx")
+TAIKEI = ("05_試算・管理シート/"
+          "川崎町_第10期_施策事業統合体系表_R8.9.25b.xlsx")
 KAWASAKI = 280          # 全国一覧表の通し番号
 COL = {"推進Ⅰ": 56, "推進Ⅱ": 78, "推進Ⅲ": 107, "推進Ⅳ": 140, "推進計": 141,
        "支援Ⅰ": 237, "支援Ⅱ": 266, "支援Ⅲ": 300, "支援Ⅳ": 333, "支援計": 334,
@@ -171,11 +173,18 @@ def main(path):
     # ══════════ 検査4　柱別の事業数の内訳が、素案の掲げる合計と一致するか
     #   第4章の表42は柱ごとに「（n節m項k事業）」を記している。
     #   k の合計が、冒頭・第4章本文が掲げる総事業数と一致しなければならない。
+    # 柱の一覧表（見出しが「柱／内容」）の中だけを見る。
+    # 第5章・第6章の節の見出しにも「（3項9事業）」の形が現れるため、
+    # 本文全体を対象にすると二重に数えてしまう。
+    hashira = ""
+    for t in doc.tables:
+        h = [c.text.strip() for c in t.rows[0].cells]
+        if h[:2] == ["柱", "内容"]:
+            hashira = "\n".join(c.text for r in t.rows for c in r.cells)
     uchiwake = [int(m.group(3)) for m in
-                re.finditer(r"（(\d+)節(\d+)項(\d+)事業）", body)]
-    # 項のみの柱（柱7）は「（9項9事業）」の形なので別に拾う
+                re.finditer(r"（(\d+)節(\d+)項(\d+)事業）", hashira)]
     uchiwake += [int(m.group(2)) for m in
-                 re.finditer(r"（(\d+)項(\d+)事業）", body)]
+                 re.finditer(r"（(\d+)項(\d+)事業）", hashira)]
     goukei = {int(m.group(3)) for m in
               re.finditer(r"全7章(\d+)節(\d+)項(\d+)事業", body)}
     if uchiwake and goukei:
@@ -186,6 +195,51 @@ def main(path):
                       f"、掲げている総事業数 {list(goukei)[0]} と一致しない")
         else:
             ok += 1
+    elif goukei and not hashira:
+        ng.append("検査4　柱の一覧表（柱／内容）が見つからない")
+
+    # ══════════ 検査5　書き下ろした事業が統合体系表と一致するか
+    #   Ver.2.0で第5章・第6章に置いた事業の表（項／事業／区分／所管）と、
+    #   第8章の柱7の対応表を、統合体系表の全147行（143事業＋再掲4）と突き合わせる。
+    import os                                     # noqa: PLC0415
+    from collections import Counter               # noqa: PLC0415
+    if os.path.exists(TAIKEI):
+        tw = openpyxl.load_workbook(TAIKEI, data_only=True,
+                                    read_only=True)["01_統合体系表"]
+        src = Counter()
+        n7 = 0
+        for r in tw.iter_rows(min_row=2, values_only=True):
+            if not r[0]:
+                continue
+            if str(r[0]).startswith("第７章"):
+                n7 += 1
+                continue
+            src[str(r[3]).strip()] += 1
+        got = Counter()
+        n7doc = 0
+        for t in doc.tables:
+            h = [c.text.strip() for c in t.rows[0].cells]
+            if h[:4] == ["項", "事業", "区分", "所管"]:
+                for row in t.rows[1:]:
+                    got[row.cells[1].text.strip()] += 1
+            elif h[:3] == ["柱7の事業", "区分", "本計画での位置"]:
+                n7doc = len(t.rows) - 1
+        if sum(got.values()) == 0:
+            pass          # Ver.1.x は書き下ろし前なので検査しない
+        else:
+            miss = src - got
+            extra = got - src
+            if miss or extra:
+                ng.append(f"検査5　書き下ろした事業が統合体系表と一致しない"
+                          f"（不足{sum(miss.values())}件・余分{sum(extra.values())}件）"
+                          + (" 不足: " + "／".join(list(miss)[:3]) if miss else "")
+                          + (" 余分: " + "／".join(list(extra)[:3]) if extra else ""))
+            else:
+                ok += 1
+            if n7doc != n7:
+                ng.append(f"検査5　柱7の事業が{n7doc}件（統合体系表は{n7}件）")
+            else:
+                ok += 1
 
     print(f"自己点検 {path}")
     print(f"  適合 {ok}件／不適合 {len(ng)}件")
