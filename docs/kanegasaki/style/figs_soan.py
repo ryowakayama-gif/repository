@@ -260,17 +260,17 @@ def s11_chiiki():
 # ══════════════ 第4章 ══════════════
 def s12_risk():
     """生活機能リスクの該当率"""
-    lab = ['社会的役割の低下', 'うつ傾向', '認知機能の低下', '知的能動性の低下',
+    lab = ['社会的役割の低下', '認知機能の低下', 'うつ傾向', '知的能動性の低下',
            '転倒リスク', '口腔機能の低下', '閉じこもり傾向', '運動器機能の低下',
            'ＩＡＤＬの低下', '低栄養傾向']
-    v = [55.6, 46.6, 45.4, 37.5, 33.0, 25.8, 22.9, 12.2, 8.7, 0.7]
+    v = [55.6, 44.1, 42.8, 37.5, 32.5, 25.1, 22.6, 11.6, 8.7, 0.6]
     col = [RED, RED, RED] + [BLUE] * 4 + [PALE] * 3
     fig, ax = plt.subplots(figsize=(7.0, 3.6))
     ax.barh(lab, v, height=0.58, color=col)
     for i, x in enumerate(v):
         _lab(ax, x + 0.9, i, '%.1f％' % x, RED if i < 3 else NAVY, sz=9)
     ax.invert_yaxis(); ax.set_xlim(0, 68)
-    ax.set_xlabel('該当率（％・無回答を除いた分母）')
+    ax.set_xlabel('該当率（％・回答者全体 n=474 を分母とする報告書の公表値）')
     ax.xaxis.grid(True, color='#E6E6E6', lw=0.8); ax.set_axisbelow(True)
     return _save(fig, 's12_risk')
 
