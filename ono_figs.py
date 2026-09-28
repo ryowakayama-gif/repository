@@ -465,3 +465,79 @@ def f_chosa(years, series):
     ax.set_ylabel("利用者数（人）")
     ax.legend(loc="upper left", frameon=False, fontsize=8, ncol=2)
     return _save(fig, "f33_chosa")
+
+
+# ================================================================ 交付金・給付適正化の図
+
+def f_kofukin_moku(rows):
+    """交付金の目標別得点。rows は (目標名, 本町, 全国, 県)。"""
+    lab = [r[0] for r in rows]
+    y = range(len(rows))
+    h = 0.26
+    fig, ax = plt.subplots(figsize=(7.6, 4.6))
+    ax.barh([i + h for i in y], [r[1] for r in rows], height=h,
+            color=[RED if r[1] < r[3] else BLUE for r in rows], label="小野町")
+    ax.barh(list(y), [r[3] for r in rows], height=h, color=ORANGE,
+            label="福島県平均")
+    ax.barh([i - h for i in y], [r[2] for r in rows], height=h, color=GREY,
+            label="全国平均")
+    for i, r in enumerate(rows):
+        _lab(ax, r[1] + 0.8, i + h, "%g" % r[1],
+             RED if r[1] < r[3] else BLUE, sz=9)
+        _lab(ax, r[3] + 0.8, i, "%.1f" % r[3], ORANGE, sz=8)
+        _lab(ax, r[2] + 0.8, i - h, "%.1f" % r[2], GREY, sz=8)
+    ax.set_yticks(list(y))
+    ax.set_yticklabels(lab, fontsize=9)
+    ax.invert_yaxis()
+    ax.set_xlim(0, max(r[2] for r in rows) * 1.3)
+    ax.set_xlabel("得点（各目標100点満点）")
+    _xgrid(ax)
+    hd, lb = ax.get_legend_handles_labels()
+    ax.legend(hd[::-1], lb[::-1], loc="lower right", frameon=False, fontsize=9,
+              ncol=3)
+    return _save(fig, "f41_kofukin_moku")
+
+
+def f_kofukin_gun(rows):
+    """指標群別の到達度。rows は (指標群, 本町, 全国)。"""
+    lab = [r[0] for r in rows]
+    y = range(len(rows))
+    fig, ax = plt.subplots(figsize=(7.2, 2.7))
+    ax.barh(list(y), [r[2] for r in rows], height=0.56, color=PALE,
+            label="全国平均")
+    ax.barh(list(y), [r[1] for r in rows], height=0.34,
+            color=[RED if r[1] / r[2] < 0.5 else BLUE for r in rows],
+            label="小野町")
+    for i, r in enumerate(rows):
+        _lab(ax, r[2] + 1.2, i, "全国 %.1f" % r[2], GREY, sz=8)
+        _lab(ax, r[1] + 1.2, i - 0.02, "%g（%.0f％）" % (r[1], r[1] / r[2] * 100),
+             RED if r[1] / r[2] < 0.5 else BLUE, sz=9)
+    ax.set_yticks(list(y))
+    ax.set_yticklabels(lab, fontsize=9)
+    ax.invert_yaxis()
+    ax.set_xlim(0, max(r[2] for r in rows) * 1.42)
+    ax.set_xlabel("得点")
+    _xgrid(ax)
+    return _save(fig, "f42_kofukin_gun")
+
+
+def f_torikaeshi(rows):
+    """0点・低得点の項目と、全国平均まで取り返した場合の伸びしろ。"""
+    lab = [r[0] for r in rows]
+    y = range(len(rows))
+    fig, ax = plt.subplots(figsize=(7.6, 4.4))
+    ax.barh(list(y), [r[2] for r in rows], height=0.6, color=PALE,
+            label="全国平均")
+    ax.barh(list(y), [r[1] for r in rows], height=0.6, color=RED,
+            label="小野町")
+    for i, r in enumerate(rows):
+        _lab(ax, r[2] + 0.35, i, "＋%.1f" % (r[2] - r[1]), NAVY, sz=9)
+        if r[1]:
+            _lab(ax, r[1] / 2, i, "%g" % r[1], "#FFFFFF", ha="center", sz=8)
+    ax.set_yticks(list(y))
+    ax.set_yticklabels(lab, fontsize=9)
+    ax.invert_yaxis()
+    ax.set_xlim(0, max(r[2] for r in rows) * 1.34)
+    ax.set_xlabel("得点（赤＝小野町、淡い青＝全国平均。右の数字が伸びしろ）")
+    _xgrid(ax)
+    return _save(fig, "f43_torikaeshi")
