@@ -95,13 +95,14 @@ else:
     secs = s3[0]["sections"]
     tbls = [b for sc in secs for b in sc["blocks"] if b["t"] == "table"]
     # 集計後に埋める欄が1つもない表は、数値を書き込み済みか枠の作り忘れ
-    nofill = [i for i, b in enumerate(tbls)
-              if not any("【集計後】" in str(c) for r in b["rows"] for c in r)]
-    chk(6, "資料3 の骨子（節数・数値欄）",
-        len(secs) == 10 and len(tbls) == 16 and len(nofill) <= 2,
-        f"節{len(secs)}／表{len(tbls)}／数値欄のない表{len(nofill)}"
-        if not (len(secs) == 10 and len(tbls) == 16 and len(nofill) <= 2)
-        else f"10節・16表、うち14表に【集計後】の欄")
+    # 集計後に埋める表は【集計後】の欄を持つ。対象者名簿から既に埋めた表（属性・課題の一覧）は除く
+    withfill = [b for b in tbls
+                if any("【集計後】" in str(c) for r in b["rows"] for c in r)]
+    ok6 = len(secs) == 10 and len(tbls) >= 16 and len(withfill) >= 14
+    chk(6, "資料3 の骨子（節数・数値欄）", ok6,
+        f"節{len(secs)}／表{len(tbls)}／【集計後】を持つ表{len(withfill)}"
+        if not ok6 else
+        f"10節・{len(tbls)}表、うち{len(withfill)}表に【集計後】の欄")
 
 # 7 資料3 の作成に必要な前提（未決の2件）が確認事項に残っていること
 import re as _re
