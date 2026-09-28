@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
-from shukei_data import N, Z, DERIVED, CROSS, AXES
+from shukei_data import N, Z, DERIVED, CROSS, AXES, SHU_HO
 
 OUT = "/home/user/repository/output/07_北塩原村第10期_集計仕様書.xlsx"
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
@@ -59,7 +59,7 @@ title_bar(ws, "B1:F1", "第10期北塩原村 アンケート調査　集計仕�
 sub_bar(ws, "B2:F2", "作成：令和8年9月3日／根拠：調査票 第1稿（0828版）＋doc23の修正案＋doc24 骨子案／"
                      "設問番号は doc23 の修正（ニーズ問7(7)の復活・在宅問13の復活）を反映した確定案です。", h=32)
 r = 4
-sub_bar(ws, f"B{r}:F{r}", "■ 集計の基本方針", h=22, fill=C["key"]); r += 1
+sub_bar(ws, f"B{r}:F{r}", "■ 集計の基本方針（11項目）", h=22, fill=C["key"]); r += 1
 POLICY = [
  ("1", "見える化への登録を最優先", "必須項目・オプション項目は設問文・選択肢・順序を標準どおりとし、集計区分も標準に合わせます。独自の区分を作ると全国・県との比較ができなくなります。"),
  ("2", "全設問を同じ形式で出す", "全体／地区別／年齢階級別／性別／前回比較（可能なもの）の5点セットを全設問で統一します。"),
@@ -69,6 +69,15 @@ POLICY = [
  ("6", "複数回答の扱い", "回答者数を分母とした％で表示し、「複数回答のため合計が100%を超えます」と注記します。"),
  ("7", "無回答の扱い", "無回答は集計対象に含め、分母から除外しません。ただし前回比較の際は前回の扱いに合わせます。"),
  ("8", "認定データとの紐付け", "管理番号により認定状況を付与します。これがないと分析編の中核（X-02）が作れません。"),
+ ("9", "分母は設問ごとの有効回答に統一", "構成比の分母は、その設問に回答した票の数（有効回答）とします。回収票の総数で割った値と混在させません。"
+       "クロス表では行・列の双方に回答した票を分母とし、表ごとに分母を明記します（クロス集計定義シートの「分母」欄）。"
+       "同じ指標に2通りの分母が現れないようにします。"),
+ ("10", "同じ指標を複数の設問から作らない", "1つの指標は1つの設問から作ります。やむを得ず複数の設問から作る場合は、"
+        "どちらを主とするかを決めて「主指標」「補足指標」と明示し、本文・図表・目標値のすべてで主指標の値を用います。"
+        "補足指標を主指標と並べて示す場合は、出所と分母が異なることを注記します。"),
+ ("11", "表ごとに分母とn数を書く", "すべての表に分母の定義（何に回答した票か）とn数を記載します。"
+        "n<30 の区分は参考値である旨を付し、単独の根拠としません（方針5）。"
+        "時点の異なる値を足して合計としません。足す必要がある場合は参考値として別に示します。"),
 ]
 head_row(ws, r, ["", "#", "方針", "内容", "", ""], [3, 6, 22, 70, 2, 2], h=22)
 r += 1
@@ -84,6 +93,16 @@ for no, t, d in POLICY:
     c.font = Font(name=F, size=9); c.alignment = Alignment(vertical="top", wrap_text=True)
     for i in range(4, 7): ws.cell(row=r, column=i).border = BD
     ws.row_dimensions[r].height = 30
+    r += 1
+
+r += 1
+sub_bar(ws, f"B{r}:F{r}", "■ 主指標と補足指標（方針10）", h=22, fill=C["key"]); r += 1
+head_row(ws, r, ["", "指標", "主指標（出所・分母）", "補足指標（出所・分母）", "なぜ分けるか", ""],
+         [3, 18, 34, 34, 34, 2], h=24)
+r += 1
+for nm, shu, ho, why in SHU_HO:
+    put(ws, r, [None, nm, shu, ho, why], wraps=(2, 3, 4, 5))
+    ws.row_dimensions[r].height = 34
     r += 1
 
 r += 1
@@ -177,15 +196,16 @@ w.freeze_panes = "A4"
 # ── Sheet5 クロス集計定義 ──────────────────────────
 w = wb.create_sheet("クロス集計定義")
 w.column_dimensions["A"].width = 3
-title_bar(w, "A1:G1", "分析編で作成するクロス表の定義")
-sub_bar(w, "A2:G2", "★＝doc24 第Ⅱ部（分析編）の中核。X-01・X-02・X-03・X-04 は第2回策定委員会の資料の骨格になります。", h=22)
-head_row(w, 3, ["No.", "コード", "クロス表", "行（表側）", "列（表頭）", "調査", "用途・出典"],
-         [5, 8, 34, 22, 22, 8, 46])
+title_bar(w, "A1:H1", "分析編で作成するクロス表の定義")
+sub_bar(w, "A2:H2", "★＝doc24 第Ⅱ部（分析編）の中核。X-01・X-02・X-03・X-04 は第2回策定委員会の資料の骨格になります。　｜　分母は表ごとに明記し、回収票の総数では割りません。「両設問」＝行・列の双方に回答した票を分母とします。", h=30)
+head_row(w, 3, ["No.", "コード", "クロス表", "行（表側）", "列（表頭）", "調査", "分母", "用途・出典"],
+         [5, 8, 30, 20, 20, 7, 40, 40])
 rr = 4
-for i, (code, name, row_v, col_v, survey, use) in enumerate(CROSS, 1):
+for i, (code, name, row_v, col_v, survey, bunbo, use) in enumerate(CROSS, 1):
     fill = C["key"] if use.startswith("★") else (C["alt"] if i % 2 == 0 else None)
-    put(w, rr, [i, code, name, row_v, col_v, survey, use], wraps=(3, 4, 5, 7), center=(1, 2, 6), fill=fill)
-    w.row_dimensions[rr].height = 26
+    put(w, rr, [i, code, name, row_v, col_v, survey, bunbo, use],
+        wraps=(3, 4, 5, 7, 8), center=(1, 2, 6), fill=fill)
+    w.row_dimensions[rr].height = 30
     rr += 1
 w.freeze_panes = "A4"
 
