@@ -489,12 +489,13 @@ def f_kofukin_moku(rows):
     ax.set_yticks(list(y))
     ax.set_yticklabels(lab, fontsize=9)
     ax.invert_yaxis()
-    ax.set_xlim(0, max(r[2] for r in rows) * 1.3)
+    ax.set_xlim(0, max(max(r[1] for r in rows),
+                       max(r[2] for r in rows)) * 1.16)
     ax.set_xlabel("得点（各目標100点満点）")
     _xgrid(ax)
     hd, lb = ax.get_legend_handles_labels()
     ax.legend(hd[::-1], lb[::-1], loc="lower right", frameon=False, fontsize=9,
-              ncol=3)
+              ncol=3, bbox_to_anchor=(1.0, 1.01))
     return _save(fig, "f41_kofukin_moku")
 
 
@@ -541,3 +542,64 @@ def f_torikaeshi(rows):
     ax.set_xlabel("得点（赤＝小野町、淡い青＝全国平均。右の数字が伸びしろ）")
     _xgrid(ax)
     return _save(fig, "f43_torikaeshi")
+
+
+def f_kofukin_tatsu(rows):
+    """指標群別の到達度。rows は (指標群, 小野町の得点, 配点, 全国平均)。
+
+    指標群によって配点が違うため、得点そのものではなく
+    配点に対する到達度（％）で並べる。
+    """
+    lab = ["%s\n（配点%d点）" % (r[0], r[2]) for r in rows]
+    y = range(len(rows))
+    on = [r[1] / r[2] * 100 for r in rows]
+    zn = [r[3] / r[2] * 100 for r in rows]
+    fig, ax = plt.subplots(figsize=(7.4, 4.6))
+    ax.barh(list(y), zn, height=0.62, color=PALE, label="全国平均")
+    ax.barh(list(y), on, height=0.36,
+            color=[RED if a < b else BLUE for a, b in zip(on, zn)],
+            label="小野町")
+    for i, (a, b, r) in enumerate(zip(on, zn, rows)):
+        _lab(ax, max(a, b) + 1.6, i - 0.12, "%g点（%.0f％）" % (r[1], a),
+             RED if a < b else BLUE, sz=9)
+        _lab(ax, b + 1.6, i + 0.34, "全国 %.0f％" % b, GREY, sz=8)
+    ax.set_yticks(list(y))
+    ax.set_yticklabels(lab, fontsize=8.5)
+    ax.invert_yaxis()
+    ax.set_xlim(0, 128)
+    ax.set_xlabel("配点に対する到達度（％）")
+    _xgrid(ax)
+    ax.legend(loc="lower right", frameon=False, fontsize=9, ncol=2)
+    return _save(fig, "f44_kofukin_tatsu")
+
+
+def f_kofukin_bunpu(ken, ono, ken_hei, zen_hei):
+    """県内の保険者の得点の分布と小野町の位置。
+
+    分布（階級ごとの団体数）だけを描き、個別の団体名も個別の得点も出さない。
+    """
+    lo, hi = 250, 650
+    edges = list(range(lo, hi + 1, 50))
+    cnt = [sum(1 for v in ken if e <= v < e + 50) for e in edges[:-1]]
+    x = [e + 25 for e in edges[:-1]]
+    col = [RED if e <= ono < e + 50 else BLUE for e in edges[:-1]]
+    fig, ax = plt.subplots(figsize=(7.6, 3.4))
+    ax.bar(x, cnt, width=44, color=col)
+    for xi, c in zip(x, cnt):
+        if c:
+            _lab(ax, xi, c + 0.35, "%d" % c, NAVY, ha="center", sz=9)
+    ax.axvline(zen_hei, color=GREY, ls="--", lw=1.4)
+    ax.axvline(ken_hei, color=ORANGE, ls="--", lw=1.4)
+    top = max(cnt) * 1.32
+    _lab(ax, zen_hei - 6, top * 0.86, "全国平均 %.1f" % zen_hei, GREY,
+         ha="right", sz=8)
+    _lab(ax, ken_hei + 6, top * 0.98, "県平均 %.1f" % ken_hei, ORANGE, sz=8)
+    _lab(ax, ono, top * 0.60, "小野町 %g点" % ono, RED, ha="center", sz=9.5)
+    ax.set_ylim(0, top)
+    ax.set_xticks(edges)
+    ax.set_yticks(range(0, int(top) + 1, 5))
+    ax.set_xlabel("令和8年度交付金の得点（800点満点）")
+    ax.set_ylabel("県内の保険者数")
+    ax.yaxis.grid(True, color="#E6E6E6", lw=0.8)
+    ax.set_axisbelow(True)
+    return _save(fig, "f45_kofukin_bunpu")
