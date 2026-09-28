@@ -23,6 +23,13 @@ ITEMS = [
   '女川町水道料金改定_最終報告に向けた工程表.docx'),
  ('01_report/README.md', '09_interim_report/README.md', '中間報告書の説明'),
 
+ # WBS・進捗
+ ('01_report/wbs.xlsx', '10_wbs/onagawa_wbs_R8.xlsx', 'WBS（業務分解構成）'),
+ ('01_report/wbs_and_progress.docx',
+  '10_wbs/女川町上下水道経営指標評価_WBSと進捗状況.docx',
+  '女川町上下水道経営指標評価_WBSと進捗状況.docx'),
+ ('01_report/wbs_README.md', '10_wbs/README.md', 'WBSの説明'),
+
  # 算定に用いた計算表
  ('02_calculation/assumption_switch_cost_calc.xlsx',
   '06_capital_plan_update/09_assumption_switch_cost_calc.xlsx',

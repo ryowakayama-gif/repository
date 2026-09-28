@@ -12,12 +12,14 @@
 
 | 順 | ファイル | 内容 |
 |:--:|---|---|
-| 1 | [`06_capital_plan_update/README.md`](06_capital_plan_update/README.md) | **総括原価の前提条件の切替と再試算。最新かつ最重要の論点** |
-| 2 | [`05_review/file_check_report.md`](05_review/file_check_report.md) | Excel成果品の確認レポート。既知の不整合6件と残作業 |
-| 3 | [`08_word_revisions/README.md`](08_word_revisions/README.md) | Word文書の修正記録（5件とも対応済み） |
-| 4 | [`05_review/word_document_review.md`](05_review/word_document_review.md) | Word文書の確認レポート |
-| 5 | [`03_documents/handoff_memo.md`](03_documents/handoff_memo.md) | 引継ぎメモ。数値前提、確定値と推計値の区別 |
-| 6 | [`03_documents/spec_alignment_summary.md`](03_documents/spec_alignment_summary.md) | 業務仕様書との整合確認 |
+| 1 | [`10_wbs/README.md`](10_wbs/README.md) | **WBSと進捗状況。滞っている8件と10月に片づける5件** |
+| 2 | [`09_interim_report/README.md`](09_interim_report/README.md) | **中間報告書（改訂版）。確定した数値はここが最新** |
+| 3 | [`06_capital_plan_update/README.md`](06_capital_plan_update/README.md) | 総括原価の前提条件の切替と再試算 |
+| 4 | [`05_review/file_check_report.md`](05_review/file_check_report.md) | Excel成果品の確認レポート。既知の不整合6件（**未修正**） |
+| 5 | [`08_word_revisions/README.md`](08_word_revisions/README.md) | Word文書の修正記録（5件とも対応済み） |
+| 6 | [`05_review/word_document_review.md`](05_review/word_document_review.md) | Word文書の確認レポート |
+| 7 | [`03_documents/handoff_memo.md`](03_documents/handoff_memo.md) | 引継ぎメモ。数値前提、確定値と推計値の区別 |
+| 8 | [`03_documents/spec_alignment_summary.md`](03_documents/spec_alignment_summary.md) | 業務仕様書との整合確認（**仕様書原本は未入手**） |
 
 ---
 
@@ -30,7 +32,12 @@ onagawa_water_tariff/
 ├── 03_documents/                引継ぎメモ・仕様書整合確認
 ├── 04_prefecture_unification/   宮城県水道料金体系統一化 検討（参考資料の位置づけ）
 ├── 05_review/                   確認・レビュー記録
-└── 06_capital_plan_update/      建設改良費調査票（女川町回答）と影響再計算
+├── 06_capital_plan_update/      建設改良費調査票（女川町回答）と影響再計算
+├── 07_progress/                 進捗状況メモ
+├── 08_word_revisions/           Word文書の修正記録
+├── 09_interim_report/           中間報告書・指摘事項対応表・工程表
+├── 10_wbs/                      WBSと進捗状況
+└── scripts/                     作成者情報の統一・受け渡し用パッケージの作成
 ```
 
 ### 01_source_evidence（作業元エビデンス）
@@ -43,7 +50,7 @@ onagawa_water_tariff/
 | `mgmt_strategy_simulation_sheet.xlsx` | 女川町_水道_経営戦略試算シート20251209版（**財政シミュのマスター**） |
 | `municipal_bond_ledger.xlsx` | 企業債_AII_布設替入り |
 | `mgmt_strategy_report_draft.docx` | 報告書_女川町_水道事業_経営戦略（案） |
-| `sewer_fee_analysis_memo.docx` | 下水道使用料分析_引継ぎメモ |
+| `sewer_fee_analysis_memo.docx` | 下水道使用料分析_引継ぎメモ。**他団体向けに作成した手順書であり、女川町のデータは含まない** |
 
 ### 02_deliverables（成果品）
 
