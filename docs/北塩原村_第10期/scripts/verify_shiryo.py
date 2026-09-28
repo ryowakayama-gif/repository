@@ -134,6 +134,53 @@ else:
         ("／パブコメの主体が村でない" if bad8 else "")
         if (miss8 or bad8) else f"{len(need)}件の日程・数値と主体の区分が整合")
 
+# 9 資料1 の次第・議論事項・配付資料一覧が資料の実体と合っていること
+s1 = [x for x in SH.CH if x["no"] == "資料1"]
+if not s1:
+    chk(9, "資料1 の骨子", False, "資料1がない")
+else:
+    S1 = {sc["no"]: sc for sc in s1[0]["sections"]}
+    bad9 = []
+    # 次第の所要時間が120分であること
+    t11 = [b for b in S1["1-1"]["blocks"] if b["t"] == "table"][0]
+    mins = sum(int(r[3].replace("分", "")) for r in t11["rows"]
+               if r[3].endswith("分") and r[3] != "120分")
+    if mins != 120:
+        bad9.append(f"次第の所要時間の合計が{mins}分")
+    if t11["rows"][-1][3] != "120分":
+        bad9.append(f"次第の合計欄が{t11['rows'][-1][3]}")
+    # ご議論いただきたい事項が9点であること
+    t12 = [b for b in S1["1-2"]["blocks"] if b["t"] == "table"][0]
+    if len(t12["rows"]) != 9:
+        bad9.append(f"議論事項が{len(t12['rows'])}点")
+    # 配付資料一覧の名称が実体と一致すること
+    t15 = [b for b in S1["1-5"]["blocks"] if b["t"] == "table"][0]
+    real = {c["no"]: c["title"] for c in SH.CH}
+    for r in t15["rows"]:
+        if r[0] in real and r[1] != real[r[0]]:
+            bad9.append(f"{r[0]} の名称 {r[1]}≠{real[r[0]]}")
+    listed = {r[0] for r in t15["rows"]}
+    miss9 = [k for k in real if k not in listed]
+    if miss9:
+        bad9.append(f"配付資料一覧にない: {miss9}")
+    chk(9, "資料1 の次第・議論事項・配付資料一覧", not bad9,
+        "・".join(bad9[:3]) if bad9 else "次第120分・議論9点・全8資料を掲載")
+
+# 10 資料1 の別冊（計画素案）の頁数が積算と大きくずれていないこと
+try:
+    import estimate_pages as EP
+    rows, _tot, _nt, _nf = EP.run()
+    est = sum(__import__("math").ceil(r[5]) for r in rows) + sum(n for _, n in EP.FRONT)
+    t15 = [b for b in [x for x in SH.CH if x["no"] == "資料1"][0]["sections"][4]["blocks"]
+           if b["t"] == "table"][0]
+    bess = [r[2] for r in t15["rows"] if r[0] == "別冊"]
+    got = int(str(bess[0]).replace("約", "")) if bess else None
+    chk(10, "資料1 の別冊の頁数と積算の整合", got is not None and abs(got - est) <= 3,
+        f"資料1は{got}頁・積算は{est}頁" if got is None or abs(got - est) > 3
+        else f"資料1 約{got}頁／積算{est}頁")
+except Exception as e:
+    chk(10, "資料1 の別冊の頁数と積算の整合", False, f"照合できない（{e}）")
+
 w = max(len(n) for _, n, _, _ in R)
 print("■ 第2回策定委員会 資料の自己点検")
 ng = 0
