@@ -318,3 +318,74 @@ if __name__ == "__main__":
     for k, v in build_all(act, nen, MIKOMI, T.CHIIKI_JISSEKI, CASES,
                           T.DAI9_KIJUN).items():
         print("  %-8s %s" % (k, v))
+
+
+# ================================================================ 素案の図
+
+def f_jinko(pop, years):
+    """総人口と高齢化率の推移・推計。"""
+    tot = [pop[y]["総人口"] for y in years]
+    ko = [pop[y]["65+"] / pop[y]["総人口"] * 100 for y in years]
+    x = range(len(years))
+    fig, ax = plt.subplots(figsize=(7.6, 3.6))
+    ax.bar(list(x), tot, width=0.6, color=PALE)
+    for i, v in enumerate(tot):
+        _lab(ax, i, v + 130, "%s" % format(v, ","), NAVY, ha="center", sz=8)
+    ax.set_ylim(0, max(tot) * 1.22)
+    ax.set_ylabel("総人口（人）")
+    ax.set_xticks(list(x))
+    ax.set_xticklabels([y.replace("年度", "") for y in years], fontsize=8)
+    ax2 = ax.twinx()
+    ax2.plot(list(x), ko, "-o", color=RED, lw=2.4, ms=6)
+    for i, v in enumerate(ko):
+        last = (i == len(ko) - 1)
+        _lab(ax2, i + (-0.08 if last else 0), v - (1.4 if last else -1.1),
+             "%.1f％" % v, RED, ha="right" if last else "center", sz=8)
+    ax2.set_ylim(min(ko) - 6, max(ko) + 6)
+    ax2.set_ylabel("高齢化率（％）", color=RED)
+    ax2.tick_params(axis="y", colors=RED)
+    _lab(ax2, len(years) - 1.2, min(ko) - 3.6, "棒＝総人口（左軸）／"
+         "折れ線＝高齢化率（右軸）", NAVY, ha="right", sz=8)
+    return _save(fig, "f21_jinko")
+
+
+def f_nintei_mikomi(jisseki, mikomi):
+    """認定者数の実績と第10期の見込み。"""
+    lab = [y for y, _v in jisseki] + [y for y, _v in mikomi]
+    val = [v for _y, v in jisseki] + [v for _y, v in mikomi]
+    n = len(jisseki)
+    col = [BLUE] * n + [ORANGE] * len(mikomi)
+    x = range(len(val))
+    fig, ax = plt.subplots(figsize=(7.2, 3.3))
+    ax.bar(list(x), val, width=0.6, color=col)
+    for i, v in enumerate(val):
+        _lab(ax, i, v + 14, "%d" % v, col[i], ha="center", sz=9)
+    ax.axvline(n - 0.5, color="#808080", lw=1.0, ls="--")
+    _lab(ax, n - 0.45, max(val) * 1.12, "← 実績　｜　見込み →", NAVY,
+         ha="center", sz=9)
+    ax.set_xticks(list(x))
+    ax.set_xticklabels([s.replace("年度", "\n年度") for s in lab], fontsize=8)
+    ax.set_ylim(0, max(val) * 1.22)
+    ax.set_ylabel("第1号被保険者の認定者数（人）")
+    return _save(fig, "f22_nintei_mikomi")
+
+
+def f_kubun(series, years, ylab="総給付費（百万円）", name="f23_kubun"):
+    """区分別の積み上げ。series は (区分名, 各年度の値) の並び。"""
+    cols = [BLUE, PALE, ORANGE, GREY]
+    x = range(len(years))
+    fig, ax = plt.subplots(figsize=(6.8, 3.4))
+    bottom = [0.0] * len(years)
+    for (lab, vals), c in zip(series, cols):
+        ax.bar(list(x), vals, width=0.56, bottom=bottom, color=c, label=lab)
+        bottom = [b + v for b, v in zip(bottom, vals)]
+    for i in x:
+        _lab(ax, i, bottom[i] + max(bottom) * 0.025,
+             format(round(bottom[i]), ","), NAVY, ha="center", sz=9)
+    ax.set_xticks(list(x))
+    ax.set_xticklabels(years, fontsize=9)
+    ax.set_ylim(0, max(bottom) * 1.24)
+    ax.set_ylabel(ylab)
+    ax.legend(loc="upper left", frameon=False, fontsize=9,
+              ncol=len(series))
+    return _save(fig, name)

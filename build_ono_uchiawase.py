@@ -31,6 +31,8 @@ from docx.shared import Pt
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
 import build_ono_tanka as T
+import ono_figs
+import ono_style as S
 
 ROOT = pathlib.Path(__file__).parent
 OUT = ROOT / "小野町_引継ぎ_整理済" / "19_打合せ"
@@ -90,6 +92,12 @@ CASES = [
      "**国の第10期の負担割合は未定。**23％から上がれば保険料も上がる"),
     ("C-2", "システム　第1号被保険者負担割合24％", sys_getsu(futan=0.24), "同上"),
 ]
+
+# 保険料の図。ケース表と同じ値から作るので、両者がずれることはない。
+FIG_HOKENRYO = ono_figs.f_hokenryo(
+    [(nm.replace("**", ""), ceil100(v)) for cd, nm, v, _m in CASES
+     if cd in ("A-1", "B-1", "A-2", "C-1")], DAI9)
+
 
 # 決めていただきたいこと（政策判断）
 KETTEI = [
@@ -236,69 +244,35 @@ SHIDAI = [
 
 # ---------------------------------------------------------------- 体裁
 
-def new_doc():
-    doc = Document()
-    st = doc.styles["Normal"]
-    st.font.name = JP_MIN
-    st.font.size = Pt(10.5)
-    st.element.rPr.rFonts.set(qn("w:eastAsia"), JP_MIN)
-    return doc
+# 体裁は ono_style（他町村の案件で用いているデザインルールに合わせたもの）による。
+# 従前と同じ呼び方（head／body／note／table）を残してあるため、
+# 本文の記述には手を入れていない。第1引数の doc は Report である。
+
+def new_doc(title):
+    return S.Report(title)
 
 
 def head(doc, text, level):
-    h = doc.add_heading(text, level=level)
-    for r in h.runs:
-        r.font.name = JP_GO
-        r._element.rPr.rFonts.set(qn("w:eastAsia"), JP_GO)
-
-
-def _emph(p, text):
-    for i, part in enumerate(str(text).split("**")):
-        if not part:
-            continue
-        r = p.add_run(part)
-        r.font.name = JP_MIN
-        r._element.rPr.rFonts.set(qn("w:eastAsia"), JP_MIN)
-        r.bold = bool(i % 2)
+    if level == 0:
+        return doc.cover([str(text).replace("**", "")], [])
+    return [doc.h1, doc.h2, doc.h3][min(level, 3) - 1](text)
 
 
 def body(doc, *paras):
     for t in paras:
-        _emph(doc.add_paragraph(), t)
+        doc.p(t)
 
 
 def note(doc, text):
-    p = doc.add_paragraph()
-    _emph(p, text)
-    for r in p.runs:
-        r.font.size = Pt(9)
+    return doc.src(text)
 
 
 def table(doc, header_row, rows, right_from=99):
-    t = doc.add_table(rows=1, cols=len(header_row))
-    t.style = "Table Grid"
-    for i, h in enumerate(header_row):
-        c = t.rows[0].cells[i]
-        c.text = ""
-        p = c.paragraphs[0]
-        r = p.add_run(h)
-        r.font.name = JP_GO
-        r._element.rPr.rFonts.set(qn("w:eastAsia"), JP_GO)
-        r.bold = True
-        r.font.size = Pt(9)
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    for row in rows:
-        cells = t.add_row().cells
-        for i, v in enumerate(row):
-            cells[i].text = ""
-            p = cells[i].paragraphs[0]
-            _emph(p, v)
-            for r in p.runs:
-                r.font.size = Pt(9)
-            if i >= right_from:
-                p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    doc.add_paragraph()
+    right = tuple(range(right_from, len(header_row))) if right_from < 99 else ()
+    return doc.tbl([list(header_row)] + [list(r) for r in rows], right=right)
 
+
+# ---------------------------------------------------------------- Excelの体裁
 
 def style_head(ws, row=1):
     for c in ws[row]:
@@ -327,7 +301,7 @@ def widths(ws, ws_widths):
 # ---------------------------------------------------------------- 次第
 
 def build_shidai():
-    doc = new_doc()
+    doc = new_doc("小野町　第10期介護保険事業計画　打合せ次第")
     head(doc, "小野町　第10期介護保険事業計画　打合せ次第", 0)
     body(doc, f"{ASOF_JP}")
 
@@ -376,7 +350,7 @@ def build_shidai():
 # ---------------------------------------------------------------- 本体
 
 def build_honbun():
-    doc = new_doc()
+    doc = new_doc("小野町　第10期介護保険事業計画　現在地と論点")
     head(doc, "第10期介護保険事業計画　現在地と論点", 0)
     body(doc, f"小野町　／　{ASOF_JP}　／　町との打合せ資料")
 
@@ -466,6 +440,11 @@ def build_honbun():
     note(doc, "※ Aは当方の算定（令和8年度を国保連月報の4〜6月の3か月で置く）、"
               "Bは見える化システム（同1か月）、"
               "**Cは国の第1号被保険者負担割合が23％から24％に上がった場合**です。")
+    doc.fig(FIG_HOKENRYO, "保険料基準額の選択肢（100円未満切上げ後）",
+            width=14.0,
+            src="資料：本業務による算定及び地域包括ケア「見える化」システムの出力。"
+                "**切り上げた水準では6,100円と6,600円に分かれ、"
+                "引下げか据え置きかの分かれ目にあたる。**")
 
     head(doc, "(1)　なぜ差が出るのか", 2)
     body(doc,
@@ -712,7 +691,7 @@ def build_xlsx():
 # ---------------------------------------------------------------- 記録様式
 
 def build_kiroku():
-    doc = new_doc()
+    doc = new_doc("小野町　第10期介護保険事業計画　打合せ記録")
     head(doc, "打合せ記録", 0)
     body(doc, "小野町　第10期介護保険事業計画　／　高齢者保健福祉計画")
     note(doc, "※ 委託仕様書8①により、受託者が作成し町と相互に確認するもの。")
@@ -744,7 +723,7 @@ def build_kiroku():
         ("議題", "　　　　　　　　　　　　　　　　　　　　"),
     ])
 
-    doc.add_paragraph()
+    doc.spacer()
     table(doc, ["確認", "氏名", "日付"], [
         ("小野町", "", ""),
         ("受託者", "", ""),
