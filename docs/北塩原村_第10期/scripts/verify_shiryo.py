@@ -8,6 +8,11 @@ import csv, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import shiryo_content as SH
 import soan_content as SO
+import shukei_data as SK
+from shihyo_dict import S as SHIHYO
+
+MD26 = "/home/user/repository/docs/北塩原村_第10期/26_第2回策定委員会_資料構成.md"
+MD24 = "/home/user/repository/docs/北塩原村_第10期/24_アンケート調査報告書_骨子案.md"
 
 R = []
 def chk(no, name, ok, detail=""):
@@ -181,6 +186,112 @@ try:
         else f"資料1 約{got}頁／積算{est}頁")
 except Exception as e:
     chk(10, "資料1 の別冊の頁数と積算の整合", False, f"照合できない（{e}）")
+
+# ── ここから分母の方針の反映の点検（doc26 §19）────────────
+S3 = [x for x in SH.CH if x["no"] == "資料3"][0]["sections"]
+
+def flat(sec):
+    """1節のすべての文字列を連結する。"""
+    out = []
+    for b in sec["blocks"]:
+        out.append(str(b.get("v", "")))
+        out.append(str(b.get("head", "")) + str(b.get("rows", "")))
+    return "".join(out)
+
+S3TXT = "".join(flat(sc) for sc in S3)
+md26 = open(MD26, encoding="utf-8").read()
+md24 = open(MD24, encoding="utf-8").read()
+
+# 11 【集計後】の欄を持つ表がある節に、分母の注記があること
+need11 = [sc["no"] for sc in S3
+          if any(b["t"] == "table" and any("【集計後】" in str(c) for r in b["rows"] for c in r)
+                 for b in sc["blocks"])]
+miss11 = [sc["no"] for sc in S3 if sc["no"] in need11
+          and not any(b["t"] == "note" and "分母" in str(b["v"]) for b in sc["blocks"])]
+chk(11, "資料3 の各節に分母の注記があること", need11 and not miss11,
+    f"分母の注記がない節 {miss11}" if miss11 else f"{len(need11)}節すべてに分母の注記")
+
+# 12 資料3 の分母が集計仕様書の定義と対応していること
+X12 = ["X-01", "X-02", "X-03", "X-04", "X-05", "X-06",
+       "X-08", "X-09", "X-10", "X-15", "X-16", "X-18"]
+C = {c[0]: c for c in SK.CROSS}
+miss12 = [k for k in X12 if k not in S3TXT]                      # 資料3が参照しているか
+bad12 = [k for k in X12 if str(C[k][5]) not in md26]             # doc26 §19-2 に定義のまま載っているか
+chk(12, "資料3 の分母が集計仕様書の定義と対応", not miss12 and not bad12,
+    (f"資料3が参照していない {miss12}" if miss12 else "") +
+    (f"／doc26に定義がない {bad12}" if bad12 else "")
+    if (miss12 or bad12) else f"{len(X12)}表とも対応表と一致")
+
+# 13 「回収した票の総数では割らない」の宣言と、回答方法の例外の明示
+ok13 = ("回収した票の総数では割りません" in S3TXT
+        and "回収した票の総数を分母とする" in S3TXT
+        and "例外" in S3TXT)
+chk(13, "総数で割らない宣言と例外の明示", ok13,
+    "宣言または例外の注記がない" if not ok13 else "約束ごと1と唯一の例外（回答方法）を明記")
+
+# 14 第1号被保険者数が指標辞書と一致し、資料5-2の2つの表で同じ値であること
+SEC52 = [sc for sc in {c["no"]: c for c in SH.CH}["資料5"]["sections"] if sc["no"] == "5-2"][0]
+t_an = [b for b in SEC52["blocks"] if b["t"] == "table" and b["head"][0] == "案"]
+t_su = [b for b in SEC52["blocks"] if b["t"] == "table"
+        and b["rows"] and b["rows"][0][0] == "第1号被保険者数"]
+want = {y: f"{SHIHYO['第1号被保険者数_' + y][0]:,}人" for y in ("令和9年", "令和10年", "令和11年")}
+bad14 = []
+if not t_an or not t_su:
+    bad14.append("資料5-2の表が見つからない")
+else:
+    ban = [r for r in t_an[0]["rows"] if r[0] == "B案"][0]
+    for i, y in enumerate(("令和9年", "令和10年", "令和11年")):
+        if ban[2 + i] != want[y]:
+            bad14.append(f"B案 {y} 資料{ban[2+i]}≠辞書{want[y]}")
+    head, row = t_su[0]["head"], t_su[0]["rows"][0]
+    for y in ("令和9年", "令和10年", "令和11年"):
+        if y in head and row[head.index(y)] != want[y]:
+            bad14.append(f"推計表 {y} 資料{row[head.index(y)]}≠辞書{want[y]}")
+    if f"{SHIHYO['通いの場_分母'][0]:,}" not in "".join(
+            str(b.get("v", "")) for sc in {c["no"]: c for c in SH.CH}["資料7"]["sections"]
+            for b in sc["blocks"]):
+        bad14.append("資料7に通いの場の分母1,009人の記載がない")
+chk(14, "第1号被保険者数が指標辞書と一致", not bad14,
+    "・".join(bad14[:3]) if bad14 else "令和9〜11年がB案・推計表・辞書で一致（1,004／995／987人）")
+
+# 15 認定状況の4区分が資料3・doc24・集計仕様書で一致すること
+KUBUN = ["認定なし", "事業対象者", "要支援1・2", "要介護1以上"]
+axE = [a for a in SK.AXES if a[0] == "E"][0][2]
+t33 = [b for sc in S3 if sc["no"] == "3-3" for b in sc["blocks"]
+       if b["t"] == "table" and b["head"][0] == "認定の状況"]
+bad15 = []
+if not t33:
+    bad15.append("資料3-3の表が見つからない")
+elif [r[0] for r in t33[0]["rows"][:4]] != KUBUN:
+    bad15.append("資料3-3の区分 " + "／".join(r[0] for r in t33[0]["rows"][:4]))
+if "／".join(KUBUN) not in axE:
+    bad15.append(f"集計軸E {axE}")
+if "／".join(KUBUN) not in md24:
+    bad15.append("doc24に4区分の記載がない")
+chk(15, "認定状況の4区分が3文書で一致", not bad15,
+    "・".join(bad15[:3]) if bad15 else "認定なし／事業対象者／要支援1・2／要介護1以上")
+
+# 16 doc26 §18-5 の資料の状況（節数・表数）が資料の実体と一致すること
+#    資料を直して一覧の更新を忘れることを検出する（§19-7）。
+blk = md26.split("### 18-5")[-1].split("\n---\n")[0] if "### 18-5" in md26 else ""
+listed = {}
+for ln in blk.split("\n"):
+    cs = [c.strip() for c in ln.strip().strip("|").split("|")] if ln.strip().startswith("|") else []
+    if len(cs) >= 4 and (cs[0].startswith("資料") or "合計" in cs[1]):
+        try:
+            listed[cs[0] or "合計"] = (int(cs[2].strip("*")),
+                                       int(cs[3].strip("*").split("＋")[0]))
+        except ValueError:
+            pass
+real = {c["no"]: (len(c["sections"]),
+                  sum(1 for sc in c["sections"] for b in sc["blocks"] if b["t"] == "table"))
+        for c in SH.CH}
+real["合計"] = (sum(v[0] for v in real.values()), sum(v[1] for v in real.values()))
+bad16 = [f"{k} 一覧{listed[k]}≠実体{real[k]}" for k in real if k in listed and listed[k] != real[k]]
+miss16 = [k for k in real if k not in listed]
+chk(16, "doc26 §18-5 の節数・表数が資料と一致", not bad16 and not miss16,
+    ("・".join(bad16[:3]) + ("／一覧にない " + str(miss16) if miss16 else ""))
+    if (bad16 or miss16) else f"全8資料と合計（{real['合計'][0]}節・{real['合計'][1]}表）が一致")
 
 w = max(len(n) for _, n, _, _ in R)
 print("■ 第2回策定委員会 資料の自己点検")
