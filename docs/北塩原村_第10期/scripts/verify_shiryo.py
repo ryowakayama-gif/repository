@@ -112,6 +112,28 @@ miss7 = [lab for key, lab in need if key not in KK]
 chk(7, "資料3 の前提となる確認事項の存在", not miss7,
     f"確認事項から消えている: {miss7}" if miss7 else "2件とも確認事項に存在")
 
+# 8 資料8 の日付が仕様書・確定済みの日程と食い違っていないこと
+s8 = [x for x in SH.CH if x["no"] == "資料8"]
+if not s8:
+    chk(8, "資料8 のスケジュール", False, "資料8がない")
+else:
+    txt = "".join(str(b.get("v", "")) + str(b.get("rows", ""))
+                  for sc in s8[0]["sections"] for b in sc["blocks"])
+    need = {"令和9年3月31日": "履行期限（仕様書3）",
+            "令和8年10月16日": "調査票の回収期限",
+            "令和9年度から令和11年度": "計画期間（仕様書）",
+            "882人": "ニーズ調査の対象者数",
+            "118人": "在宅介護実態調査の対象者数"}
+    miss8 = [v for k, v in need.items() if k not in txt]
+    # 村が実施する工程に受託者を主体として書いていないこと
+    bad8 = [r[0] for sc in s8[0]["sections"] for b in sc["blocks"] if b["t"] == "table"
+            and b["head"][0] == "時期"
+            for r in b["rows"] if "パブリックコメントの実施" in r[1] and r[2] != "村"]
+    chk(8, "資料8 の日程・主体", not miss8 and not bad8,
+        ("欠落: " + "・".join(miss8) if miss8 else "") +
+        ("／パブコメの主体が村でない" if bad8 else "")
+        if (miss8 or bad8) else f"{len(need)}件の日程・数値と主体の区分が整合")
+
 w = max(len(n) for _, n, _, _ in R)
 print("■ 第2回策定委員会 資料の自己点検")
 ng = 0
