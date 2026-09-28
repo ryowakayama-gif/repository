@@ -125,6 +125,22 @@
 
 ---
 
+## 受け渡し時のファイル名
+
+`04_prefecture_unification/01_final_deliverables/` の文書は日本語のファイル名です。
+日本語名のままzipにまとめると、Windowsで開いたときにファイル名が文字化けするため、
+受け渡し用にまとめる際は半角英数字のファイル名に置き換え、対応表を同梱しています。
+
+| 受け渡し時のファイル名 | 内容 |
+|---|---|
+| `01_prefecture_unification_report.docx` | 宮城県水道料金体系統一化_検討報告書 |
+| `02_coastal_utilities_comparison.docx` | 県内臨海団体比較_影響試算 |
+| `03_mgmt_strategy_report_draft_revised.docx` | 経営戦略報告書（案）修正版 |
+
+文書の中身（本文・表）はいずれもUTF-8で保存されており、文字化けはありません。
+
+---
+
 ## 検証方法
 
 - 3ファイルとも修正後にスキーマ検証を実施し、いずれも合格
