@@ -601,6 +601,41 @@ def main():
     except Exception as e:
         chk(36, '素案の積算が仕様書の約100頁に収まること', False, f'照合できない（{e}）')
 
+    # ── 37　交付金の要改善項目の件数・点数が再計算と一致すること ─────────
+    #    素案2-8・6-3 の「32項目・122点」「11項目・61点」を、
+    #    3か年の項目別データから作り直して突き合わせる。
+    try:
+        import analyze_kofukin as AK
+        rows_k, K_k = AK.load()
+        yk = AK.yokaizen(rows_k, K_k)
+        n32, p122 = len(yk), sum(x['配点'] for x in yk)
+        kisai = [x for x in yk if x['判定'] == '可（記載）']
+        p56 = sum(x['配点'] for x in kisai)
+        bad37 = []
+        if f'{n32}項目・{p122:.0f}点' not in t:
+            bad37.append(f'素案に「{n32}項目・{p122:.0f}点」の記載がない')
+        # 6-3 の一覧（11項目61点）は 可（記載）56点＋認知症施策推進計画5点
+        t63 = None
+        for sec in SC.CH[5]['sections']:
+            if sec['no'] == '6-3':
+                for b in sec['blocks']:
+                    if b['t'] == 'table' and b['head'][0] == '交付金・指標':
+                        t63 = b
+        if t63 is None:
+            bad37.append('6-3の一覧がない')
+        else:
+            body = t63['rows'][:-1]
+            tot = sum(float(str(r[1]).replace('点', '')) for r in body)
+            if len(body) != 11 or abs(tot - 61) > 0.5:
+                bad37.append(f'6-3の一覧が{len(body)}項目{tot:.0f}点')
+            if abs(tot - (p56 + 5)) > 0.5:
+                bad37.append(f'6-3の61点が 可（記載）{p56:.0f}点＋認知症計画5点と合わない')
+        chk(37, '交付金の要改善項目の件数・点数が再計算と一致すること', not bad37,
+            '・'.join(bad37[:3]) if bad37
+            else f'{n32}項目{p122:.0f}点／6-3は11項目61点（可（記載）{p56:.0f}点＋5点）')
+    except Exception as e:
+        chk(37, '交付金の要改善項目の件数・点数が再計算と一致すること', False, f'照合できない（{e}）')
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
