@@ -150,6 +150,12 @@ def total_cost(plan, kanro, kiden, rate, shokan, kison, method, ritsu, torikata,
     return '=' + '+'.join(f'({p})' for p in parts)
 
 
+# 04_料金への影響 の行位置（先に決めておき、03シートから参照する）
+Z_FIRST, Z_LAST = 7, 14      # 水量ゾーン8行
+HELP_ROW = Z_LAST + 1        # 月額合計（件数加重）
+REV_ROW = HELP_ROW + 1       # 年間収入
+RATIO_ROW = REV_ROW + 1      # 総括原価回収割合
+
 # 01_設定 のセル参照は、シートを書き出したあとに実際の行から組み立てる
 S = {}
 VOL = REV = RATE_IN = M_A = None
@@ -187,7 +193,9 @@ SETTINGS = [
  ('資産維持率（％）', 3.0, None, '日本水道協会「水道料金算定要領」の標準値は3％'),
  ('対象資産の取り方', '期首期末平均', ['期首期末平均', '期首の帳簿価額'],
   '期首期末平均＝896,312千円　期首＝1,042,625千円。いずれも推計値で未確定'),
- ('資産維持費の年数', 5, [1, 3, 5], ''),
+ ('資産維持費の年数', 5, [5],
+  '5年の料金算定なので5で固定。他の費目・収益・水量がすべて5年計のため、'
+  'ここだけ短くすると期間がそろわない'),
  ('【控除項目】', None, None, None),
  ('長期前受金戻入益', '経営戦略の実額',
   ['経営戦略の実額', '成果品の推計値', '控除しない'],
@@ -209,14 +217,15 @@ SETTINGS = [
   '★既定は四捨五入（中間報告書と同じ）。町の現行料金は1円未満切捨てとされているため、'
   '条例化の際は切捨てに切り替えて確認する。差は1件あたり1円以内・年間で約2万円'),
  ('消費税率', 0.10, None, '料金表は税込、収支・総括原価は税抜。収入の換算に使う'),
- ('母集団補正率', 1.15145, None,
-  '★ゾーン別試算は全使用者の一部しか拾えていないため、収入を補う率。'
-  '税抜どうしで給水収益に合わせた値であり、別データによる検証が必要'),
+
  ('【料金改定の試算】', None, None, None),
  ('パターン1の改定率', '=総括原価回収に必要な率', None,
   '空欄にすると03シートの必要改定率を使います。数値を入れるとその率で試算します'),
- ('パターン3-Aの水準係数', 0.976194, None,
-  '05シートの「必要な係数の目安」を見ながら調整してください'),
+ ('パターン3-Aの水準係数の決め方', '自動（総括原価に合わせる）',
+  ['自動（総括原価に合わせる）', '手入力'],
+  '自動にすると、総括原価を回収する水準に毎回そろえます'),
+ ('　手入力する場合の係数', 0.976194, None,
+  '上を「手入力」にしたときだけ使います。03シートに実際に使われた係数が出ます'),
 ]
 
 r = 5
@@ -261,11 +270,12 @@ S.update(plan=ref('建設改良費の計画'), kanro=ref('耐用年数（管路�
          doryoku=ref('動力費・薬品費'))
 HASU = ref('端数処理')
 TAX = ref('消費税率')
-COVER = ref('母集団補正率')
 VOL = ref('有収水量　5年計（㎥）')
+M_MODE = ref('パターン3-Aの水準係数の決め方')
+M_MANUAL = ref('　手入力する場合の係数')
 REV = ref('給水収益　5年計（千円・税抜）')
 RATE_IN = ref('パターン1の改定率')
-M_A = ref('パターン3-Aの水準係数')
+M_A = "'03_指標と改定率'!$C$15"
 
 r += 1
 put(ws, r, 2, '設定の確認', size=10, bold=True)
@@ -302,8 +312,10 @@ for label, formula, fmt in RESULTS:
     r += 1
 r += 1
 note(ws, r, '※ 数式の計算結果はファイルに保存していません。Excelで開くと計算されます。')
-note(ws, r + 1, '※ 既定値のまま開くと 1,175,810千円 / 272.4円/㎥ / 50.3% / 1.990倍 / 2,809円 になります。')
-note(ws, r + 2, '※ 他会計補助金等を「控除しない」にすると 1,448,807千円 / 2.452倍 になります。')
+note(ws, r + 1, '※ 既定値のまま開くと 総括原価1,175,810千円 / 給水原価272.4円/㎥ / '
+                '回収割合50.3% / 必要改定率1.990倍 / 標準家庭（パターン1）4,969円 になります。')
+note(ws, r + 2, '※ 標準家庭を赤字半減案（1.125倍）で見ると2,809円です。上の欄はパターン1の額です。')
+note(ws, r + 3, '※ 他会計補助金等を「控除しない」にすると 1,448,807千円 / 2.452倍 になります。')
 
 # ============================== 02_総括原価 ==============================
 ws = wb.create_sheet('02_総括原価')
@@ -374,6 +386,9 @@ IND = [
  ('赤字半減の改定率（倍）', f'=1+C12/({REV}/5)', '0.000', '定義③の半減'),
  ('パターン1に適用する改定率（倍）', f'=IF(ISNUMBER({RATE_IN}),{RATE_IN},C10)', '0.000',
   '01_設定に数値を入れるとその率。空欄なら必要改定率'),
+ ('3-Aに適用する水準係数', None, '0.000000',
+  '自動の場合は「必要改定率×現行の月額合計÷水準係数1のときの月額合計」で求める。'
+  'この式なら税区分と母集団の補正が相殺されるため、収入の推計方法に左右されない'),
 ]
 r = 5
 for name, formula, fmt, memo in IND:
@@ -381,7 +396,10 @@ for name, formula, fmt, memo in IND:
     r += 1
 r = 5
 for name, formula, fmt, memo in IND:
-    if name.startswith('料金不足額'):
+    if name.startswith('3-Aに適用する水準係数'):
+        formula = (f'=IF({M_MODE}="手入力",{M_MANUAL},'
+                   f"C10*'04_料金への影響'!$F${HELP_ROW}/'04_料金への影響'!$N${HELP_ROW})")
+    elif name.startswith('料金不足額'):
         formula = (f'={REV}/5'
                    f'+IF({S["hojo"]}="控除しない",0,-(\'02_総括原価\'!C{COST_ROW["控除：他会計補助金等"]})/5)'
                    f'-(\'02_総括原価\'!C{COST_ROW["維持管理費"]}/5'
@@ -409,12 +427,12 @@ note(ws, r, '※ 改定率は通年ベース。令和8年度の料金は現行�
 # ============================== 04_料金への影響 ==============================
 ws = wb.create_sheet('04_料金への影響')
 ws.sheet_view.showGridLines = False
-widths(ws, [4, 16, 10, 8, 10, 13, 10, 13, 10, 13, 10, 4, 40])
+widths(ws, [4, 18, 10, 8, 10, 13, 10, 13, 10, 13, 10, 4, 44, 12])
 title(ws, 1, '利用者への影響（月額・税込）と年間収入（税抜）', 13)
 note(ws, 2, 'パターン1は現行料金に改定率を一律に乗じたもの。3-Aは口径別基本料金＋段階逓増。')
 note(ws, 3, '★件数・月平均水量は代表値による推計であり、原票との照合は未了。'
             '全使用者の調定明細による検証を経ていない。', RED)
-note(ws, 4, '月額は税込。年間収入は（1＋消費税率）で割って税抜にし、母集団補正率を掛けている。')
+note(ws, 4, '月額は税込。年間収入は税抜で、現行は給水収益（01_設定）の年平均をそのまま起点にしている。')
 
 RATE = "'03_指標と改定率'!$C$14"
 ZONES = [('① 0㎥', 0.0, 297, 13), ('② 1〜5㎥', 2.9, 513, 13), ('③ 6〜10㎥', 8.0, 590, 13),
@@ -431,6 +449,16 @@ def cur_formula(vcell, dia):
             f'+MAX(0,{vcell}-100)*110,0)+{METER[dia]}')
 
 
+def p3a_unit_formula(vcell, dia):
+    """水準係数を1としたときの3-A（丸めなし）。水準係数の算定に使う。"""
+    tiers = (f'MIN({vcell},10)*91.3'
+             f'+MAX(0,MIN({vcell},20)-10)*192.5'
+             f'+MAX(0,MIN({vcell},50)-20)*258.5'
+             f'+MAX(0,MIN({vcell},100)-50)*280.5'
+             f'+MAX(0,{vcell}-100)*324.5')
+    return f'{BASE_A[dia]}+({tiers})'
+
+
 def p3a_formula(vcell, dia):
     tiers = (f'MIN({vcell},10)*91.3'
              f'+MAX(0,MIN({vcell},20)-10)*192.5'
@@ -442,9 +470,8 @@ def p3a_formula(vcell, dia):
 
 
 header(ws, 6, ['', '水量ゾーン', '月平均\n水量', '件数', '適用\n口径', '現行', '', 'パターン1\n改定後',
-               '現行比', 'パターン3-A', '現行比', '', '備考'])
-r = 7
-Z_FIRST = r
+               '現行比', 'パターン3-A', '現行比', '', '備考', '計算用\n3-A係数1'])
+r = Z_FIRST
 for name, vol, cnt, dia in ZONES:
     put(ws, r, 2, name)
     put(ws, r, 3, vol, fmt='#,##0.0', align='center')
@@ -455,27 +482,59 @@ for name, vol, cnt, dia in ZONES:
     put(ws, r, 9, f'=H{r}/F{r}', fmt='0.00"倍"', align='center')
     put(ws, r, 10, '=' + p3a_formula(f'C{r}', dia), fmt='#,##0')
     put(ws, r, 11, f'=J{r}/F{r}', fmt='0.00"倍"', align='center')
+    put(ws, r, 14, '=' + p3a_unit_formula(f'C{r}', dia), fmt='#,##0.0', size=8, color=GREY)
     r += 1
-Z_LAST = r - 1
-put(ws, r, 2, '年間収入（百万円）', bold=True, size=9.5)
+
+# --- 月額合計（件数加重）。3-Aの水準係数を決めるために使う ---
+put(ws, r, 2, '月額合計（件数加重・円）', bold=True, size=9)
 put(ws, r, 4, f'=SUM(D{Z_FIRST}:D{Z_LAST})', fmt='#,##0', bold=True, align='center')
-for col in (6, 8, 10):
+for col in (6, 8, 10, 14):
     L = get_column_letter(col)
-    put(ws, r, col,
-        f'=SUMPRODUCT($D${Z_FIRST}:$D${Z_LAST},{L}{Z_FIRST}:{L}{Z_LAST})*12'
-        f'/(1+{TAX})*{COVER}/1000000',
-        fmt='#,##0.0', bold=True, color=NAVY, fill=OUT_FILL)
-REV_ROW = r
+    put(ws, r, col, f'=SUMPRODUCT($D${Z_FIRST}:$D${Z_LAST},{L}{Z_FIRST}:{L}{Z_LAST})',
+        fmt='#,##0', size=9)
+put(ws, r, 13, 'N列は水準係数を1としたときの3-A。03シートの水準係数の算定に使う',
+    size=8.5, color=GREY, wrap=True)
 r += 1
+
+# --- 年間収入。起点を給水収益に接続する ---
+put(ws, r, 2, '年間収入（百万円・税抜）', bold=True, size=9.5)
+put(ws, r, 6, f'={REV}/5/1000', fmt='#,##0.0', bold=True, color=NAVY, fill=OUT_FILL)
+put(ws, r, 8, f'=F{r}*{RATE}', fmt='#,##0.0', bold=True, color=NAVY, fill=OUT_FILL)
+put(ws, r, 10, f'=F{r}*J{HELP_ROW}/F{HELP_ROW}', fmt='#,##0.0', bold=True, color=NAVY, fill=OUT_FILL)
+put(ws, r, 13, '現行は給水収益（税抜）の年平均そのもの。パターン1は改定率を乗じ、'
+               '3-Aはゾーン別試算の月額合計の比を乗じている', size=8.5, color=GREY, wrap=True)
+r += 1
+
 put(ws, r, 2, '総括原価回収割合', bold=True, size=9.5)
 for col in (6, 8, 10):
     L = get_column_letter(col)
-    put(ws, r, col, f"={L}{REV_ROW}*1000000/({VOL}/5)/'03_指標と改定率'!$C$6",
+    put(ws, r, col, f"={L}{REV_ROW}/('03_指標と改定率'!$C$5/5/1000)",
         fmt='0.0%', bold=True, color=NAVY, fill=OUT_FILL)
-RATIO_ROW = r
-put(ws, r, 13, '料金は税込のため（1＋消費税率）で割って税抜にしたうえ、母集団補正率を掛けている',
+put(ws, r, 13, '年間収入÷総括原価の年平均。水準係数が自動なら3-Aは100％になる',
     size=8.5, color=GREY, wrap=True)
 r += 2
+
+# --- ゾーン別試算と給水収益の関係（診断） ---
+band(ws, r, 'ゾーン別試算と給水収益の関係（診断）', 14)
+r += 1
+DIAG = [
+ ('ゾーン別試算の年額（税込）', f'=F{HELP_ROW}*12', '#,##0',
+  '代表値×件数×12か月。全使用者の一部しか拾えていない'),
+ ('　税抜に換算', f'=F{HELP_ROW}*12/(1+{TAX})', '#,##0', '（1＋消費税率）で割った額'),
+ ('給水収益の年平均（税抜）', f'={REV}/5*1000', '#,##0', '01_設定の入力値'),
+ ('含意される母集団補正率', None, '0.00000',
+  '★給水収益÷税抜換算額。1.15前後なら、ゾーン別試算が拾えていない分が約15％あるということ。'
+  '別データによる検証を経ていない'),
+]
+DIAG_FIRST = r
+for name, formula, fmt, memo in DIAG:
+    put(ws, r, 2, name, size=9)
+    if formula is None:
+        formula = f'=F{DIAG_FIRST+2}/F{DIAG_FIRST+1}'
+    put(ws, r, 6, formula, fmt=fmt, size=9, fill=OUT_FILL)
+    put(ws, r, 13, memo, size=8.5, color=(RED if memo.startswith('★') else GREY), wrap=True)
+    r += 1
+r += 1
 
 band(ws, r, '標準家庭と特殊用途', 13)
 r += 1
@@ -483,6 +542,7 @@ header(ws, r, ['', '区分', '月使用量', '', '口径', '現行', '', 'パタ
                'パターン3-A', '現行比', '', '備考'])
 r += 1
 STD_ROW = r
+BIZ_ROW = r + 3          # 中規模事業者（50mm・1,000㎥）の行
 SPECIAL = [('標準家庭', 20, 20, '中間報告書の標準家庭'),
            ('少量使用（13mm・8㎥）', 8, 13, '3-Aでも現行より上がる'),
            ('13mm・3㎥', 3, 13, '3-Aで現行を下回るのはこの付近まで'),
@@ -518,7 +578,9 @@ note(ws, 3, '★この係数は総括原価と一致するよう逆算した設�
 note(ws, 4, '※ 掲載額は設計値として四捨五入している。請求額の端数処理は「01_設定」の設定に従う（04シート）。')
 header(ws, 6, ['', '口径', '現行メーター使用料', '案3-A 基本料金', '', '備考'])
 r = 7
+BASE_ROW = {}
 for k in [13, 20, 25, 40, 50, 75, 100]:
+    BASE_ROW[k] = r
     put(ws, r, 2, f'{k}mm', align='center')
     put(ws, r, 3, METER[k], fmt='#,##0')
     put(ws, r, 4, f'=ROUND({BASE_A[k]}*{M_A},0)', fmt='#,##0')
@@ -538,8 +600,15 @@ for (upper, rate), cur, memo in zip(TIER,
 r += 2
 band(ws, r, '水準係数の調整', 6)
 r += 1
-put(ws, r, 2, '現在の係数', size=10)
-put(ws, r, 3, f'={M_A}', fmt='0.000000', align='center', fill=OUT_FILL, bold=True)
+put(ws, r, 2, '決め方', size=10)
+put(ws, r, 3, f'={M_MODE}', align='center', fill=OUT_FILL, bold=True)
+r += 1
+put(ws, r, 2, '実際に使っている係数', size=10, bold=True)
+put(ws, r, 3, f'={M_A}', fmt='0.000000', align='center', fill=OUT_FILL, bold=True, color=NAVY)
+put(ws, r, 6, '「自動」なら総括原価を回収する水準に毎回そろえます。'
+              '「手入力」にすると01_設定に入れた値をそのまま使うため、'
+              '条件を変えても追随しません（04シートの回収割合で確認してください）。',
+    size=8.5, color=GREY, wrap=True)
 r += 1
 put(ws, r, 2, '3-Aの年間収入（百万円）', size=10)
 put(ws, r, 3, "='04_料金への影響'!J" + str(REV_ROW), fmt='#,##0.0', align='center', fill=OUT_FILL)
@@ -547,12 +616,25 @@ r += 1
 put(ws, r, 2, '総括原価（年平均・百万円）', size=10)
 put(ws, r, 3, "='03_指標と改定率'!C5/5/1000", fmt='#,##0.0', align='center', fill=OUT_FILL)
 r += 1
-put(ws, r, 2, '必要な係数の目安', size=10, bold=True)
-put(ws, r, 3, f'=C{r-3}*C{r-1}/C{r-2}', fmt='0.000000', align='center',
-    fill=IN_FILL, bold=True, color=RED)
-put(ws, r, 6, 'この値を「01_設定」の水準係数に入れ直すと、3-Aの収入が総括原価に近づきます。'
-              '端数処理があるため1〜2回の繰り返しで合います。', size=8.5, color=GREY, wrap=True)
+put(ws, r, 2, '3-Aの回収割合', size=10, bold=True)
+put(ws, r, 3, f'=C{r-2}/C{r-1}', fmt='0.0%', align='center', fill=OUT_FILL, bold=True, color=NAVY)
+put(ws, r, 6, '100％から離れている場合は、上の決め方が「手入力」になっています。', size=8.5, color=GREY)
 r += 2
+
+band(ws, r, '掲載額と請求額の端数の差', 6)
+r += 1
+note(ws, r, '掲載額は基本料金を円単位・従量単価を小数第1位で丸めている。'
+            '請求額は丸める前の単価で計算するため、両者は完全には一致しない。')
+r += 1
+header(ws, r, ['', '例', '掲載表から積み上げた額', '請求額（04シート）', '', '差'])
+r += 1
+put(ws, r, 2, '50mm・1,000㎥', align='center')
+put(ws, r, 3, f'=D{BASE_ROW[50]}+10*89.1+10*187.9+30*252.3+50*273.8+900*316.8', fmt='#,##0')
+put(ws, r, 4, f"='04_料金への影響'!J{BIZ_ROW}", fmt='#,##0')
+put(ws, r, 6, f'=C{r}-D{r}', fmt='+#,##0"円";-#,##0"円"', align='center', bold=True, color=RED)
+r += 2
+note(ws, r, '※ 条例化の際は、料金表の額と請求額の端数処理を同一の規定にそろえる。')
+r += 1
 note(ws, r, '※ 塩竈市の基本料金比率：13mm 770／20mm 1,430／25mm 2,310／40mm 5,500／'
             '50mm 11,000／75mm 22,000／100mm 41,800（税込×1.1）')
 note(ws, r + 1, '※ 従量料金の基礎単価：〜10㎥ 91.3／〜20㎥ 192.5／〜50㎥ 258.5／'
@@ -562,8 +644,11 @@ note(ws, r + 1, '※ 従量料金の基礎単価：〜10㎥ 91.3／〜20㎥ 192.
 ws = wb.create_sheet('06_ケース比較')
 ws.sheet_view.showGridLines = False
 widths(ws, [4, 40, 16, 14, 12, 14, 4, 46])
-title(ws, 1, '主要ケースの比較（01_設定とは独立に計算しています）', 8)
-note(ws, 2, '各行はその行の条件だけで計算しており、「01_設定」を変えても動きません。')
+title(ws, 1, '主要ケースの比較', 8)
+note(ws, 2, '費目の条件（C列の総括原価）は各行に書いた条件だけで計算しており、'
+            '「01_設定」の費目設定を変えても動きません。')
+note(ws, 3, 'ただし給水原価・回収割合・必要改定率（D〜F列）は「01_設定」の有収水量と給水収益を'
+            '参照するため、そちらを変えると全行が動きます。', RED)
 
 D = dict(plan='建設改良費調査票', kanro=38, kiden=38, rate=2.1,
          shokan='経営戦略方式（40年・据置なし）', kison='財政シミュに接続',
@@ -584,7 +669,8 @@ CASES = [
  ('他会計補助金＋補助金を控除', dict(hojo='他会計補助金＋補助金'), '補助金419,000千円も控除した場合'),
  ('既存資産の償却費を差引方式に戻す', dict(kison='差引方式'), '改訂前の算定。41,318千円不足する'),
  ('機械・電気を20年償却', dict(kiden=20), '鷲神高度処理設備の区分が確定した場合'),
- ('機械・電気を20年＋繰入金を控除しない', dict(kiden=20, hojo='控除しない'), '負担が最も重くなる組合せ'),
+ ('機械・電気を20年＋繰入金を控除しない', dict(kiden=20, hojo='控除しない'),
+  'この2つを同時に変えた場合。表中で最も大きくなるのは長期前受金を推計値に戻した行'),
  ('借入利率2.0％', dict(rate=2.0), ''),
  ('借入利率3.0％', dict(rate=3.0), ''),
  ('資産維持率1.0％', dict(ritsu=1.0), ''),
@@ -596,9 +682,9 @@ CASES = [
  ('動力費・薬品費を補正しない', dict(doryoku='経営戦略のまま'), '経営戦略の単価をそのまま使う'),
  ('その他営業収益等を控除し雑支出を算入', dict(sonota='控除する', zasshi='算入する'), ''),
 ]
-header(ws, 4, ['', 'ケース', '総括原価\n5年計（千円）', '給水原価\n（円/㎥）', '回収割合',
+header(ws, 5, ['', 'ケース', '総括原価\n5年計（千円）', '給水原価\n（円/㎥）', '回収割合',
                '必要改定率\n（倍）', '', '内容'])
-r = 5
+r = 6
 for name, over, memo in CASES:
     put(ws, r, 2, name, bold=name.startswith('★'), color=(NAVY if name.startswith('★') else None))
     put(ws, r, 3, case(**over), fmt='#,##0')
@@ -612,9 +698,10 @@ for name, over, memo in CASES:
             ws.cell(row=r, column=col).fill = OUT_FILL
     r += 1
 r += 1
-note(ws, r, '※ 各行は他の条件を採用条件に固定したうえで、記載の条件だけを変えた値である。'
+note(ws, r, '※ 各行は他の費目条件を採用条件に固定したうえで、記載の条件だけを変えた値である。'
             '複数の条件が同時に動く場合は単純な加算にならない。')
 note(ws, r + 1, '※ 必要改定率は給水収益に対する倍率であり、確定した改定水準ではない。')
+note(ws, r + 2, '※ この表は総括原価の比較であり、3-Aの水準係数や利用者への影響は含まない。')
 
 # ============================== 07_計算用データ ==============================
 src = openpyxl.load_workbook(SRC)
