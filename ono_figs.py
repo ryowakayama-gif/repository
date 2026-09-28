@@ -389,3 +389,79 @@ def f_kubun(series, years, ylab="総給付費（百万円）", name="f23_kubun")
     ax.legend(loc="upper left", frameon=False, fontsize=9,
               ncol=len(series))
     return _save(fig, name)
+
+
+# ================================================================ 総合事業ワークシートの図
+
+def f_jinzai(years, juyo, kyokyu):
+    """人材の視点。認定者数の推計（需要）と、生産年齢人口で縮めた供給可能量。"""
+    x = range(len(years))
+    fig, ax = plt.subplots(figsize=(7.4, 3.6))
+    ax.bar(list(x), juyo, width=0.58, color=PALE, label="認定者数の推計（需要）")
+    ax.plot(list(x), kyokyu, "-o", color=RED, lw=2.6, ms=7,
+            label="生産年齢人口で縮めた供給可能量")
+    for i, v in enumerate(juyo):
+        _lab(ax, i, v + 26, "%d" % v, NAVY, ha="center", sz=9)
+    for i, v in enumerate(kyokyu):
+        if i == 0:                       # 基準年は需要と同じ値なので右にずらす
+            _lab(ax, i + 0.34, v, "%d" % v, RED, ha="left", sz=9)
+        else:
+            _lab(ax, i, v - 64, "%d" % v, RED, ha="center", sz=9)
+    gap = [k - j for j, k in zip(juyo, kyokyu)]
+    for i, g in enumerate(gap):
+        if g < 0:
+            _lab(ax, i, 46, _pm(g, "人", 0), RED, ha="center", sz=8)
+    ax.set_xticks(list(x))
+    ax.set_xticklabels(years, fontsize=9)
+    ax.set_ylim(0, max(juyo) * 1.26)
+    ax.set_ylabel("要支援・要介護認定者数（人）")
+    ax.legend(loc="upper right", frameon=False, fontsize=9)
+    return _save(fig, "f31_jinzai")
+
+
+def f_keido(years, vals, koku=None):
+    """調整済み軽度認定率の推移。"""
+    x = range(len(years))
+    fig, ax = plt.subplots(figsize=(7.2, 3.2))
+    ax.plot(list(x), vals, "-o", color=RED, lw=2.6, ms=7, label="小野町")
+    for i, v in enumerate(vals):
+        _lab(ax, i, v + 0.32, "%.1f％" % v, RED, ha="center", sz=9)
+    if koku:
+        ax.axhline(koku, color=GREY, lw=1.6, ls="--")
+        _lab(ax, len(years) - 0.5, koku - 0.5, "参考 %.1f％" % koku, GREY,
+             ha="right", sz=9)
+    ax.set_xticks(list(x))
+    ax.set_xticklabels([y.replace("年度", "") for y in years], fontsize=9)
+    ax.set_ylim(min(vals) - 1.6, max(vals) + 1.4)
+    ax.set_ylabel("調整済み軽度認定率（％）")
+    return _save(fig, "f32_keido")
+
+
+def f_chosa(years, series):
+    """総合事業の実施状況調査への回答。空欄と、実人数＝延べ人数の年を見せる。
+
+    series は (区分名, 実人数の並び, 延べ人数の並び)。None は調査票の空欄。
+    """
+    x = range(len(years))
+    n = len(series)
+    w = 0.8 / (n * 2)
+    fig, ax = plt.subplots(figsize=(7.6, 3.6))
+    cols = [(BLUE, PALE), (RED, ORANGE)]
+    for k, (lab, jitsu, nobe) in enumerate(series):
+        for j, (vals, nm, c) in enumerate(
+                [(jitsu, "実人数", cols[k][0]), (nobe, "延べ人数", cols[k][1])]):
+            off = (k * 2 + j - (n * 2 - 1) / 2) * w
+            xs = [i + off for i, v in enumerate(vals) if v is not None]
+            ys = [v for v in vals if v is not None]
+            ax.bar(xs, ys, width=w * 0.92, color=c, label=f"{lab} {nm}")
+            for xx, v in zip(xs, ys):
+                _lab(ax, xx, v + 24, "%d" % v, c, ha="center", sz=8)
+    for i in x:
+        if all(v is None for _l, jt, nb in series for v in (jt[i], nb[i])):
+            _lab(ax, i, 40, "調査票が空欄", GREY, ha="center", sz=8)
+    ax.set_xticks(list(x))
+    ax.set_xticklabels([y.replace("年度", "") for y in years], fontsize=9)
+    ax.set_ylim(0, 1260)
+    ax.set_ylabel("利用者数（人）")
+    ax.legend(loc="upper left", frameon=False, fontsize=8, ncol=2)
+    return _save(fig, "f33_chosa")
