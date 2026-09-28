@@ -15,11 +15,12 @@
 | 1 | [`10_wbs/README.md`](10_wbs/README.md) | **WBSと進捗状況。滞っている8件と10月に片づける5件** |
 | 2 | [`09_interim_report/README.md`](09_interim_report/README.md) | **中間報告書（改訂版）。確定した数値はここが最新** |
 | 3 | [`06_capital_plan_update/README.md`](06_capital_plan_update/README.md) | 総括原価の前提条件の切替と再試算 |
-| 4 | [`05_review/file_check_report.md`](05_review/file_check_report.md) | Excel成果品の確認レポート。既知の不整合6件（**未修正**） |
-| 5 | [`08_word_revisions/README.md`](08_word_revisions/README.md) | Word文書の修正記録（5件とも対応済み） |
-| 6 | [`05_review/word_document_review.md`](05_review/word_document_review.md) | Word文書の確認レポート |
-| 7 | [`03_documents/handoff_memo.md`](03_documents/handoff_memo.md) | 引継ぎメモ。数値前提、確定値と推計値の区別 |
-| 8 | [`03_documents/spec_alignment_summary.md`](03_documents/spec_alignment_summary.md) | 業務仕様書との整合確認（**仕様書原本は未入手**） |
+| 4 | [`05_review/excel_review_20260928.md`](05_review/excel_review_20260928.md) | **Excel成果品の再確認。採用版・実績集計・旧版の区分** |
+| 5 | [`05_review/file_check_report.md`](05_review/file_check_report.md) | Excel成果品の確認レポート（令和8年9月8日・経緯） |
+| 6 | [`08_word_revisions/README.md`](08_word_revisions/README.md) | Word文書の修正記録（5件とも対応済み） |
+| 7 | [`05_review/word_document_review.md`](05_review/word_document_review.md) | Word文書の確認レポート |
+| 8 | [`03_documents/handoff_memo.md`](03_documents/handoff_memo.md) | 引継ぎメモ。数値前提、確定値と推計値の区別 |
+| 9 | [`03_documents/spec_alignment_summary.md`](03_documents/spec_alignment_summary.md) | 業務仕様書との整合確認（**仕様書原本は未入手**） |
 
 ---
 
@@ -57,7 +58,7 @@ onagawa_water_tariff/
 | ファイル | 内容 | シート数 |
 |---|---|:--:|
 | `01_rate_reform_simulation_MAIN.xlsx` | **料金改定シミュレーション本体**。仕様書パターン1〜3に対応 | 8 |
-| `02_total_cost_simulation.xlsx` | 総括原価・資産維持率感度分析 ※要修正（レポート#1） | 3 |
+| `02_total_cost_simulation.xlsx` | 総括原価・資産維持率感度分析 ※**旧版**（累計誤式は修正済） | 3 |
 | `03_tariff_period_cost_calc.xlsx` | 料金算定対象期間の設定と原価算定 | 2 |
 | `04_tariff_1m3_unit_by_diameter.xlsx` | 口径別1㎥刻み調定分析 | 9 |
 | `05_volume_zone_by_wateramount.xlsx` | 水量区分別ボリュームゾーン分析 | 4 |

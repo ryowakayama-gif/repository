@@ -106,6 +106,8 @@ ITEMS = [
   '資産維持費に関する資料（受領資料）'),
 
  # 確認記録
+ ('06_check/excel_review.md', '05_review/excel_review_20260928.md',
+  'Excel成果品の再確認（令和8年9月28日）'),
  ('06_check/file_check_report.md', '05_review/file_check_report.md', 'ファイル確認結果'),
  ('06_check/word_document_review.md', '05_review/word_document_review.md', 'Word文書の確認結果'),
  ('06_check/working_rules.md', 'CLAUDE.md', '作業上の取り決め'),

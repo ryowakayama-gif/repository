@@ -204,6 +204,14 @@ SETTINGS = [
  ('有収水量　5年計（㎥）', 4316000, None, '経営戦略の水需要予測'),
  ('給水収益　5年計（千円・税抜）', 590845, None,
   '現行料金による見込額。令和8年4〜6月の基本料金等免除は未反映'),
+ ('【料金と収入の換算】', None, None, None),
+ ('端数処理', '四捨五入', ['四捨五入', '1円未満切捨て'],
+  '★既定は四捨五入（中間報告書と同じ）。町の現行料金は1円未満切捨てとされているため、'
+  '条例化の際は切捨てに切り替えて確認する。差は1件あたり1円以内・年間で約2万円'),
+ ('消費税率', 0.10, None, '料金表は税込、収支・総括原価は税抜。収入の換算に使う'),
+ ('母集団補正率', 1.15145, None,
+  '★ゾーン別試算は全使用者の一部しか拾えていないため、収入を補う率。'
+  '税抜どうしで給水収益に合わせた値であり、別データによる検証が必要'),
  ('【料金改定の試算】', None, None, None),
  ('パターン1の改定率', '=総括原価回収に必要な率', None,
   '空欄にすると03シートの必要改定率を使います。数値を入れるとその率で試算します'),
@@ -251,12 +259,28 @@ S.update(plan=ref('建設改良費の計画'), kanro=ref('耐用年数（管路�
          choki=ref('長期前受金戻入益'), hojo=ref('他会計補助金等'),
          sonota=ref('その他営業収益・受取利息等'), zasshi=ref('雑支出'),
          doryoku=ref('動力費・薬品費'))
+HASU = ref('端数処理')
+TAX = ref('消費税率')
+COVER = ref('母集団補正率')
 VOL = ref('有収水量　5年計（㎥）')
 REV = ref('給水収益　5年計（千円・税抜）')
 RATE_IN = ref('パターン1の改定率')
 M_A = ref('パターン3-Aの水準係数')
 
 r += 1
+put(ws, r, 2, '設定の確認', size=10, bold=True)
+chk = (f'=IF(ISNA(MATCH({dep_key(S["plan"], S["method"], S["kanro"], S["kiden"])},{KEY_D},0)),'
+       f'"★耐用年数の組合せが参照表にありません",'
+       f'IF(ISNA(MATCH({int_key(S["plan"], S["rate"], S["shokan"])},{KEY_I},0)),'
+       f'"★借入利率が参照表にありません（2.0〜3.0を0.1刻みで選んでください）",'
+       f'IF(ROUND({S["rate"]},1)<>{S["rate"]},'
+       f'"★借入利率は0.1刻みでしか参照表にないため "&TEXT({S["rate"]},"0.00")&"％ は "'
+       f'&TEXT(ROUND({S["rate"]},1),"0.0")&"％ として計算しています",'
+       f'"設定は参照表にあります")))')
+put(ws, r, 3, chk, fill=OUT_FILL, bold=True, color=NAVY, size=9)
+ws.merge_cells(start_row=r, start_column=3, end_row=r, end_column=5)
+r += 2
+
 band(ws, r, '算定結果（詳しくは02・03シート）', 5, NAVY)
 r += 1
 RESULTS = [
@@ -386,9 +410,11 @@ note(ws, r, '※ 改定率は通年ベース。令和8年度の料金は現行�
 ws = wb.create_sheet('04_料金への影響')
 ws.sheet_view.showGridLines = False
 widths(ws, [4, 16, 10, 8, 10, 13, 10, 13, 10, 13, 10, 4, 40])
-title(ws, 1, '利用者への影響（月額・税込）', 13)
+title(ws, 1, '利用者への影響（月額・税込）と年間収入（税抜）', 13)
 note(ws, 2, 'パターン1は現行料金に改定率を一律に乗じたもの。3-Aは口径別基本料金＋段階逓増。')
-note(ws, 3, '件数・月平均水量は代表値による推計であり、原票との照合は未了。')
+note(ws, 3, '★件数・月平均水量は代表値による推計であり、原票との照合は未了。'
+            '全使用者の調定明細による検証を経ていない。', RED)
+note(ws, 4, '月額は税込。年間収入は（1＋消費税率）で割って税抜にし、母集団補正率を掛けている。')
 
 RATE = "'03_指標と改定率'!$C$14"
 ZONES = [('① 0㎥', 0.0, 297, 13), ('② 1〜5㎥', 2.9, 513, 13), ('③ 6〜10㎥', 8.0, 590, 13),
@@ -411,12 +437,13 @@ def p3a_formula(vcell, dia):
              f'+MAX(0,MIN({vcell},50)-20)*258.5'
              f'+MAX(0,MIN({vcell},100)-50)*280.5'
              f'+MAX(0,{vcell}-100)*324.5')
-    return f'ROUND(({BASE_A[dia]}+({tiers}))*{M_A},0)'
+    x = f'({BASE_A[dia]}+({tiers}))*{M_A}'
+    return f'IF({HASU}="四捨五入",ROUND({x},0),ROUNDDOWN({x},0))'
 
 
-header(ws, 5, ['', '水量ゾーン', '月平均\n水量', '件数', '適用\n口径', '現行', '', 'パターン1\n改定後',
+header(ws, 6, ['', '水量ゾーン', '月平均\n水量', '件数', '適用\n口径', '現行', '', 'パターン1\n改定後',
                '現行比', 'パターン3-A', '現行比', '', '備考'])
-r = 6
+r = 7
 Z_FIRST = r
 for name, vol, cnt, dia in ZONES:
     put(ws, r, 2, name)
@@ -424,7 +451,7 @@ for name, vol, cnt, dia in ZONES:
     put(ws, r, 4, cnt, fmt='#,##0', align='center')
     put(ws, r, 5, f'{dia}mm', align='center')
     put(ws, r, 6, '=' + cur_formula(f'C{r}', dia), fmt='#,##0')
-    put(ws, r, 8, f'=ROUND(F{r}*{RATE},0)', fmt='#,##0')
+    put(ws, r, 8, f'=IF({HASU}="四捨五入",ROUND(F{r}*{RATE},0),ROUNDDOWN(F{r}*{RATE},0))', fmt='#,##0')
     put(ws, r, 9, f'=H{r}/F{r}', fmt='0.00"倍"', align='center')
     put(ws, r, 10, '=' + p3a_formula(f'C{r}', dia), fmt='#,##0')
     put(ws, r, 11, f'=J{r}/F{r}', fmt='0.00"倍"', align='center')
@@ -434,7 +461,9 @@ put(ws, r, 2, '年間収入（百万円）', bold=True, size=9.5)
 put(ws, r, 4, f'=SUM(D{Z_FIRST}:D{Z_LAST})', fmt='#,##0', bold=True, align='center')
 for col in (6, 8, 10):
     L = get_column_letter(col)
-    put(ws, r, col, f'=SUMPRODUCT($D${Z_FIRST}:$D${Z_LAST},{L}{Z_FIRST}:{L}{Z_LAST})*12*1.04677/1000000',
+    put(ws, r, col,
+        f'=SUMPRODUCT($D${Z_FIRST}:$D${Z_LAST},{L}{Z_FIRST}:{L}{Z_LAST})*12'
+        f'/(1+{TAX})*{COVER}/1000000',
         fmt='#,##0.0', bold=True, color=NAVY, fill=OUT_FILL)
 REV_ROW = r
 r += 1
@@ -444,7 +473,8 @@ for col in (6, 8, 10):
     put(ws, r, col, f"={L}{REV_ROW}*1000000/({VOL}/5)/'03_指標と改定率'!$C$6",
         fmt='0.0%', bold=True, color=NAVY, fill=OUT_FILL)
 RATIO_ROW = r
-put(ws, r, 13, '補正係数1.04677は収入のみの経験補正（中間報告書5-6）', size=8.5, color=GREY, wrap=True)
+put(ws, r, 13, '料金は税込のため（1＋消費税率）で割って税抜にしたうえ、母集団補正率を掛けている',
+    size=8.5, color=GREY, wrap=True)
 r += 2
 
 band(ws, r, '標準家庭と特殊用途', 13)
@@ -464,7 +494,7 @@ for name, vol, dia, memo in SPECIAL:
     put(ws, r, 3, vol, fmt='#,##0', align='center')
     put(ws, r, 5, f'{dia}mm', align='center')
     put(ws, r, 6, '=' + cur_formula(f'C{r}', dia), fmt='#,##0')
-    put(ws, r, 8, f'=ROUND(F{r}*{RATE},0)', fmt='#,##0')
+    put(ws, r, 8, f'=IF({HASU}="四捨五入",ROUND(F{r}*{RATE},0),ROUNDDOWN(F{r}*{RATE},0))', fmt='#,##0')
     put(ws, r, 9, f'=H{r}/F{r}', fmt='0.00"倍"', align='center')
     put(ws, r, 10, '=' + p3a_formula(f'C{r}', d), fmt='#,##0')
     put(ws, r, 11, f'=J{r}/F{r}', fmt='0.00"倍"', align='center')
@@ -485,8 +515,9 @@ widths(ws, [4, 20, 16, 16, 4, 60])
 title(ws, 1, 'パターン3-A　口径別料金表（税込・円）', 6)
 note(ws, 2, '塩竈市の体系比率に「01_設定」の水準係数を乗じたもの。')
 note(ws, 3, '★この係数は総括原価と一致するよう逆算した設定値であり、実際の調定データで検証した値ではない。', RED)
-header(ws, 5, ['', '口径', '現行メーター使用料', '案3-A 基本料金', '', '備考'])
-r = 6
+note(ws, 4, '※ 掲載額は設計値として四捨五入している。請求額の端数処理は「01_設定」の設定に従う（04シート）。')
+header(ws, 6, ['', '口径', '現行メーター使用料', '案3-A 基本料金', '', '備考'])
+r = 7
 for k in [13, 20, 25, 40, 50, 75, 100]:
     put(ws, r, 2, f'{k}mm', align='center')
     put(ws, r, 3, METER[k], fmt='#,##0')
@@ -628,6 +659,8 @@ REFS = [
  ('固定資産台帳ベースの既存償却費（年）', 32188, '経営戦略'),
  ('有収水量　5年計（㎥）', 4316000, '経営戦略の水需要予測'),
  ('給水収益　5年計', 590845, '★令和8年4〜6月の基本料金等免除は未反映'),
+ ('母集団補正率', 1.15145, '★ゾーン別試算の税抜収入を給水収益に合わせた値。別データによる検証が必要'),
+ ('消費税率', 0.10, '料金表は税込、収支・総括原価は税抜'),
 ]
 r = 5
 for name, val, memo in REFS:
@@ -641,6 +674,8 @@ r += 2
 band(ws, r, 'この計算表でできないこと', 5)
 r += 1
 for t in ['使用者別の調定明細による検証。件数・口径分布は代表値による推計のまま',
+          '母集団補正率1.15145の妥当性。ゾーン別試算が全使用者の一部しか拾えていないための補正で、'
+          '別データによる検証を経ていない',
           '産業用特例（3-B）の減収額。対象者の母集団が接続しないため算定していない',
           '年次の資金収支。企業債元金償還・建設改良費・期首資金を含む資金残高',
           '令和8年4〜6月の基本料金等免除を織り込んだ令和8・9年度の実収入',
