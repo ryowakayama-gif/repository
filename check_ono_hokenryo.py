@@ -35,13 +35,23 @@ STALE = {
 
 # 標準ケースの額を載せているはずの成果品。載っていなければ作り直し漏れ。
 POSITIVE = {
-    "小野町高齢者保健福祉計画_第10期介護保険事業計画_素案_第5版": ("6,048円", "6,100円"),
+    "小野町高齢者保健福祉計画_第10期介護保険事業計画_素案_第6版": ("6,048円", "6,100円"),
     "小野町_第10期_サービス見込量の算定結果": ("6,048円",),
     "小野町_見える化_所得段階別被保険者数の入力": ("6,048円",),
+    "小野町高齢者福祉サービス推進協議会資料_第9期計画の評価と令和7年度調査結果_20260928":
+        ("6,048円", "6,533円"),
 }
 
+# 読み手に見えてはいけない強調マーカー。`**` を太字に変換せず本文に出していないか。
+# 令和8年9月28日に素案（708か所）と協議会資料（196か所）で見つかり、直した。
+NO_MARKER = (
+    "小野町高齢者保健福祉計画_第10期介護保険事業計画_素案_第6版",
+    "小野町高齢者福祉サービス推進協議会資料_第9期計画の評価と令和7年度調査結果_20260928",
+)
+
 # 訂正の経緯を説明する文書では、訂正前の額に言及してよい。
-ALLOW = ("推計が通りました", "システムとの突合", "業務進捗", "進捗管理")
+ALLOW = ("推計が通りました", "システムとの突合", "業務進捗", "進捗管理",
+         "打合せ資料_現在地と論点")
 
 
 def is_gen(p):
@@ -72,7 +82,7 @@ def text_of(p):
 
 
 def main():
-    hits, missing, seen = [], [], set()
+    hits, missing, seen, marks = [], [], set(), []
     n = 0
     for p in sorted(ROOT.rglob("*")):
         if not p.is_file() or not is_gen(p):
@@ -86,6 +96,10 @@ def main():
                 for must in musts:
                     if must not in t:
                         missing.append((p.relative_to(ROOT), must))
+        if any(k in p.name for k in NO_MARKER):
+            t = text_of(p) if t is None else t
+            if "**" in t:
+                marks.append((p.relative_to(ROOT), t.count("**")))
         if any(a in p.name for a in ALLOW):
             continue
         t = text_of(p) if t is None else t
@@ -96,9 +110,14 @@ def main():
         if key not in seen:
             missing.append((key, "そもそも成果品が見つからない"))
     print(f"走査 {n}件（うち経緯説明文書は古い額の点検から除外）")
-    if not hits and not missing:
+    if not hits and not missing and not marks:
         print("古い保険料額は残っていない。標準ケースの額も載っている。")
+        print("強調マーカー（**）が本文に出ている成果品もない。")
         return 0
+    if marks:
+        print(f"**強調マーカーが本文に出ている成果品が {len(marks)}件**")
+        for rel, c in marks:
+            print(f"  {rel}\n      ** が {c}か所。太字に変換されていない")
     if hits:
         print(f"**古い額が {len(hits)}件 残っている**")
         for rel, bad, why in hits:
