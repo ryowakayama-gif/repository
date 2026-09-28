@@ -287,6 +287,61 @@ def main():
         "図表マップに未登録" if len(f21) != 1 else ("PNGがない（build_figure_taikei.py を実行）"
                                               if not os.path.exists(fp) else "図3-1 を登録・実在"))
 
+    # ── 22　第1号被保険者数に同じ時点で2つの値が併存しないこと ──────────
+    import shihyo_dict as SD
+    bad22 = []
+    # 2-9 の乖離表（見える化の年度の値）
+    t29 = None
+    for sec in ch['第2章']['sections']:
+        if sec['no'] == '2-9':
+            for b in sec['blocks']:
+                if b['t'] == 'table' and b['head'] == ['', '計画値', '実績', '差']:
+                    t29 = t29 or b
+    if t29 is None:
+        bad22.append('2-9の乖離表がない')
+    else:
+        for r in t29['rows']:
+            yr = r[0].replace('年度', '年度')
+            exp = SD.HIHOKENSHA_MIERUKA.get(yr)
+            got = int(''.join(c for c in r[2] if c.isdigit()))
+            if exp is not None and got != exp:
+                bad22.append(f'2-9 {yr} 素案{got}≠見える化{exp}')
+            if exp is None and yr == '令和8年度' and got != SD.HIHOKENSHA_BAN['令和8年'][2]:
+                bad22.append(f"2-9 {yr} 素案{got}≠B案{SD.HIHOKENSHA_BAN['令和8年'][2]}")
+    # 2-2 と 5-2 の推計表が B案と一致すること
+    for chn, secno in (('第2章', '2-2'), ('第5章', '5-2')):
+        for sec in ch[chn]['sections']:
+            if sec['no'] != secno:
+                continue
+            for b in sec['blocks']:
+                if b['t'] != 'table' or b['head'][:2] != ['', '前期高齢者']:
+                    continue
+                for r in b['rows']:
+                    key = r[0].replace('（実績）', '').replace('令和7年12月末', '令和8年')
+                    if key not in SD.HIHOKENSHA_BAN:
+                        continue
+                    z, k, tot = SD.HIHOKENSHA_BAN[key]
+                    got = int(r[3].replace(',', ''))
+                    if got != tot:
+                        bad22.append(f'{secno} {r[0]} 素案{got}≠B案{tot}')
+    chk(22, '第1号被保険者数の値が出所ごとに一致すること', not bad22,
+        '・'.join(bad22[:4]) if bad22 else '2-2・2-9・5-2 の全行が出所の値と一致')
+
+    # ── 23　指標辞書の値が素案に書かれていること ─────────────────
+    def num_in(v):
+        s1 = f'{v:,}' if isinstance(v, int) and v >= 1000 else str(v)
+        return s1 in t or str(v) in t
+    bad23 = [k for k, (v, *_rest) in SD.S.items() if not num_in(v)]
+    chk(23, '指標辞書の値が素案に記載されていること', not bad23,
+        '素案にない: ' + '・'.join(bad23[:4]) if bad23 else f'{len(SD.S)}件すべて記載')
+
+    # ── 24　出所の異なる同じ名前の指標に、時点の断りがあること ─────────
+    need24 = [('1,009', '65歳以上人口'), ('1,012', '令和7年12月末'),
+              ('1,015', '令和6年度'), ('1,011', '令和7年度')]
+    bad24 = [f'{n}（{w}）' for n, w in need24 if n in t and w not in t]
+    chk(24, '第1号被保険者数の3つの出所に時点の断りがあること', not bad24,
+        '断りがない: ' + '・'.join(bad24) if bad24 else '4件とも時点を明記')
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
