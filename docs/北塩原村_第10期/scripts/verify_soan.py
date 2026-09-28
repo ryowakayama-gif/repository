@@ -454,6 +454,73 @@ def main():
     chk(28, '素案の本文に内部の仕組みの語がないこと', not hit28,
         '・'.join(sorted(set(hit28))[:4]) if hit28 else f'{len(NAIGO)}語のいずれも本文にない')
 
+    # ── 29　成果品の地の文にマークダウンの記号が残っていないこと ───────
+    #    docxビルダは ** を太字に変換しないため、そのまま紙に出てしまう。
+    hit29 = []
+    for c in SC.CH:
+        for sec in c['sections']:
+            for b in sec['blocks']:
+                for v in ([str(b.get('v', ''))]
+                          + [str(x) for r in b.get('rows', []) for x in r]
+                          + [str(x) for x in b.get('head', [])]):
+                    for g in ('**', '__', '~~', '](' ):
+                        if g in v:
+                            hit29.append(f'{sec["no"]}:{g}')
+    chk(29, '本文にマークダウンの記号が残っていないこと', not hit29,
+        '・'.join(sorted(set(hit29))[:4]) if hit29 else '**・__・~~・リンク記法のいずれもない')
+
+    # ── 30　2-8 の目標別得点が交付金の算定と一致すること ─────────────
+    KF = os.path.join(DATA, '交付金_目標別の県内比較_令和8年度.csv')
+    t30 = None
+    for sec in SC.CH[1]['sections']:
+        if sec['no'] == '2-8':
+            for b in sec['blocks']:
+                if (b['t'] == 'table' and b['head'][0] == '交付金・目標'
+                        and '県内順位' in b['head'] and '全国順位' in b['head']):
+                    t30 = b
+    bad30 = []
+    if not os.path.exists(KF) or t30 is None:
+        bad30.append('算定のCSVまたは2-8の表がない')
+    else:
+        D = {r['目標名']: r for r in csv.DictReader(open(KF, encoding='utf-8-sig'))}
+        for r in t30['rows']:
+            name = r[0].split('\u3000', 1)[-1].strip()
+            d = D.get(name)
+            if not d:
+                bad30.append(f'{name[:12]}が算定にない'); continue
+            for i, key in ((1, '本村'), (2, '県平均'), (3, '県内順位'),
+                           (4, '全国平均'), (5, '全国順位')):
+                a = float(str(r[i]).replace('点', '').replace('位', '').replace(',', ''))
+                if abs(a - float(d[key])) > 0.05:
+                    bad30.append(f'{name[:8]} {key} 素案{r[i]}≠算定{d[key]}')
+    chk(30, '2-8 の目標別得点が交付金の算定と一致すること', not bad30,
+        '・'.join(bad30[:3]) if bad30 else '8目標×5項目すべて一致')
+
+    # ── 31　交付金の満点の定義が一貫していること ───────────────────
+    need31 = ['800点満点', '成果指向型配分枠', '評価指標による満点']
+    miss31 = [x for x in need31 if x not in t]
+    bad31 = []
+    if '160点' in t and '100点満点で上限' not in t and '満点は100点' not in t:
+        bad31.append('目標Ⅳの満点の断りがない')
+    chk(31, '交付金の満点の定義が一貫していること', not miss31 and not bad31,
+        ('欠落: ' + '・'.join(miss31) if miss31 else '') + '・'.join(bad31)
+        if (miss31 or bad31) else '800点は評価指標による満点。成果指向型配分枠は別枠と明記')
+
+    # ── 32　給付適正化の主要3事業の名称が節をまたいで一致すること ─────────
+    SAN = ['要介護認定の適正化', 'ケアプラン等の点検', '縦覧点検・医療情報との突合']
+    where32 = {}
+    for c in SC.CH:
+        for sec in c['sections']:
+            txt = ''.join([str(b.get('v', ''))
+                           + str(b.get('rows', '')) + str(b.get('head', ''))
+                           for b in sec['blocks']])
+            if '主要3事業' in txt or '主要３事業' in txt:
+                where32[sec['no']] = [x for x in SAN if x in txt]
+    bad32 = [f'{k}（{len(v)}/3）' for k, v in where32.items() if len(v) not in (0, 3)]
+    chk(32, '主要3事業の名称が節をまたいで一致すること', len(where32) >= 3 and not bad32,
+        '一部しか一致しない: ' + '・'.join(bad32) if bad32
+        else f'主要3事業に触れる{len(where32)}節で名称が一致')
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')

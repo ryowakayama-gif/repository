@@ -140,6 +140,22 @@ def main():
     for lab, d, note in rows:
         p(f'  {lab:<34}{d:>16,.0f}円{yen(d):>9.0f}円' + (f'　{note}' if note else ''))
 
+    # ── 調整交付金の見込交付割合の感応度 ─────────────────
+    #   給付費の増減とは効き方が違う。交付割合の低下はそのまま保険料収納必要額に
+    #   乗るため、限界率を経由しない。指針（令和5年9月12日老介発0912第1号）により
+    #   主要3事業の取組状況が調整交付金の算定に勘案されるため、この感応度が要る。
+    kofu_base3 = hyojun3 + SOGO_R5 * 3      # 調整交付金の算定基礎（①＋総合事業費）
+    rows_kofu = []
+    for pt, note in ((0.1, '主要3事業の取組状況が勘案される（指針 第二の(2)④）'),
+                     (0.22, '5-7で置いた見込交付割合の幅 4.10〜4.32％に相当')):
+        d = kofu_base3 * pt / 100
+        rows_kofu.append((f'調整交付金の見込交付割合が{pt}ポイント低下', d, d / denom, note))
+    p('')
+    p('■ 調整交付金の見込交付割合の感応度（限界率を経由しない）')
+    p(f'  算定基礎（①＋総合事業費）3か年計 {kofu_base3:,.0f}円')
+    for lab, d, m, note in rows_kofu:
+        p(f'  {lab:<34}{d:>16,.0f}円{m:>9.0f}円　{note}')
+
     # 第1号被保険者負担割合
     p('')
     p('■ 第1号被保険者負担割合（α）の感応度')
@@ -245,7 +261,10 @@ def main():
         w.writerow(['項目', '給付費等の増減(円)', '月額への効き(円)', '備考'])
         for lab, d, note in rows:
             w.writerow([lab, round(d), round(yen(d), 1), note or ''])
+        for lab, d, m, note in rows_kofu:
+            w.writerow([lab, round(d), round(m, 1), note])
         w.writerow([])
+        w.writerow(['調整交付金の算定基礎 3年計(円)', kofu_base3])
         w.writerow(['分母(人・月)', round(denom)])
         w.writerow(['限界率(%)', round(marginal * 100, 2)])
         w.writerow(['標準給付費見込額 3年計(円)', hyojun3])
