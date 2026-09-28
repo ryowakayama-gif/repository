@@ -30,6 +30,7 @@ TARGETS = [
     '09_interim_report/女川町水道料金改定_中間報告書.docx',
     '09_interim_report/女川町水道料金改定_中間報告書_指摘事項対応表.docx',
     '09_interim_report/女川町水道料金改定_最終報告に向けた工程表.docx',
+    '09_interim_report/onagawa_adopted_calc.xlsx',
     '10_wbs/onagawa_wbs_R8.xlsx',
     '10_wbs/女川町上下水道経営指標評価_WBSと進捗状況.docx',
 ]

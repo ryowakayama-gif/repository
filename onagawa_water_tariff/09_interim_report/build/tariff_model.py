@@ -60,7 +60,11 @@ INT_5Y          =   157_345        # 支払利息5年計（既往50,585＋新規
 AM_YEAR         =    26_889        # 資産維持費（年・千円）
 
 kyusui_genka  = TOTAL_COST_5Y * 1000 / YUSHU_5Y
-kyoukyu_tanka = 128.2
+# 供給単価は3種類あり、混用できない
+TANKA_R7_INC  = 128.2                              # 令和7年度実績・税込調定単価
+TANKA_R7_EX   = 116.6                              # 令和7年度実績・税抜（消費税相当額11,948,075円を除く）
+kyoukyu_tanka = REV_5Y / 5 * 1000 / (YUSHU_5Y / 5)  # 令和8〜12年度の推計・税抜
+kaishu_wariai = kyoukyu_tanka / kyusui_genka        # 総括原価回収割合（税抜どうしの比）
 rev_year      = REV_5Y / 5
 shortfall     = (TOTAL_COST_5Y - REV_5Y) / 5
 ratio_full    = TOTAL_COST_5Y / REV_5Y
@@ -71,7 +75,8 @@ print(f'''
 【確定した前提】
   総括原価5年計      {TOTAL_COST_5Y:,}千円
   給水原価           {kyusui_genka:.1f}円/㎥
-  現行供給単価       {kyoukyu_tanka}円/㎥　料金回収率 {kyoukyu_tanka/kyusui_genka:.1%}
+  供給単価（R8〜R12・税抜） {kyoukyu_tanka:.1f}円/㎥　総括原価回収割合 {kaishu_wariai:.1%}
+  　（参考）R7実績 税込{TANKA_R7_INC}円/㎥・税抜{TANKA_R7_EX}円/㎥　※将来推計と同じ指標として比較しない
   現行料金収入       {rev_year:,.0f}千円/年
   年間不足額         {shortfall:,.0f}千円/年
   必要改定率（総括原価回収） {ratio_full:.2f}倍
@@ -145,11 +150,11 @@ print(f'''
 # 影響の算定
 # ============================================================
 PATTERNS = [
- ('現行',                 lambda v,d: current(v,d)),
- ('P1-A 現行体系×2.38',   lambda v,d: p1(v,d,K_FULL)),
- ('P1-B 現行体系×1.50',   lambda v,d: p1(v,d,1.50)),
- ('P2 赤字半減×1.36',     lambda v,d: p1(v,d,K_HALF)),
- ('P3-A 口径別逓増',      lambda v,d: p3a(v,d,M_A)),
+ ('現行',                                  lambda v,d: current(v,d)),
+ (f'P1-A 現行体系×{K_FULL:.2f}',            lambda v,d: p1(v,d,K_FULL)),
+ ('P1-B 現行体系×1.50',                    lambda v,d: p1(v,d,1.50)),
+ (f'P2 赤字半減×{K_HALF:.3f}',              lambda v,d: p1(v,d,K_HALF)),
+ ('P3-A 口径別逓増',                        lambda v,d: p3a(v,d,M_A)),
 ]
 
 print('■ 水量ゾーン別 月額料金（円）と現行比')
@@ -183,22 +188,17 @@ for nm, d, v, c in FISH:
     b=p3b(v,d,M_A,ind=True)/base
     print(f"{nm:16s}{d:>6d}{v:>7d}{c:>5d}"+''.join(f'{x:>11.2f}倍' for x in vals)+f"{b:>13.2f}倍")
 
-print()
-print('■ 19社合計の年額（千円）と財政影響')
-for n,fn in PATTERNS:
-    tot=sum(c*fn(v,d)*12 for _,d,v,c in FISH)
-    print(f'  {n:22s} {tot/1000:>10,.0f}千円')
-tot_b=sum(c*p3b(v,d,M_A,ind=True)*12 for _,d,v,c in FISH)
-print(f'  {"P3-B 産業特例適用":22s} {tot_b/1000:>10,.0f}千円')
+# 19社の合計額・産業特例による減収額は算定しない。
+# 口径別の実績と母集団が接続しないため（100mmは1社の仮定が口径全体実績の約5.71倍、
+# 水量ゾーン別試算の501㎥超は年約233千㎥に対し19社の500㎥以上だけで年372千㎥）。
+# 使用者別の調定明細を受領したうえで、同一母集団に各案を適用し直して算定する。
 
 print()
-print('■ 年間料金収入と料金回収率')
+print('■ 年間料金収入と総括原価回収割合（税抜・水量ゾーン別試算による推計）')
 for n,fn in PATTERNS:
-    r=revenue(fn); g=kyusui_genka
-    print(f'  {n:22s} {r/1e6:>8.1f}百万円  供給単価 {r/(YUSHU_5Y/5):>6.1f}円/㎥  回収率 {r/(YUSHU_5Y/5)/g:>6.1%}')
-r3b = revenue(lambda v,d: p3a(v,d,M_A)) - (sum(c*(p3a(v,d,M_A)-p3b(v,d,M_A,ind=True))*12 for _,d,v,c in FISH))
-print(f'  {"P3-B 産業特例適用":22s} {r3b/1e6:>8.1f}百万円  供給単価 {r3b/(YUSHU_5Y/5):>6.1f}円/㎥  回収率 {r3b/(YUSHU_5Y/5)/kyusui_genka:>6.1%}')
-print(f'  　（産業特例による減収 {(revenue(lambda v,d: p3a(v,d,M_A))-r3b)/1e6:.1f}百万円/年）')
+    r=revenue(fn)
+    print(f'  {n:26s} {r/1e6:>8.1f}百万円  供給単価 {r/(YUSHU_5Y/5):>6.1f}円/㎥  回収割合 {r/(YUSHU_5Y/5)/kyusui_genka:>6.1%}')
+print('  P3-B 産業特例適用          算定していない（母集団が接続しないため）')
 
 # ============================================================
 # 特殊用途区分（湯屋用・船舶用）への影響
@@ -218,11 +218,11 @@ for nm, f, vols, dia in [('湯屋用', yuya, [500, 800], 40), ('船舶用（直�
 
 print()
 print('■ 段階改定の例（パターン2を第1次とする2段階）')
-steps=[('第1次（R8年度内）', K_HALF, '赤字半減'),
+steps=[('第1次（R9.4適用開始）', K_HALF, '料金不足額の半減'),
        ('第2次（R13〜R17）', K_FULL, '総括原価の回収')]
 for nm,k,aim in steps:
     r=revenue(lambda v,d: p1(v,d,k))
-    print(f'  {nm:20s} 改定率{k:.2f}倍  収入{r/1e6:6.1f}百万円  回収率{r/(YUSHU_5Y/5)/kyusui_genka:6.1%}  標準家庭{p1(20,20,k):,}円  （{aim}）')
+    print(f'  {nm:24s} 改定率{k:.3f}倍  収入{r/1e6:6.1f}百万円  回収割合{r/(YUSHU_5Y/5)/kyusui_genka:6.1%}  標準家庭{p1(20,20,k):,}円  （{aim}）')
 
 # ============================================================
 # 結果の保存
@@ -230,7 +230,9 @@ for nm,k,aim in steps:
 import json, os
 res = dict(
   総括原価5年計=TOTAL_COST_5Y, 給水原価=round(kyusui_genka,1),
-  現行供給単価=kyoukyu_tanka, 料金回収率=round(kyoukyu_tanka/kyusui_genka,3),
+  供給単価_R8toR12_税抜=round(kyoukyu_tanka,1),
+  総括原価回収割合=round(kaishu_wariai,3),
+  供給単価_R7実績_税込=TANKA_R7_INC, 供給単価_R7実績_税抜=TANKA_R7_EX,
   現行料金収入年=round(rev_year), 年間不足額=round(shortfall),
   必要改定率=round(ratio_full,3), キャッシュ不足額=round(cash_short),
   赤字半減改定率=round(K_HALF,3), P3A水準係数=round(M_A,4),
