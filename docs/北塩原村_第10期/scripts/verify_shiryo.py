@@ -87,6 +87,31 @@ src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
                         "shiryo_content.py"), encoding="utf-8").read()
 chk(5, "「下回る唯一の目標」の誤りが残っていないこと", "下回る唯一の目標" not in src)
 
+# 6 資料3 は集計前の骨子であり、数値欄が【集計後】で埋まっていること
+s3 = [x for x in SH.CH if x["no"] == "資料3"]
+if not s3:
+    chk(6, "資料3 の骨子", False, "資料3がない")
+else:
+    secs = s3[0]["sections"]
+    tbls = [b for sc in secs for b in sc["blocks"] if b["t"] == "table"]
+    # 集計後に埋める欄が1つもない表は、数値を書き込み済みか枠の作り忘れ
+    nofill = [i for i, b in enumerate(tbls)
+              if not any("【集計後】" in str(c) for r in b["rows"] for c in r)]
+    chk(6, "資料3 の骨子（節数・数値欄）",
+        len(secs) == 10 and len(tbls) == 16 and len(nofill) <= 2,
+        f"節{len(secs)}／表{len(tbls)}／数値欄のない表{len(nofill)}"
+        if not (len(secs) == 10 and len(tbls) == 16 and len(nofill) <= 2)
+        else f"10節・16表、うち14表に【集計後】の欄")
+
+# 7 資料3 の作成に必要な前提（未決の2件）が確認事項に残っていること
+import re as _re
+KK = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                       "wbs_kakunin.py"), encoding="utf-8").read()
+need = [("問4(15)(16)", "リスク判定の領域数"), ("要介護認定データの提供時期", "認定データの関連付け")]
+miss7 = [lab for key, lab in need if key not in KK]
+chk(7, "資料3 の前提となる確認事項の存在", not miss7,
+    f"確認事項から消えている: {miss7}" if miss7 else "2件とも確認事項に存在")
+
 w = max(len(n) for _, n, _, _ in R)
 print("■ 第2回策定委員会 資料の自己点検")
 ng = 0
