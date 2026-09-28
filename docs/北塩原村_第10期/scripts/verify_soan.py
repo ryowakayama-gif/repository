@@ -521,6 +521,86 @@ def main():
         '一部しか一致しない: ' + '・'.join(bad32) if bad32
         else f'主要3事業に触れる{len(where32)}節で名称が一致')
 
+    # ── 33　5-4(12) の需要に対する供給の表が再計算と一致すること ─────────
+    import estimate_jinzai as EJ
+    t33 = None
+    for sec in SC.CH[4]['sections']:
+        for b in sec['blocks']:
+            if (b['t'] == 'table' and b['head'][0] == ''
+                    and b['rows'] and b['rows'][0][0] == '生産年齢人口'):
+                t33 = b
+    bad33 = []
+    if t33 is None:
+        bad33.append('5-4(12)の表がない')
+    else:
+        calc = {r[0]: r for r in EJ.run()}
+        ROW = {'生産年齢人口': 1, '認定者数（需要）': 2, '　うち要支援1・2': 3,
+               '　うち要介護1以上': 4, '供給の枠（生産年齢人口に比例）': 5,
+               '要支援の方に回せる量': 6, '要支援の充足率': 7}
+        for row in t33['rows']:
+            idx = ROW.get(row[0])
+            if idx is None:
+                bad33.append(f'{row[0]}が再計算にない'); continue
+            for j, y in enumerate(t33['head'][1:], start=1):
+                got = str(row[j]).replace('人', '').replace('%', '').replace(',', '')
+                exp = calc[y][idx]
+                if abs(float(got) - float(exp)) > 0.05:
+                    bad33.append(f'{y} {row[0]} 素案{row[j]}≠再計算{exp}')
+    chk(33, '5-4(12) 需要に対する供給が再計算と一致すること', not bad33,
+        '・'.join(bad33[:3]) if bad33 else '4時点×7行すべて一致（要支援の充足率100.0→18.6%）')
+
+    # ── 34　5-6 の補助給付等の比率と感応度が算定と一致すること ─────────
+    KAN = load_csv('第10期_保険料感応度.csv')
+    t34 = None
+    for sec in SC.CH[4]['sections']:
+        for b in sec['blocks']:
+            if b['t'] == 'table' and b['head'][:2] == ['前提', '標準給付費への差']:
+                t34 = b
+    bad34 = []
+    if t34 is None or not KAN:
+        bad34.append('5-6の表または感応度のCSVがない')
+    else:
+        D = {r['項目']: r for r in KAN if r.get('項目')}
+        for row in t34['rows']:
+            key = [k for k in D if row[0][:12] in k or k.startswith(row[0][:10])]
+            if not key:
+                bad34.append(f'{row[0][:16]}が算定にない'); continue
+            d = D[key[0]]
+            a = float(str(row[1]).replace('＋', '').replace(',', '').replace('千円', ''))
+            if abs(a * 1000 - float(d['給付費等の増減(円)'])) > 1000:
+                bad34.append(f'{row[0][:10]} 差 素案{row[1]}≠算定{d["給付費等の増減(円)"]}')
+            m = float(str(row[2]).replace('＋', '').replace('円', ''))
+            if abs(m - float(d['月額への効き(円)'])) > 0.5:
+                bad34.append(f'{row[0][:10]} 月額 素案{row[2]}≠算定{d["月額への効き(円)"]}')
+    ok34 = not bad34 and in_md(t, '対標準給付費比', '9.02%', '7.56%')
+    chk(34, '5-6 の補助給付等の比率と感応度が算定と一致すること', ok34,
+        '・'.join(bad34[:3]) if bad34 else '比率の系列と感応度2件が算定と一致')
+
+    # ── 35　5-4(11) の施策反映が手引きの3区分で、織り込んでいない旨があること ──
+    need35 = ['① 認定者数', '② 施設・居住系サービス', '③ 在宅サービス',
+              '施策の効果を織り込んでいません']
+    miss35 = [x for x in need35 if x not in t]
+    chk(35, '5-4(11) 施策反映が手引きの3区分であること', not miss35,
+        '欠落: ' + '・'.join(miss35) if miss35 else '3区分と、効果を織り込んでいない旨を明記')
+
+    # ── 36　素案の積算が仕様書の約100頁に収まること ────────────────
+    #    5-12（据え置いている項目の一覧）は数値の確定後に削除するため、
+    #    成果品としての頁数はこれを除いた値で見る。
+    try:
+        import estimate_pages as EP
+        import math
+        rows, _t, _nt, _nf = EP.run()
+        est = sum(math.ceil(r[5]) for r in rows) + sum(n for _, n in EP.FRONT)
+        S512 = {sec['no']: sec for c in SC.CH for sec in c['sections']}.get('5-12')
+        h512 = (sum(EP.block_h(b) for b in S512['blocks']) / EP.BODY_H) if S512 else 0
+        final = est - h512
+        ok36 = 95 <= final <= 105
+        chk(36, '素案の積算が仕様書の約100頁に収まること', ok36,
+            f'積算{est}頁・5-12を除くと{final:.1f}頁'
+            + ('' if ok36 else '（約100頁から外れています）'))
+    except Exception as e:
+        chk(36, '素案の積算が仕様書の約100頁に収まること', False, f'照合できない（{e}）')
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')

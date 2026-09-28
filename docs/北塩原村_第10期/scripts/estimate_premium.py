@@ -55,6 +55,12 @@ HOJO_R5 = 14_495_976 + 6_768_762 + 0 + 252_189
 CHIIKI_R5 = 39_885_993
 # 総合事業費（令和5年度決算。介護予防・生活支援サービス事業費＋一般介護予防事業費）
 SOGO_R5 = 14_637_340 + 1_825_335
+# 補助給付等と サービス諸費 の決算（対標準給付費比の趨勢を見るため）
+#   (年度, 特定入所者, 高額介護, 高額医療合算, 審査支払手数料, サービス諸費)
+HOJO_KESSAN = [
+    ('令和4年度', 17_745_000, 6_550_000, 0, 234_000, 247_333_000),
+    ('令和5年度', 14_495_976, 6_768_762, 0, 252_189, 258_848_000),
+]
 
 
 def main():
@@ -139,6 +145,40 @@ def main():
     p(f'  {"項目":<34}{"給付費等の増減":>18}{"月額":>10}')
     for lab, d, note in rows:
         p(f'  {lab:<34}{d:>16,.0f}円{yen(d):>9.0f}円' + (f'　{note}' if note else ''))
+
+    # ── 補助給付等の対標準給付費比の趨勢と感応度 ─────────────
+    #   他案件で「その他給付費の対総給付費比が低下しており、置いていた率が
+    #   過大だった」ことが分かった。本村も据え置きであるため趨勢を確かめる。
+    p('')
+    p('■ 補助給付等の対標準給付費比（決算と第10期の見込み）')
+    hojo_ratio = []
+    for y, toku, koga, iryo, tesu, svc in HOJO_KESSAN:
+        h = toku + koga + iryo + tesu
+        std = svc + h
+        hojo_ratio.append((y, h, std, h / std * 100))
+        p(f'  {y}　補助給付等{h:>12,}円　標準給付費{std:>13,}円　'
+          f'比率 {h / std * 100:>5.2f}％')
+    r10 = HOJO_R5 * 3 / hyojun3 * 100
+    p(f'  第10期3か年　補助給付等{HOJO_R5*3:>12,}円　標準給付費{hyojun3:>13,}円　'
+      f'比率 {r10:>5.2f}％（令和5年度決算の据え置き）')
+    rows_hojo = []
+    for y, h, std, ratio in hojo_ratio:
+        if abs(ratio - r10) < 0.01:
+            continue
+        std_alt = svc3 / (1 - ratio / 100)
+        d = std_alt - hyojun3
+        rows_hojo.append((f'補助給付等の比率が{y}の{ratio:.2f}％に戻る場合',
+                          d, yen(d), f'第10期の据え置きは{r10:.2f}％'))
+    # 特定入所者のみが令和4年度の水準に戻る場合
+    toku_r4 = HOJO_KESSAN[0][1]
+    toku_r5 = HOJO_KESSAN[1][1]
+    d_toku = (toku_r4 - toku_r5) * 3
+    rows_hojo.append(('特定入所者介護サービス費等のみ令和4年度の水準に戻る場合',
+                      d_toku, yen(d_toku), '令和4年度17,745千円・令和5年度14,496千円'))
+    p('')
+    p('■ 補助給付等の感応度')
+    for lab, d, m, note in rows_hojo:
+        p(f'  {lab:<44}{d:>14,.0f}円{m:>9.0f}円　{note}')
 
     # ── 調整交付金の見込交付割合の感応度 ─────────────────
     #   給付費の増減とは効き方が違う。交付割合の低下はそのまま保険料収納必要額に
@@ -261,6 +301,8 @@ def main():
         w.writerow(['項目', '給付費等の増減(円)', '月額への効き(円)', '備考'])
         for lab, d, note in rows:
             w.writerow([lab, round(d), round(yen(d), 1), note or ''])
+        for lab, d, m, note in rows_hojo:
+            w.writerow([lab, round(d), round(m, 1), note])
         for lab, d, m, note in rows_kofu:
             w.writerow([lab, round(d), round(m, 1), note])
         w.writerow([])
