@@ -27,6 +27,8 @@ import openpyxl
 XLSX = ("09_元資料/交付金評価/③令和８年度交付金評価指標等（市町村分・公表版）/"
         "001732614_令和８年度全国集計（市町村）.xlsx")
 GROUPS = "04_調査・入力・分析/R8.9.25交付金再解析/交付金列定義_R8.9.28.json"
+TAIKEI = ("05_試算・管理シート/"
+          "川崎町_第10期_施策事業統合体系表_R8.9.25b.xlsx")
 KAWASAKI = 280
 
 
@@ -138,6 +140,33 @@ def main(shiryo, soan):
             ng.append(f"検査4　選択は「{n}件」と書いているが本文には{sentaku}件")
         else:
             ok += 1
+
+    # 町案から取り込む事業の件数と、列挙した事業の数が合っているか
+    m = re.search(r"記載のない事業が(\d+)件（([^）]+)）", body)
+    if m:
+        n = int(m.group(1))
+        real = len([x for x in m.group(2).split("、") if x.strip()])
+        if n != real:
+            ng.append(f"検査4　町案から取り込む事業は「{n}件」と書いているが"
+                      f"、列挙は{real}件")
+        else:
+            ok += 1
+    cnt = {int(x) for x in re.findall(r"記載のない事業が(\d+)件", body)}
+    if len(cnt) > 1:
+        ng.append(f"検査2　町案から取り込む事業の件数に2つの値がある: {sorted(cnt)}")
+    # 統合体系表の「05_体系案との異同」シートと突き合わせる
+    try:
+        tw = openpyxl.load_workbook(TAIKEI, data_only=True,
+                                    read_only=True)["05_体系案との異同"]
+        real = sum(1 for r in tw.iter_rows(min_row=2, values_only=True)
+                   if r and str(r[0]).strip() == "素案に取り込む事業")
+        if cnt and real not in cnt:
+            ng.append(f"検査3　町案から取り込む事業が資料は{sorted(cnt)}件、"
+                      f"統合体系表の異同シートは{real}件")
+        elif cnt:
+            ok += 1
+    except Exception as e:      # noqa: BLE001
+        ng.append(f"検査3　統合体系表を読めない: {e}")
 
     print(f"自己点検 {shiryo}")
     print(f"  適合 {ok}件／不適合 {len(ng)}件")
