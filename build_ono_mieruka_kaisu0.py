@@ -57,7 +57,9 @@ OK = PatternFill("solid", fgColor="E2EFDA")
 THIN = Side(style="thin", color="BFBFBF")
 BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
 
-OUR_GETSU = 6095
+OUR_GETSU = 6048
+          # 令和8年9月28日訂正。調整交付金見込額の基数に総合事業費を
+          # 含めていなかった（6,095円→6,048円）。切上げ6,100円は不変。
 
 # 給付費と利用者数の対比（ワークシート 2_サービス別給付費）
 SHOKO = [

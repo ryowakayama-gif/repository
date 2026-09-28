@@ -66,7 +66,9 @@ BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
 OUR_STD3 = 3093948       # 標準給付費（3年計・千円）
 OUR_CHI3 = 191749        # 地域支援事業費（3年計・千円）
 OUR_SOGO3 = 103743       # うち総合事業費（3年計・千円）
-OUR_GETSU = 6095         # 保険料基準額（月額・基金取崩なし）
+OUR_GETSU = 6048         # 保険料基準額（月額・基金取崩なし）
+          # 令和8年9月28日訂正。調整交付金見込額の基数に総合事業費を
+          # 含めていなかった（6,095円→6,048円）。切上げ6,100円は不変。
 
 # ワークシート 5_保険料推計 から読み取った値
 SYS = {
@@ -182,6 +184,9 @@ def classify(rows):
 
 
 def premium(std, chi, sogo, wari, shuno, g, pop3, kikin=0):
+    # ここの wari は hikaku() で「調整交付金見込額÷標準給付費」として求めるので、
+    # std に掛けると見込額そのものに戻る。基数に総合事業費を含める正しい算式は
+    # build_ono_tanka.premium() を参照のこと（本関数は再現専用）。
     need = (std + chi) * 0.23 + (std + sogo) * 0.05 - std * wari - kikin
     return need / shuno * 1000 / (pop3 * g) / 12
 

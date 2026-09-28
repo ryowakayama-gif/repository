@@ -58,7 +58,9 @@ BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
 SHIZEN = 6511      # 自然体推計（4,829＋1,682）
 GENZAI = 4829      # 画面の表示値（施策反映後）
 SAISA = -1682      # 施策反映による増減
-OUR_GETSU = 6095
+OUR_GETSU = 6048
+          # 令和8年9月28日訂正。調整交付金見込額の基数に総合事業費を
+          # 含めていなかった（6,095円→6,048円）。切上げ6,100円は不変。
 
 # 認定率の伸びの選択肢（画面で確認）
 SENTAKUSHI = [

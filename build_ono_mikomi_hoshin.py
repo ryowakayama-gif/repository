@@ -98,7 +98,9 @@ def compute():
     def getsu(kikin=0, alpha=ALPHA, w=None, chi=CHI10, sogo=SOGO10, s=None):
         s = std if s is None else s
         w = wari if w is None else w
-        need = (s + chi) * alpha + (s + sogo) * 0.05 - s * w - kikin
+        # 調整交付金見込額の基数は調整交付金相当額（5％）と同じ（標準給付費＋総合事業費）。
+        # 令和8年9月28日、見える化システムの出力と照合して訂正した。
+        need = (s + chi) * alpha + (s + sogo) * 0.05 - (s + sogo) * w - kikin
         return need / RATE * 1000 / hosei / 12
 
     base = getsu()

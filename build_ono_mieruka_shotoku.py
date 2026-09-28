@@ -197,8 +197,10 @@ def kikaku():
     def m(rates, wari, kikin=0):
         # 補正後被保険者数の出し方は build_ono_tanka.hosei_ninzu と同じ。
         h = sum(r * round(n / tot * pop3) for r, n in rates)
+        # 調整交付金見込額の基数は調整交付金相当額（5％）と同じ（標準給付費＋総合事業費）。
+        # 令和8年9月28日、見える化システムの出力と照合して訂正した。
         need = ((std + chi) * T.FUTAN_WARIAI + (std + sogo) * T.CHOSEI_SOTO
-                - std * wari - kikin)
+                - (std + sogo) * wari - kikin)
         return need / T.SHUNORITSU * 1000 / h / 12
 
     return {"軽減前": g_pre, "軽減後": g_post,

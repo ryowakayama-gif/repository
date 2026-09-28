@@ -61,7 +61,9 @@ OK = PatternFill("solid", fgColor="E2EFDA")
 THIN = Side(style="thin", color="BFBFBF")
 BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
 
-OUR_GETSU = 6095          # 当方の算定（月額・基金取崩なし）
+OUR_GETSU = 6048          # 当方の算定（月額・基金取崩なし）
+          # 令和8年9月28日訂正。調整交付金見込額の基数に総合事業費を
+          # 含めていなかった（6,095円→6,048円）。切上げ6,100円は不変。
 OUR_STD3 = 3093948        # 当方の標準給付費（3年計・千円）
 OUR_KYU3 = 2869936        # 当方の総給付費（3年計・千円）
 
@@ -505,7 +507,7 @@ def main():
     print("出力:", p1)
     print("     ", p2)
     print("  必ず直すもの 3つの伸びが「未設定」→「0（ゼロ）」")
-    print("  いまの保険料 2,964円／直すと約6,336〜6,657円／当方 6,095円")
+    print("  いまの保険料 2,964円／直すと約6,336〜6,657円／当方 6,048円")
     print("  ワーニング 86件（0925は42件）")
     print(f"  自己点検 {'OK' if not bad else 'NG: ' + ' / '.join(bad)}")
 
