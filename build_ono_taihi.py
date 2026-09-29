@@ -20,7 +20,7 @@
 import pathlib
 
 import ono_style as S
-from check_ono_taihi import TAIHI
+from check_ono_taihi import TAIHI, taio
 
 OUT = pathlib.Path(__file__).parent / "小野町_引継ぎ_整理済" / "03_計画素案"
 ASOF = "20260929"
@@ -90,6 +90,10 @@ TAISAKU = [
 ]
 
 
+# 素案（第7版）で対応した優先番号
+DONE = {"1", "2", "3", "4", "5", "6", "7"}
+
+
 def body(doc, *texts):
     for t in texts:
         doc.p(t)
@@ -126,31 +130,47 @@ def main():
         ("**計**", "", f"**{len(TAIHI)}件**"),
     ], right=(2,))
 
-    doc.h1("1　対比の結果")
+    n_taio = sum(1 for ch, se, *_x in TAIHI if taio(ch, se))
+    doc.p("")
+    body(doc,
+         f"**このうち{n_taio}件は、素案（第7版）で対応しました。**"
+         "対応した内容は第2章に、残っているものは第3章に示します。")
+
+    doc.h1("1　素案（第7版）で対応した項目")
+    table(doc, ["他団体の計画の章・節", "素案での対応箇所"],
+          [(f"{ch}　{se}", f"**{taio(ch, se)}**")
+           for ch, se, *_x in TAIHI if taio(ch, se)])
+    doc.src("※ 章番号の繰り下げに伴い、本文の相互参照90か所を機械置換しています。")
+
+    doc.h1("2　対比の結果")
     doc.h2("(1)　記載がないもの")
     table(doc, ["他団体の計画の章・節", "内容", "本町の状態"],
-          [(f"**{ch}**\n{se}", memo, "**記載なし**")
+          [(f"**{ch}**\n{se}", memo,
+            f"**{taio(ch, se)}**" if taio(ch, se) else "**記載なし**")
            for ch, se, _t, j, memo in TAIHI if j == "×"])
 
     doc.h2("(2)　記載はあるが扱いが違うもの")
     table(doc, ["他団体の計画の章・節", "本町の対応箇所", "違い"],
-          [(f"**{ch}**\n{se}", t, memo)
+          [(f"**{ch}**\n{se}",
+            f"**{taio(ch, se)}**" if taio(ch, se) else t, memo)
            for ch, se, t, j, memo in TAIHI if j == "△"])
 
     doc.h2("(3)　相当する記載があるもの")
     table(doc, ["他団体の計画の章・節", "本町の対応箇所"],
           [(f"{ch}　{se}", t) for ch, se, t, j, _b in TAIHI if j == "○"])
 
-    doc.h1("2　対応の方針")
+    doc.h1("3　残っている項目と対応の方針")
     body(doc,
          "**上の結果を踏まえ、素案の構成を他団体の形に合わせて組み替えます。**"
          "優先順位は、法令が定めを求めているもの、"
          "計画の評価に関わるもの、資料がすでに手元にあるものの順です。")
-    table(doc, ["優先", "何をするか", "内容", "使える資料"],
-          [(no, what, naiyo, shiryo) for no, what, naiyo, shiryo in TAISAKU])
+    table(doc, ["優先", "何をするか", "内容", "使える資料", "**状態**"],
+          [(no, what, naiyo, shiryo,
+            "**対応済み（第7版）**" if no in DONE else "**これから**")
+           for no, what, naiyo, shiryo in TAISAKU])
     doc.src("※ 優先「―」は、資料がないため町とのご相談が必要なもの。")
 
-    doc.h1("3　組み替えた後の構成（案）")
+    doc.h1("4　組み替えた後の構成")
     body(doc,
          "**基本理念・基本目標・施策体系は、第9期計画から継承したものを"
          "そのまま用います。**組み替えるのは章立てと節立てです。")
@@ -205,7 +225,7 @@ def main():
             "※ 他団体の第2章第6節「介護事業所の現状」は、"
             "本町が事業所調査を実施していないため置いていません。")
 
-    doc.h1("4　町にご確認いただきたいこと")
+    doc.h1("5　町にご確認いただきたいこと")
     table(doc, ["#", "内容", "なぜ必要か"], [
         ("1", "**事業所調査（介護人材実態調査）を実施するか**",
          "**第2章に「介護事業所の現状」の節を置くには、"
