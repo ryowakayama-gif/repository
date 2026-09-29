@@ -7,6 +7,7 @@
   検査1　交付金の数値が出典（001732614.xlsx）から再現できるか
   検査2　同じ事項に2つの値が置かれていないか
   検査3　割合を書いた箇所に分母が併記されているか
+  検査6　年度別の内訳の合計が「第10期計」の欄と一致するか
 
 不適合があれば終了コード1を返す。
 
@@ -240,6 +241,39 @@ def main(path):
                 ng.append(f"検査5　柱7の事業が{n7doc}件（統合体系表は{n7}件）")
             else:
                 ok += 1
+
+    # ══════════ 検査6　表の内訳の合計が「計」の欄と一致するか
+    #   レビュー指摘7（地域支援事業費 46,033＋49,596＋53,159＝148,788千円だが
+    #   表98・101は148,789千円）への対応。
+    #   年度別の値が並ぶ表について、3か年計の欄と内訳の合計を突き合わせる。
+    def _num(txt):
+        m = re.search(r"([\d,]+)", txt.replace(",", "") and txt)
+        return int(m.group(1).replace(",", "")) if m else None
+
+    uchiwake = 0
+    for t in doc.tables:
+        head = [c.text.strip() for c in t.rows[0].cells]
+        if "第10期計" not in head:
+            continue
+        i_tot = head.index("第10期計")
+        yrs = [i for i, h in enumerate(head)
+               if re.match(r"令和(9|10|11)年度$", h)]
+        if len(yrs) != 3:
+            continue
+        for row in t.rows[1:]:
+            cells = [c.text.strip() for c in row.cells]
+            tot = _num(cells[i_tot])
+            vals = [_num(cells[i]) for i in yrs]
+            if tot is None or any(v is None for v in vals):
+                continue
+            if "％" in cells[i_tot] or "人" in cells[i_tot]:
+                continue
+            uchiwake += 1
+            if sum(vals) != tot:
+                ng.append(f"検査6　{cells[1]} の内訳の合計 {sum(vals):,} が"
+                          f"「第10期計」{tot:,} と一致しない")
+    if uchiwake:
+        ok += 1
 
     print(f"自己点検 {path}")
     print(f"  適合 {ok}件／不適合 {len(ng)}件")
