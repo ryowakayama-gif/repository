@@ -5,6 +5,7 @@
    元を直したときの取り残しを検出する。不適合があれば終了コード1を返す。
 """
 import csv, os, sys
+sys.dont_write_bytecode = True   # 古いバイトコードで誤った結果が出ることを防ぐ
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import shiryo_content as SH
 import soan_content as SO
@@ -344,6 +345,59 @@ for c in SH.CH:
                         hit18.append(f'{c["no"]}{sc["no"]}:{g}')
 chk(18, "委員会資料の本文に内部の仕組みの語がないこと", not hit18,
     "・".join(sorted(set(hit18))[:4]) if hit18 else f"{len(NAIGO)}語のいずれも本文にない")
+
+# 19 交付金の表が、計画素案と委員会資料（資料2・資料7）で一致すること
+#    同じ数字を2つの成果品に書き写しているため、片方を直したときの取り残しを検出する。
+import re as _re2
+
+def _num(x):
+    """数値のセルだけを比べる。単位・記号は落とし、節番号（4-7 等）は比較の対象外とする。"""
+    v = _re2.sub(r'[\s\u3000点位％%人項目計配得,〜～]', '', str(x))
+    v = v.replace('▲', '-').replace('＋', '+')
+    return v if _re2.match(r'^[-+]?[\d.]+$', v) else None
+
+def _find(sec, pred):
+    for b in sec['blocks']:
+        if b['t'] == 'table' and pred(b):
+            return b
+    return None
+
+SO_S = {sc['no']: sc for c in SO.CH for sc in c['sections']}
+SH_S = {sc['no']: sc for c in SH.CH for sc in c['sections']}
+PRED = {
+ '3か年の得点推移': lambda b: b['head'][0] == '' and b['rows'][0][0].startswith('保険者機能強化推進交付金'),
+ '推移の4区分':    lambda b: b['head'] == ['区分', '項目数', '点'],
+ '目標別の8目標':   lambda b: b['head'][0] == '交付金・目標' and '県内順位' in b['head'] and '全国順位' in b['head'],
+ '政策領域の差':    lambda b: '本村の差' in b['head'] and '福島県の差' in b['head'],
+ '未取得の主な項目': lambda b: b['head'] == ['交付金・目標', '評価指標', '配点', '全国該当率'],
+ '61点の一覧':     lambda b: b['head'][0] == '交付金・指標',
+ '122点の4区分':   lambda b: b['head'] == ['区分', '項目数', '点', '内容'],
+}
+WHERE = {
+ '3か年の得点推移': ('2-8', '2-4'), '推移の4区分': ('2-8', '2-4'),
+ '目標別の8目標': ('2-8', '2-4'), '政策領域の差': ('2-8', '2-4'),
+ '未取得の主な項目': ('2-8', '2-4'), '61点の一覧': ('6-3', '7-3c'),
+ '122点の4区分': ('6-3', '7-3c'),
+}
+bad19 = []
+n_ok = 0
+for name, (so_no, sh_no) in WHERE.items():
+    a = _find(SO_S[so_no], PRED[name])
+    b = _find(SH_S[sh_no], PRED[name])
+    if a is None or b is None:
+        bad19.append(f'{name}が{"素案" if a is None else "資料"}にない')
+        continue
+    if len(a['rows']) != len(b['rows']):
+        bad19.append(f'{name} 行数 素案{len(a["rows"])}≠資料{len(b["rows"])}')
+        continue
+    for i, (ra, rb) in enumerate(zip(a['rows'], b['rows'])):
+        va = [y for y in (_num(x) for x in ra) if y is not None]
+        vb = [y for y in (_num(x) for x in rb) if y is not None]
+        if va != vb:
+            bad19.append(f'{name} 行{i+1}（{str(ra[0])[:14]}） 素案{va}≠資料{vb}')
+    n_ok += 1
+chk(19, "交付金の表が計画素案と委員会資料で一致すること", not bad19,
+    "・".join(bad19[:3]) if bad19 else f"{n_ok}表（3か年の推移・4区分・目標別・政策領域・未取得・61点・122点）が一致")
 
 w = max(len(n) for _, n, _, _ in R)
 print("■ 第2回策定委員会 資料の自己点検")

@@ -12,6 +12,7 @@
   すべて適合すれば終了コード0、1件でも不適合があれば1を返す。
 """
 import csv, json, os, re, sys, subprocess
+sys.dont_write_bytecode = True   # 古いバイトコードで誤った結果が出ることを防ぐ
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(BASE, 'data')

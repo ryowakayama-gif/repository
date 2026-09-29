@@ -5,6 +5,7 @@
    不適合があれば終了コード1を返す。
 """
 import os, re, sys
+sys.dont_write_bytecode = True   # 古いバイトコードで誤った結果が出ることを防ぐ
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from shukei_data import N, Z, DERIVED, CROSS, AXES, SHU_HO
 

@@ -13,6 +13,7 @@
    点検8 WBS の表示順が 大分類→中分類 の順に整っていること
 """
 import os, re, sys
+sys.dont_write_bytecode = True   # 古いバイトコードで誤った結果が出ることを防ぐ
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from spec_data import S, SHIEN, GAIBU
 from wbs_data import W
