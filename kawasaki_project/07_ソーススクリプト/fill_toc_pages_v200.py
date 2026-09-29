@@ -84,16 +84,21 @@ def main():
     # 節は計画書に現れる順に並んでいるため、探す位置を前の節の頁以降に限る。
     # そうしないと、節名と同じ語が本文中に先に現れたときにそちらを拾う
     # （例：3-3の表にある「第10章10-4（KPI管理表）」を10-4の頁としてしまう）。
+    # ⚠ floor が body_from より前に戻ると、目次自身の頁を拾ってしまう。
+    #    実際、Ver.2.3までは「ご挨拶（川崎町長）」の行が目次の頁で一致し、
+    #    floor がその頁まで戻ったため、第1章〜第4章の24行がすべて
+    #    目次の頁（3頁）になっていた。floor は body_from 未満に戻さない。
     floor = body_from
     for n, row in enumerate(rows):
         if row.cells[0].text.strip():          # 章の行は後で解く
             continue
         ttl = row.cells[1].text.strip()
-        frm = floor if not ttl.startswith("ご挨拶") else 0
+        is_aisatsu = ttl.startswith("ご挨拶")
+        frm = 0 if is_aisatsu else max(floor, body_from)
         no, idx = page_of(norm(ttl), frm)
         found[n] = no
-        if idx is not None:
-            floor = idx
+        if idx is not None and not is_aisatsu:
+            floor = max(idx, body_from)
     for n, row in enumerate(rows):
         if not row.cells[0].text.strip():
             continue
@@ -105,6 +110,12 @@ def main():
                 kids.append(found[m])
         found[n] = (min(kids) if kids
                     else page_of(norm(row.cells[1].text), body_from)[0])
+    # 目次自身の頁を拾っていないかを確かめる
+    toc_pages = {no for no, txt, i in pg if i < body_from and no is not None}
+    on_toc = [(rows[i].cells[1].text.strip(), found[i])
+              for i in range(len(found))
+              if found[i] is not None and found[i] in toc_pages
+              and not rows[i].cells[1].text.strip().startswith("ご挨拶")]
 
     # 頁番号が戻っていないかを確かめる
     seq = [v for v in found if v is not None]
@@ -126,6 +137,12 @@ def main():
     print("頁番号を入れました：", DOCX)
     print(f"目次 {len(rows)}行　記入 {hit}件　未特定 {miss}件")
     print(f"総頁数 {len(pg)}　本文の開始 {body_from + 1}頁目（PDF）")
+    if on_toc:
+        print("  ⚠ 目次自身の頁を拾っている行があります：")
+        for t, v in on_toc:
+            print(f"      {t}　{v}")
+    else:
+        print("  目次自身の頁を拾っている行はありません。")
     if back:
         print("  ⚠ 頁番号が前の行より小さい行があります：")
         for t, v in back:
