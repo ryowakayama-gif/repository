@@ -584,23 +584,46 @@ def main():
     chk(35, '5-4(11) 施策反映が手引きの3区分であること', not miss35,
         '欠落: ' + '・'.join(miss35) if miss35 else '3区分と、効果を織り込んでいない旨を明記')
 
-    # ── 36　素案の積算が仕様書の約100頁に収まること ────────────────
-    #    5-12（据え置いている項目の一覧）は数値の確定後に削除するため、
-    #    成果品としての頁数はこれを除いた値で見る。
+    # ── 36　計画の積算が仕様書の約100頁に収まること ────────────────
+    #    仕様書の約100頁は成果品としての計画にかかる。素案の編集注記（⚙）と
+    #    5-12（据え置いている項目の一覧）はいずれも計画の確定時に削除するため、
+    #    判定はこの2つを除いた確定版の頁数で行う。素案のままの頁数も併せて示す。
     try:
         import estimate_pages as EP
         import math
-        rows, _t, _nt, _nf = EP.run()
-        est = sum(math.ceil(r[5]) for r in rows) + sum(n for _, n in EP.FRONT)
-        S512 = {sec['no']: sec for c in SC.CH for sec in c['sections']}.get('5-12')
-        h512 = (sum(EP.block_h(b) for b in S512['blocks']) / EP.BODY_H) if S512 else 0
-        final = est - h512
+        import os as _os
+        from figures_map import FIGS as _FIGS
+        _figs = {}
+        for _sec, _fn, _cap, _src in _FIGS:
+            _figs.setdefault(_sec, []).append(_fn)
+
+        def _pages(skip_notes=False, skip_secs=()):
+            tot = 0
+            for ch in SC.CH:
+                h = 300 + 30 * 20                      # 章見出し
+                for sec in ch['sections']:
+                    if sec['no'] in skip_secs:
+                        continue
+                    h += 320 + 25 * 20 + 180           # 節見出し
+                    for fn in _figs.get(f'{ch["no"]}|{sec["no"]}', []):
+                        w, hh = EP.png_size(_os.path.join(EP.FIGDIR, fn))
+                        h += (160 + (6.3 * hh / w) * 1440 + 60
+                              + 18 * 20 + 40 + 16 * 20 + 200)
+                    for b in sec['blocks']:
+                        if skip_notes and b['t'] == 'note':
+                            continue
+                        h += EP.block_h(b)
+                tot += math.ceil(h / EP.BODY_H)        # 章の変わり目で改頁
+            return tot + sum(n for _, n in EP.FRONT)
+
+        est = _pages()
+        final = _pages(skip_notes=True, skip_secs=('5-12',))
         ok36 = 95 <= final <= 105
-        chk(36, '素案の積算が仕様書の約100頁に収まること', ok36,
-            f'積算{est}頁・5-12を除くと{final:.1f}頁'
-            + ('' if ok36 else '（約100頁から外れています）'))
+        chk(36, '計画の積算が仕様書の約100頁に収まること', ok36,
+            f'確定版{final}頁（素案のままは{est}頁。編集注記と5-12で{est - final}頁）'
+            + ('' if ok36 else '　約100頁から外れています')) 
     except Exception as e:
-        chk(36, '素案の積算が仕様書の約100頁に収まること', False, f'照合できない（{e}）')
+        chk(36, '計画の積算が仕様書の約100頁に収まること', False, f'照合できない（{e}）')
 
     # ── 37　交付金の要改善項目の件数・点数が再計算と一致すること ─────────
     #    素案2-8・6-3 の「32項目・122点」「11項目・61点」を、
@@ -667,6 +690,155 @@ def main():
     chk(38, '配布データ（A案）の値が素案の中で1通りであること', not bad38,
         '・'.join(bad38[:3]) if bad38
         else f'令和8年{ban.get("令和8年")}人・令和9〜11年{ban.get("令和9年")}／{ban.get("令和10年")}／{ban.get("令和11年")}人で統一')
+
+    # ── 39　資6 に基本指針の別表11事項がすべて掲げられていること ────────
+    #    網羅性の根拠となる表なので、事項の脱落と「対応」欄の空白を見る。
+    try:
+        KAN = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一']
+        t6 = None
+        for c in SC.CH:
+            for sec in c['sections']:
+                if sec['no'] == '資6':
+                    for b in sec['blocks']:
+                        if b['t'] == 'table' and b['head'][0] == '事項' and '対応' in b['head']:
+                            t6 = b
+        bad39, part = [], []
+        if t6 is None:
+            bad39.append('資6の対応表がない')
+        else:
+            got = [r[0] for r in t6['rows']]
+            for k in KAN:
+                if k not in got:
+                    bad39.append(f'事項{k}がない')
+            for r in t6['rows']:
+                if not str(r[2]).strip():
+                    bad39.append(f'事項{r[0]}の該当箇所が空欄')
+                if str(r[3]).strip() not in ('対応', '一部', '未対応'):
+                    bad39.append(f'事項{r[0]}の対応欄が「{r[3]}」')
+            # 「一部」とした事項は理由と代替の表に必ず現れること
+            part = [r[0] for r in t6['rows'] if str(r[3]).strip() == '一部']
+            t6b = None
+            for c in SC.CH:
+                for sec in c['sections']:
+                    if sec['no'] == '資6':
+                        for b in sec['blocks']:
+                            if b['t'] == 'table' and '理由' in b['head']:
+                                t6b = b
+            if t6b is None and part:
+                bad39.append('「一部」の事項があるのに理由の表がない')
+            elif t6b is not None:
+                got2 = [r[0] for r in t6b['rows']]
+                for k in part:
+                    if k not in got2:
+                        bad39.append(f'事項{k}が一部なのに理由が書かれていない')
+        chk(39, '資6 の別表11事項がすべて掲げられていること', not bad39,
+            '・'.join(bad39[:3]) if bad39
+            else f'11事項すべて掲げ、一部対応{len(part)}件に理由と代替を記載')
+    except Exception as e:
+        chk(39, '資6 の別表11事項がすべて掲げられていること', False, f'照合できない（{e}）')
+
+    # ── 40　図表番号一覧が本文に現れる順と一致し、番号が連番であること ──────
+    #    番号は figures_map.py の並び順から振るため、手書きとのずれを機械で見る。
+    try:
+        from figures_map import FIGS as F40, index_rows as IR40
+        t8 = None
+        for c in SC.CH:
+            for sec in c['sections']:
+                if sec['no'] == '資8':
+                    for b in sec['blocks']:
+                        if b['t'] == 'table' and b['head'][0] == '図番号':
+                            t8 = b
+        bad40 = []
+        if t8 is None:
+            bad40.append('資8の図表番号一覧がない')
+        else:
+            if [list(r) for r in t8['rows']] != IR40():
+                bad40.append('一覧が図の対応表と一致しない')
+            # 図の登録順が本文に現れる順（章節の並び）と一致すること。
+            # 一覧と対応表はどちらも同じ並びから作るため、両者を比べても
+            # 並び自体の誤りは出ない。素案の章節の並びと突き合わせる。
+            order = {}
+            for ci, c in enumerate(SC.CH):
+                for si, sec in enumerate(c['sections']):
+                    order[f'{c["no"]}|{sec["no"]}'] = (ci, si)
+            pos = []
+            for key, _fn, _cap, _src in F40:
+                if key not in order:
+                    bad40.append(f'図の登録先 {key} が素案にない')
+                else:
+                    pos.append((order[key], key))
+            for (a1, k1), (a2, k2) in zip(pos, pos[1:]):
+                if a2 < a1:
+                    bad40.append(f'図の登録順が本文の順と違う（{k1} の後に {k2}）')
+                    break
+            # 章ごとに1から連番であること（飛び・重複を見る）
+            seq = {}
+            for fnum, _title, _loc, _src in t8['rows']:
+                ch, n = fnum.replace('図', '').split('-')
+                seq.setdefault(ch, []).append(int(n))
+            for ch, ns in seq.items():
+                if ns != list(range(1, len(ns) + 1)):
+                    bad40.append(f'図{ch}-の番号が連番でない（{ns}）')
+            # 一覧の件数が登録した図の数と一致すること
+            if len(t8['rows']) != len(F40):
+                bad40.append(f"一覧{len(t8['rows'])}件と図{len(F40)}件が合わない")
+        chk(40, '図表番号一覧が本文の順と一致し番号が連番であること', not bad40,
+            '・'.join(bad40[:3]) if bad40
+            else f'図{len(F40)}点、章ごとに連番で一覧と一致')
+    except Exception as e:
+        chk(40, '図表番号一覧が本文の順と一致し番号が連番であること', False, f'照合できない（{e}）')
+
+    # ── 41　制度改正の主な事項が 1-8 に掲げられていること ─────────────
+    #    C軸の走査語。保険料・給付費に効くものが落ちると計画の前提が狂う。
+    try:
+        need41 = ['82.65', '7区分', '激変緩和', '補足給付', '令和8年度介護報酬改定',
+                  '一定以上所得', '給与所得控除', '事業状況報告', '高額医療合算',
+                  '返還義務', '電子資格確認', '協力医療機関', '地域類型',
+                  '特定地域サービス', '入居定員']
+        s18 = ''
+        for c in SC.CH:
+            for sec in c['sections']:
+                if sec['no'] == '1-8':
+                    for b in sec['blocks']:
+                        if b['t'] in ('table', 'kpi'):
+                            s18 += ' '.join(b['head']) + ' '
+                            s18 += ' '.join(str(x) for r in b['rows'] for x in r) + ' '
+                        elif b['t'] == 'bullets':
+                            s18 += ' '.join(b['v']) + ' '
+                        else:
+                            s18 += str(b['v']) + ' '
+        miss41 = [k for k in need41 if k not in s18]
+        chk(41, '制度改正の主な事項が 1-8 に掲げられていること', not miss41,
+            '1-8にない：' + '・'.join(miss41) if miss41
+            else f'{len(need41)}件すべて記載')
+    except Exception as e:
+        chk(41, '制度改正の主な事項が 1-8 に掲げられていること', False, f'照合できない（{e}）')
+
+    # ── 42　資6・資7 が指す章節が現に存在すること ──────────────────
+    #    存在しない節を指す「対応しています」を防ぐ。
+    try:
+        import re as _re
+        exist = {sec['no'] for c in SC.CH for sec in c['sections']}
+        bad42 = []
+        for c in SC.CH:
+            for sec in c['sections']:
+                if sec['no'] not in ('資6', '資7'):
+                    continue
+                for b in sec['blocks']:
+                    if b['t'] != 'table':
+                        continue
+                    for r in b['rows']:
+                        for cell in r:
+                            for ref in _re.findall(r'(?:施策)?\d+-\d+(?:\(\d+\))?', str(cell)):
+                                base = ref.split('(')[0]
+                                cand = [base, '施策' + base]
+                                if not any(x in exist for x in cand):
+                                    bad42.append(f'{sec["no"]}が指す{ref}がない')
+        bad42 = sorted(set(bad42))
+        chk(42, '資6・資7 が指す章節が現に存在すること', not bad42,
+            '・'.join(bad42[:4]) if bad42 else '参照先すべて実在')
+    except Exception as e:
+        chk(42, '資6・資7 が指す章節が現に存在すること', False, f'照合できない（{e}）')
 
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)

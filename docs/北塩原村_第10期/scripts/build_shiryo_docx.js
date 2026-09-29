@@ -7,7 +7,8 @@ const {Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBr
 const path = require('path');
 // 入力のJSONが元データより古いときは止める（古い成果品を作らないため）
 (function () {
-  const src = "shiryo_content.py";
+  // __dirname 基準にする。cwd に依らず走らせるため
+  const src = path.join(__dirname, "shiryo_content.py");
   const js  = "/tmp/shiryo.json";
   if (!fs.existsSync(js)) {
     console.error('入力の ' + js + ' がありません。先に ' + src + ' を実行してください。');
@@ -38,13 +39,14 @@ function figure(b) {
   })];
   if (b.source) out.push(new Paragraph({
     alignment: AlignmentType.CENTER, spacing: {after: 200},
-    children: [new TextRun({text: '出典：' + b.source, font: FONTG, size: 15, color: GREY})],
+    children: [new TextRun({text: '出典：' + b.source, font: FONTG, size: 16, color: GREY})],
   }));
   return out;
 }
 
 const C = JSON.parse(fs.readFileSync('/tmp/shiryo.json', 'utf8'));
-const FONT = '游明朝', FONTG = '游ゴシック';
+// 書式は計画素案と同じ体裁（本文 游ゴシック 10.5pt）に合わせる。図表の色味は現行のまま
+const FONT = '游ゴシック', FONTG = '游ゴシック';
 const NAVY = '1F3864', BLUE = '2E75B6', BAND = 'DDEBF7', NOTE = 'FFF3F3', KEYB = 'FFF2CC', GREY = '595959';
 const TBLW = 9360;
 
@@ -125,15 +127,15 @@ C.chapters.forEach((ch, ci) => {
       kids.push(new Paragraph({
         heading: HeadingLevel.HEADING_2, spacing: {before: 320, after: 180},
         border: {bottom: {style: BorderStyle.SINGLE, size: 12, color: BLUE, space: 4}},
-        children: [new TextRun({text: `${sec.no}　${sec.title}`, font: FONTG, size: 24, bold: true, color: NAVY})],
+        children: [new TextRun({text: `${sec.no}　${sec.title}`, font: FONTG, size: 25, bold: true, color: NAVY})],
       }));
     }
     sec.blocks.forEach(b => {
       if (b.t === 'p') kids.push(p(b.v));
-      else if (b.t === 'h3') kids.push(p(b.v, {size: 21, bold: true, font: FONTG, color: BLUE, after: 100}));
+      else if (b.t === 'h3') kids.push(p(b.v, {size: 22, bold: true, font: FONTG, color: BLUE, after: 100}));
       else if (b.t === 'bullets') b.v.forEach(x => kids.push(new Paragraph({
         numbering: {reference: 'bul', level: 0}, spacing: {after: 60, line: 300},
-        children: [new TextRun({text: x, font: FONT, size: 21})],
+        children: [new TextRun({text: x, font: FONT, size: 20})],
       })));
       else if (b.t === 'key') {
         const lines = String(b.v).split('\n');
@@ -152,7 +154,7 @@ C.chapters.forEach((ch, ci) => {
         spacing: {before: 120, after: 180, line: 280}, indent: {left: 200, right: 200},
         shading: {type: ShadingType.CLEAR, fill: NOTE},
         border: {left: {style: BorderStyle.SINGLE, size: 18, color: 'C00000', space: 8}},
-        children: [new TextRun({text: '※ ' + b.v, font: FONTG, size: 18, color: GREY})],
+        children: [new TextRun({text: '※ ' + b.v, font: FONTG, size: 17, color: GREY})],
       }));
       else if (b.t === 'table') { kids.push(table(b.head, b.rows, b.widths)); kids.push(p('', {after: 160})); }
       else if (b.t === 'fig') { figure(b).forEach(x => kids.push(x)); }
@@ -163,7 +165,7 @@ C.chapters.forEach((ch, ci) => {
 const doc = new Document({
   styles: {default: {
     heading1: {run: {font: FONTG, size: 30, bold: true, color: 'FFFFFF'}},
-    heading2: {run: {font: FONTG, size: 24, bold: true, color: NAVY}},
+    heading2: {run: {font: FONTG, size: 25, bold: true, color: NAVY}},
   }},
   numbering: {config: [{reference: 'bul', levels: [{level: 0, format: LevelFormat.BULLET, text: '・',
     alignment: AlignmentType.LEFT, style: {paragraph: {indent: {left: 400, hanging: 200}}}}]}]},

@@ -4,15 +4,20 @@ const d = require('/tmp/node_modules/docx');
 const path = require('path');
 // 入力のJSONが元データより古いときは止める（古い成果品を作らないため）
 (function () {
-  const src = "soan_content.py";
-  const js  = "/tmp/soan.json";
+  // 元データは本文だけでなく図の対応表も含む。どちらが新しくても組み直す
+  // __dirname 基準にする。cwd に依らず走らせるため
+  const srcs = ["soan_content.py", "figures_map.py"]
+                 .map(f => require('path').join(__dirname, f));
+  const js   = "/tmp/soan.json";
   if (!fs.existsSync(js)) {
-    console.error('入力の ' + js + ' がありません。先に ' + src + ' を実行してください。');
+    console.error('入力の ' + js + ' がありません。先に build_soan.py を実行してください。');
     process.exit(1);
   }
-  if (fs.statSync(js).mtimeMs < fs.statSync(src).mtimeMs) {
-    console.error('入力の ' + js + ' が ' + src + ' より古いです。先に ' + src + ' を実行してください。');
-    process.exit(1);
+  for (const src of srcs) {
+    if (fs.statSync(js).mtimeMs < fs.statSync(src).mtimeMs) {
+      console.error('入力の ' + js + ' が ' + src + ' より古いです。先に build_soan.py を実行してください。');
+      process.exit(1);
+    }
   }
 })();
 
@@ -21,7 +26,8 @@ const {Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBr
        TableOfContents, Header, Footer, PageNumber} = d;
 
 const C = JSON.parse(fs.readFileSync('/tmp/soan.json', 'utf8'));
-const FONT = '游明朝';
+// 書式は協議用素案の体裁（本文 游ゴシック 10.5pt）に合わせる。図表の色味は現行のまま
+const FONT = '游ゴシック';
 const FONTG = '游ゴシック';
 const NAVY = '1F3864', BLUE = '2E75B6', BAND = 'DDEBF7', NOTE = 'FFF3F3', GREY = '595959';
 const TBLW = 9360;   // A4 縦 本文幅（DXA）
@@ -76,7 +82,7 @@ function figure(f) {
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER, spacing: {after: 200},
-      children: [new TextRun({text: '出典：' + f.source, font: FONTG, size: 15, color: GREY})],
+      children: [new TextRun({text: '出典：' + f.source, font: FONTG, size: 16, color: GREY})],
     }),
   ];
 }
@@ -127,17 +133,17 @@ C.chapters.forEach((ch, ci) => {
       heading: HeadingLevel.HEADING_2,
       spacing: {before: 320, after: 180},
       border: {bottom: {style: BorderStyle.SINGLE, size: 12, color: BLUE, space: 4}},
-      children: [new TextRun({text: `${sec.no}　${sec.title}`, font: FONTG, size: 24,
+      children: [new TextRun({text: `${sec.no}　${sec.title}`, font: FONTG, size: 25,
                               bold: true, color: NAVY})],
     }));
     (C.figures[ch.no + '|' + sec.no] || []).forEach(f => { figure(f).forEach(x => kids.push(x)); });
     sec.blocks.forEach(b => {
       if (b.t === 'p') kids.push(p(b.v));
-      else if (b.t === 'h3') kids.push(p(b.v, {size: 21, bold: true, font: FONTG,
+      else if (b.t === 'h3') kids.push(p(b.v, {size: 22, bold: true, font: FONTG,
                                                color: BLUE, after: 100}));
       else if (b.t === 'bullets') b.v.forEach(x => kids.push(new Paragraph({
         numbering: {reference: 'bul', level: 0}, spacing: {after: 60, line: 300},
-        children: [new TextRun({text: x, font: FONT, size: 21})],
+        children: [new TextRun({text: x, font: FONT, size: 20})],
       })));
       else if (b.t === 'note') {
         kids.push(new Paragraph({
@@ -145,7 +151,7 @@ C.chapters.forEach((ch, ci) => {
           indent: {left: 200, right: 200},
           shading: {type: ShadingType.CLEAR, fill: NOTE},
           border: {left: {style: BorderStyle.SINGLE, size: 18, color: 'C00000', space: 8}},
-          children: [new TextRun({text: `⚙ 編集注記：${b.v}`, font: FONTG, size: 18, color: GREY})],
+          children: [new TextRun({text: `⚙ 編集注記：${b.v}`, font: FONTG, size: 17, color: GREY})],
         }));
       } else if (b.t === 'table' || b.t === 'kpi') {
         kids.push(table(b.head, b.rows, b.widths));

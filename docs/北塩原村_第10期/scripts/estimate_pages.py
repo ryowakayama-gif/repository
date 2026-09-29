@@ -27,15 +27,16 @@ def para_h(text, pt=10.5, line=300, after=120):
     return n * line + after
 
 def block_h(b):
+    # 文字の大きさは build_soan_docx.js と揃える。ずれると頁数の積算が狂う
     t = b["t"]
     if t == "p":
-        return para_h(b["v"])
+        return para_h(b["v"])                                   # 10.5pt
     if t == "h3":
-        return para_h(b["v"], after=100)
+        return para_h(b["v"], pt=11, after=100)                 # 11pt
     if t == "bullets":
-        return sum(para_h(x, after=60) for x in b["v"])
+        return sum(para_h(x, pt=10, after=60) for x in b["v"])   # 10pt
     if t == "note":
-        return para_h(b["v"], pt=9.5, line=280, after=160) + 100
+        return para_h(b["v"], pt=8.5, line=280, after=160) + 100  # 8.5pt
     if t in ("table", "kpi"):
         # 表：8.5pt・行送り240・セル余白上下60。列幅に応じて折り返す
         widths = b.get("widths")
@@ -65,11 +66,11 @@ def run():
         nt = nf = nsec = 0
         for sec in ch["sections"]:
             nsec += 1
-            h += 320 + 24 * 20 + 180            # 節見出し
+            h += 320 + 25 * 20 + 180            # 節見出し 12.5pt
             for fn in figs.get(f'{ch["no"]}|{sec["no"]}', []):
                 nf += 1
                 w, hh = png_size(os.path.join(FIGDIR, fn))
-                h += 160 + (6.3 * hh / w) * 1440 + 60 + 18 * 20 + 40 + 15 * 20 + 200
+                h += 160 + (6.3 * hh / w) * 1440 + 60 + 18 * 20 + 40 + 16 * 20 + 200
             for b in sec["blocks"]:
                 if b["t"] in ("table", "kpi"):
                     nt += 1
@@ -108,13 +109,13 @@ def shiryo_block_h(b):
     if t == "p":
         return para(b["v"])
     if t == "h3":
-        return para(b["v"], after=100)
+        return para(b["v"], pt=11, after=100)
     if t == "key":
         return para(b["v"], line=300, after=160) + 200
     if t == "note":
-        return para(b["v"], pt=9.5, line=280, after=160) + 100
+        return para(b["v"], pt=8.5, line=280, after=160) + 100
     if t == "bullets":
-        return sum(para(x, after=60) for x in b["v"])
+        return sum(para(x, pt=10, after=60) for x in b["v"])
     if t == "fig":
         w, hh = png_size(os.path.join(SH_FIGDIR, b["file"]))
         return 160 + (b.get("width", 6.3) * hh / w) * 1440 + 60 + 18 * 20 + 40 + 200
