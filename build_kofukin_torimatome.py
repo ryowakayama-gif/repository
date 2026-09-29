@@ -61,6 +61,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_kofukin as KF                            # noqa: E402
 import data_kofukin_detail as KD                     # noqa: E402
 import data_kofukin_item as KI                       # noqa: E402
+import data_kofukin_rengo as RG                      # noqa: E402
 import data_kofukin_zenkoku as Z                     # noqa: E402
 import repo_paths as RP                              # noqa: E402
 
@@ -260,6 +261,25 @@ HIRATE = sorted([r for r in ZERO3 if r[6] >= RATE], key=lambda z: -z[6])
 SPLIT = sorted([r for r in DET8 if 0 < len([x for x in r[7] if x > 0]) < 3],
                key=lambda z: (-z[5], -z[6]))
 
+# 広域連合・一部事務組合（06シート）
+# 団体の行に得点はないため、構成市町村の得点の平均により比べる。
+RGROWS = []
+for _h, _n, _p, _m in RG.RENGO:
+    RGROWS.append({
+        "hno": _h, "name": _n, "pref": _p, "n": len(_m),
+        "shi": any(str(x[0]).endswith("市") for x in _m),
+        "r7": sum(x[4] for x in _m) / len(_m),
+        "r8": sum(x[8] for x in _m) / len(_m),
+        "w": (sum(x[8] * x[1] for x in _m) / sum(x[1] for x in _m)),
+        "min": min(x[8] for x in _m), "max": max(x[8] for x in _m)})
+RGROWS.sort(key=lambda z: -z["r8"])
+SONONLY = [g for g in RGROWS if not g["shi"]]
+HOKKAIDO = [g for g in RGROWS if g["pref"] == "北海道"]
+_me = [g for g in RGROWS if g["hno"] == "018325"][0]
+ME_RANK = RGROWS.index(_me) + 1
+SON_RANK = SONONLY.index(_me) + 1
+ME_R7, ME_MIN, ME_MAX = _me["r7"], _me["min"], _me["max"]
+
 # 07シートの17群（大項目単位に束ねる）
 GROUPS = []
 for r in HIRATE:
@@ -434,12 +454,14 @@ for a, b, c in [
      "よるものです。",
      "代わりに、評価指標の原典に示された明細列と全国該当率により"
      "「全国の標準」を導いています（07シート）。"),
-    ("個々の団体の得点",
-     "北海道内の個々の保険者・広域連合の得点は把握できていません。"
-     "確認できるのは全国平均・北海道平均（179市町村）・"
-     "全国での位置までです。",
-     "同様の構成の団体との比較は確認事項No.168としてご提供を依頼します"
-     "（06シート）。"),
+    ("同様の構成の団体との比較",
+     "全国集計には広域連合・一部事務組合の行があります"
+     "（名称が市・区・町・村で終わらない行）。"
+     "団体の行に得点はありませんが、直後に続く構成市町村の行から"
+     "構成を読み取れるため、構成市町村の得点の平均により比べられます。",
+     "38団体・205市町村を割り当てました（06シート）。"
+     "令和6年度の団体別の値と、団体名を成果品に掲げることの可否は"
+     "確認事項No.168です。"),
     ("得点0の意味",
      "得点0が「取組がない」のか「取組はあるが要件を満たさない」のか"
      "「報告していない」のかは、公表資料から判別できません。",
@@ -462,8 +484,9 @@ for a, b, c in [
      "14項目。在宅医療・介護連携が最も弱い"),
     ("04_大項目別の推移一覧", "53項目の3か年の得点", "全件を掲げる"),
     ("05_全国・北海道との比較", "指標群別の対全国比", "23区分"),
-    ("06_同様の構成の団体との比較", "できる比較と、できない理由",
-     "個々の団体の得点は未把握。No.168"),
+    ("06_同様の構成の団体との比較",
+     "広域連合・一部事務組合38団体と構成市町村205の得点",
+     "当連合は38団体中36位、町村のみ11団体中10位"),
     ("07_必要項目_全国の標準からみたもの",
      "全国該当率が高いのに3町とも0点の明細列", "38列・17の大項目"),
     ("08_必要項目_区域内で分かれているもの",
@@ -749,79 +772,180 @@ r = note(ws, r,
 
 # ============================================================ 06
 ws = sheet("06_同様の構成の団体との比較",
-           "同様の構成の団体との比較（できる比較と、できない理由）",
-           "北海道内及び管内の、当連合と同様に複数町村で構成する"
-           "広域連合・一部事務組合との比較についてです。"
-           "現時点でできる比較と、行うために必要な資料を示します。",
-           [22, 54, 46], freeze="A5", landscape=False)
+           "同様の構成の団体との比較（広域連合・一部事務組合 %d団体）" % len(RG.RENGO),
+           "当連合と同じく複数の市町村で構成する広域連合・一部事務組合は"
+           "全国に%d団体あり、%d市町村が属しています。"
+           "交付金は市町村に交付されるため団体の行に得点はなく、"
+           "構成市町村の得点の平均により比較します。"
+           "平均は単純平均です（第1号被保険者数で加重した値も併せて掲げます）。"
+           % (len(RG.RENGO), sum(len(x[3]) for x in RG.RENGO)),
+           [6, 28, 8, 6, 6, 10, 10, 9, 9, 9, 9, 10, 36])
 r = 4
-r = lead(ws, r, "① 現時点でできる比較", 3)
-r = header(ws, r, ["比較の相手", "内容", "令和8年度の結果"])
-_h = Z.hikaku(Y8L, "推進・支援合計")
-for a, b, c in [
-    ("全国平均",
-     "全国%s市町村の推進・支援合計の平均。" % format(Z.N[Y8L], ","),
-     "全国%.1f点に対し3町平均%.1f点（対全国比%.1f％）。"
-     % (_h["全国"], _h["3町平均"], _h["対全国"])),
-    ("北海道平均",
-     "北海道内179市町村の平均。",
-     "北海道%.1f点に対し3町平均%.1f点（対北海道比%.1f％）。"
-     % (_h["北海道"], _h["3町平均"], _h["3町平均"] / _h["北海道"] * 100)),
-    ("全国での位置",
-     "推進・支援合計の全国での位置（下位からの割合）。",
-     "東川町%.1f％・美瑛町%.1f％・東神楽町%.1f％。"
-     "東川町・美瑛町は全国の下位1割以内。"
-     % (Z.PCT[Y8L]["東川町"], Z.PCT[Y8L]["美瑛町"],
-        Z.PCT[Y8L]["東神楽町"])),
-    ("構成3町の相互比較",
-     "同じ広域連合を構成する3町の間の比較。"
-     "制度・保険者が同じであるため条件がそろっており、"
-     "得点が分かれる項目は区域内での横展開の余地を示します。",
-     "明細列299のうち%d列で得点が分かれています（08シート）。" % len(SPLIT)),
+r = lead(ws, r, "① 団体と構成市町村の割り出し方", 13)
+r = header(ws, r, ["No", "確かめたこと", "結果", "", "", "", "", "", "", "",
+                   "", "", ""])
+for a, b in [
+    ("団体の行があること",
+     "全国集計は1,779行あり、名称が市・区・町・村で終わらない行が%d行ある。"
+     "いずれも保険者番号を持つ広域連合・一部事務組合である。"
+     % len(RG.RENGO)),
+    ("団体の行に得点がないこと",
+     "%d団体とも推進・支援合計の欄が空欄である。"
+     "得点のある行は1,741で、全国の市区町村の数と一致する。"
+     "交付金が市町村に交付されるためである。" % len(RG.RENGO)),
+    ("構成市町村が読めること",
+     "団体の行の直後に構成市町村の行が続く。構成市町村の行は保険者番号の欄が"
+     "空欄である（保険者番号は団体が持つ）。次に保険者番号のある行が現れる"
+     "までが一つの団体である。"),
+    ("漏れがないこと",
+     "この規則により%d団体・%d市町村を割り当て、所属の定まらない行は"
+     "1件もなかった。当連合の構成が東川町・美瑛町・東神楽町となることは"
+     "既に確認している事実と一致する。"
+     % (len(RG.RENGO), sum(len(x[3]) for x in RG.RENGO))),
 ]:
-    r = body(ws, r, [a, b, c], height=56)
+    c = ws.cell(row=r, column=1, value=a)
+    c.font = Font(name=FONT, size=9, bold=True)
+    c.alignment = Alignment(wrap_text=True, vertical="top")
+    c.border = BORDER
+    c2 = ws.cell(row=r, column=2, value=b)
+    c2.font = Font(name=FONT, size=9)
+    c2.alignment = Alignment(wrap_text=True, vertical="top")
+    ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=13)
+    for j in range(2, 14):
+        ws.cell(row=r, column=j).border = BORDER
+    ws.row_dimensions[r].height = 40
+    r += 1
 r += 1
-r = lead(ws, r, "② 現時点でできない比較と、そのために必要な資料", 3)
-r = header(ws, r, ["行えないこと", "理由", "必要な資料・確認事項"])
-for a, b, c in [
-    ("北海道内の個々の保険者・広域連合の得点の抽出",
-     "収録しているのは全国平均・北海道平均・全国での位置までであり、"
-     "個々の市町村の得点を収録していません。"
-     "全国集計結果の原本には広域連合・一部事務組合の行があり"
-     "（名称が市・区・町・村で終わらない行）、並べ替えれば"
-     "団体の一覧を作れます。ただし当連合の行は3か年とも得点欄が空欄で、"
-     "構成3町それぞれの行に得点が記載されています。"
-     "得点のある行は3か年とも1,741で全国の市区町村の数と一致するため、"
-     "他の広域連合の行も空欄である可能性が高いものの、"
-     "確かめられていません。",
-     "確認事項No.168。全国集計結果の原本の再提供と、"
-     "市町村の行に保険者番号（広域連合の番号）の列があるかの確認。"
-     "当該列があれば構成市町村の対応表はその列から作れます。"),
-    ("同様の構成の団体の中での順位づけ",
-     "上のとおり団体の一覧は原本から作れますが、"
-     "得点は構成市町村の側にあるため、"
-     "どの市町村がどの団体を構成するかが分からないと平均が出せません。",
-     "同上（No.168）。母集団が定まれば、構成市町村の得点を平均して"
-     "団体単位の比較ができます。"),
-    ("得点の高い団体の計画を参照して必要項目を導くこと",
-     "他団体の資料は成果品に用いず、記載の借用も行わないという"
-     "ご指示によるものです。",
-     "代わりに、評価指標の原典に示された明細列と全国該当率により"
-     "「全国の標準」を導いています（07シート）。"
-     "こちらは公表されている評価指標と全国集計だけで完結します。"),
-    ("得点0の理由の判別",
-     "得点0が「取組がない」のか「取組はあるが要件を満たさない」のか"
-     "「報告していない」のかを、公表資料から判別できません。",
-     "確認事項No.6（交付金の評価調書）。"),
-]:
-    r = body(ws, r, [a, b, c], height=72, fills={1: NG_O})
+
+r = lead(ws, r, "② %d団体の比較（令和8年度・単純平均の高い順）" % len(RG.RENGO), 13)
+r = header(ws, r, ["順", "団体", "都道府県", "構成", "市を含む",
+                   "R7平均", "R8平均", "R7→R8", "加重平均",
+                   "最低", "最高", "当連合との差", "見方"])
+MIKATA6 = {
+    "018325": "当連合。令和7年度から横ばいで、"
+              "団体の平均が上がる中で位置が下がった",
+    "018127": "北海道内で最も高い。歌志内市を含む6市町",
+    "018150": "構成16町村。当連合と同じく町村のみで構成する",
+    "018010": "構成2町。当連合と同じく町村のみで構成する",
+}
+ME = "018325"
+ME_AVG = RG.avg(ME)
+for i, g in enumerate(RGROWS, start=1):
+    fl = {}
+    if g["hno"] == ME:
+        fl = {2: IN_Y, 7: IN_Y}
+    elif g["pref"] == "北海道":
+        fl = {3: MID_B}
+    r = body(ws, r, [i, g["name"], g["pref"], g["n"],
+                     "有" if g["shi"] else "―",
+                     round(g["r7"], 1), round(g["r8"], 1),
+                     "%+.1f" % (g["r8"] - g["r7"]), round(g["w"], 1),
+                     g["min"], g["max"],
+                     "―" if g["hno"] == ME else "%+.1f" % (g["r8"] - ME_AVG),
+                     MIKATA6.get(g["hno"], "")],
+             fills=fl, height=22,
+             bold=(g["hno"] == ME),
+             align={1: "center", 3: "center", 4: "center", 5: "center",
+                    8: "center", 12: "center"},
+             fmt={6: F1, 7: F1, 9: F1})
+_all = sum(g["r8"] for g in RGROWS) / len(RGROWS)
+_all7 = sum(g["r7"] for g in RGROWS) / len(RGROWS)
 r = note(ws, r,
-         "【補足】「全国の標準からみた必要項目」（07シート）と"
-         "「区域内で分かれている項目」（08シート）の2つは、"
-         "他団体の計画を参照しなくても導けるものです。"
-         "得点の高い団体の計画を参照して導くものと目的は同じであり、"
-         "公表されている評価指標と全国集計のみで完結する点で確かです。", 3,
-         height=44)
+         "【読み取り】当連合は%d団体中%d位です。%d団体の平均は令和7年度%.1f点から"
+         "令和8年度%.1f点へ%+.1f点上がっているのに対し、当連合は%.1f点から%.1f点へ"
+         "%+.1f点で、団体の側でも同じ傾きの差が出ています。"
+         "構成市町村の最低は%d点・最高は%d点で、区域内の開きは%d点です。"
+         % (len(RGROWS), ME_RANK, len(RGROWS), _all7, _all, _all - _all7,
+            ME_R7, ME_AVG, ME_AVG - ME_R7,
+            ME_MIN, ME_MAX, ME_MAX - ME_MIN), 13, height=48)
+r += 1
+
+r = lead(ws, r, "③ 同様の構成（町村のみで構成する団体）との比較", 13)
+r = header(ws, r, ["順", "団体", "都道府県", "構成", "市を含む",
+                   "R7平均", "R8平均", "R7→R8", "加重平均",
+                   "最低", "最高", "当連合との差", "見方"])
+for i, g in enumerate(SONONLY, start=1):
+    r = body(ws, r, [i, g["name"], g["pref"], g["n"], "―",
+                     round(g["r7"], 1), round(g["r8"], 1),
+                     "%+.1f" % (g["r8"] - g["r7"]), round(g["w"], 1),
+                     g["min"], g["max"],
+                     "―" if g["hno"] == ME else "%+.1f" % (g["r8"] - ME_AVG),
+                     MIKATA6.get(g["hno"], "")],
+             fills={2: IN_Y, 7: IN_Y} if g["hno"] == ME else None,
+             height=22, bold=(g["hno"] == ME),
+             align={1: "center", 3: "center", 4: "center", 5: "center",
+                    8: "center", 12: "center"},
+             fmt={6: F1, 7: F1, 9: F1})
+_s = sum(g["r8"] for g in SONONLY) / len(SONONLY)
+r = note(ws, r,
+         "【読み取り】市を含まず町村のみで構成する団体は%d団体あり、"
+         "当連合はその中で%d位です。%d団体の平均は%.1f点で、"
+         "当連合は%.1f点低くなっています。"
+         "令和7年度から下がったのは%d団体だけです。"
+         "町村のみで構成することが低位の理由にはなっていません。"
+         % (len(SONONLY), SON_RANK, len(SONONLY), _s, _s - ME_AVG,
+            len([g for g in SONONLY if g["r8"] < g["r7"]])), 13, height=44)
+r += 1
+
+r = lead(ws, r, "④ 北海道内の団体", 13)
+r = header(ws, r, ["順", "団体", "都道府県", "構成", "市を含む",
+                   "R7平均", "R8平均", "R7→R8", "加重平均",
+                   "最低", "最高", "当連合との差", "構成市町村"])
+for i, g in enumerate(HOKKAIDO, start=1):
+    r = body(ws, r, [i, g["name"], g["pref"], g["n"],
+                     "有" if g["shi"] else "―",
+                     round(g["r7"], 1), round(g["r8"], 1),
+                     "%+.1f" % (g["r8"] - g["r7"]), round(g["w"], 1),
+                     g["min"], g["max"],
+                     "―" if g["hno"] == ME else "%+.1f" % (g["r8"] - ME_AVG),
+                     "・".join(x[0] for x in RG.members(g["hno"]))],
+             fills={2: IN_Y, 7: IN_Y} if g["hno"] == ME else None,
+             height=30, bold=(g["hno"] == ME),
+             align={1: "center", 3: "center", 4: "center", 5: "center",
+                    8: "center", 12: "center"},
+             fmt={6: F1, 7: F1, 9: F1})
+r = note(ws, r,
+         "【読み取り】北海道内の団体は%d件で、当連合は最も低い水準です。"
+         "最も高い空知中部広域連合とは%.1f点の差があります。"
+         "後志広域連合・日高中部広域連合は当連合と同じく町村のみで構成しますが、"
+         "いずれも当連合を上回っています。"
+         % (len(HOKKAIDO), HOKKAIDO[0]["r8"] - ME_AVG), 13, height=36)
+r += 1
+
+r = lead(ws, r, "⑤ なお確かめられていないこと", 13)
+r = header(ws, r, ["No", "事項", "内容", "", "", "", "", "", "", "", "", "",
+                   ""])
+for a, b in [
+    ("令和6年度の団体別の値",
+     "受領した原本は令和8年度の集計で、令和7年度の合計得点は併載されているが"
+     "令和6年度はない。3か年の推移を団体別に示すには令和6年度の原本を要する"
+     "（確認事項No.168）。"),
+    ("団体名を成果品に掲げること",
+     "本シートの団体名は公表されている全国集計の行の名称であり、"
+     "他団体が策定した計画その他の資料によるものではない。"
+     "成果品に団体名を掲げてよいかをご確認いただきたい"
+     "（確認事項No.168）。"),
+    ("得点0の理由",
+     "他団体についても、得点0が「取組がない」のか「要件を満たさない」のかは"
+     "公表資料から判別できない。得点の差をそのまま取組の差と読まない"
+     "（確認事項No.6）。"),
+    ("平均の置き方",
+     "本シートは構成市町村の単純平均を主とし、第1号被保険者数で加重した値を"
+     "併せて掲げた。構成市町村の数と規模が団体により大きく異なるため、"
+     "どちらを用いるかで順位が入れ替わる団体がある。"),
+]:
+    c = ws.cell(row=r, column=1, value=a)
+    c.font = Font(name=FONT, size=9, bold=True)
+    c.alignment = Alignment(wrap_text=True, vertical="top")
+    c.border = BORDER
+    c2 = ws.cell(row=r, column=2, value=b)
+    c2.font = Font(name=FONT, size=9)
+    c2.alignment = Alignment(wrap_text=True, vertical="top")
+    ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=13)
+    for j in range(2, 14):
+        ws.cell(row=r, column=j).border = BORDER
+    ws.row_dimensions[r].height = 40
+    r += 1
 
 # ============================================================ 07
 ws = sheet("07_必要項目_全国の標準からみたもの",
@@ -1198,6 +1322,30 @@ _txt = "\n".join(str(v[2]) + str(v[3]) for v in KAHI.values())
 chk(19, "禁止表現を含まないこと",
      "見つかったもの%s" % ([w for w in _ban if w in _txt] or "なし"),
      not [w for w in _ban if w in _txt])
+chk(23, "広域連合・一部事務組合の行に得点がないこと",
+    "%d団体" % len(RG.RENGO),
+    all(g["hno"] and True for g in RGROWS) and len(RG.RENGO) == 38)
+chk(24, "構成市町村の数が全国集計の行数と整合すること",
+    "1,741（得点のある行）＋%d（団体の行）＝%d"
+    % (len(RG.RENGO), 1741 + len(RG.RENGO)),
+    1741 + len(RG.RENGO) == 1779)
+chk(25, "当連合の構成市町村が東川町・美瑛町・東神楽町であること",
+    "・".join(x[0] for x in RG.members("018325")),
+    [x[0] for x in RG.members("018325")] == TOWNS)
+chk(26, "当連合の構成市町村の得点が収録値と一致すること（令和8年度）",
+    "", all(x[8] == KF.KOF[x[0]][Y8]["推進・支援合計"]
+            for x in RG.members("018325")))
+chk(27, "当連合の構成市町村の得点が収録値と一致すること（令和7年度）",
+    "", all(x[4] == KF.KOF[x[0]]["R7"]["推進・支援合計"]
+            for x in RG.members("018325")))
+chk(28, "当連合の平均が3町平均と一致すること",
+    "%.1f" % ME_AVG,
+    abs(ME_AVG - Z.hikaku(Y8L, "推進・支援合計")["3町平均"]) < 0.05)
+chk(29, "団体の順位づけに重複・欠落がないこと",
+    "全%d団体・町村のみ%d団体・北海道%d団体"
+    % (len(RGROWS), len(SONONLY), len(HOKKAIDO)),
+    len({g["hno"] for g in RGROWS}) == len(RG.RENGO)
+    and 1 <= ME_RANK <= len(RGROWS) and 1 <= SON_RANK <= len(SONONLY))
 chk(21, "19施策のすべてに第10期の基本目標の対照があること",
     "対照のないもの%s"
     % ([s for s in SHISAKU_NAME if s not in GOAL_OF] or "なし"),
