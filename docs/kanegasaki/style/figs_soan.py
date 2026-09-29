@@ -174,7 +174,7 @@ def s8_choki():
     ser = [('第1号被保険者', [4740, 4691, 4659, 4786, 4823, 4751, 4703], GREY, '-o'),
            ('75歳以上', [2835, 2857, 2871, 2875, 2792, 2847, 2883], ORANGE, '-s'),
            ('85歳以上', [994, 1058, 1101, 1257, 1261, 1242, 1229], BLUE, '-^'),
-           ('認定者数', [823, 842, 850, 915, 931, 919, 909], RED, '-o')]
+           ('認定者数', [804, 820, 831, 893, 913, 902, 894], RED, '-o')]
     xs = [12, 15, 17, 22, 27, 30, 32]
     fig, ax = plt.subplots(figsize=(7.2, 3.6))
     for name, v, c, m in ser:
@@ -187,6 +187,29 @@ def s8_choki():
     ax.set_ylabel('令和12年度＝100とした指数')
     LEG(ax, ncol=4, gap=0.14)
     return _save(fig, 's8_choki')
+
+
+def s26_kyokyu():
+    """需要に対する供給　―　要支援等に回せる量"""
+    yr = ['Ｒ2', 'Ｒ12', 'Ｒ17', 'Ｒ22', 'Ｒ27', 'Ｒ32']
+    xs = list(range(6))
+    kyo = [781, 704, 669, 608, 550, 502]      # 供給枠
+    ju = [612, 644, 661, 710, 734, 717]       # 要介護1以上
+    nok = [k - j for k, j in zip(kyo, ju)]    # 要支援等に回せる量
+    fig, ax = plt.subplots(figsize=(7.2, 3.6))
+    ax.plot(xs, kyo, '-o', color=BLUE, lw=2.4, ms=6, label='供給枠（生産年齢人口比）')
+    ax.plot(xs, ju, '-s', color=RED, lw=2.4, ms=6, label='要介護1以上の認定者数')
+    ax.bar(xs, nok, width=0.34, color=PALE, label='要支援等に回せる量')
+    for i, v in enumerate(nok):
+        ax.text(i, v + (26 if v >= 0 else -54),
+                ('%d人' % v) if v >= 0 else ('▲%d人' % -v), ha='center',
+                color=NAVY, fontsize=9, fontweight='bold')
+    ax.axhline(0, color='#808080', lw=1.2)
+    ax.set_xticks(xs); ax.set_xticklabels(yr)
+    ax.set_xlim(-0.6, 5.6); ax.set_ylim(-320, 900)
+    ax.set_ylabel('人')
+    LEG(ax, ncol=3, gap=0.14)
+    return _save(fig, 's26_kyokyu')
 
 
 def s9_hokenryo():
@@ -394,7 +417,8 @@ def s17_kanno():
 
 ALL = [s1_jinko, s2_uchiwake, s3_gyoseiku, s4_nintei_suii, s5_ninchi_jiritsu,
        s6_kyufu, s7_suikei, s8_choki, s9_hokenryo, s10_seika, s11_chiiki,
-       s12_risk, s13_fukugo, s14_shisaku, s15_seikatsu, s16_jinzai, s17_kanno]
+       s12_risk, s13_fukugo, s14_shisaku, s15_seikatsu, s16_jinzai, s17_kanno,
+       s26_kyokyu]
 
 if __name__ == '__main__':
     import sys

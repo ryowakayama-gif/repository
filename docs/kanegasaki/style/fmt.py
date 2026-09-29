@@ -5,7 +5,7 @@
 
 　合わせた項目
 　　用紙・余白　　A4縦　上下左右2.0cm　ヘッダ／フッタ1.25cm
-　　本文フォント　BIZ UDPゴシック 12pt　段落前後3pt
+　　本文フォント　游ゴシック 12pt　段落前後3pt
 　　見出し　　　　H1 16pt 太字 #2E74B5／H2 14pt 太字 #2E74B5／H3 11pt 太字 #1F4D78
 　　出典行　　　　8pt　段落前2pt・後8pt
 　　表　　　　　　見出し行 塗り#1F3864・白文字11pt太字・中央／本文11pt
@@ -21,8 +21,8 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
-FONT = 'BIZ UDPゴシック'
-GFONT = 'BIZ UDPゴシック'
+FONT = '游ゴシック'
+GFONT = '游ゴシック'
 BODY_PT = 12          # 本文
 TBL_PT = 11           # 表内
 C_H1 = RGBColor(0x2E, 0x74, 0xB5)
