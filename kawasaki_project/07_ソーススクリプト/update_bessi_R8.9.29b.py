@@ -1,0 +1,92 @@
+# -*- coding: utf-8 -*-
+"""別添整理表の更新（別添22 意見聴取の記録様式を作成済みに改める）
+
+`05_試算・管理シート/川崎町_計画書_別添整理表_R8.9.29.xlsx`
+  01_別添一覧　No.22 の現状・必要な作業・頁数
+  02_頁数の目安　資料編の頁数（13頁→15頁）
+  03_新たに作る様式　No.22（意見聴取の記録様式）の様式の要素と期限
+"""
+import openpyxl
+from openpyxl.styles import PatternFill
+
+XL = "05_試算・管理シート/川崎町_計画書_別添整理表_R8.9.29.xlsx"
+DONE = PatternFill("solid", fgColor="E2EFDA")
+
+YOSO = (
+    "様式1 実施計画（場・機会／実施予定／対象／聴き方／町の出席者／記録者）／"
+    "様式2 意見聴取記録票（聴いた場／その日共に何をしたか／参加者／場の設え／"
+    "本人の声（言葉のまま）／家族等の声／表情・振る舞い・場の雰囲気／写真・イラスト／"
+    "記録者が気づいたこと／今すぐできること／地域課題への翻訳／"
+    "関わる施策・事業／フィードバックの予定／庁内・庁外への共有の予定）／"
+    "様式3 反映台帳（15項目）／様式4 フィードバック記録／様式5 評価時の意見聴取")
+
+wb = openpyxl.load_workbook(XL)
+
+# ══════════════════════════ 03_新たに作る様式
+ws = wb["03_新たに作る様式"]
+ws.cell(6, 4).value = YOSO
+ws.cell(6, 5).value = "R8.9.29 作成済み（運用は確認事項No.146）"
+for c in range(1, ws.max_column + 1):
+    ws.cell(6, c).fill = DONE
+
+# ══════════════════════════ 01_別添一覧
+ws = wb["01_別添一覧"]
+head = [c.value for c in ws[1]]
+col_no = head.index("No") + 1
+col_genjo = head.index("現在の状況") + 1
+col_sagyo = head.index("必要な作業") + 1
+col_page = head.index("資料編の頁数") + 1
+hit = 0
+for r in range(2, ws.max_row + 1):
+    if str(ws.cell(r, col_no).value).strip() == "22":
+        hit = r
+        break
+if not hit:
+    raise SystemExit("別添No.22 が見つからない")
+ws.cell(hit, col_genjo).value = (
+    "令和8年9月29日に様式一式（様式1〜5・7シート）を作成した。"
+    "`05_試算・管理シート/川崎町_認知症_意見聴取記録様式_R8.9.29.xlsx`。"
+    "厚生労働省「都道府県・市町村向け認知症施策推進計画策定の手引き」3.1（2）及び"
+    "「認知症の本人の声を施策・事業運営に活かしていくためのヒント」（令和7年度老健事業）"
+    "の考え方に沿って設計している")
+ws.cell(hit, col_sagyo).value = (
+    "運用（記録者・保管・個人情報の取扱い・計画書への掲げ方）を町と確定する"
+    "（確認事項No.146）。"
+    "聴取の実施（令和8年10〜11月）後に、結果の要約（誰から何件・主な意見）を"
+    "別添に加える")
+for c in range(1, ws.max_column + 1):
+    ws.cell(hit, c).fill = DONE
+
+# ══════════════════════════ 02_頁数の目安（本文が93頁になったことを反映）
+ws = wb["02_頁数の目安"]
+ws.cell(2, 2).value = "素案Ver.2.2（第1章〜第10章。目次4頁を含む）"
+ws.cell(2, 3).value = 93
+ws.cell(2, 4).value = (
+    "Ver.2.1の88頁から5頁増えた（第6章に「新しい認知症観」と本町が目指す姿・"
+    "本人参画の進め方・部署横断的な検討の場・他の計画との連動・"
+    "事業の追加候補の表を加えたことによる）。"
+    "継続101事業の本文をどこまで書き下ろすかにより更に増減する。打合せによる")
+ws.cell(4, 3).value = 106
+ws.cell(4, 4).value = (
+    "仕様書8は「100頁程度」。Ver.2.1の時点では101頁であったが、"
+    "本文が93頁になったことにより106頁となる。"
+    "100頁程度の範囲と考えるが、継続101事業を本文に書き下ろす場合は"
+    "資料編を絞り込む必要がある（別添の置き場所の振り分けを見直す）")
+for c in range(1, ws.max_column + 1):
+    ws.cell(2, c).fill = DONE
+    ws.cell(4, c).fill = DONE
+
+wb.save(XL)
+print("保存：", XL)
+wb2 = openpyxl.load_workbook(XL)
+ws2 = wb2["03_新たに作る様式"]
+print("  別添22（意見聴取）：", ws2.cell(6, 5).value)
+ws3 = wb2["01_別添一覧"]
+tot = 0
+for r in range(2, ws3.max_row + 1):
+    v = ws3.cell(r, col_page).value
+    if isinstance(v, (int, float)):
+        tot += v
+print("  資料編の頁数合計：", tot)
+ws4 = wb2["02_頁数の目安"]
+print("  本文", ws4.cell(2, 3).value, "頁／計画書計", ws4.cell(4, 3).value, "頁")
