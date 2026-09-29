@@ -8,9 +8,14 @@ from figures_map import FIGS
 MD = "/home/user/repository/docs/北塩原村_第10期/18_計画素案.md"
 JS = "/tmp/soan.json"
 
-figs = {}
-for _sec, _fn, _cap, _src in FIGS:
-    figs.setdefault(_sec, []).append({"file": _fn, "caption": _cap, "source": _src})
+figs = {}          # 節の冒頭に出す図
+figs_inline = {}   # soan_content の {"t":"fig"} の位置に出す図（ファイル名で引く）
+for _sec, _fn, _cap, _src, _inline in FIGS:
+    _rec = {"file": _fn, "caption": _cap, "source": _src}
+    if _inline:
+        figs_inline[_fn] = _rec
+    else:
+        figs.setdefault(_sec, []).append(_rec)
 
 out = [f"# {S.TITLE}・{S.TITLE2}　{S.DRAFT}", "",
        f"**計画期間：{S.SUBTITLE}**　／　{S.ISSUER}　／　{S.DATE}", "",
@@ -34,6 +39,10 @@ for ch in S.CH:
                 out += [f"- {x}" for x in b["v"]] + [""]
             elif t == "note":
                 out += [f"> ⚙ **編集注記**：{b['v']}", ""]
+            elif t == "fig":
+                f = figs_inline[b["v"]]
+                out += [f"![{f['caption']}](../../output/figures/{f['file']})", "",
+                        f"**{f['caption']}**", "", f"出典：{f['source']}", ""]
             elif t in ("table", "kpi"):
                 head = b["head"]
                 out += ["| " + " | ".join(head) + " |",
@@ -43,12 +52,9 @@ for ch in S.CH:
     out += ["---", ""]
 
 open(MD, "w", encoding="utf-8").write("\n".join(out))
-figs = {}
-for sec, fn, cap, src in FIGS:
-    figs.setdefault(sec, []).append({"file": fn, "caption": cap, "source": src})
 json.dump({"title": S.TITLE, "title2": S.TITLE2, "subtitle": S.SUBTITLE,
            "draft": S.DRAFT, "issuer": S.ISSUER, "date": S.DATE,
-           "chapters": S.CH, "figures": figs},
+           "chapters": S.CH, "figures": figs, "figures_inline": figs_inline},
           open(JS, "w", encoding="utf-8"), ensure_ascii=False)
 print(f"Markdown: {MD}  ({len(out)}行)")
 print(f"JSON    : {JS}")

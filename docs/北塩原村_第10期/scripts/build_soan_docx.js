@@ -153,6 +153,8 @@ C.chapters.forEach((ch, ci) => {
           border: {left: {style: BorderStyle.SINGLE, size: 18, color: 'C00000', space: 8}},
           children: [new TextRun({text: `⚙ 編集注記：${b.v}`, font: FONTG, size: 17, color: GREY})],
         }));
+      } else if (b.t === 'fig') {
+        figure(C.figures_inline[b.v]).forEach(x => kids.push(x));
       } else if (b.t === 'table' || b.t === 'kpi') {
         kids.push(table(b.head, b.rows, b.widths));
         kids.push(p('', {after: 160}));

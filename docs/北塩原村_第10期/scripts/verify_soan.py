@@ -594,8 +594,8 @@ def main():
         import os as _os
         from figures_map import FIGS as _FIGS
         _figs = {}
-        for _sec, _fn, _cap, _src in _FIGS:
-            _figs.setdefault(_sec, []).append(_fn)
+        for _e in _FIGS:              # inline の図も同じ節に積む
+            _figs.setdefault(_e[0], []).append(_e[1])
 
         def _pages(skip_notes=False, skip_secs=()):
             tot = 0
@@ -762,7 +762,8 @@ def main():
                 for si, sec in enumerate(c['sections']):
                     order[f'{c["no"]}|{sec["no"]}'] = (ci, si)
             pos = []
-            for key, _fn, _cap, _src in F40:
+            for _e in F40:
+                key = _e[0]
                 if key not in order:
                     bad40.append(f'図の登録先 {key} が素案にない')
                 else:
@@ -839,6 +840,42 @@ def main():
             '・'.join(bad42[:4]) if bad42 else '参照先すべて実在')
     except Exception as e:
         chk(42, '資6・資7 が指す章節が現に存在すること', False, f'照合できない（{e}）')
+
+    # ── 43　登録した図がすべて本文に1回だけ現れ、画像が実在すること ────────
+    #    inline の図は soan_content の {"t":"fig"} で置くため、置き忘れると
+    #    図表番号一覧には載るのに本文から消える。番号だけが残る事故を防ぐ。
+    try:
+        from figures_map import FIGS as F43
+        import os as _os2
+        FIGDIR = '/home/user/repository/output/figures'
+        placed = {}
+        for c in SC.CH:
+            for sec in c['sections']:
+                for b in sec['blocks']:
+                    if b['t'] == 'fig':
+                        placed[b['v']] = placed.get(b['v'], 0) + 1
+        bad43 = []
+        reg = set()
+        for _e in F43:
+            key, fn = _e[0], _e[1]
+            inline = bool(_e[4]) if len(_e) > 4 else False
+            reg.add(fn)
+            if not _os2.path.exists(_os2.path.join(FIGDIR, fn)):
+                bad43.append(f'{fn} の画像がない')
+            n = placed.get(fn, 0)
+            if inline and n != 1:
+                bad43.append(f'{fn} はinlineだが本文に{n}回（1回であること）')
+            if not inline and n:
+                bad43.append(f'{fn} は節の冒頭に出す図だがfigブロックもある')
+        for fn in placed:
+            if fn not in reg:
+                bad43.append(f'{fn} が図の対応表に登録されていない')
+        chk(43, '登録した図がすべて本文に1回だけ現れ画像が実在すること', not bad43,
+            '・'.join(bad43[:3]) if bad43
+            else f'図{len(reg)}点、うち本文中に置くもの{len(placed)}点、画像すべて実在')
+    except Exception as e:
+        chk(43, '登録した図がすべて本文に1回だけ現れ画像が実在すること', False,
+            f'照合できない（{e}）')
 
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)

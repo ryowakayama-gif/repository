@@ -592,8 +592,204 @@ def fig_2_14():
                  loc="left", pad=10)
     save(fig, "fig2-14_サービス区分別変化.png")
 
+
+
+# ══════════ 追加図（doc49 §3-1）══════════
+# いずれも算定の結果を読んで描く。固定値を書き写さない。
+
+# ── 受給率の内訳（在宅・居住系・施設別）／2-4 ──
+def fig_jukyuritsu_uchiwake():
+    import csv as _csv, io as _io, collections as _c
+    rows = list(_csv.reader(_io.open(
+        "/home/user/repository/docs/北塩原村_第10期/data/mieruka_tidy.csv",
+        encoding="utf-8")))
+    d = _c.defaultdict(dict)
+    for r in rows[1:]:
+        if r[4].startswith("合計受給率") and r[6] == "北塩原村":
+            d[r[4]][r[7]] = float(r[10])
+    # 見える化の期の表記を年度の順に並べる
+    ORDER = ["H26", "H27", "H28", "H29", "H30", "R元", "R2", "R3", "R4", "R5",
+             "R6（R7/2月サービス提供分まで）", "R7（R8/2月サービス提供分まで）"]
+    lab = ["H26", "H27", "H28", "H29", "H30", "R元", "R2", "R3", "R4", "R5", "R6", "R7"]
+    zai = [d["合計受給率（在宅サービス）"][k] for k in ORDER]
+    kyo = [d["合計受給率（居住系サービス）"][k] for k in ORDER]
+    shi = [d["合計受給率（施設サービス）"][k] for k in ORDER]
+    x = list(range(len(lab)))
+    fig, ax = plt.subplots(figsize=(7.4, 4.0))
+    b1 = ax.bar(x, zai, color=K["xl"], edgecolor=K["m"], linewidth=0.8,
+                label="在宅サービス")
+    b2 = ax.bar(x, kyo, bottom=zai, color=K["m"], edgecolor=K["d"], linewidth=0.8,
+                label="居住系サービス", hatch="///")
+    b3 = ax.bar(x, shi, bottom=[a + b for a, b in zip(zai, kyo)],
+                color=K["d"], edgecolor=K["d"], linewidth=0.8, label="施設サービス")
+    for xi, a, b, c in zip(x, zai, kyo, shi):
+        ax.annotate(f"{a+b+c:.1f}", (xi, a + b + c), xytext=(0, 3),
+                    textcoords="offset points", ha="center", fontsize=8.5,
+                    fontweight="bold", color=K["d"])
+    # 在宅が底だった時期（平成30年度〜令和2年度）に印をつける
+    ax.annotate("在宅の底（H30〜R2）", xy=(5, zai[5]), xytext=(5, 3.4),
+                ha="center", fontsize=8.5, color=K["d"], fontweight="bold",
+                arrowprops=dict(arrowstyle="-", color=K["m"], lw=0.9,
+                                shrinkA=2, shrinkB=2))
+    ax.set_xticks(x); ax.set_xticklabels([f"{l}\n年度" for l in lab], fontsize=8.5)
+    ax.set_ylim(0, 18.6)
+    style_ax(ax, ylab="受給率（％）")
+    ax.legend(loc="upper center", fontsize=9, ncols=3, bbox_to_anchor=(0.5, -0.16))
+    ax.set_title("受給率の内訳（在宅・居住系・施設別）　施設が縮み在宅が戻している",
+                 loc="left", pad=10)
+    save(fig, "fig_受給率の内訳.png")
+
+
+# ── 事業所数からみた供給体制の位置（偏差値）／2-5 ──
+def fig_jigyosho_ichi():
+    import csv as _csv, io as _io, collections as _c
+    rows = list(_csv.reader(_io.open(
+        "/home/user/repository/docs/北塩原村_第10期/data/mieruka_tidy.csv",
+        encoding="utf-8")))
+    d = _c.defaultdict(dict)
+    for r in rows[1:]:
+        if r[2] == "δ1-b" and "事業所数（偏差値）" in r[4]:
+            d[r[4]][r[8]] = float(r[10])
+    yrs = ["2019", "2022", "2025"]
+    lab = ["令和元年", "令和4年", "令和7年"]
+    fuku = [d["人口10万人あたり居宅（福祉系）サービス事業所数（偏差値）"][y] for y in yrs]
+    iryo = [d["人口10万人あたり居宅（医療系）サービス事業所数（偏差値）"][y] for y in yrs]
+    kyotu = [d["人口10万人あたり居宅介護支援事業所数（偏差値）"][y] for y in yrs]
+    x = list(range(len(lab)))
+    fig, ax = plt.subplots(figsize=(7.2, 3.8))
+    ax.axhline(50, color=K["m"], ls="-", lw=1.0, zorder=1)
+    ax.annotate("全国平均（偏差値50）", (2.32, 50), fontsize=8.5, color=K["m"],
+                va="center", ha="left")
+    ax.plot(x, kyotu, label="居宅介護支援事業所", **S_MURA)
+    ax.plot(x, fuku, label="居宅（福祉系）サービス事業所", **S_KEN)
+    ax.plot(x, iryo, label="居宅（医療系）サービス事業所", **S_ZEN)
+    label_last(ax, x, kyotu, f"{kyotu[-1]:.1f}")
+    label_last(ax, x, fuku, f"{fuku[-1]:.1f}", color=K["m"])
+    label_last(ax, x, iryo, f"{iryo[-1]:.1f}", color=K["l"])
+    ax.annotate("実数は3時点とも0\n（村内に医療系の事業所なし）", (0.5, 31.5),
+                fontsize=8.5, color=K["d"], fontweight="bold", ha="left")
+    ax.set_xticks(x); ax.set_xticklabels(lab, fontsize=9.5)
+    ax.set_xlim(-0.3, 2.9); ax.set_ylim(28, 74)
+    style_ax(ax, ylab="全国の市町村の中での偏差値")
+    ax.legend(loc="upper left", fontsize=9)
+    ax.set_title("事業所数からみた供給体制の位置　医療系は全国平均を大きく下回る",
+                 loc="left", pad=10)
+    save(fig, "fig_事業所数の位置.png")
+
+
+# ── 需要に対する供給（担い手の枠）／5-4(12) ──
+def fig_juyo_kyokyu():
+    import sys as _s, os as _o
+    _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__)))
+    import estimate_jinzai as _J
+    rows = _J.run()
+    lab = [r[0] for r in rows]
+    waku = [r[5] for r in rows]         # 担い手の枠
+    juudo = [r[4] for r in rows]        # 要介護1以上（先に充てる量）
+    maware = [r[6] for r in rows]       # 要支援に回せる量
+    hitsuyo = [r[3] for r in rows]      # 要支援の必要量
+    juuritsu = [r[7] for r in rows]     # 充足率
+    x = list(range(len(lab)))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.6, 3.9),
+                                   gridspec_kw={"width_ratios": [1, 1], "wspace": 0.32})
+
+    # 左：担い手の枠の内訳（重度から充て、残りが軽度に回る）
+    ax1.bar(x, juudo, color=K["d"], edgecolor=K["d"], linewidth=0.8,
+            label="要介護1以上に充てる")
+    ax1.bar(x, maware, bottom=juudo, color=K["xl"], edgecolor=K["m"], linewidth=0.8,
+            label="要支援に回せる", hatch="///")
+    for xi, j_, m, w in zip(x, juudo, maware, waku):
+        ax1.annotate(f"{w}", (xi, w), xytext=(0, 3), textcoords="offset points",
+                     ha="center", fontsize=8.5, fontweight="bold", color=K["d"])
+        if m >= 20:
+            ax1.annotate(f"{m}", (xi, j_ + m / 2), ha="center", va="center",
+                         fontsize=8.5, color=K["d"])
+    ax1.set_xticks(x); ax1.set_xticklabels(lab, fontsize=8.5, rotation=30, ha="right")
+    ax1.set_ylim(0, 245)
+    style_ax(ax1, ylab="人")
+    ax1.legend(loc="upper center", fontsize=8, ncols=1,
+               bbox_to_anchor=(0.5, -0.24))
+    ax1.set_title("担い手の枠の内訳", loc="left", fontsize=10.5, pad=8)
+
+    # 右：要支援の必要量と回せる量の対比（ここが充足率）
+    h = 0.38
+    ax2.bar([i - h/2 for i in x], hitsuyo, width=h, color=K["xl"],
+            edgecolor=K["m"], linewidth=0.8, label="要支援の必要量")
+    ax2.bar([i + h/2 for i in x], maware, width=h, color=K["d"],
+            edgecolor=K["d"], linewidth=0.8, label="要支援に回せる量")
+    for xi, hh, m, r in zip(x, hitsuyo, maware, juuritsu):
+        ax2.annotate(f"{hh}", (xi - h/2, hh), xytext=(0, 3), textcoords="offset points",
+                     ha="center", fontsize=8.5, color=K["m"])
+        ax2.annotate(f"{m}", (xi + h/2, m), xytext=(0, 3), textcoords="offset points",
+                     ha="center", fontsize=8.5, fontweight="bold", color=K["d"])
+        # 充足率は専用の帯に置く（棒や凡例と重ねない）
+        ax2.annotate(f"{r:.1f}%", (xi, 106), ha="center", va="center", fontsize=9,
+                     fontweight="bold", color=K["d"] if r < 50 else K["m"])
+    ax2.axhline(98, color=K["xl"], lw=0.8, zorder=1)
+    ax2.set_xticks(x); ax2.set_xticklabels(lab, fontsize=8.5, rotation=30, ha="right")
+    ax2.set_ylim(0, 116)
+    style_ax(ax2, ylab="人")
+    ax2.legend(loc="upper center", fontsize=8, ncols=2,
+               bbox_to_anchor=(0.5, -0.24))
+    ax2.set_title("要支援の必要量と回せる量（上段は充足率）", loc="left",
+                  fontsize=10.5, pad=8)
+
+    fig.suptitle("需要に対する供給（担い手の枠）　要支援に回せる量が細っていく",
+                 x=0.012, ha="left", fontsize=12, y=1.04)
+    save(fig, "fig_需要に対する供給.png")
+
+
+# ── 算定上の保険料月額と条例上の基準額／5-7 ──
+def fig_hokenryo_jorei():
+    import csv as _csv, io as _io
+    rows = list(_csv.reader(_io.open(
+        "/home/user/repository/docs/北塩原村_第10期/data/第10期_保険料パターン.csv",
+        encoding="utf-8")))[1:]
+    K9 = 6700                            # 第9期の条例基準額
+    pats = [(r[0], r[1], r[2], int(r[4])) for r in rows]
+    g1 = [p for p in pats if p[1] == "取崩なし"]
+    g2 = [p for p in pats if p[1] != "取崩なし"]
+    lo = min(p[3] for p in pats); hi = max(p[3] for p in pats)
+    fig, ax = plt.subplots(figsize=(7.6, 4.3))
+    ax.axvline(K9, color=K["d"], ls="-", lw=2.0, zorder=2)
+    ys, ylab = [], []
+    for i, (p, mk, cl, nm) in enumerate([
+            (g2, "o", K["d"], "基金を24,000千円取り崩す"),
+            (g1, "s", K["m"], "基金を取り崩さない")]):
+        base = i * 7
+        for j, (futan, _kikin, suijun, tsuki) in enumerate(sorted(p, key=lambda t: t[3])):
+            y = base + j + 1
+            ys.append(y); ylab.append(f"　{futan}・{suijun}")
+            jorei = int(round(tsuki / 100.0) * 100)
+            ax.plot([tsuki], [y], marker=mk, ms=7, color=cl, zorder=5)
+            # 文字は白地を敷く。第9期の縦線が文字を切らないようにするため
+            ax.annotate(f"{tsuki:,} → 条例 {jorei:,}", (tsuki, y), xytext=(9, 0),
+                        textcoords="offset points", va="center", ha="left",
+                        fontsize=8.5, color=K["d"], zorder=6,
+                        bbox=dict(boxstyle="square,pad=0.12", fc="white",
+                                  ec="none"))
+        ys.append(base); ylab.append(nm)      # 群の見出しを軸ラベルとして置く
+    ax.set_yticks(ys); ax.set_yticklabels(ylab, fontsize=8.5)
+    for t, l in zip(ax.get_yticklabels(), ylab):
+        if not l.startswith("　"):
+            t.set_fontweight("bold"); t.set_fontsize(9)
+    ax.set_xlim(lo - 150, hi + 620); ax.set_ylim(-0.9, 13.4)
+    ax.invert_yaxis()
+    ax.annotate(f"第9期の条例基準額 {K9:,}円", (K9, -0.75), fontsize=9,
+                color=K["d"], fontweight="bold", ha="center", va="bottom")
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda v, p: f"{int(v):,}"))
+    style_ax(ax, xlab="算定上の保険料月額（円）／矢印の右は百円未満を四捨五入した条例上の基準額")
+    ax.grid(axis="x", visible=True); ax.grid(axis="y", visible=False)
+    ax.set_title(f"算定上の月額と条例上の基準額　12パターンの幅は{hi-lo:,}円",
+                 loc="left", pad=24)
+    save(fig, "fig_保険料と条例基準額.png")
+
+
 if __name__ == "__main__":
     fig_2_5(); fig_2_6(); fig_2_7(); fig_2_8()
     fig_2_9(); fig_2_10(); fig_2_11(); fig_2_12()
     fig_2_13(); fig_2_14(); fig_2_15(); fig_2_16()
     fig_2_17(); fig_2_18(); fig_2_19(); fig_2_20()
+    # 追加図（doc49 §3-1）
+    fig_jukyuritsu_uchiwake(); fig_jigyosho_ichi()
+    fig_juyo_kyokyu(); fig_hokenryo_jorei()

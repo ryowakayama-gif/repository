@@ -57,8 +57,8 @@ def run():
     import soan_content as S
     from figures_map import FIGS
     figs = {}
-    for sec, fn, cap, src in FIGS:
-        figs.setdefault(sec, []).append(fn)
+    for e in FIGS:                    # inline の図も同じ節に積む（位置は高さに効かない）
+        figs.setdefault(e[0], []).append(e[1])
 
     rows, tot_h, tot_t, tot_f = [], 0, 0, 0
     for ch in S.CH:
