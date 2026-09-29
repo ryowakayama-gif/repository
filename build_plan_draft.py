@@ -459,6 +459,7 @@ def P(text="", size=10.5, bold=False, align=None, space_after=4, indent=None):
     if align:
         p.alignment = align
     p.paragraph_format.space_after = Pt(space_after)
+    p.paragraph_format.line_spacing = 1.12       # 行間を空けて読みやすくする
     if indent:
         p.paragraph_format.left_indent = Cm(indent)
     return p
@@ -637,8 +638,16 @@ def H3(t):
 
 
 def LEAD(text, size=10):
-    """表・図の前に置く小見出し（【 】付き）。"""
-    return P(text, size=size, bold=True, space_after=3)
+    """表・図の前に置く小見出し（【 】付き）。
+
+    第9期計画は【　】を図表のキャプションとして用いている（資料7）。
+    第10期では節の中の分析のまとまりを示す小見出しとしても用いる。
+    直前の本文と続けて詰まると区切りが見えないため、前に余白を置く。
+    """
+    p = P(text, size=size, bold=True, space_after=3)
+    p.paragraph_format.space_before = Pt(8)
+    p.paragraph_format.keep_with_next = True
+    return p
 
 
 def UNIT(text, size=8.5):
@@ -651,6 +660,31 @@ def SRC(text, size=8.5):
     return P("資料：" + text, size=size, align=WD_ALIGN_PARAGRAPH.RIGHT, space_after=8)
 
 
+HEAD_SHD = "DCE6F1"      # 表頭の地色（淡い青）
+
+
+def _shade(cell, color):
+    """セルに地色を付ける。tcPr では vAlign より前に置く。"""
+    tcPr = cell._tc.get_or_add_tcPr()
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:val"), "clear")
+    shd.set(qn("w:color"), "auto")
+    shd.set(qn("w:fill"), color)
+    va = tcPr.find(qn("w:vAlign"))
+    if va is None:
+        tcPr.append(shd)
+    else:
+        va.addprevious(shd)
+
+
+def _row_flags(row, header=False):
+    """行の分割を禁じ、見出し行は各ページの先頭で繰り返す。"""
+    trPr = row._tr.get_or_add_trPr()
+    trPr.append(OxmlElement("w:cantSplit"))
+    if header:
+        trPr.append(OxmlElement("w:tblHeader"))
+
+
 def TBL(head, rows, widths=None, size=8.5, headsize=None):
     t = doc.add_table(rows=1, cols=len(head))
     t.style = "Table Grid"
@@ -658,11 +692,14 @@ def TBL(head, rows, widths=None, size=8.5, headsize=None):
     for i, hh in enumerate(head):
         c = t.rows[0].cells[i]
         c.text = ""
+        c.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
         r = c.paragraphs[0].add_run(hh)
         r.bold = True
         r.font.size = Pt(headsize or size)
         r.font.name = FONT
         r._element.rPr.rFonts.set(qn("w:eastAsia"), FONT)
+        _shade(c, HEAD_SHD)
+    _row_flags(t.rows[0], header=True)
     for row in rows:
         cells = t.add_row().cells
         for i, v in enumerate(row):
@@ -671,6 +708,7 @@ def TBL(head, rows, widths=None, size=8.5, headsize=None):
             r.font.size = Pt(size)
             r.font.name = FONT
             r._element.rPr.rFonts.set(qn("w:eastAsia"), FONT)
+        _row_flags(t.rows[-1])
     if widths:
         tot = sum(widths)
         if tot > TEXTW:                  # 本文幅に収まるよう比例配分する
@@ -678,6 +716,9 @@ def TBL(head, rows, widths=None, size=8.5, headsize=None):
         for i, w in enumerate(widths):
             for row in t.rows:
                 row.cells[i].width = Cm(w)
+    # 表の前後に余白を置く（本文と表が続けて詰まると読みにくい）。
+    for _p in t.rows[0].cells[0].paragraphs:
+        _p.paragraph_format.space_before = Pt(0)
     return t
 
 
@@ -1097,6 +1138,9 @@ TBL(["読替えの方法", "適する指標の性質", "該当する北海道の
     [4.0, 4.4, 5.4, 4.0])
 
 H2("第9節　介護保険制度改正の主な内容")
+P("第10期計画の期間には、介護保険法をはじめとする制度の改正が続きます。"
+  "本節では、本計画に関係する事項を次の4つに分けて整理します。"
+  "国の第10期基本指針（案）が示す主な論点は次のとおりです。")
 BUL("2040年を見据えた中山間・人口減少地域のサービス提供体制")
 BUL("新たな地域医療構想との接続と医療・介護連携")
 BUL("高齢者向け住まい、住宅部局との連携、身寄りのない高齢者等への支援")
@@ -1112,7 +1156,7 @@ P("国の基本指針案では、市町村計画の基本的記載事項とし�
   "人材確保・生産性向上・経営改善支援、ロジックモデルとPDCAの充実が示されています。")
 P("あわせて、計画策定に当たって確認すべき指標・状況として11事項の別表が新設される案が"
   "示されました。本計画の対応状況は資料6に整理しています。"
-  "本素案はこれらを反映し、告示後に最終照合します。")
+  "本計画はこれらを反映するものとし、告示後に最終の照合を行います。")
 P("")
 LEAD("【2040年を見据えた地域類型の考え方】")
 P("国は、2040年に向けて高齢化・人口減少の速さが地域によって大きく異なることを踏まえ、"
@@ -1430,7 +1474,7 @@ NOTE("美瑛町の第3期総合戦略には人口の目標値が示されてい�
      "また東神楽町は実績が目標を下回る見込みです。"
      "このため総人口の目標値を3町一律には用いられません。"
      "町別の総人口の置き方については、"
-     "住民基本台帳の実績趨勢によることを受託者の案とします［要協議］。")
+     "住民基本台帳の実績趨勢によることとする案を示しています［要協議］。")
 UNIT("単位：人")
 TBL(["区分", "平成24年", "平成29年", "令和2年", "令和5年", "令和5年の構成比"],
     [["総人口", "28,635", "28,929", "28,288", "27,887", "100.0％"],
@@ -5075,7 +5119,7 @@ TBL(["時期", "提出主体", "主な提出物", "広域連合の処理・成�
       "町別・サービス別に統合し需給リスクを整理"],
      ["年度末～翌年度初", "3町", "町計画の事業実績・成果・改善措置",
       "共通KPIと町固有指標を接続し年次スコアカードを作成"],
-     ["審議前（7～8月）", "広域連合・受託者", "評価案、町別比較、改善案",
+     ["審議前（7～8月）", "広域連合", "評価案、町別比較、改善案",
       "達成・概ね達成・未達・評価不能を判定し根拠を明記"],
      ["審議（9月）", "広域連合", "年次評価スコアカード", "委員会へ報告し意見を受ける"],
      ["審議後（10月）", "広域連合・3町", "意見対応、改善責任者、期限",
@@ -5191,10 +5235,10 @@ TBL(["事項", "確認すべき指標・状況", "対応", "本計画での記�
       "地域包括支援センターにおける相談体制、インセンティブ交付金における評価）",
       "一部対応", "第3章第1節2・第4節、第5章 基本目標2／見える化F1～F9、W126～W145",
       "地域包括支援センターの相談体制（F15～F25）及び"
-      "多様なサービス・活動の数（F28～F40）は再出力を依頼中"],
+      "多様なサービス・活動の数（F28～F40）はデータの登録を進める"],
      ["十", "医療介護連携の状況（医療介護連携に関する加算の算定状況）", "一部対応",
       "第5章 基本目標1／見える化O4・O5",
-      "介護報酬側のO1～O3・O6～O13は再出力を依頼中。"
+      "介護報酬側のO1～O3・O6～O13はデータの登録を進める。"
       "診療報酬側のL20～L26はデータ登録がない。上川中部圏域の医療機関への照会で補う"],
      ["十一", "認知症の人の数及び関連施策の状況（認知症の人の数・推計値、認知症疾患医療センター、"
       "認知症サポート医、ピアサポート活動や就労等の社会参加の機会・場の数・利用者数）",
@@ -5215,7 +5259,7 @@ TBL(["区分", "件数", "該当事項"],
 
 H2("資料7 図表番号一覧")
 P("第9期計画は図表に番号を付けておらず、【　】括弧のキャプションのみで管理していました。"
-  "第10期では「図N」及び「図N-M」の通し番号を付し、本文・別冊の図表集・修正指示書で"
+  "第10期では「図N」及び「図N-M」の通し番号を付し、本文と別冊の図表集で"
   "同じ番号を用います。")
 P("図は、①本文に画像として掲載するもの（本文掲載）と、②別冊の図表集を参照するもの"
   "（図表集参照）に分けています。図表集には全36シート142点を収録しており、"
