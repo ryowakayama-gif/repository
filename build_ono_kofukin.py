@@ -689,7 +689,7 @@ def build_xlsx(MK, ZI, SU, SG):
     ])
 
     ws = wb.create_sheet("03_福島県が0点の項目")
-    ws.append(["全国該当率が6割以上で福島県が0点の項目（大雪地区広域連合の方法による）"])
+    ws.append(["全国該当率が6割以上で福島県が0点の項目（他団体の方法による）"])
     ws.cell(1, 1).font = Font(bold=True, size=12)
     ws.append([])
     ws.append(["列", "交付金", "目標", "評価指標", "枝番", "配点", "全国該当率",
