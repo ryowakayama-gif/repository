@@ -45,9 +45,94 @@ OUT = pathlib.Path(__file__).parent / "output" / "ono_fig"
 YS = ["令和3年度", "令和4年度", "令和5年度", "令和6年度", "令和7年度"]
 
 
+# 作図した図の数値を控える台帳。build_ono_zuhyo_daicho.py が読む。
+# 各図の数値は関数ごとに一次資料から計算しているため、
+# ここで書き出す以外に一覧する方法がない。
+# 図の作り方には手を入れず、共通の出口（_save）で控えるだけとする。
+LEDGER = {}
+
+
+def _harvest(fig, name):
+    """描かれた図から、系列名と数値を読み取って控える。"""
+    try:
+        ax = fig.axes[0]
+    except (AttributeError, IndexError):
+        return
+    d = {"name": name, "title": ax.get_title() or "",
+         "xlabel": ax.get_xlabel() or "", "ylabel": ax.get_ylabel() or "",
+         "xs": [t.get_text().replace("\n", " ") for t in ax.get_xticklabels()],
+         "ys": [t.get_text().replace("\n", " ") for t in ax.get_yticklabels()],
+         "series": [], "kind": ""}
+    kinds = set()
+    for c in getattr(ax, "containers", []):
+        patches = list(getattr(c, "patches", []) or [])
+        if not patches:
+            continue
+        # 幅がそろっていれば縦棒、高さがそろっていれば横棒とみる
+        ws = {round(p.get_width(), 6) for p in patches}
+        hs = {round(p.get_height(), 6) for p in patches}
+        if len(ws) == 1 and len(hs) > 1:
+            vals = [p.get_height() for p in patches]
+            kinds.add("縦棒")
+        elif len(hs) == 1 and len(ws) >= 1:
+            vals = [p.get_width() for p in patches]
+            kinds.add("横棒")
+        else:
+            vals = [p.get_height() for p in patches]
+            kinds.add("縦棒")
+        lab = c.get_label() or ""
+        if lab.startswith("_"):
+            lab = ""
+        d["series"].append((lab, [round(float(v), 4) for v in vals]))
+    for ln in getattr(ax, "lines", []):
+        yd = list(ln.get_ydata())
+        if not yd or len(yd) < 2:
+            continue
+        lab = ln.get_label() or ""
+        if lab.startswith("_"):
+            lab = ""
+        d["series"].append((lab, [round(float(v), 4) for v in yd]))
+        kinds.add("折れ線")
+    # 第2軸があれば拾う
+    for ax2 in fig.axes[1:]:
+        for ln in getattr(ax2, "lines", []):
+            yd = list(ln.get_ydata())
+            if not yd or len(yd) < 2:
+                continue
+            lab = (ln.get_label() or "")
+            if lab.startswith("_"):
+                lab = ""
+            d["series"].append((lab + "（第2軸）" if lab else "（第2軸）",
+                                [round(float(v), 4) for v in yd]))
+            kinds.add("折れ線")
+    d["kind"] = "・".join(sorted(kinds)) or "その他"
+    LEDGER[name] = d
+    _dump()
+
+
+def _dump():
+    """控えをJSONに残す。成果品ごとに別のプロセスで作図するため、
+    図表データ管理台帳がまとめて読めるようにする。"""
+    import json
+    try:
+        OUT.mkdir(parents=True, exist_ok=True)
+        p = OUT / "_ledger.json"
+        got = {}
+        if p.exists():
+            try:
+                got = json.loads(p.read_text())
+            except Exception:
+                got = {}
+        got.update(LEDGER)
+        p.write_text(json.dumps(got, ensure_ascii=False, indent=1))
+    except Exception:
+        pass
+
+
 def _save(fig, name):
     OUT.mkdir(parents=True, exist_ok=True)
     p = OUT / ("%s.png" % name)
+    _harvest(fig, name)
     fig.savefig(p, dpi=200, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     return p
