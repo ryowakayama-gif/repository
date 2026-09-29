@@ -5,7 +5,7 @@
 直して、規則どおりになっているかを確かめる。
 
   ・用紙・余白　　A4縦　上下左右2.0cm　ヘッダ／フッタ1.25cm
-  ・本文　　　　　BIZ UDPゴシック 12pt
+  ・本文　　　　　游ゴシック 10.5pt（令和8年9月29日に他団体の協議用素案に合わせた）
   ・見出し　　　　H1 16pt #2E74B5／H2 14pt #2E74B5／H3 11pt #1F4D78
   ・表　　　　　　見出し行 塗り#1F3864・白文字・中央／列幅はグリッドにも書く
   ・列幅　　　　　合計17.0cm（本文幅）
@@ -45,8 +45,9 @@ TARGETS = [
     "21_給付適正化・交付金/小野町_給付適正化と交付金の取りまとめ_20260928.docx",
 ]
 
-FONT = "BIZ UDPゴシック"
-TEXTW = 17.0
+FONT = "游ゴシック"
+BODY_PT = 10.5
+TEXTW = 17.2
 TOL = 0.35          # 列幅の合計の許容差（cm）
 
 
@@ -63,10 +64,12 @@ def check(path):
         if (_emu(s.page_width), _emu(s.page_height)) != (21.0, 29.7):
             bad.append(f"section{i} 用紙 {_emu(s.page_width)}×"
                        f"{_emu(s.page_height)}cm（A4縦でない）")
-        for nm, v in (("左", s.left_margin), ("右", s.right_margin),
-                      ("上", s.top_margin), ("下", s.bottom_margin)):
-            if abs(_emu(v) - 2.0) > 0.01:
-                bad.append(f"section{i} {nm}余白 {_emu(v)}cm（2.0cmでない）")
+        for nm, v, want in (("左", s.left_margin, 1.9),
+                            ("右", s.right_margin, 1.9),
+                            ("上", s.top_margin, 2.0),
+                            ("下", s.bottom_margin, 2.0)):
+            if abs(_emu(v) - want) > 0.01:
+                bad.append(f"section{i} {nm}余白 {_emu(v)}cm（{want}cmでない）")
         for nm, v in (("ヘッダ", s.header_distance), ("フッタ", s.footer_distance)):
             if abs(_emu(v) - 1.25) > 0.01:
                 bad.append(f"section{i} {nm}距離 {_emu(v)}cm（1.25cmでない）")
@@ -75,9 +78,9 @@ def check(path):
     st = d.styles["Normal"]
     if st.font.name != FONT:
         bad.append(f"本文フォント {st.font.name}（{FONT}でない）")
-    if st.font.size != Pt(12):
+    if st.font.size != Pt(BODY_PT):
         bad.append(f"本文サイズ {st.font.size.pt if st.font.size else None}pt"
-                   "（12ptでない）")
+                   f"（{BODY_PT}ptでない）")
 
     # ---- 表：見出し行の塗りと列幅
     for ti, t in enumerate(d.tables):

@@ -4,10 +4,16 @@
 **規則のみを取り入れたものであり、他団体の数値は一切用いていない。**
 
 合わせた項目
-  用紙・余白　　A4縦　上下左右2.0cm　ヘッダ／フッタ1.25cm
-  本文　　　　　BIZ UDPゴシック 12pt　段落前後3pt
-  見出し　　　　H1 16pt 太字 #2E74B5／H2 14pt 太字 #2E74B5／H3 11pt 太字 #1F4D78
-  表　　　　　　見出し行 塗り#1F3864・白文字11pt太字・中央／本文11pt
+  用紙・余白　　A4縦　上下2.0cm・左右1.9cm　ヘッダ／フッタ1.25cm
+  本文　　　　　游ゴシック 10.5pt　段落前後3pt
+  見出し　　　　H1 15pt 太字 #2E74B5／H2 12.5pt 太字 #2E74B5／H3 11pt 太字 #1F4D78
+  表　　　　　　見出し行 塗り#1F3864・白文字8.5pt太字・中央／本文8.5pt
+
+  **令和8年9月29日に、書体と文字の大きさを他団体の協議用素案に合わせた。**
+  従前は BIZ UDPゴシック 12pt（表11pt）だったが、表の多い計画書では
+  1行に入る文字数が少なく折り返しが増えるため、游ゴシック10.5pt（表8.5pt）
+  とし、左右の余白を1.9cmに詰めて本文幅を17.2cmに広げた。
+  表の塗り・罫線・強調の扱いは従前のまま。
   　　　　　　　罫線 上下#2E75B6(sz6)、左右・内側#BFBFBF(sz4)、セル余白左右10dxa
   　　　　　　　列幅はセル幅とグリッド（w:gridCol）の両方に書く
   　　　　　　　（一方だけではLibreOfficeで反映されない）
@@ -43,13 +49,13 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Cm, Pt, RGBColor
 
-FONT = "BIZ UDPゴシック"
-BODY_PT = 12
-TBL_PT = 11
-SRC_PT = 8
+FONT = "游ゴシック"
+BODY_PT = 10.5
+TBL_PT = 8.5
+SRC_PT = 8.5
 C_H1 = RGBColor(0x2E, 0x74, 0xB5)
 C_H3 = RGBColor(0x1F, 0x4D, 0x78)
-TEXTW = 17.0                      # 本文の幅（cm）＝21.0−2.0−2.0
+TEXTW = 17.2                      # 本文の幅（cm）＝21.0−1.9−1.9
 
 
 def _set_font(run, f=FONT, sz=BODY_PT, b=False, color=None, italic=False):
@@ -121,7 +127,7 @@ class Report:
             s.page_width, s.page_height = Cm(29.7), Cm(21.0)
         else:
             s.page_width, s.page_height = Cm(21.0), Cm(29.7)
-        s.left_margin = s.right_margin = Cm(2.0)
+        s.left_margin = s.right_margin = Cm(1.9)
         s.top_margin = s.bottom_margin = Cm(2.0)
         s.header_distance = s.footer_distance = Cm(1.25)
         if s is not self.doc.sections[0]:
@@ -199,13 +205,13 @@ class Report:
         return q
 
     def h1(self, text):
-        return self._head(text, 16, C_H1, 18, 9, 1)
+        return self._head(text, 15, C_H1, 12, 5, 1)
 
     def h2(self, text):
-        return self._head(text, 14, C_H1, 14, 6, 2)
+        return self._head(text, 12.5, C_H1, 9, 5, 2)
 
     def h3(self, text):
-        return self._head(text, 11, C_H3, 10, 4, 0)
+        return self._head(text, 11, C_H3, 9, 4, 0)
 
     def part(self, text):
         """第1部・第2部のような大区切り。改ページして中央に置く。"""
@@ -353,7 +359,7 @@ class Report:
         q = self.doc.add_paragraph()
         q.alignment = WD_ALIGN_PARAGRAPH.CENTER
         q.paragraph_format.space_after = Pt(14)
-        _set_font(q.add_run(title), sz=16, b=True, color=C_H1)
+        _set_font(q.add_run(title), sz=15, b=True, color=C_H1)
         r = self.doc.add_paragraph()
         r.alignment = WD_ALIGN_PARAGRAPH.CENTER
         r.paragraph_format.space_after = Pt(10)
