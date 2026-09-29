@@ -5,10 +5,10 @@
 
 　合わせた項目
 　　用紙・余白　　A4縦　上下左右2.0cm　ヘッダ／フッタ1.25cm
-　　本文フォント　游ゴシック 12pt　段落前後3pt
-　　見出し　　　　H1 16pt 太字 #2E74B5／H2 14pt 太字 #2E74B5／H3 11pt 太字 #1F4D78
-　　出典行　　　　8pt　段落前2pt・後8pt
-　　表　　　　　　見出し行 塗り#1F3864・白文字11pt太字・中央／本文11pt
+　　本文フォント　游ゴシック 10.5pt　行間1.12　段落後4pt
+　　見出し　　　　H1 15pt 太字 #2E74B5／H2 12.5pt 太字 #2E74B5／H3 11pt 太字 #1F4D78
+　　出典行　　　　8.5pt　段落前2pt・後8pt
+　　表　　　　　　見出し行 塗り#1F3864・白文字8.5pt太字・中央／本文8.5pt
 　　　　　　　　　罫線 上下#2E75B6(sz6)、左右・内側#BFBFBF(sz4)、セル余白左右10dxa
 　　ヘッダ　　　　文書名を中央に配置
 　　フッタ　　　　ページ番号を「- n -」の形で中央に配置
@@ -23,8 +23,8 @@ from docx.oxml import OxmlElement
 
 FONT = '游ゴシック'
 GFONT = '游ゴシック'
-BODY_PT = 12          # 本文
-TBL_PT = 11           # 表内
+BODY_PT = 10.5        # 本文（大雪地区広域連合 協議用素案に合わせる）
+TBL_PT = 8.5          # 表内（同）
 C_H1 = RGBColor(0x2E, 0x74, 0xB5)
 C_H3 = RGBColor(0x1F, 0x4D, 0x78)
 DOC_TITLE = '金ケ崎町 高齢者福祉計画・第10期介護保険事業計画・認知症施策推進計画'
@@ -41,8 +41,9 @@ st.font.name = FONT; st.font.size = Pt(BODY_PT)
 st.element.rPr.rFonts.set(qn('w:eastAsia'), FONT)
 st.element.rPr.rFonts.set(qn('w:ascii'), FONT)
 st.element.rPr.rFonts.set(qn('w:hAnsi'), FONT)
-st.paragraph_format.space_before = Pt(3)
-st.paragraph_format.space_after = Pt(3)
+st.paragraph_format.space_before = Pt(0)
+st.paragraph_format.space_after = Pt(4)
+st.paragraph_format.line_spacing = 1.12
 
 
 def _f(run, f=FONT, sz=BODY_PT, b=False, color=None):
@@ -54,9 +55,10 @@ def _f(run, f=FONT, sz=BODY_PT, b=False, color=None):
         run.font.color.rgb = color
 
 
-def P(text='', sz=BODY_PT, b=False, f=FONT, before=3, after=3, ind=0, align=None, color=None):
+def P(text='', sz=BODY_PT, b=False, f=FONT, before=0, after=4, ind=0, align=None, color=None):
     p = doc.add_paragraph(); pf = p.paragraph_format
     pf.space_before = Pt(before); pf.space_after = Pt(after)
+    pf.line_spacing = 1.12
     if ind:
         pf.left_indent = Cm(ind)
     if align:
@@ -73,30 +75,30 @@ def P(text='', sz=BODY_PT, b=False, f=FONT, before=3, after=3, ind=0, align=None
 
 def H1(t):
     p = doc.add_paragraph()
-    p.paragraph_format.space_before = Pt(18); p.paragraph_format.space_after = Pt(9)
+    p.paragraph_format.space_before = Pt(12); p.paragraph_format.space_after = Pt(5)
     p.paragraph_format.keep_with_next = True
-    _f(p.add_run(t), GFONT, 16, True, C_H1)
+    _f(p.add_run(t), GFONT, 15, True, C_H1)
     return _register(p, t, 1)
 
 
 def H2(t):
     p = doc.add_paragraph()
-    p.paragraph_format.space_before = Pt(14); p.paragraph_format.space_after = Pt(6)
+    p.paragraph_format.space_before = Pt(9); p.paragraph_format.space_after = Pt(5)
     p.paragraph_format.keep_with_next = True
-    _f(p.add_run(t), GFONT, 14, True, C_H1)
+    _f(p.add_run(t), GFONT, 12.5, True, C_H1)
     return _register(p, t, 2)
 
 
 def H3(t):
     p = doc.add_paragraph()
-    p.paragraph_format.space_before = Pt(10); p.paragraph_format.space_after = Pt(4)
+    p.paragraph_format.space_before = Pt(9); p.paragraph_format.space_after = Pt(5)
     p.paragraph_format.keep_with_next = True
     _f(p.add_run(t), GFONT, 11, True, C_H3)
     return p
 
 
 def BUL(t, ind=0.4):
-    P('・' + t, ind=ind, before=2, after=2)
+    P('・' + t, sz=10, ind=ind, before=0, after=2)
 
 
 def _border(tbl):
@@ -163,7 +165,7 @@ def TBL(rows, widths=None, fs=TBL_PT):
 
 
 def SRC(t):
-    P(t, sz=8, ind=0.2, before=2, after=8)
+    P(t, sz=8.5, ind=0.2, before=2, after=8)
 
 
 FIGNO = [0]                      # 図番号の連番
