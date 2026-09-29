@@ -877,6 +877,50 @@ def main():
         chk(43, '登録した図がすべて本文に1回だけ現れ画像が実在すること', False,
             f'照合できない（{e}）')
 
+    # ── 44　図の数値の正本が1か所であること ──────────────────────
+    #    (a) 作図スクリプトに数値がじか書きされていないこと
+    #    (b) 画像の中の表題に図表番号を焼き込んでいないこと
+    #        （番号は figures_map.py が振るため、焼き込むと採番のやり直しで食い違う）
+    try:
+        import re as _re4
+        import os as _os4
+        _sc = _os4.path.join(_os4.path.dirname(_os4.path.abspath(__file__)))
+        with open(_os4.path.join(_sc, 'build_figures.py'), encoding='utf-8') as _f4:
+            bf = _f4.read()
+        bad44 = []
+        # (b) 表題に図表番号がないこと
+        yaki = _re4.findall(r'(?:set_title\(|suptitle\()"図[0-9]+-[0-9]+', bf)
+        if yaki:
+            bad44.append(f'画像の表題に図表番号が{len(yaki)}件焼き込まれている')
+        # (a) 数値の並びがじか書きされていないこと（3つ以上の数の並び）
+        jika = []
+        for m in _re4.finditer(r'^\s*([A-Za-z_][A-Za-z_0-9]*)\s*=\s*\[([^\]]*)\]',
+                               bf, _re4.M):
+            body = m.group(2)
+            nums = _re4.findall(r'-?\d+\.?\d*', body)
+            if len(nums) >= 3 and not _re4.search(r'[A-Za-z_]{2,}', body):
+                jika.append(m.group(1))
+        # 見るのは「計測した値」である。次は軸の位置・区分の名・体裁であり、
+        # 正本に持つ対象ではないため除く（区分の名は data_zuhyo にもあるが、
+        # 作図は目盛りの位置として数で持つ必要がある）
+        LAYOUT = {'x', 'lab', 'labels', 'cat', 'cats', 'names', 'grp', 'yrs',
+                  'ORDER', 'ys', 'ylab', 'widths', 'pos', 'bottom', 'b',
+                  'CHART', 'FIGSIZE', 'idx', 'y'}
+        jika = [v for v in jika if v not in LAYOUT]
+        if jika:
+            bad44.append('作図に数値がじか書き：' + '・'.join(sorted(set(jika))[:5]))
+        # 正本の系列数が作図の参照数と釣り合っていること
+        import data_zuhyo as _DZ4
+        nref = len(_re4.findall(r'V\("', bf))
+        nser = sum(len(d['series']) for d in _DZ4.load(use_book=False).values())
+        if nref < nser * 0.8:
+            bad44.append(f'正本の系列{nser}に対し作図の参照が{nref}しかない')
+        chk(44, '図の数値の正本が1か所であること', not bad44,
+            '・'.join(bad44[:3]) if bad44
+            else f'じか書きなし、表題に番号なし、正本{nser}系列を参照{nref}件')
+    except Exception as e:
+        chk(44, '図の数値の正本が1か所であること', False, f'照合できない（{e}）')
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
