@@ -920,10 +920,13 @@ chk(12, "市町村認知症施策推進計画の主体が構成3町であるこ�
     "素案の実物から数えた", "%d箇所" % len(_SHUTAI), len(_SHUTAI) > 0)
 
 _IKEN = [t for t in _ps if "認知症の人及びその家族等からの意見の聴取" in t]
+# 注記は語の説明であり方針を述べるものではないため、記号の有無は本文で判定する。
+_IKEN_HON = [t for t in _IKEN if not t.startswith("注")]
 chk(13, "意見の聴取が［要協議］のまま残されていること（No.130③は未決）",
-    "素案の実物から数えた",
-    "%d箇所（いずれも［要協議］）" % len(_IKEN),
-    len(_IKEN) > 0 and all("［要協議］" in t for t in _IKEN))
+    "素案の実物から数えた（注記を除く）",
+    "本文%d箇所（いずれも［要協議］）・注記%d箇所"
+    % (len(_IKEN_HON), len(_IKEN) - len(_IKEN_HON)),
+    len(_IKEN_HON) > 0 and all("［要協議］" in t for t in _IKEN_HON))
 
 NG_WORDS = ["に由来する", "と整合する", "1件も", "有意差がないため", "全国トップ級"]
 
