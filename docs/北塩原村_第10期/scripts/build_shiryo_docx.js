@@ -5,6 +5,20 @@ const {Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBr
        Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, LevelFormat,
        TableOfContents, Footer, PageNumber, ImageRun} = d;
 const path = require('path');
+// 入力のJSONが元データより古いときは止める（古い成果品を作らないため）
+(function () {
+  const src = "shiryo_content.py";
+  const js  = "/tmp/shiryo.json";
+  if (!fs.existsSync(js)) {
+    console.error('入力の ' + js + ' がありません。先に ' + src + ' を実行してください。');
+    process.exit(1);
+  }
+  if (fs.statSync(js).mtimeMs < fs.statSync(src).mtimeMs) {
+    console.error('入力の ' + js + ' が ' + src + ' より古いです。先に ' + src + ' を実行してください。');
+    process.exit(1);
+  }
+})();
+
 
 const FIGDIR = '/home/user/repository/output/figures';
 function pngSize(buf) {              // PNG IHDR: 幅=16..19 / 高さ=20..23（ビッグエンディアン）

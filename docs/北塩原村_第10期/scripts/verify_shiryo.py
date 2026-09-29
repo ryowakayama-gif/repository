@@ -352,7 +352,7 @@ import re as _re2
 
 def _num(x):
     """数値のセルだけを比べる。単位・記号は落とし、節番号（4-7 等）は比較の対象外とする。"""
-    v = _re2.sub(r'[\s\u3000点位％%人項目計配得,〜～]', '', str(x))
+    v = _re2.sub(r'[\s\u3000点位％%人項目計配得,〜～円千百万]', '', str(x))
     v = v.replace('▲', '-').replace('＋', '+')
     return v if _re2.match(r'^[-+]?[\d.]+$', v) else None
 
@@ -398,6 +398,107 @@ for name, (so_no, sh_no) in WHERE.items():
     n_ok += 1
 chk(19, "交付金の表が計画素案と委員会資料で一致すること", not bad19,
     "・".join(bad19[:3]) if bad19 else f"{n_ok}表（3か年の推移・4区分・目標別・政策領域・未取得・61点・122点）が一致")
+
+# 20 見込量・保険料の表が、計画素案と委員会資料（資料5・資料6）で一致すること
+#    照合の型は3つ。pos＝行の並びが同じ表、sub＝資料が素案の抜粋である表、
+#    tr＝素案と資料で行と列が入れ替わっている表。
+def _lab(x):
+    return _re2.sub(r'[\s\u3000（）()　・]', '', str(x))
+
+def _vals(row):
+    return [y for y in (_num(x) for x in row) if y is not None]
+
+PR = {
+ '認定率（前期・後期）': lambda b: b['head'] == ['区分', '前期高齢者', '後期高齢者'],
+ '認定率の置き方':      lambda b: b['head'][0] == '認定率の置き方',
+ '推計のバックテスト':   lambda b: b['head'] == ['起点', '予測年', '予測', '実績', '誤差'],
+ '伸びの偏りの補正候補': lambda b: '変化の実数' in b['head'] and '変化率' in b['head'],
+ '保険料パターン':      lambda b: b['head'][0] == '第1号負担割合',
+ '所得段階別':         lambda b: b['head'][0] == '段階' and '構成比' in b['head'],
+ '感応度':            lambda b: '月額への効き' in b['head'],
+ '中長期の見通し':      lambda b: b['head'][:2] == ['区分', '令和11年度'] and '令和11年度比' in b['head'],
+ '保険料の推移':        lambda b: b['rows'][0][0] in ('北塩原村',) or str(b['rows'][0][0]).startswith('第7期'),
+ '認定者数の推計':      lambda b: '要支援1' in b['head'] or (b['rows'] and str(b['rows'][0][0]) == '第1号被保険者数' and '令和8年（実績）' in b['head']),
+ '中長期の保険料のケース': lambda b: b['head'][0] == 'ケース',
+}
+JOB = [
+ ('認定率（前期・後期）',  '5-3',  '5-2',  'pos'),
+ ('認定率の置き方',       '5-3',  '5-2',  'pos'),
+ ('推計のバックテスト',    '5-4',  '5-4',  'pos'),
+ ('伸びの偏りの補正候補',  '5-4',  '5-4',  'pos'),
+ ('保険料パターン',       '5-7',  '6-3b', 'pos'),
+ ('所得段階別',          '5-7',  '6-4',  'pos'),
+ ('感応度',             '5-7',  '6-3',  'sub'),
+ ('中長期の見通し',       '5-11', '6-5',  'sub'),
+ ('保険料の推移',         '5-7',  '6-1',  'set'),
+ ('認定者数の推計',       '5-3',  '5-2',  'tr'),
+ ('中長期の保険料のケース', '5-11', '6-5',  'insub'),
+]
+bad20 = []
+n20 = 0
+for name, so_no, sh_no, mode in JOB:
+    a = _find(SO_S[so_no], PR[name])
+    b = _find(SH_S[sh_no], PR[name])
+    if a is None or b is None:
+        bad20.append(f'{name}が{"素案" if a is None else "資料"}にない')
+        continue
+    if mode == 'pos':
+        # 行の並びが同じ表。資料の数値がすべて素案の同じ行にあることを確かめる
+        if len(a['rows']) != len(b['rows']):
+            bad20.append(f'{name} 行数 素案{len(a["rows"])}≠資料{len(b["rows"])}')
+            continue
+        for i, (ra, rb) in enumerate(zip(a['rows'], b['rows'])):
+            va, vb = _vals(ra), _vals(rb)
+            if not set(vb) <= set(va):
+                bad20.append(f'{name} 行{i+1}（{str(ra[0])[:12]}） 素案{va}⊉資料{vb}')
+    elif mode == 'sub':
+        A = {_lab(r[0]): _vals(r) for r in a['rows']}
+        for rb in b['rows']:
+            k = _lab(rb[0])
+            hit = [kk for kk in A if kk.startswith(k[:10]) or k.startswith(kk[:10])]
+            if not hit:
+                bad20.append(f'{name}「{str(rb[0])[:16]}」が素案にない')
+                continue
+            va, vb = A[hit[0]], _vals(rb)
+            if not set(vb) <= set(va):
+                bad20.append(f'{name}「{str(rb[0])[:12]}」 素案{va}⊉資料{vb}')
+    elif mode == 'insub':
+        # 行の見出しが素案と資料で違う表。資料の数値が素案の表のどこかにあることを確かめる
+        va = {v for r in a['rows'] for v in _vals(r)}
+        vb = {v for r in b['rows'] for v in _vals(r)}
+        if not vb <= va:
+            bad20.append(f'{name} 素案にない数値 {sorted(vb - va)[:4]}')
+    elif mode == 'set':
+        va = sorted(v for r in a['rows'] for v in _vals(r))
+        vb = sorted(v for r in b['rows'] for v in _vals(r))
+        if va != vb:
+            bad20.append(f'{name} 値の集合が違う 素案{va[:5]}…≠資料{vb[:5]}…')
+    elif mode == 'tr':
+        # 素案は行＝年、資料は列＝年。資料の各年の列を素案の同じ年の行と比べる
+        for j, y in enumerate(b['head'][1:], start=1):
+            ky = _lab(y)
+            ra = [r for r in a['rows'] if _lab(r[0]) == ky]
+            if not ra:
+                continue
+            col = [y2 for y2 in (_num(r[j]) for r in b['rows']) if y2 is not None]
+            row = _vals(ra[0])
+            # 資料の列には第1号被保険者数（素案では5-2の表）も入るため、包含で判定する
+            if not set(col) <= set(row) | {_num('1,012人'), _num('1,004人'),
+                                           _num('995人'), _num('987人')}:
+                bad20.append(f'{name} {y} 素案{row}⊉資料{col}')
+    n20 += 1
+# 配布データ（A案）の値が素案の本文にも書かれていること
+tA = _find(SH_S['5-2'], lambda b: b['head'][0] == '案')
+if tA is not None:
+    rowA = [r for r in tA['rows'] if r[0] == 'A案']
+    if rowA:
+        so_md = open("/home/user/repository/docs/北塩原村_第10期/18_計画素案.md",
+                     encoding="utf-8").read()
+        miss = [v for v in rowA[0][2:] if str(v).replace('人', '') not in so_md]
+        if miss:
+            bad20.append(f'A案の値が素案の本文にない {miss}')
+chk(20, "見込量・保険料の表が計画素案と委員会資料で一致すること", not bad20,
+    "・".join(bad20[:3]) if bad20 else f"{n20}表（認定率・認定者数・バックテスト・保険料パターン・所得段階別・感応度・中長期ほか）とA案の値が一致")
 
 w = max(len(n) for _, n, _, _ in R)
 print("■ 第2回策定委員会 資料の自己点検")

@@ -637,6 +637,37 @@ def main():
     except Exception as e:
         chk(37, '交付金の要改善項目の件数・点数が再計算と一致すること', False, f'照合できない（{e}）')
 
+    # ── 38　配布データ（A案）の値が素案の中で1通りであること ────────────
+    #    同じ指標を2か所に書いていたため、954人と953人が併存していた。
+    A = load_csv('第10期_要介護度別認定者数推計.csv')
+    ban = {}
+    for r in A:
+        if r.get('案') == 'A':
+            ban[r['年']] = int(r['第1号被保険者計'])
+    bad38 = []
+    if not ban:
+        bad38.append('A案の算定がない')
+    else:
+        for y in ('令和8年', '令和9年', '令和10年', '令和11年'):
+            v = ban.get(y)
+            if v is None:
+                continue
+            # 算定の値の前後1人の値が本文に出てこないこと（同じ指標に2つの値が併存する型）
+            for w2 in (v - 1, v + 1):
+                if f'{w2}人' in t:
+                    bad38.append(f'{y} 算定{v}人に対し本文に{w2}人がある')
+        # 令和8年の値と実績との差が1通りであること
+        v8 = ban.get('令和8年')
+        if v8 and f'{v8}人' in t:
+            sa = 1012 - v8
+            if f'{sa}人下回' not in t and f'{sa}人多い' not in t and f'{sa}人' not in t:
+                bad38.append(f'令和8年の差{sa}人の記載がない')
+            if f'{sa - 1}人（' in t or f'{sa + 1}人（' in t:
+                bad38.append('差の人数が2通りある')
+    chk(38, '配布データ（A案）の値が素案の中で1通りであること', not bad38,
+        '・'.join(bad38[:3]) if bad38
+        else f'令和8年{ban.get("令和8年")}人・令和9〜11年{ban.get("令和9年")}／{ban.get("令和10年")}／{ban.get("令和11年")}人で統一')
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')

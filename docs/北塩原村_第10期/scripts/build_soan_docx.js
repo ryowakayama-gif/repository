@@ -2,6 +2,20 @@
 const fs = require('fs');
 const d = require('/tmp/node_modules/docx');
 const path = require('path');
+// 入力のJSONが元データより古いときは止める（古い成果品を作らないため）
+(function () {
+  const src = "soan_content.py";
+  const js  = "/tmp/soan.json";
+  if (!fs.existsSync(js)) {
+    console.error('入力の ' + js + ' がありません。先に ' + src + ' を実行してください。');
+    process.exit(1);
+  }
+  if (fs.statSync(js).mtimeMs < fs.statSync(src).mtimeMs) {
+    console.error('入力の ' + js + ' が ' + src + ' より古いです。先に ' + src + ' を実行してください。');
+    process.exit(1);
+  }
+})();
+
 const {Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBreak, ImageRun,
        Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, LevelFormat,
        TableOfContents, Header, Footer, PageNumber} = d;
