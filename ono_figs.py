@@ -688,3 +688,38 @@ def f_kofukin_bunpu(ken, ono, ken_hei, zen_hei):
     ax.yaxis.grid(True, color="#E6E6E6", lw=0.8)
     ax.set_axisbelow(True)
     return _save(fig, "f45_kofukin_bunpu")
+
+
+def f_nyutaiin(rows):
+    """入退院支援と人生の最終段階における支援の算定者数割合の位置。
+
+    交付金の活動指標群は、全保険者の中での順位（上位7割・5割・3割・1割）で
+    評価される。4つの加算について、小野町がどこまで届いているかを示す。
+
+    rows: [(指標名, 得点, 配点, 到達段階, 補足)]
+    """
+    names = [r[0] for r in rows]
+    pts = [r[1] for r in rows]
+    mans = [r[2] for r in rows]
+    stage = [r[3] for r in rows]
+    y = list(range(len(rows)))
+    col = [RED if p == 0 else (BLUE if p >= m else ORANGE)
+           for p, m in zip(pts, mans)]
+    fig, ax = plt.subplots(figsize=(7.8, 3.2))
+    # 配点までの薄い背景
+    ax.barh(y, mans, height=0.52, color="#F0F0F0")
+    ax.barh(y, pts, height=0.52, color=col)
+    for i, (p, m, s) in enumerate(zip(pts, mans, stage)):
+        _lab(ax, m + 0.25, i, "%d点／%d点　%s" % (p, m, s),
+             col[i], ha="left", sz=9)
+    # 段階の目盛り（2点きざみ＝上位7割・5割・3割・1割）
+    ax.set_xticks([0, 2, 4, 6, 8])
+    ax.set_xticklabels(["0\n（上位7割に\n届かない）", "2\n上位7割", "4\n上位5割",
+                        "6\n上位3割", "8\n上位1割"], fontsize=8)
+    ax.set_yticks(y)
+    ax.set_yticklabels(names, fontsize=9.5)
+    ax.invert_yaxis()
+    ax.set_xlim(0, 15.5)
+    ax.set_xlabel("得点（配点8点）と全保険者の中での位置")
+    _xgrid(ax)
+    return _save(fig, "f46_nyutaiin")

@@ -112,6 +112,45 @@ SEIKA = _mk("目標Ⅳ")
 TEKISEIKA_M = [m for m in K.meisai() if 57 <= m["列"] <= 75]
 RENKEI_M = [m for m in K.meisai() if 267 <= m["列"] <= 297]
 
+def _katsudo(no, eda):
+    """支援Ⅲ 活動指標群の、指標番号（1／2）と枝番の頭（ア／イ）の得点と配点。
+
+    枝番は「ア ①」のように頭にだけ ア／イ が入り、以降は ②③④ である。
+    上位1割に該当すれば上位3割・5割・7割も得点するため、
+    4段階の合計がそのまま到達段階を表す（0／2／4／6／8）。
+    """
+    got = man = 0
+    cur = None
+    for r in K.meisai():
+        if "在宅医療" not in r["目標"] or "活動指標群" not in r["指標群"]:
+            continue
+        if r["番号"] != no:
+            continue
+        z = r["枝番"].strip()
+        if z.startswith(("ア", "イ")):
+            cur = z[0]
+        if cur == eda:
+            got += r["小野町"]
+            man += r["満点"]
+    return int(got), int(man)
+
+
+def _dankai(pt):
+    return {0: "上位7割に届かない", 2: "上位7割", 4: "上位5割",
+            6: "上位3割", 8: "上位1割（配点満点）"}.get(pt, "%d点" % pt)
+
+
+# 入退院支援・人生の最終段階における支援の4つの加算
+NYUTAIIN = [
+    (no, eda, nm) for no, eda, nm in (
+        ("1", "ア", "入院時情報連携加算\n（ケアマネジャーから病院へ）"),
+        ("1", "イ", "退院・退所加算\n（病院からケアマネジャーへ）"),
+        ("2", "ア", "ターミナルケアに係る加算等"),
+        ("2", "イ", "看取りに係る加算等"))
+]
+NYUTAIIN_ROWS = [(nm, *_katsudo(no, eda), _dankai(_katsudo(no, eda)[0]), "")
+                 for no, eda, nm in NYUTAIIN]
+
 # 全国平均に届いていない指標（伸びしろ）
 NOBI = sorted((s for s in SHIHYO if s["小野町"] < s["全国平均"]),
               key=lambda s: s["全国平均"] - s["小野町"], reverse=True)
@@ -754,6 +793,14 @@ def build_docx(figs):
     ], right=(3, 4))
     doc.src("※ いずれも介護DBにより厚生労働省が算定するもので、"
             "保険者が申告する項目ではない。上位1割に該当すれば上位3割・5割・7割も得点する。")
+    doc.fig(figs["入退院"],
+            "入退院支援と人生の最終段階における支援の位置（活動指標群）",
+            width=15.0,
+            src="資料：令和8年度保険者機能強化推進交付金・"
+                "介護保険保険者努力支援交付金（市町村分）該当状況調査票集計表。"
+                "**入院時は配点満点（上位1割）である一方、"
+                "退院時は上位7割にも入っていない。**"
+                "灰色の帯は配点8点までの残りを表す。")
     body(doc,
          "**入院時情報連携加算は、介護支援専門員が利用者の入院時に"
          "病院へ情報を提供したときに算定されます。小野町は上位1割です。**"
@@ -1134,6 +1181,14 @@ def build_xlsx():
 
 def selfcheck(figs):
     bad = []
+    # 入退院支援の4つの加算の合計が、支援Ⅲの活動指標群の得点と合うこと
+    n_got = sum(r[1] for r in NYUTAIIN_ROWS)
+    n_man = sum(r[2] for r in NYUTAIIN_ROWS)
+    gun = GUN.get("支援Ⅲ　活動", {})
+    if gun and abs(n_got - gun["小野町"]) > 0.5:
+        bad.append(f"入退院支援の合計 {n_got}≠活動指標群 {gun['小野町']}")
+    if gun and abs(n_man - gun["配点"]) > 0.5:
+        bad.append(f"入退院支援の配点 {n_man}≠活動指標群 {gun['配点']}")
     # 目標別の合計が総合と合うこと
     moku = sum(v["小野町"] for nm, v in GOKEI.items() if v["満点"] == 100)
     if abs(moku - ZEN["小野町"]) > 0.5:
@@ -1183,6 +1238,7 @@ def main():
             [(nm, v["小野町"], v["配点"], v["全国平均"]) for nm, v in GUN.items()]),
         "伸びしろ": FG.f_torikaeshi(
             [(s["指標"][:24], s["小野町"], s["全国平均"]) for s in NOBI[:10]]),
+        "入退院": FG.f_nyutaiin(NYUTAIIN_ROWS),
     }
     bad = selfcheck(figs)
     p1, p2 = build_docx(figs), build_xlsx()
