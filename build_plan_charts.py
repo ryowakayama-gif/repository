@@ -2136,7 +2136,9 @@ e2 = table(ws, r0 + 1, ["区分", "在宅サービス", "施設及び居住系�
             ["北海道", 8918, 10504],
             ["大雪地区広域連合", 9164, 13097]], numfmt="#,##0")
 mono_bar(ws, "調整済み第1号1人あたり給付月額（北海道との比較）", "給付月額（円）",
-         Reference(ws, min_col=1, min_row=r0 + 3, max_row=e2),
+         # 値は見出しの次の行（全国）から始まる。区分もそこから採らないと
+         # 棒と区分名が1行ずれる（北海道の値が大雪の名で出る）。
+         Reference(ws, min_col=1, min_row=r0 + 2, max_row=e2),
          Reference(ws, min_col=2, max_col=3, min_row=r0 + 1, max_row=e2),
          "N26", width=16, height=10, labels=True, numfmt="#,##0", gap=60)
 note(ws, e2 + 1,
