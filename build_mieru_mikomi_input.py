@@ -967,8 +967,11 @@ GAMEN13_JOR = [0.4550, 0.6850, 0.6900, 0.9000, 1.0000, 1.2000, 1.3000,
                1.5000, 1.7000, 1.9000, 2.1000, 2.3000, 2.4000]
 GAMEN13_SHOTOKU = [None] * 6 + [1200000, 2100000, 3200000, 4200000,
                                 5200000, 6200000, 7200000]
-# 画面が表示している第1号被保険者数（人口の設定が社人研のままのときの値）
-GAMEN13_HIHO = {"令和9年度": 9116, "令和10年度": 9110, "令和11年度": 9107}
+# 画面が表示している第1号被保険者数（人口の設定が社人研のままのときの値）。
+# 「第10期」の画面（R9からR11）と「令和12年度以降」の画面（R12からR32）の写しによる。
+GAMEN13_HIHO = {"令和9年度": 9116, "令和10年度": 9110, "令和11年度": 9107,
+                "令和12年度": 9106, "令和17年度": 9166, "令和22年度": 9375,
+                "令和27年度": 9270, "令和32年度": 8993}
 _S6 = sum(_D["N_R6"])
 _KOSEI16 = [x / _S6 for x in _D["N_R6"]]
 _KOSEI13 = _KOSEI16[:12] + [sum(_KOSEI16[12:])]
@@ -1043,31 +1046,45 @@ r = note(ws, r,
 r += 1
 r = lead(ws, r, "3　人口の設定を改めない場合（計を画面の第1号被保険者数に合わせる）",
          span=4 + len(YALL))
-r = header(ws, r, ["", "段階", "画面の割合", "令和9年度", "令和10年度",
-                   "令和11年度"] + [""] * (len(YALL) - 2))
+r = header(ws, r, ["", "段階", "画面の割合"] + YALLL + ["基準所得金額"])
 DAN13_G = {y: _saidai_joyo(GAMEN13_HIHO[y], _KOSEI13) for y in GAMEN13_HIHO}
 for _i in range(13):
     r = body(ws, r, [_i + 1, "第%d段階" % (_i + 1), GAMEN13_JOR[_i]]
-             + [DAN13_G[y][_i] for y in ("令和9年度", "令和10年度", "令和11年度")]
-             + [""] * (len(YALL) - 2),
-             fills={j: IN_Y for j in (4, 5, 6)},
-             fmt={j: "#,##0" for j in (4, 5, 6)}, align=_AL_D, height=18)
-r = body(ws, r, ["", "計", "―"]
-         + [sum(DAN13_G[y]) for y in ("令和9年度", "令和10年度", "令和11年度")]
-         + [""] * (len(YALL) - 2),
-         fills={i: MID_B for i in range(1, 7)}, bold=True,
-         fmt={j: "#,##0" for j in (4, 5, 6)}, align=_AL_D, height=20)
+             + [DAN13_G[y][_i] for y in YALLL]
+             + [GAMEN13_SHOTOKU[_i] if GAMEN13_SHOTOKU[_i] else "―"],
+             fills={j: IN_Y for j in range(4, 4 + len(YALL))},
+             fmt={j: "#,##0" for j in range(4, 5 + len(YALL))},
+             align=_AL_D, height=18)
+r = body(ws, r, ["", "計", "―"] + [sum(DAN13_G[y]) for y in YALLL] + ["―"],
+         fills={i: MID_B for i in range(1, 5 + len(YALL))}, bold=True,
+         fmt={j: "#,##0" for j in range(4, 5 + len(YALL))},
+         align=_AL_D, height=20)
+r = body(ws, r, ["", "画面と案Cの差（案C−画面）", "―"]
+         + [sum(DANKAI[y]) - GAMEN13_HIHO[yl] for y, yl in zip(YALL, YALLL)]
+         + ["―"],
+         fills={i: GRAY for i in range(1, 5 + len(YALL))},
+         fmt={j: "+#,##0;-#,##0;0" for j in range(4, 4 + len(YALL))},
+         align=_AL_D, height=20)
 r = note(ws, r,
          "注1）" + ZANTEI + "\n"
          "注2）人口の設定を案Cに改めないまま入れる場合の値です。"
          "構成比は1の表と同じ（%sの実績）で、"
          "合計だけを画面が表示している第1号被保険者数に合わせています。\n"
-         "注3）**この場合、システムが出す保険料額は当方の算定とは別のものになります。**"
+         "注3）**画面が表示する第1号被保険者数は令和12年度以降にもあります。**"
+         "「第10期」の画面が令和9年度から令和11年度、"
+         "「令和12年度以降」の画面が令和12・17・22・27・32年度です。"
+         "いずれも人口の設定が社人研のままのときの値であり、"
+         "案Cとは%+d人から%+d人の開きがあります（いずれも案Cが上回ります）。\n"
+         "注4）**この場合、システムが出す保険料額は当方の算定とは別のものになります。**"
          "人口も給付費の見込みも当方の算定と違うためです。"
          "画面の値と当方の値を突き合わせるときは、"
          "先に人口の設定を案Cに改めてください（確認事項No.127）。"
-         % KOSEI_SAIYO,
-         span=4 + len(YALL), height=76)
+         % (KOSEI_SAIYO,
+            min(sum(DANKAI[y]) - GAMEN13_HIHO[yl]
+                for y, yl in zip(YALL, YALLL)),
+            max(sum(DANKAI[y]) - GAMEN13_HIHO[yl]
+                for y, yl in zip(YALL, YALLL))),
+         span=4 + len(YALL), height=90)
 
 # ============================================================ 09
 ws = sheet("09_給付費と保険料", "給付費と保険料（参考・暫定値）",
@@ -1343,6 +1360,18 @@ for _s, _yc in (("02_認定者数", 1), ("03_施設居住系の利用者数", 3)
 chk(18, "書き出した表の内訳の和と「計」の欄が一致すること",
      "02・03・04・05シートの全行を読み直して検算",
      "%d行を検算／合わない %s" % (_kei_n, _kei_ng or "なし"), not _kei_ng)
+
+_g13_ng = [y for y in YALLL if sum(DAN13_G[y]) != GAMEN13_HIHO[y]]
+chk(19, "画面の第1号被保険者数に合わせる表の計が画面の値と一致すること",
+     "08シート3の各年度で Σ段階別 ＝ 画面の第1号被保険者数",
+     "全%d年度（%s）／合わない %s"
+     % (len(YALLL), "・".join(YALLL), _g13_ng or "なし"), not _g13_ng)
+
+_g13_y = sorted(GAMEN13_HIHO) == sorted(YALLL)
+chk(20, "画面の写しの年度が算定の年度と過不足なく一致すること",
+     "GAMEN13_HIHO のキー ＝ 令和9〜12・17・22・27・32年度",
+     "画面の写し%d年度／算定%d年度"
+     % (len(GAMEN13_HIHO), len(YALLL)), _g13_y)
 
 NG_WORDS = ["に由来する", "と整合する", "1件も", "有意差がないため関係がない",
             "全国トップ級"]
