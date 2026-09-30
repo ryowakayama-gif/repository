@@ -960,6 +960,115 @@ r = note(ws, r,
          % (KOSEI_SAIYO, KEISU_SAIYO, KEISU_R7),
          span=4 + len(YALL), height=104)
 
+# ---- 「①標準段階区分・割合」の画面にそのまま入れる場合の値
+# 画面の標準は13段階であり、当連合の第13段階の多段階化（第14〜16段階）を
+# 第13段階へ束ねる。割合は画面に表示されている国の標準の値。
+GAMEN13_JOR = [0.4550, 0.6850, 0.6900, 0.9000, 1.0000, 1.2000, 1.3000,
+               1.5000, 1.7000, 1.9000, 2.1000, 2.3000, 2.4000]
+GAMEN13_SHOTOKU = [None] * 6 + [1200000, 2100000, 3200000, 4200000,
+                                5200000, 6200000, 7200000]
+# 画面が表示している第1号被保険者数（人口の設定が社人研のままのときの値）
+GAMEN13_HIHO = {"令和9年度": 9116, "令和10年度": 9110, "令和11年度": 9107}
+_S6 = sum(_D["N_R6"])
+_KOSEI16 = [x / _S6 for x in _D["N_R6"]]
+_KOSEI13 = _KOSEI16[:12] + [sum(_KOSEI16[12:])]
+
+
+def _saidai_joyo(total, kosei):
+    """最大剰余法で合計を保って整数に配分する。"""
+    raw = [total * k for k in kosei]
+    base = [int(x) for x in raw]
+    order = sorted(range(len(raw)), key=lambda i: -(raw[i] - base[i]))
+    for j in range(total - sum(base)):
+        base[order[j % len(order)]] += 1
+    return base
+
+
+DAN13 = {y: _saidai_joyo(sum(DANKAI[y]), _KOSEI13) for y in YALL}
+
+r += 1
+r = lead(ws, r, "2　「①標準段階区分・割合」の画面に入れる場合（13段階へ束ねる）",
+         span=4 + len(YALL))
+r = header(ws, r, ["", "段階", "画面の割合"] + YALLL + ["基準所得金額"])
+for _i in range(13):
+    r = body(ws, r, [_i + 1, "第%d段階" % (_i + 1), GAMEN13_JOR[_i]]
+             + [DAN13[y][_i] for y in YALL]
+             + [GAMEN13_SHOTOKU[_i] if GAMEN13_SHOTOKU[_i] else "―"],
+             fills={j: IN_Y for j in range(4, 4 + len(YALL))},
+             fmt={j: "#,##0" for j in range(4, 5 + len(YALL))},
+             align=_AL_D, height=18)
+r = body(ws, r, ["", "計", "―"] + [sum(DAN13[y]) for y in YALL] + ["―"],
+         fills={i: MID_B for i in range(1, 5 + len(YALL))}, bold=True,
+         fmt={j: "#,##0" for j in range(4, 5 + len(YALL))},
+         align=_AL_D, height=20)
+_H13 = {y: sum(a * b for a, b in zip(DAN13[y], GAMEN13_JOR)) for y in YALL}
+r = body(ws, r, ["", "補正後被保険者数", "―"]
+         + [round(_H13[y], 1) for y in YALL] + ["―"],
+         fills={i: GRAY for i in range(1, 5 + len(YALL))},
+         fmt={j: "#,##0.0" for j in range(4, 4 + len(YALL))},
+         align=_AL_D, height=20)
+_H16_3 = sum(sum(a * b for a, b in zip(DANKAI[y], JORITSU)) for y in Y3)
+_H13_3 = sum(_H13[y] for y in Y3)
+_J = GETSU * 0.99 * _H16_3 * 12
+r = note(ws, r,
+         "注1）" + ZANTEI + "\n"
+         "注2）**画面に表示されている割合は国の標準（13段階）であり、"
+         "当連合の条例の乗率とは異なります。**"
+         "第2・第4・第6から第9・第11から第13段階の9つで違いがあり、"
+         "第14から第16段階（多段階化した分）は標準にありません。"
+         "本表の人数を標準の割合のまま入れると、"
+         "第10期3か年の補正後被保険者数は%s人（条例の乗率なら%s人）となり、"
+         "**算定上の月額は%d円から%d円へ%+d円動きます**。\n"
+         "注3）したがって、**所得段階の設定は「弾力化」を選び、"
+         "1の表（16段階）の人数と乗率を入れることを基本とします。**"
+         "標準の13段階のまま入れるのは、"
+         "画面が弾力化を受け付けない場合に限ります。\n"
+         "注4）**画面が表示する第1号被保険者数は人口の設定によります。**"
+         "人口の設定が社人研のままのとき、画面は"
+         "令和9年度%s人・令和10年度%s人・令和11年度%s人を表示します。"
+         "本表の計（%s人・%s人・%s人）は案Cによるものであり、"
+         "**先に人口の設定を案Cに改めないと計が画面と合いません**"
+         "（確認事項No.127）。"
+         % ("{:,.1f}".format(_H13_3), "{:,.1f}".format(_H16_3),
+            round(GETSU), round(_J / 0.99 / _H13_3 / 12),
+            round(_J / 0.99 / _H13_3 / 12) - round(GETSU),
+            "{:,}".format(GAMEN13_HIHO["令和9年度"]),
+            "{:,}".format(GAMEN13_HIHO["令和10年度"]),
+            "{:,}".format(GAMEN13_HIHO["令和11年度"]),
+            "{:,}".format(sum(DANKAI[Y3[0]])),
+            "{:,}".format(sum(DANKAI[Y3[1]])),
+            "{:,}".format(sum(DANKAI[Y3[2]]))),
+         span=4 + len(YALL), height=118)
+
+r += 1
+r = lead(ws, r, "3　人口の設定を改めない場合（計を画面の第1号被保険者数に合わせる）",
+         span=4 + len(YALL))
+r = header(ws, r, ["", "段階", "画面の割合", "令和9年度", "令和10年度",
+                   "令和11年度"] + [""] * (len(YALL) - 2))
+DAN13_G = {y: _saidai_joyo(GAMEN13_HIHO[y], _KOSEI13) for y in GAMEN13_HIHO}
+for _i in range(13):
+    r = body(ws, r, [_i + 1, "第%d段階" % (_i + 1), GAMEN13_JOR[_i]]
+             + [DAN13_G[y][_i] for y in ("令和9年度", "令和10年度", "令和11年度")]
+             + [""] * (len(YALL) - 2),
+             fills={j: IN_Y for j in (4, 5, 6)},
+             fmt={j: "#,##0" for j in (4, 5, 6)}, align=_AL_D, height=18)
+r = body(ws, r, ["", "計", "―"]
+         + [sum(DAN13_G[y]) for y in ("令和9年度", "令和10年度", "令和11年度")]
+         + [""] * (len(YALL) - 2),
+         fills={i: MID_B for i in range(1, 7)}, bold=True,
+         fmt={j: "#,##0" for j in (4, 5, 6)}, align=_AL_D, height=20)
+r = note(ws, r,
+         "注1）" + ZANTEI + "\n"
+         "注2）人口の設定を案Cに改めないまま入れる場合の値です。"
+         "構成比は1の表と同じ（%sの実績）で、"
+         "合計だけを画面が表示している第1号被保険者数に合わせています。\n"
+         "注3）**この場合、システムが出す保険料額は当方の算定とは別のものになります。**"
+         "人口も給付費の見込みも当方の算定と違うためです。"
+         "画面の値と当方の値を突き合わせるときは、"
+         "先に人口の設定を案Cに改めてください（確認事項No.127）。"
+         % KOSEI_SAIYO,
+         span=4 + len(YALL), height=76)
+
 # ============================================================ 09
 ws = sheet("09_給付費と保険料", "給付費と保険料（参考・暫定値）",
            ZANTEI + "　"
