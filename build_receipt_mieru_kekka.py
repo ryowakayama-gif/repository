@@ -54,6 +54,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
 import data_mieru_danryoku as GD
+import mieru_anc as AN
 import data_mieru_jinko as J
 import data_mieru_kekka as K
 import repo_paths as RP
@@ -674,57 +675,11 @@ r = note(ws, r,
 # ============================================================ 07 人口の設定
 # 案C（総人口＝地方創生総合戦略、年齢階級別＝住民基本台帳の実績趨勢）を
 # 「独自データを登録する」の欄へ入れるための値。
-_bufp, _oldp = io.StringIO(), sys.stdout
-sys.stdout = _bufp
-try:
-    _P = runpy.run_path(os.path.join(RP.ROOT, "build_projection.py"))
-finally:
-    sys.stdout = _oldp
-pop_tot, pop_juki, CL3 = _P["pop_tot"], _P["pop_juki"], _P["CL"]
-
+ANC = AN.ANC
 JY = J.YEARS
-JITSU = ("R6", "R7")                     # 実績年。画面の値をそのまま用いる
-PAIR3 = {"65-74": ["65-69", "70-74"], "75-84": ["75-79", "80-84"],
-         "85+": ["85-89", "90+"]}
-
-
-def _r0(x):
-    return int(Decimal(str(x)).quantize(Decimal("1"), ROUND_HALF_UP))
-
-
-def _saidai(total, w):
-    """最大剰余法。w の比で total（整数）に配分し、合計を保つ。"""
-    s = sum(w)
-    raw = [total * x / s for x in w]
-    base = [int(x) for x in raw]
-    order = sorted(range(len(w)), key=lambda i: -(raw[i] - base[i]))
-    for j in range(total - sum(base)):
-        base[order[j % len(order)]] += 1
-    return base
-
-
-ANC = {}
-for _y in JY:
-    if _y in JITSU:
-        ANC[_y] = {"総人口": J.SOJINKO[_y],
-                   "男": {a: J.dan(a, _y) for a in J.AGE},
-                   "女": {a: J.jo(a, _y) for a in J.AGE},
-                   "出所": "画面（実績）"}
-        continue
-    _s = J.SEIREKI[_y]
-    _c3 = {c: pop_juki(c, _s) for c in CL3}
-    _t65 = _r0(sum(_c3.values()))
-    _a6 = {}
-    for c in CL3:
-        x, z = PAIR3[c]
-        _w = [J.kei(x, _y), J.kei(z, _y)]
-        _a6[x] = _c3[c] * _w[0] / sum(_w)
-        _a6[z] = _c3[c] * _w[1] / sum(_w)
-    _ints = dict(zip(J.AGE, _saidai(_t65, [_a6[a] for a in J.AGE])))
-    _m, _f = {}, {}
-    for a in J.AGE:
-        _m[a], _f[a] = _saidai(_ints[a], [J.dan(a, _y), J.jo(a, _y)])
-    ANC[_y] = {"総人口": _r0(pop_tot(_s)), "男": _m, "女": _f, "出所": "案C"}
+pop_tot, pop_juki, CL3 = AN.pop_tot, AN.pop_juki, AN.CL3
+_r0, _saidai = AN.r0, AN.saidai
+JITSU, PAIR3 = AN.JITSU, AN.PAIR3
 
 
 def _i1(y):
