@@ -314,6 +314,78 @@ def main():
                 "／".join(bad[:2]) if bad
                 else (f"{n}行を照合" if n else "1行も突き合っていない（期の名を確かめる）"))
 
+    # ── 順位（順位シート）と素案の記載の突合 ─────────────────────
+    #    順位は「順位」シートにあり、表のシートには入っていない。
+    #    素案は費用額を県内44番目・全国1,153番目と書いていたが、実物は
+    #    45番目・1,152番目であった。1つずれるため、必ず実物から読む。
+    #
+    #    **母数（59保険者など）だけで突き合わせない。** 認定率も費用額も
+    #    必要保険料額も母数が同じ59保険者であり、母数で結ぶと別の指標の
+    #    順位を拾ってしまう。指標を表す語で結ぶ。
+    import re as _re
+    txt = "\n".join(
+        str(b2.get("v", "")) if b2["t"] in ("p", "h3", "note")
+        else " ".join(str(x) for r in b2.get("rows", []) for x in r)
+        for ch in SC.CH for sec in ch["sections"] for b2 in sec["blocks"])
+
+    def rank_pairs(pat):
+        """順位シートから (見出し, 時点, [(順位, 母数)]) を返す"""
+        wb = book(pat)
+        if "順位" not in wb.sheetnames:
+            return None
+        vals = [str(v).strip() for r in wb["順位"].iter_rows(values_only=True)
+                for v in r if v not in (None, "")]
+        head = vals[0] if vals else ""
+        out, tp = [], ""
+        for i2, v in enumerate(vals):
+            if v.startswith("（") and ("時点" in v or "年" in v):
+                tp = v
+            m = _re.match(r"^([\d,]+)番目$", v)
+            if m and i2 + 1 < len(vals):
+                m2 = _re.match(r"^([\d,]+)保険者$", vals[i2 + 1])
+                if m2:
+                    out.append((m.group(1), m2.group(1), tp))
+        return head, out
+
+    # 素案が現に順位を書いている指標だけを見る。
+    # **文の中で探さない。** 1つの文に認定率と費用額の順位が並ぶことがあり、
+    # 文単位では取り違える。順位シートから「N保険者中M番目」の形を組み立て、
+    # その文字列が素案にあること、かつ誤った順位がないことを見る。
+    # (点検番号, ファイル, 名前, 用いる組の位置)
+    RANKS = [(14, "P2_", "認定率", 0), (15, "P3_", "費用額", 0),
+             (16, "P1_", "高齢化率", 1)]
+    for no, pat, kw, which in RANKS:
+        got = rank_pairs(pat)
+        if not got:
+            chk(no, f"{kw}の順位が見える化と一致すること", False, "順位シートがない")
+            continue
+        _head, pairs = got
+        use = pairs[which * 2: which * 2 + 2]
+        if len(use) < 2:
+            chk(no, f"{kw}の順位が見える化と一致すること", False,
+                f"順位シートに{which + 1}組目がない（{len(pairs)}組）")
+            continue
+        bad, n = [], 0
+        for rank, tot, _tp in use:
+            want = f"{tot}保険者中{rank}番目"
+            if want in txt:
+                n += 1
+                continue
+            # 同じ母数で書かれている順位をすべて挙げる。
+            # 1つの母数を複数の指標が使うため、1件だけ出すと取り違える
+            ms = sorted(set(_re.findall(rf"{_re.escape(tot)}保険者中([\d,]+)番目", txt)))
+            if ms:
+                bad.append(f"{tot}保険者中：見える化{rank}番目／"
+                           f"素案にあるのは{'・'.join(ms)}番目")
+            else:
+                bad.append(f"{tot}保険者中{rank}番目の記載が素案にない")
+        if not bad and n == 0:
+            chk(no, f"{kw}の順位が見える化と一致すること", True, "素案に順位の記載なし")
+        else:
+            chk(no, f"{kw}の順位が見える化と一致すること", not bad,
+                "／".join(sorted(set(bad))[:2]) if bad
+                else f"{n}対を照合（{use[0][2] or '時点の記載なし'}）")
+
     # ── 見える化に収録されていない期（突合できない値）─────────────
     UNCOV = []
     for fig, bk in [("fig2-2_高齢化率推移", "P1_"), ("fig2-3_将来推計人口", "P1_"),
