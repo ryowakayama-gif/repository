@@ -386,6 +386,69 @@ def main():
                 "／".join(sorted(set(bad))[:2]) if bad
                 else f"{n}対を照合（{use[0][2] or '時点の記載なし'}）")
 
+    # ── 交付金：見える化の年度ラベルと素案の年度ラベルの対応 ──────────
+    #    見える化は取組の年度で、厚生労働省の該当状況調査票集計表は評価・交付の
+    #    年度で呼ぶ。同じ評価が1年ずれた名で載るため、突き合わせるときに
+    #    取り違えやすい。実物で対応を確かめ、ずれたら気づくようにする。
+    import csv as _csv
+    BATCH = os.path.join(BASE, "data", "mieruka_batch.csv")
+    if os.path.exists(BATCH):
+        w126 = {}
+        with io.open(BATCH, encoding="utf-8") as f:
+            for r in _csv.DictReader(f):
+                if r["file"].startswith("W126") and "北塩原" in r["region"]:
+                    w126[r["indicator"]] = float(r["value"])
+        # 素案2-8の得点の表
+        t28 = soan_table("2-8", head0="")
+        got = {}
+        for ch in SC.CH:
+            for sec in ch["sections"]:
+                if sec["no"] != "2-8":
+                    continue
+                for b2 in sec["blocks"]:
+                    if b2["t"] != "table" or "令和6年度" not in b2["head"]:
+                        continue
+                    i6 = b2["head"].index("令和6年度")
+                    for row in b2["rows"]:
+                        got[str(row[0])] = row[i6]
+        PAIR = [("推進合計", "保険者機能強化推進交付金（400点）"),
+                ("支援合計", "介護保険保険者努力支援交付金（400点）"),
+                ("推進・支援合計", "合計（800点）")]
+        bad18 = []
+        n18 = 0
+        for wk, sk in PAIR:
+            if wk not in w126 or sk not in got:
+                continue
+            n18 += 1
+            if not near(w126[wk], num(got[sk])):
+                bad18.append(f"{sk}：見える化(令和5年度){w126[wk]:.0f}≠素案(令和6年度){got[sk]}")
+        chk(18, "交付金：見える化の令和5年度が素案の令和6年度と一致すること",
+            not bad18 and n18 > 0,
+            "／".join(bad18[:2]) if bad18
+            else (f"{n18}件一致（見える化は取組の年度、素案は評価の年度で呼ぶ）"
+                  if n18 else "突き合わせる値がない"))
+
+        # 目標別の内訳も確かめる（W127＝推進・W129＝支援）
+        mokuhyo = {}
+        with io.open(BATCH, encoding="utf-8") as f:
+            for r in _csv.DictReader(f):
+                if r["file"][:4] in ("W127", "W129") and "北塩原" in r["region"]:
+                    mokuhyo[(r["file"][:4], r["indicator"])] = float(r["value"])
+        s127 = sum(v for (fk, ind), v in mokuhyo.items()
+                   if fk == "W127" and ind.startswith("目標") and "合計" in ind
+                   and "目標別" not in ind)
+        s129 = sum(v for (fk, ind), v in mokuhyo.items()
+                   if fk == "W129" and ind.startswith("目標") and "合計" in ind
+                   and "目標別" not in ind)
+        ok19 = near(s127, w126.get("推進合計", -1)) and \
+            near(s129, w126.get("支援合計", -1))
+        chk(19, "交付金：目標別の内訳が推進・支援の計と合うこと", ok19,
+            f"推進{s127:.0f}／支援{s129:.0f}"
+            + ("" if ok19 else f"（計は推進{w126.get('推進合計')}／支援{w126.get('支援合計')}）"))
+    else:
+        chk(18, "交付金：見える化の令和5年度が素案の令和6年度と一致すること", False,
+            "mieruka_batch.csv がない（parse_mieruka_batch.py を実行してください）")
+
     # ── 見える化に収録されていない期（突合できない値）─────────────
     UNCOV = []
     for fig, bk in [("fig2-2_高齢化率推移", "P1_"), ("fig2-3_将来推計人口", "P1_"),

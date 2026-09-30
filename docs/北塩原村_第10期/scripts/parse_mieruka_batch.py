@@ -36,6 +36,31 @@ def is_num(v):
     return isinstance(v, (int, float)) and not isinstance(v, bool)
 
 
+RE_REGION = re.compile(r"^(北塩原村?|福島県|全国)$")
+
+
+def as_region(v):
+    """セルがそれ自体で地域を表すときにその名を返す。
+
+    「高齢化率（福島県）」のように地域名を含むだけの見出しを地域と
+    取り違えないため、完全一致で見る。
+    """
+    if not isinstance(v, str):
+        return None
+    t = v.strip()
+    return t if RE_REGION.match(t) else None
+
+
+def region_in(v):
+    """行の見出しが（福島県）のように地域を名指ししていればその名を返す"""
+    if not isinstance(v, str):
+        return None
+    for k in ("福島県", "全国"):
+        if k in v:
+            return k
+    return None
+
+
 def header_row(rows):
     """期の見出しの行と、値が始まる列を返す。
 
@@ -98,13 +123,45 @@ def parse(path):
             v = rows[h][j] if j < len(rows[h]) else None
             periods.append(str(v).strip().replace("\n", "") if v not in (None, "")
                            else f"列{j}")
+        # 様式3：見出しの行が地域名のとき（地域別）。列が地域、行が指標。
+        # この様式では、地域名の列を採らずに本村の値として読むと、
+        # 福島県だけが収録されたブックの値を本村の値として取り違える。
+        hdr_regions = [(j, str(rows[h][j]).strip())
+                       for j in range(vcol, len(rows[h]))
+                       if isinstance(rows[h][j], str)
+                       and re.search(r"[都道府県市区町村]$", str(rows[h][j]).strip())]
+        if hdr_regions:
+            keep_cols = [(j, nm) for j, nm in hdr_regions if as_region(nm)]
+            if not keep_cols:
+                note = "地域別だが本村・県・全国の列がない（収録：%s）" % \
+                       "・".join(nm for _, nm in hdr_regions[:3])
+                continue
+            for i, r in enumerate(rows):
+                if i <= h:
+                    continue
+                lab = " ".join(str(v).strip() for v in r[:vcol]
+                               if isinstance(v, str) and str(v).strip()
+                               and not str(v).strip().startswith("（"))
+                unit = next((str(v).strip() for v in r[:vcol]
+                             if isinstance(v, str) and str(v).strip().startswith("（")), "")
+                if not lab:
+                    continue
+                for j, nm in keep_cols:
+                    if j >= len(r) or not is_num(r[j]):
+                        continue
+                    out.append({"file": os.path.basename(path), "sheet": sn,
+                                "region": nm, "indicator": lab, "unit": unit,
+                                "period": "", "value": r[j]})
+            continue
+
         tgt = []
         for i, r in enumerate(rows):
             if i <= h:
                 continue
             for j, v in enumerate(r[:vcol]):
-                if isinstance(v, str) and any(k in v for k in KEEP):
-                    tgt.append((i, j, v.strip()))
+                nm = as_region(v)
+                if nm:
+                    tgt.append((i, j, nm))
                     break
         if not tgt:
             # 様式2：ブック全体が1つの地域のもの。
@@ -122,7 +179,8 @@ def parse(path):
                     lab = next((str(v).strip() for v in r[:vcol]
                                 if isinstance(v, str) and str(v).strip()), "")
                     if lab:
-                        tgt.append((i, 0, who))
+                        # 「高齢化率（福島県）」のような行は、その地域の値である
+                        tgt.append((i, 0, region_in(lab) or who))
             if not tgt:
                 note = "本村・県・全国の行がない"
                 continue
