@@ -14,6 +14,29 @@
 必要資料が未受領であることによる暫定値であり、確定値ではない。
 その旨を00シート・各シートの表題・注記・印刷のフッターに置いている。
 
+━━ 画面ごとに入力の様式が違う ━━
+
+令和8年9月30日のご指示
+  「施設居住系、在宅、地域支援事業と入力フォーマットが異なるので
+    修正をお願いします」
+
+**3つの画面は入力の様式が違う。同じ形で並べると入力できない。**
+様式（区分の別・並び順・単位・年度・量の欄の有無）は
+`data_mieru_yoshiki.py` に収め、本表はそこから組み立てる。
+
+  手順4 施設・居住系　画面の区分は（１）居宅サービス・（２）地域密着型サービス・
+      （３）施設サービスの3つで、総括表の「施設サービス／居住系サービス」とは
+      束ね方が違う。入れるのは利用者数（人・整数）。
+      **介護療養型医療施設は画面に行がない。**
+  手順5 在宅　画面の区分は（１）居宅サービス・（２）地域密着型サービス・
+      （４）居宅介護支援の3つ。**施策反映は利用率によって行う。**
+      利用率の分母は認定者数−施設・居住系サービス利用者数であり、
+      要介護度別の列の前に「全体」の列がある。
+      利用回（日）数は別の欄で、1月当たりの延べ回（日）数である。
+  手順6・7 地域支援事業　**量（人）と事業費（円）が同じ1つの表に混在する。**
+      **量の欄があるのは4項目だけ**で、ほかの事業は事業費の欄しかない。
+      年度は11年度。４．の計はシステムが１．から３．の和として計算する。
+
 ━━ 本表に載せるもの・載せないもの ━━
 
 **載せるのは、画面の値を変える箇所と、そこに入れる値だけ**である。
@@ -26,7 +49,8 @@
 **固定値を書かない。** 見込量・給付費・保険料は
 `build_mikomiryo_santei.py`、所得段階別は `build_shotoku_dankai.py`、
 令和8年度の実績見込み値は `build_mieru_r8_input.py`、
-人口の設定は `mieru_anc.py` を読む。算定を改めれば本表が追随する。
+人口の設定は `mieru_anc.py`、画面の様式は `data_mieru_yoshiki.py` を読む。
+算定を改めれば本表が追随する。
 
 シート構成（見える化システムの画面の順）
   00_この表について
@@ -35,11 +59,11 @@
   03_設定の選択
   04_令和8年度の実績見込み値
   05_認定者数
-  06_施設居住系の利用者数
-  07_在宅の利用者数
-  08_在宅の利用回日数
-  09_地域支援事業の量
-  10_地域支援事業費
+  06_施設居住系の利用者数（画面の3区分の並び。利用者数）
+  07_在宅の利用率と利用者数（画面の3区分の並び。利用率で施策反映する）
+  08_在宅の利用回日数（画面の区分の並び）
+  09_地域支援事業の量と事業費（様式どおりの1表。量の欄は4項目）
+  10_地域支援事業費の計と入力欄のない量
   11_保険料額の算定
   12_入力後の確かめ方
   13_自己点検
@@ -63,6 +87,7 @@ import data_mieru_danryoku as GD
 import data_mieru_jinko as J
 import data_mieru_kekka2 as K2
 import data_mieru_suikei as MS
+import data_mieru_yoshiki as YS
 import mieru_anc as AN
 import repo_paths as RP
 
@@ -257,6 +282,11 @@ for i, (a, b) in enumerate([
          "利用者数（人数）の欄は整数で扱われます。"
          "利用回（日）数の欄は小数第1位までです。"
          "本表はその桁に合わせて掲げています。"),
+        ("画面ごとに様式が違うこと",
+         "施設・居住系・在宅・地域支援事業は入力の様式が違います。"
+         "施設・居住系は利用者数（人）、在宅は利用率（％）、"
+         "地域支援事業は量（人）と事業費（円）が同じ表に並びます。"
+         "本表は画面ごとの様式に合わせて分けています。"),
         ("「―」の意味",
          "制度上その要介護度の区分がないもの（画面に列がないもの）です。"
          "0とは意味が違います。0は「区分はあるが計上がない」ことを表します。"),
@@ -281,10 +311,10 @@ _SH = [
      "手順2　実績及び推計方法の設定／令和8年度の実績見込み値"),
     ("05_認定者数", "手順3　施策反映　認定者数"),
     ("06_施設居住系の利用者数", "手順4　施策反映　施設・居住系サービス利用者数"),
-    ("07_在宅の利用者数", "手順5　施策反映　在宅サービス利用者数"),
+    ("07_在宅の利用率と利用者数", "手順5　施策反映　在宅サービス利用者数（利用率）"),
     ("08_在宅の利用回日数", "手順5　施策反映　在宅サービス利用回（日）数"),
-    ("09_地域支援事業の量", "手順6　地域支援事業の見込み量推計"),
-    ("10_地域支援事業費", "手順7　地域支援事業費"),
+    ("09_地域支援事業の量と事業費", "手順6・手順7　地域支援事業"),
+    ("10_地域支援事業費の計と入力欄のない量", "手順7　地域支援事業費"),
     ("11_保険料額の算定", "手順8　保険料額の算定"),
     ("12_入力後の確かめ方", "推計結果概要の確認"),
     ("13_自己点検", "―"),
@@ -303,9 +333,10 @@ r = note(ws, r,
 _HYO = {
     "02": "02_人口の設定", "03": "03_設定の選択",
     "04": "04_令和8年度の実績見込み値", "05": "05_認定者数",
-    "06": "06_施設居住系の利用者数", "07": "07_在宅の利用者数",
-    "08": "08_在宅の利用回日数", "09": "09_地域支援事業の量",
-    "10": "10_地域支援事業費", "11": "11_保険料額の算定",
+    "06": "06_施設居住系の利用者数", "07": "07_在宅の利用率と利用者数",
+    "08": "08_在宅の利用回日数", "09": "09_地域支援事業の量と事業費",
+    "10": "10_地域支援事業費の計と入力欄のない量",
+    "11": "11_保険料額の算定",
 }
 
 ICHIRAN = [
@@ -351,15 +382,18 @@ ICHIRAN = [
     ("手順5", "施策反映　在宅", "1人1月あたり給付費の実績値の年度",
      "「令和7年度」に改める", "03", "施設・居住系と別に選べる",
      "月額を下げる向き（確認事項No.137）"),
-    ("手順5", "施策反映　在宅", "利用者数（令和9年度以降）",
-     "当方の算定値を入れる", "07", "要介護度別・全8年度", ""),
+    ("手順5", "施策反映　在宅", "利用率（令和9年度以降）",
+     "当方の算定値を入れる", "07",
+     "この画面は利用率で施策反映する。分母は認定者数−施設・居住系利用者数",
+     ""),
     ("手順5", "施策反映　在宅", "利用回（日）数（令和9年度以降）",
      "当方の算定値を入れる", "08", "小数第1位まで", ""),
-    ("手順6", "地域支援事業の見込み量推計", "総合事業・一般介護予防事業の量",
-     "当方の算定値を入れる", "09",
-     "令和7年度実績が未受領のため令和6年度を据え置いて延ばしている", ""),
-    ("手順7", "地域支援事業費", "事業費",
-     "当方の算定値を入れる", "10", "現況は全年度0",
+    ("手順6", "地域支援事業", "量（利用者数）",
+     "量の欄がある4項目のうち3項目に当方の算定値を入れる", "09",
+     "量の欄は4項目だけ。令和7年度実績が未受領のため令和6年度を据え置く", ""),
+    ("手順7", "地域支援事業", "事業費",
+     "総合事業費と包括的支援事業・任意事業費の計を入れる", "09",
+     "現況は全年度0。事業別の内訳は未受領のため計のみ",
      "月額 約＋332円"),
     ("手順8", "保険料額の算定", "所得段階の設定",
      "「弾力化」を選び16段階で入れる", "11",
@@ -677,79 +711,209 @@ r = note(ws, r,
          span=10, height=50)
 
 
-# ============================================================ 06・07
-def riyosha_sheet(name, title, labs):
-    ws = sheet(name, title,
-               ZANTEI + "　"
-               "「施策反映」の画面に入れる利用者数（人／月）です。"
-               "利用者数の欄は整数で扱われるため整数で掲げています。"
-               "「―」は制度上その要介護度の区分がないものです。",
-               [4, 13, 22, 13] + [9] * 7 + [10], freeze="E5")
-    r = 4
-    r = lead(ws, r, "利用者数（人／月・整数）", span=12)
-    r = header(ws, r, ["", "区分", "サービス", "年度"] + DO_COLS + ["計"])
-    for i, lab in enumerate(labs, start=1):
+# ============================================================ 06・07・08
+# 画面の様式（区分の別・並び順）は `data_mieru_yoshiki` による。
+# 施設・居住系と在宅で区分の束ね方が違い、在宅は利用率で施策反映する。
+_BY_NAME = {short(l): l for l in SVC}
+
+# 手順4の画面の区分とサービス（画面の写しの区分に番号を付したもの）
+_SHI_GROUPS = [
+    (no, [_BY_NAME[n] for n in names])
+    for no, (_k, names) in zip(YS.SHISETSU_KUBUN, MS.GAMEN_KUBUN.items())
+]
+# 手順5の画面の区分とサービス
+_ZAI_GROUPS = [(no, [_BY_NAME[n] for n in names])
+               for no, names in YS.ZAITAKU_KUBUN]
+
+_SHISETSU = [l for g in _SHI_GROUPS for l in g[1]]
+_ZAITAKU = [l for g in _ZAI_GROUPS for l in g[1]]
+# 総括表にあって画面に行がないもの（介護療養型医療施設）
+_GAMEN_NASHI = [l for l in SVC if short(l) in YS.GAMEN_NASHI]
+
+
+def _zai_nintei(vals_nin, riyo):
+    """要介護度別の在宅の認定者数＝認定者数−施設・居住系サービス利用者数。
+
+    在宅サービス利用率の分母である（画面の率から逆算して確かめている）。
+    """
+    return [vals_nin[i] - sum((riyo[l][i] or 0) for l in _SHISETSU
+                              + _GAMEN_NASHI) for i in range(7)]
+
+
+_ZN_R7 = _zai_nintei(list(NIN_R7), JISSEKI)
+_ZN = {y: _zai_nintei(list(NIN[y]), MIKOMI[y]) for y in YALL}
+
+
+def _ritsu(lab, vals, zn):
+    """要介護度別の利用率（％・小数第2位）。画面に列がない欄は None。"""
+    v = masked(lab, vals)
+    return [None if v[i] is None or zn[i] <= 0
+            else round(v[i] / zn[i] * 100, 2) for i in range(7)]
+
+
+def _ritsu_zentai(lab, vals, zn):
+    v = masked(lab, vals)
+    num = [x for x in v if x is not None]
+    return round(sum(num) / sum(zn) * 100, 2) if num else None
+
+
+# ---------------------------------------------------------------- 06
+ws = sheet("06_施設居住系の利用者数",
+           "施設・居住系サービスの利用者数（手順4）",
+           ZANTEI + "　"
+           "「施策反映　施設・居住系サービス利用者数」の画面に入れる"
+           "利用者数（人／月）です。"
+           "**画面の区分（（１）居宅サービス・（２）地域密着型サービス・"
+           "（３）施設サービス）の並びにそろえています。**"
+           "利用者数の欄は整数で扱われるため整数で掲げています。"
+           "「―」は画面にその要介護度の列がないものです。",
+           [4, 26, 13] + [9] * 7 + [10], freeze="D5")
+r = 4
+_i = 0
+for no, labs in _SHI_GROUPS:
+    r = lead(ws, r, no + "　利用者数（人／月・整数）", span=11)
+    r = header(ws, r, ["", "サービス", "年度"] + DO_COLS + ["計"])
+    for lab in labs:
+        _i += 1
         rows = [("令和7年度\n（実績）", riyosha_r7(lab), False)]
         for y, yl in zip(YALL, YALLL):
             rows.append((yl, riyosha(lab, y), True))
         for j, (yl, vals, is_in) in enumerate(rows):
-            r = do_row(ws, r, [i if j == 0 else "",
-                               kubun(lab) if j == 0 else "",
+            r = do_row(ws, r, [_i if j == 0 else "",
                                short(lab) if j == 0 else "", yl], vals,
-                       i_fill=({k: IN_Y for k in range(5, 12)}
-                               if is_in else {4: GRAY}))
-    r = note(ws, r,
-             "注1）" + ZANTEI + "\n"
-             "注2）令和7年度は年報（保険者単位）の要介護度別の月平均です。"
-             "令和9年度以降は要介護度別の伸びを乗じています。\n"
-             "注3）実績が0のものは令和9年度以降も0です。"
-             "区域内に事業所がなくても区域外の事業所の利用により"
-             "給付実績があるものがあります。\n"
-             "注4）**認知症対応型共同生活介護の要支援2は月0.42人であり、"
-             "整数の欄では0になります。**"
-             "システムのワーニングチェックで「下限を下回る」として"
-             "挙がりますが、整数の欄である以上ほかに置きようがないため、"
-             "理由の記入で足ります。",
-             span=12, height=64)
-    return len(labs)
+                       i_fill=({k: IN_Y for k in range(4, 11)}
+                               if is_in else {3: GRAY}))
+N_SHISETSU = _i
+r = note(ws, r,
+         "注1）" + ZANTEI + "\n"
+         "注2）区分の別・並び順は国の様式（ワークシート）によります。"
+         "総括表の「施設サービス／居住系サービス」とは束ね方が違います。\n"
+         "注3）**介護療養型医療施設は画面に行がありません**"
+         "（令和6年3月末で廃止された施設サービスであり、"
+         "当連合の実績もありません）。このため本表には掲げていません。\n"
+         "注4）令和7年度は年報（保険者単位）の要介護度別の月平均です。"
+         "令和9年度以降は要介護度別の伸びを乗じています。\n"
+         "注5）**認知症対応型共同生活介護の要支援2は月0.42人であり、"
+         "整数の欄では0になります。**"
+         "システムのワーニングチェックで「下限を下回る」として"
+         "挙がりますが、整数の欄である以上ほかに置きようがないため、"
+         "理由の記入で足ります。",
+         span=11, height=88)
 
+# ---------------------------------------------------------------- 07
+ws = sheet("07_在宅の利用率と利用者数",
+           "在宅サービスの利用率と利用者数（手順5）",
+           ZANTEI + "　"
+           "「施策反映　在宅サービス」の画面に入れる値です。"
+           "**この画面の施策反映は利用率によって行います**"
+           "（様式の記述欄が「在宅サービス利用者数（利用率）」であることによる）。"
+           "1に利用率、2に対応する利用者数を掲げています。"
+           "**画面の区分（（１）居宅サービス・（２）地域密着型サービス・"
+           "（４）居宅介護支援）の並びにそろえています。**",
+           [4, 26, 13, 9] + [9] * 7, freeze="D5")
+r = 4
+r = note(ws, r,
+         "【利用率の分母】\n"
+         "**認定者数−施設・居住系サービス利用者数**（要介護度別）です。"
+         "第1号被保険者数ではありません。"
+         "令和7年度は %s人（要介護度別 %s）。\n"
+         "この分母であることは、画面が表示している利用率と"
+         "当方の実績から逆算した率が全21区分で一致することにより"
+         "確かめています（13シート 点検16）。"
+         % ("{:,.1f}".format(sum(_ZN_R7)),
+            "／".join("%.1f" % x for x in _ZN_R7)),
+         span=11, height=62, fill=MID_B)
+r += 1
+_i = 0
+for no, labs in _ZAI_GROUPS:
+    r = lead(ws, r, "1　" + no + "　利用率（％・小数第2位）", span=11)
+    r = header(ws, r, ["", "サービス", "年度", "全体"] + DO_COLS)
+    for lab in labs:
+        _i += 1
+        rows = [("令和7年度\n（実績）", JISSEKI[lab], _ZN_R7, False)]
+        for y, yl in zip(YALL, YALLL):
+            rows.append((yl, MIKOMI[y][lab], _ZN[y], True))
+        for j, (yl, vals, zn, is_in) in enumerate(rows):
+            rr = _ritsu(lab, vals, zn)
+            r = body(ws, r,
+                     [_i if j == 0 else "", short(lab) if j == 0 else "", yl,
+                      _ritsu_zentai(lab, vals, zn)]
+                     + ["―" if x is None else x for x in rr],
+                     fills=({k: IN_Y for k in range(4, 12)} if is_in
+                            else {3: GRAY}),
+                     align={k: "right" for k in range(4, 12)},
+                     fmt={k: "0.00" for k in range(4, 12)}, height=18)
+N_ZAITAKU = _i
+r = note(ws, r,
+         "注1）" + ZANTEI + "\n"
+         "注2）率は利用者数÷（認定者数−施設・居住系サービス利用者数）です。"
+         "「全体」の列は要介護度計の率であり、各列の和ではありません。\n"
+         "注3）「―」は画面にその要介護度の列がないものです。"
+         "**訪問介護・通所介護・地域密着型通所介護・定期巡回・夜間対応型・"
+         "看護小規模多機能型居宅介護は要支援の列がありません**"
+         "（介護予防訪問介護・介護予防通所介護は総合事業へ移行済みです）。",
+         span=11, height=62)
 
-_SHISETSU = [l for l in SVC if kubun(l) != "在宅サービス"]
-_ZAITAKU = [l for l in SVC if kubun(l) == "在宅サービス"]
-N_SHISETSU = riyosha_sheet("06_施設居住系の利用者数",
-                           "施設・居住系サービスの利用者数（令和9年度以降）",
-                           _SHISETSU)
-N_ZAITAKU = riyosha_sheet("07_在宅の利用者数",
-                          "在宅サービスの利用者数（令和9年度以降）",
-                          _ZAITAKU)
+r += 1
+_i = 0
+for no, labs in _ZAI_GROUPS:
+    r = lead(ws, r, "2　" + no + "　利用者数（人／月・整数）", span=11)
+    r = header(ws, r, ["", "サービス", "年度"] + DO_COLS + ["計"])
+    for lab in labs:
+        _i += 1
+        rows = [("令和7年度\n（実績）", riyosha_r7(lab), False)]
+        for y, yl in zip(YALL, YALLL):
+            rows.append((yl, riyosha(lab, y), True))
+        for j, (yl, vals, is_in) in enumerate(rows):
+            r = do_row(ws, r, [_i if j == 0 else "",
+                               short(lab) if j == 0 else "", yl], vals,
+                       i_fill=({k: IN_Y for k in range(4, 11)}
+                               if is_in else {3: GRAY}))
+r = note(ws, r,
+         "注）1の利用率に分母を乗じた値です。"
+         "利用者数の欄で入力する画面（手順2の令和8年度の実績見込み値）では"
+         "この値を用います。整数は要支援の群・要介護の群ごとに"
+         "合計を保つよう配分しています。",
+         span=11, height=40)
 
 # ============================================================ 08
 ws = sheet("08_在宅の利用回日数",
-           "在宅サービスの利用回（日）数（令和9年度以降）",
+           "在宅サービスの利用回（日）数（手順5）",
            ZANTEI + "　"
            "「施策反映　在宅サービス」の画面に入れる利用回（日）数です。"
+           "**1月当たりの延べ回（日）数**であり、1人1月あたりではありません。"
            "利用回（日）数の欄は小数第1位まで受け付けます。"
-           "1人1月あたり回（日）数を令和7年度で固定し、利用者数に乗じています。",
-           [4, 24, 7, 11] + [9] * 7 + [11], freeze="E5")
+           "1人1月あたり回（日）数を令和7年度で固定し、利用者数に乗じています。"
+           "**画面の区分の並びにそろえています。**",
+           [4, 26, 7, 13] + [9] * 7 + [11], freeze="E5")
 r = 4
-r = lead(ws, r, "利用回（日）数（回・日／月・小数第1位）", span=12)
-r = header(ws, r, ["", "サービス", "単位", "年度"] + DO_COLS + ["計"])
 N_KAISU = 0
-for i, lab in enumerate([l for l in SVC if l in KAISU_MAP], start=1):
-    N_KAISU += 1
-    u = KAISU_MAP[lab][2]
-    rows = [("令和7年度\n（実績）",
-             to_dec1(kaisu_do(lab, masked(lab, JISSEKI[lab]))), False)]
-    for y, yl in zip(YALL, YALLL):
-        rows.append((yl, to_dec1(kaisu_do(lab, masked(lab, MIKOMI[y][lab]))),
-                     True))
-    for j, (yl, vals, is_in) in enumerate(rows):
-        r = do_row(ws, r, [i if j == 0 else "",
-                           short(lab) if j == 0 else "",
-                           u if j == 0 else "", yl], vals,
-                   i_fill=({k: IN_Y for k in range(5, 12)}
-                           if is_in else {4: GRAY}),
-                   fmt={k: "0.0" for k in range(5, 13)})
+_KAI_ORDER = [l for g in _ZAI_GROUPS for l in g[1] if l in KAISU_MAP]
+_i = 0
+for no, labs in _ZAI_GROUPS:
+    _ls = [l for l in labs if l in KAISU_MAP]
+    if not _ls:
+        continue
+    r = lead(ws, r, no + "　利用回（日）数（回・日／月・小数第1位）", span=12)
+    r = header(ws, r, ["", "サービス", "単位", "年度"] + DO_COLS + ["計"])
+    for lab in _ls:
+        _i += 1
+        i = _i
+        N_KAISU += 1
+        u = KAISU_MAP[lab][2]
+        rows = [("令和7年度\n（実績）",
+                 to_dec1(kaisu_do(lab, masked(lab, JISSEKI[lab]))), False)]
+        for y, yl in zip(YALL, YALLL):
+            rows.append(
+                (yl, to_dec1(kaisu_do(lab, masked(lab, MIKOMI[y][lab]))),
+                 True))
+        for j, (yl, vals, is_in) in enumerate(rows):
+            r = do_row(ws, r, [i if j == 0 else "",
+                               short(lab) if j == 0 else "",
+                               u if j == 0 else "", yl], vals,
+                       i_fill=({k: IN_Y for k in range(5, 12)}
+                               if is_in else {4: GRAY}),
+                       fmt={k: "0.0" for k in range(5, 13)})
 r = note(ws, r,
          "注1）" + ZANTEI + "\n"
          "注2）**通所介護・地域密着型通所介護・通所リハビリテーション・"
@@ -760,75 +924,147 @@ r = note(ws, r,
          span=12, height=52)
 
 # ============================================================ 09
-ws = sheet("09_地域支援事業の量",
-           "地域支援事業の見込み量（令和9年度以降）",
+# 地域支援事業は量（利用者数）と事業費（円）が同じ1つの表に混在する様式である。
+# 行の構成・並び順・量の欄の有無は `data_mieru_yoshiki.CHIIKI_KUBUN` による。
+# 様式の年度は11年度。当方が値を置くのは第10期の3か年である
+# （地域支援事業の中長期の額は国の様式でも第10期の後は参考であり、
+#  当方は令和6年度の水準を据え置くにとどめている）。
+_CY = ["令和6年度", "令和7年度", "令和8年度"] + list(YALLL)
+_CY_IN = set(Y3L)
+
+# 量を置ける欄（令和6年度の実績と延ばし方）
+_RYO_SRC = {nm: (key, u, nb) for nm, key, u, nb in SOGO_RYO}
+_RYO_IN = {}
+for _nm, _src in YS.CHIIKI_RYO_MAP.items():
+    _key, _u, _nb = _RYO_SRC[_src]
+    _b = sg3(_key)
+    _f = NIN_NOBI if _nb == "認定者数" else HIHO_NOBI
+    _RYO_IN[_nm] = (_b, {yl: (None if _b is None else _b * _f[y])
+                         for y, yl in zip(Y3, Y3L)}, _nb)
+
+ws = sheet("09_地域支援事業の量と事業費",
+           "地域支援事業の量と事業費（手順6・手順7）",
            ZANTEI + "　"
-           "「地域支援事業の見込み量推計」の画面に入れる値です。"
-           "**総合事業の令和7年度実績が未受領であるため、"
-           "令和6年度の実績を据え置いて延ばしています**（確認事項No.112）。",
-           [4, 40, 8, 14, 14, 14, 14, 22], freeze="A5")
+           "「地域支援事業」の画面に入れる値です。"
+           "**この画面は量（利用者数）と事業費（円）が同じ表に並ぶ様式です。**"
+           "事業費は年間累計の円、利用者数は1月当たりの人数です。"
+           "**量の欄があるのは4項目だけ**で、ほかの事業は事業費の欄しか"
+           "ありません。行の並びは国の様式（ワークシート）によります。",
+           [4, 46, 14] + [13] * len(_CY), freeze="D5")
 r = 4
 r = note(ws, r,
          "【この画面の値は特に暫定の度合いが高いものです】\n"
-         "令和6年度の実績（3町計）を基準として据え置き、"
-         "サービス事業は認定者数の伸び、"
-         "一般介護予防事業は第1号被保険者数の伸びで延ばしています。"
-         "通いの場の箇所数は3町の事業計画により定まるため据え置きです。",
-         span=8, height=48, fill=NG_O)
+         "**事業別の内訳（総合事業22項目・包括的支援事業8項目）は未受領です**"
+         "（確認事項No.5・No.112・No.150）。"
+         "入れられるのは総合事業費の計と包括的支援事業・任意事業費の計、"
+         "及び量3項目です。"
+         "**未受領の欄は空欄のままとし、0を入れません**"
+         "（0を入れると「計上がない」ことを表してしまいます）。",
+         span=3 + len(_CY), height=56, fill=NG_O)
 r += 1
-r = lead(ws, r, "1　介護予防・日常生活支援総合事業（サービス事業）の量",
-         span=8)
-r = header(ws, r, ["", "事業", "単位", "令和6年度実績\n（3町計）",
-                   "令和9年度", "令和10年度", "令和11年度", "延ばし方"])
-N_SOGO = 0
-for i, (nm, key, u, nb) in enumerate(SOGO_RYO, start=1):
-    b = sg3(key)
-    if b is None:
-        continue
-    N_SOGO += 1
-    f = NIN_NOBI if nb == "認定者数" else HIHO_NOBI
-    vs = [b * f[y] for y in Y3]
-    r = body(ws, r, [i, nm, u, b, round(vs[0], 1), round(vs[1], 1),
-                     round(vs[2], 1), nb + "の伸び"],
-             fills={5: IN_Y, 6: IN_Y, 7: IN_Y},
-             fmt={4: "#,##0", 5: "0.0", 6: "0.0", 7: "0.0"},
-             align={4: "right", 5: "right", 6: "right", 7: "right"},
-             height=22)
+N_SOGO = N_KAYOI = 0
+_CHI_ROWS = 0
+_RYO_ROWS = 0
+for _gno, (_gname, _items) in enumerate(YS.CHIIKI_KUBUN, start=1):
+    r = lead(ws, r, _gname, span=3 + len(_CY))
+    r = header(ws, r, ["", "サービス種別・項目", "区分"] + _CY)
+    for _nm, _has_ryo in _items:
+        _CHI_ROWS += 1
+        # 事業費の行
+        if _gno == 4:
+            _bk = "システムが計算します"
+            _vals = ["" for _ in _CY]
+            _fl = {j: GRAY for j in range(1, 4 + len(_CY))}
+        elif _nm == "包括的支援事業(地域包括支援センターの運営)":
+            _bk = "事業費（円）"
+            _vals = ["" for _ in _CY]
+            _fl = {j: NG_O for j, y in enumerate(_CY, start=4)
+                   if y in _CY_IN}
+        elif _gno == 2 or _gno == 3:
+            _bk = "事業費（円）"
+            _vals = ["" for _ in _CY]
+            _fl = {j: NG_O for j, y in enumerate(_CY, start=4)
+                   if y in _CY_IN}
+        else:
+            _bk = "事業費（円）"
+            _vals = ["" for _ in _CY]
+            _fl = {j: NG_O for j, y in enumerate(_CY, start=4)
+                   if y in _CY_IN}
+        r = body(ws, r, ["", _nm, _bk] + _vals, fills=_fl,
+                 align={j: "right" for j in range(4, 4 + len(_CY))},
+                 fmt={j: "#,##0" for j in range(4, 4 + len(_CY))},
+                 height=18, bold=(_gno == 4))
+        if not _has_ryo:
+            continue
+        _RYO_ROWS += 1
+        _in = _RYO_IN.get(_nm)
+        if _in is None:
+            _vals = ["" for _ in _CY]
+            _fl = {j: NG_O for j, y in enumerate(_CY, start=4)
+                   if y in _CY_IN}
+        else:
+            _b, _fy, _nb = _in
+            N_SOGO += 1
+            _vals = [_b if y == "令和6年度" else
+                     (round(_fy[y], 1) if y in _CY_IN else "")
+                     for y in _CY]
+            _fl = {j: (IN_Y if y in _CY_IN else GRAY)
+                   for j, y in enumerate(_CY, start=4)}
+        r = body(ws, r, ["", "　(利用者数：人)", "量（人／月）"] + _vals,
+                 fills=_fl,
+                 align={j: "right" for j in range(4, 4 + len(_CY))},
+                 fmt={j: "0.0" for j in range(4, 4 + len(_CY))},
+                 height=18)
+
+r = note(ws, r,
+         "注1）" + ZANTEI + "\\n"
+         "注2）黄色は当方で値を用意できる欄、赤は資料の受領を要する欄、"
+         "灰色はシステムが計算する欄です。\\n"
+         "注3）**量の欄があるのは4項目（訪問介護相当サービス・"
+         "訪問型サービスA・通所介護相当サービス・通所型サービスA）だけ**です。"
+         "そのうち当方が値を置けるのは3項目で、訪問型サービスAは"
+         "総合事業の実施状況に関する調査に区分がありません。\\n"
+         "注4）量の基礎は令和6年度の利用者実人数（3町計）です。"
+         "サービス事業は認定者数の伸びで延ばしています。"
+         "令和7年度実績は未受領です（確認事項No.112）。\\n"
+         "注5）**総合事業費はシステムが手順6の量から自動計算することが"
+         "あります。**その場合、量が埋まらないとシステムの算定額が"
+         "10シートの額と一致しません。\\n"
+         "注6）**４．の計はシステムが１．から３．の和として計算します。**"
+         "当方が用意できるのは計の2つだけで、事業別に割り付けられないため、"
+         "１．から３．の各行には入れられません。"
+         "計は手順8（保険料額の算定）の地域支援事業費の欄で入れます"
+         "（下の参考及び10シート）。",
+         span=3 + len(_CY), height=104)
 
 r += 1
-r = lead(ws, r, "2　一般介護予防事業（通いの場）の量", span=8)
-r = header(ws, r, ["", "項目", "単位", "令和6年度実績\n（3町計）",
-                   "令和9年度", "令和10年度", "令和11年度", "延ばし方"])
-N_KAYOI = 0
-for i, (nm, key, u, nb) in enumerate(KAYOI_RYO, start=1):
-    b = sum(x for x in SG.KAYOI[key][0] if x is not None)
-    N_KAYOI += 1
-    if nb == "据え置き":
-        vs = [b] * 3
-    else:
-        f = NIN_NOBI if nb == "認定者数" else HIHO_NOBI
-        vs = [b * f[y] for y in Y3]
-    r = body(ws, r, [i, nm, u, b, round(vs[0], 1), round(vs[1], 1),
-                     round(vs[2], 1),
-                     nb if nb == "据え置き" else nb + "の伸び"],
-             fills={5: IN_Y, 6: IN_Y, 7: IN_Y},
-             fmt={4: "#,##0", 5: "0.0", 6: "0.0", 7: "0.0"},
-             align={4: "right", 5: "right", 6: "right", 7: "right"},
-             height=22)
+r = lead(ws, r, "参考　当方が用意できる計（手順8の地域支援事業費の欄に入れる額）",
+         span=3 + len(_CY))
+r = header(ws, r, ["", "事業区分", "区分", "令和9年度", "令和10年度",
+                   "令和11年度"] + [""] * (len(_CY) - 3))
+for _i2, (_nm2, _v2) in enumerate(
+        [("介護予防・日常生活支援総合事業費", SOGO_R6),
+         ("包括的支援事業（センター運営）及び任意事業費"
+          "／包括的支援事業（社会保障充実分）", HOKATSU_R6),
+         ("地域支援事業費（計。保険料算定上のB）", CHIIKI_R6)], start=1):
+    r = body(ws, r, [_i2, _nm2, "事業費（円）", _v2, _v2, _v2]
+             + [""] * (len(_CY) - 3),
+             fills={4: IN_Y, 5: IN_Y, 6: IN_Y},
+             fmt={j: "#,##0" for j in range(4, 7)},
+             align={j: "right" for j in range(4, 7)},
+             height=26, bold=(_i2 == 3))
 r = note(ws, r,
-         "注）3町の地域包括支援センター事業実施報告書（令和7年度）により"
-         "事業ごとの実施状況は確認できましたが、"
-         "**量の単位が延べ人数・食数・回数・団体数で混在**しており、"
-         "国の実施状況調査の利用者実人数とは数えているものが違います。"
-         "足さない・比べないこととし、"
-         "見込みの基礎は令和6年度の利用者実人数のまま据え置いています。",
-         span=8, height=48)
+         "注）令和6年度決算の水準を3年据え置いたものです。"
+         "内訳が未受領のため2区分までしか分けられません（確認事項No.5）。"
+         "この額を入れると算定上の月額が約＋332円上がります。",
+         span=3 + len(_CY), height=32)
 
 # ============================================================ 10
-ws = sheet("10_地域支援事業費",
-           "地域支援事業費（手順7）",
+ws = sheet("10_地域支援事業費の計と入力欄のない量",
+           "地域支援事業費の計と、入力欄のない量",
            ZANTEI + "　"
-           "「地域支援事業費」の画面に入れる値です。"
+           "1に事業費の計（手順7で入れる額）、"
+           "2に**様式に入力欄のない量**を掲げています。"
            "**現況では全ての年度・全ての区分が0**であり、"
            "保険料に算入されていません。"
            "令和6年度決算の水準を3年据え置いています。",
@@ -861,20 +1097,57 @@ r = body(ws, r, ["", "特定地域居宅サービス等事業／介護情報利�
          fmt={j: "#,##0" for j in range(3, 7)},
          align={j: "right" for j in range(3, 7)}, height=22)
 r = note(ws, r,
-         "注1）" + ZANTEI + "\n"
+         "注1）" + ZANTEI + "\\n"
          "注2）**保険者機能強化推進事業費及び保険者努力支援事業費は"
-         "この額から除いています**（令和6年度決算の款4の全体%s円から"
+         "この額から除いています**（令和6年度決算の款4の全体183,384,259円から"
          "2事業を除いた額が%s円）。"
          "このため、手順8の「保険者機能強化推進交付金等の交付見込額」の欄は"
          "**0のままとします。**"
-         "両方を行うと二重控除になります（確認事項No.86）。\n"
-         "注3）**総合事業費はシステムが手順6から自動計算することがあります。**"
-         "その場合、手順6が埋まらないとシステムの算定額が本表と一致しません。\n"
-         "注4）この額を入れると算定上の月額が約%s円上がります。"
-         % ("{:,}".format(_S["_P"]["CHIIKI_ZEN"]
-                          if isinstance(_S.get("_P"), dict) else 183384259),
-            "{:,}".format(CHIIKI_R6), "＋332"),
-         span=7, height=76)
+         "両方を行うと二重控除になります（確認事項No.86）。\\n"
+         "注3）この額を入れると算定上の月額が約＋332円上がります。"
+         % "{:,}".format(CHIIKI_R6),
+         span=7, height=62)
+
+r += 1
+r = lead(ws, r, "2　様式に入力欄のない量（画面には入力しません）", span=7)
+r = header(ws, r, ["", "項目", "単位", "令和6年度実績\n（3町計）",
+                   "令和9年度", "令和11年度", "扱い"])
+_NO_IN = [(nm, key, u, nb) for nm, key, u, nb in SOGO_RYO
+          if nm not in YS.CHIIKI_RYO_MAP.values()]
+N_NOIN = 0
+for i, (nm, key, u, nb) in enumerate(_NO_IN, start=1):
+    b = sg3(key)
+    if b is None:
+        continue
+    N_NOIN += 1
+    f = NIN_NOBI if nb == "認定者数" else HIHO_NOBI
+    r = body(ws, r, [N_NOIN, nm, u, b, round(b * f[Y3[0]], 1),
+                     round(b * f[Y3[2]], 1), YS.CHIIKI_RYO_NASHI_RIYU],
+             fmt={4: "#,##0", 5: "0.0", 6: "0.0"},
+             align={j: "right" for j in range(4, 7)}, height=30)
+for i, (nm, key, u, nb) in enumerate(KAYOI_RYO, start=1):
+    b = sum(x for x in SG.KAYOI[key][0] if x is not None)
+    N_KAYOI += 1
+    N_NOIN += 1
+    if nb == "据え置き":
+        v9 = v11 = b
+    else:
+        f = NIN_NOBI if nb == "認定者数" else HIHO_NOBI
+        v9, v11 = b * f[Y3[0]], b * f[Y3[2]]
+    r = body(ws, r, [N_NOIN, nm, u, b, round(v9, 1), round(v11, 1),
+                     YS.CHIIKI_RYO_NASHI_RIYU],
+             fmt={4: "#,##0", 5: "0.0", 6: "0.0"},
+             align={j: "right" for j in range(4, 7)}, height=30)
+r = note(ws, r,
+         "注1）**これらは見える化システムの様式に量の欄がありません。**"
+         "画面には入力せず、計画本文（第6章第3節2）に掲げます。\\n"
+         "注2）3町の地域包括支援センター事業実施報告書（令和7年度）により"
+         "事業ごとの実施状況は確認できましたが、"
+         "**量の単位が延べ人数・食数・回数・団体数で混在**しており、"
+         "国の実施状況調査の利用者実人数とは数えているものが違います。"
+         "足さない・比べないこととし、"
+         "見込みの基礎は令和6年度の利用者実人数のまま据え置いています。",
+         span=7, height=62)
 
 # ============================================================ 11
 ws = sheet("11_保険料額の算定",
@@ -1118,7 +1391,7 @@ chk(11, "一覧の全ての行に操作が書かれていること",
 _kei_ng, _kei_n = [], 0
 for _w in wb.worksheets:
     if _w.title not in ("05_認定者数", "06_施設居住系の利用者数",
-                        "07_在宅の利用者数", "08_在宅の利用回日数",
+                        "07_在宅の利用率と利用者数", "08_在宅の利用回日数",
                         "04_令和8年度の実績見込み値"):
         continue
     _hd = None
@@ -1142,9 +1415,10 @@ chk(12, "書き出した表の内訳の和と「計」の欄が一致するこ�
     "%d行を検算／合わない %s" % (_kei_n, _kei_ng or "なし"), not _kei_ng)
 
 chk(12.5, "地域支援事業の量の件数が0でないこと",
-    "サービス事業・通いの場の行数",
-    "サービス事業%d件／通いの場%d件" % (N_SOGO, N_KAYOI),
-    N_SOGO > 0 and N_KAYOI > 0)
+    "入力欄がある量・入力欄のない量の行数",
+    "入力欄がある量%d件／入力欄のない量%d件（うち通いの場%d件）"
+    % (N_SOGO, N_NOIN, N_KAYOI),
+    N_SOGO > 0 and N_NOIN > 0 and N_KAYOI > 0)
 
 _ast = []
 for _w in wb.worksheets:
@@ -1177,6 +1451,53 @@ _zan = [_w.title for _w in wb.worksheets
 chk(15, "自己点検を除く全シートの冒頭に暫定値である旨があること",
     "各シートのA2に「暫定値」の語があること",
     "無いシート %s" % (_zan or "なし"), not _zan)
+
+# ---------------------------------------------- 様式（画面ごとに違うこと）
+_sk = list(MS.GAMEN_KUBUN.keys())
+chk(16, "施設・居住系の区分と並び順が画面の写しと一致すること",
+    "MS.GAMEN_KUBUN の区分・サービスを順に並べる",
+    "%d区分・%d サービス（%s）／画面にない区分 %s"
+    % (len(_SHI_GROUPS), N_SHISETSU, "・".join(_sk),
+       "・".join(short(l) for l in _GAMEN_NASHI) or "なし"),
+    len(_SHI_GROUPS) == 3 and N_SHISETSU == 7
+    and [short(l) for l in _GAMEN_NASHI] == YS.GAMEN_NASHI)
+
+_zset = {short(l) for l in SVC if kubun(l) == "在宅サービス"}
+_yset = {n for _no, ns in YS.ZAITAKU_KUBUN for n in ns}
+chk(17, "在宅の様式の区分が当方の在宅サービスと過不足なく一致すること",
+    "YS.ZAITAKU_KUBUN の名称の集合 ＝ 総括表の在宅サービスの集合",
+    "様式%d区分／当方%d区分／差 %s"
+    % (len(_yset), len(_zset), (_yset ^ _zset) or "なし"),
+    _yset == _zset and N_ZAITAKU == len(_zset))
+
+# 在宅サービス利用率の分母（認定者数−施設・居住系利用者数）の裏づけ。
+# 画面が表示している令和7年度の利用率と、当方の実績から逆算した率を比べる。
+_MN = {"特定福祉用具販売": "特定福祉用具購入費", "住宅改修": "住宅改修費"}
+_rd, _rn = 0.0, 0
+for _lab in _ZAITAKU:
+    _nm = _MN.get(short(_lab), short(_lab))
+    if _nm not in MS.ZAITAKU_DO:
+        continue
+    _g = MS.ZAITAKU_DO[_nm]["R7"][0] * 100
+    _m = _ritsu_zentai(_lab, JISSEKI[_lab], _ZN_R7) or 0.0
+    _rn += 1
+    _rd = max(_rd, abs(_g - _m))
+chk(18, "在宅サービス利用率の分母が画面の率から裏づけられること",
+    "分母＝認定者数−施設・居住系利用者数として逆算した率と画面の率を比べる",
+    "%d区分／最大の差 %.2fポイント（時点の違いによるもの）" % (_rn, _rd),
+    _rn == len(_ZAITAKU) and _rd < 1.0)
+
+_ryo_n = sum(1 for _g, _it in YS.CHIIKI_KUBUN for _nm, _h in _it if _h)
+chk(19, "地域支援事業の様式で量の欄があるのが4項目であること",
+    "YS.CHIIKI_KUBUN の量の欄の数／当方が値を置ける数",
+    "量の欄 %d項目／当方が置ける %d項目（訪問型サービスAは調査に区分なし）"
+    % (_ryo_n, N_SOGO), _ryo_n == 4 and N_SOGO == 3)
+
+_ci = sum(len(_it) for _g, _it in YS.CHIIKI_KUBUN)
+chk(20, "地域支援事業の様式の行を残らず掲げていること",
+    "書き出した項目の数 ＝ YS.CHIIKI_KUBUN の項目の数",
+    "様式%d項目／書き出し%d項目（うち量の行%d）" % (_ci, _CHI_ROWS, _RYO_ROWS),
+    _ci == _CHI_ROWS and _RYO_ROWS == _ryo_n)
 
 r = header(ws, 4, ["No.", "点検した内容", "式・条件", "結果", "判定"])
 for c in CHECKS:
