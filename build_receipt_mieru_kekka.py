@@ -31,7 +31,8 @@
   04_所得段階別の入力
   05_保険料の対照
   06_サービス別の対照
-  07_自己点検
+  07_人口の設定の入力値
+  08_自己点検
 
 出力
   output/第10期計画_見える化_推計結果の受領点検.xlsx
@@ -43,11 +44,13 @@ import io
 import os
 import runpy
 import sys
+from decimal import Decimal, ROUND_HALF_UP
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
+import data_mieru_jinko as J
 import data_mieru_kekka as K
 import repo_paths as RP
 
@@ -73,13 +76,18 @@ def chk(no, naiyo, shiki, kekka, ok):
     return ok
 
 
+def _plain(v):
+    """xlsx は Markdown を解釈しないため、書き出しの時点で ** を落とす。"""
+    return v.replace("**", "") if isinstance(v, str) else v
+
+
 # ============================================================ 体裁
 def sheet(name, title, subtitle, widths, freeze="A5"):
     ws = wb.create_sheet(name)
     ws["A1"] = title
     ws["A1"].font = Font(name=FONT, size=14, bold=True, color="FFFFFF")
     ws["A1"].fill = PatternFill("solid", fgColor=NAVY)
-    ws["A2"] = subtitle
+    ws["A2"] = _plain(subtitle)
     ws["A2"].font = Font(name=FONT, size=9)
     ws["A2"].fill = PatternFill("solid", fgColor=GRAY)
     ws["A2"].alignment = Alignment(wrap_text=True, vertical="top")
@@ -100,7 +108,7 @@ def sheet(name, title, subtitle, widths, freeze="A5"):
 
 def header(ws, row, cols, height=28):
     for i, hh in enumerate(cols, start=1):
-        c = ws.cell(row=row, column=i, value=hh)
+        c = ws.cell(row=row, column=i, value=_plain(hh))
         c.font = Font(name=FONT, size=9, bold=True, color="FFFFFF")
         c.fill = PatternFill("solid", fgColor=HEAD)
         c.alignment = Alignment(wrap_text=True, horizontal="center",
@@ -113,7 +121,7 @@ def header(ws, row, cols, height=28):
 def body(ws, row, vals, fills=None, height=20, align=None, bold=False,
          fmt=None):
     for i, v in enumerate(vals, start=1):
-        c = ws.cell(row=row, column=i, value=v)
+        c = ws.cell(row=row, column=i, value=_plain(v))
         c.font = Font(name=FONT, size=9, bold=bold)
         c.border = BORDER
         ha = (align or {}).get(i, "left" if isinstance(v, str) else "right")
@@ -127,7 +135,7 @@ def body(ws, row, vals, fills=None, height=20, align=None, bold=False,
 
 
 def lead(ws, row, text, span=10):
-    c = ws.cell(row=row, column=1, value=text)
+    c = ws.cell(row=row, column=1, value=_plain(text))
     c.font = Font(name=FONT, size=10.5, bold=True, color=NAVY)
     ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=span)
     ws.row_dimensions[row].height = 20
@@ -135,7 +143,7 @@ def lead(ws, row, text, span=10):
 
 
 def note(ws, row, text, span=10, height=None):
-    c = ws.cell(row=row, column=1, value=text)
+    c = ws.cell(row=row, column=1, value=_plain(text))
     c.font = Font(name=FONT, size=8.5)
     c.alignment = Alignment(wrap_text=True, vertical="top")
     ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=span)
@@ -659,8 +667,198 @@ r = note(ws, r,
          "見える化の包括推計とは延ばし方も違います。",
          span=6, height=46)
 
-# ============================================================ 07 自己点検
-ws = sheet("07_自己点検", "自己点検",
+# ============================================================ 07 人口の設定
+# 案C（総人口＝地方創生総合戦略、年齢階級別＝住民基本台帳の実績趨勢）を
+# 「独自データを登録する」の欄へ入れるための値。
+_bufp, _oldp = io.StringIO(), sys.stdout
+sys.stdout = _bufp
+try:
+    _P = runpy.run_path(os.path.join(RP.ROOT, "build_projection.py"))
+finally:
+    sys.stdout = _oldp
+pop_tot, pop_juki, CL3 = _P["pop_tot"], _P["pop_juki"], _P["CL"]
+
+JY = J.YEARS
+JITSU = ("R6", "R7")                     # 実績年。画面の値をそのまま用いる
+PAIR3 = {"65-74": ["65-69", "70-74"], "75-84": ["75-79", "80-84"],
+         "85+": ["85-89", "90+"]}
+
+
+def _r0(x):
+    return int(Decimal(str(x)).quantize(Decimal("1"), ROUND_HALF_UP))
+
+
+def _saidai(total, w):
+    """最大剰余法。w の比で total（整数）に配分し、合計を保つ。"""
+    s = sum(w)
+    raw = [total * x / s for x in w]
+    base = [int(x) for x in raw]
+    order = sorted(range(len(w)), key=lambda i: -(raw[i] - base[i]))
+    for j in range(total - sum(base)):
+        base[order[j % len(order)]] += 1
+    return base
+
+
+ANC = {}
+for _y in JY:
+    if _y in JITSU:
+        ANC[_y] = {"総人口": J.SOJINKO[_y],
+                   "男": {a: J.dan(a, _y) for a in J.AGE},
+                   "女": {a: J.jo(a, _y) for a in J.AGE},
+                   "出所": "画面（実績）"}
+        continue
+    _s = J.SEIREKI[_y]
+    _c3 = {c: pop_juki(c, _s) for c in CL3}
+    _t65 = _r0(sum(_c3.values()))
+    _a6 = {}
+    for c in CL3:
+        x, z = PAIR3[c]
+        _w = [J.kei(x, _y), J.kei(z, _y)]
+        _a6[x] = _c3[c] * _w[0] / sum(_w)
+        _a6[z] = _c3[c] * _w[1] / sum(_w)
+    _ints = dict(zip(J.AGE, _saidai(_t65, [_a6[a] for a in J.AGE])))
+    _m, _f = {}, {}
+    for a in J.AGE:
+        _m[a], _f[a] = _saidai(_ints[a], [J.dan(a, _y), J.jo(a, _y)])
+    ANC[_y] = {"総人口": _r0(pop_tot(_s)), "男": _m, "女": _f, "出所": "案C"}
+
+
+def _i1(y):
+    return sum(ANC[y]["男"].values()) + sum(ANC[y]["女"].values())
+
+
+def _kouki(d):
+    return sum(d["男"][a] + d["女"][a] for a in J.AGE[2:])
+
+
+ws = sheet("07_人口の設定の入力値",
+           "「総人口と被保険者数の設定」に入れる値（案C）",
+           "「独自データを登録する」を選んだ場合の入力値です。"
+           "**令和6年度・令和7年度は実績であるため画面の値をそのまま入れ、"
+           "令和8年度以降を案C（総人口＝地方創生総合戦略、"
+           "年齢階級別＝住民基本台帳の実績趨勢）に改めます。**"
+           "白い欄（6階級と第2号被保険者）が入力欄で、"
+           "第1号被保険者と総数は自動計算されます。",
+           [4, 18, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11])
+r = 4
+_AL = {j: "right" for j in range(3, 14)}
+_FMT = {j: "#,##0" for j in range(3, 14)}
+_HD = ["", "区分"] + JY
+
+r = lead(ws, r, "1　総人口（人）", span=13)
+r = header(ws, r, _HD)
+r = body(ws, r, ["", "案C（入力する値）"] + [ANC[y]["総人口"] for y in JY],
+         height=20, fills={j: IN_Y for j in range(3, 14)}, fmt=_FMT,
+         align=_AL, bold=True)
+r = body(ws, r, ["", "画面の現在値"] + [J.SOJINKO[y] for y in JY],
+         height=20, fmt=_FMT, align=_AL)
+r = body(ws, r, ["", "差（案C−画面）"]
+         + [ANC[y]["総人口"] - J.SOJINKO[y] for y in JY],
+         height=20, fills={j: GRAY for j in range(1, 14)},
+         fmt={j: "+#,##0;-#,##0;0" for j in range(3, 14)}, align=_AL)
+
+r += 1
+r = lead(ws, r, "2　被保険者数（1）男（人）", span=13)
+r = header(ws, r, _HD)
+for a in J.AGE:
+    r = body(ws, r, ["", J.AGEL[a]] + [ANC[y]["男"][a] for y in JY],
+             height=18, fills={j: IN_Y for j in range(3, 14)}, fmt=_FMT,
+             align=_AL)
+r = body(ws, r, ["", "第2号被保険者"] + [J.dan("第2号", y) for y in JY],
+         height=18, fills={j: IN_Y for j in range(3, 14)}, fmt=_FMT,
+         align=_AL)
+r = body(ws, r, ["", "第1号被保険者（自動）"]
+         + [sum(ANC[y]["男"].values()) for y in JY],
+         height=18, fills={j: GRAY for j in range(1, 14)}, fmt=_FMT,
+         align=_AL)
+
+r += 1
+r = lead(ws, r, "3　被保険者数（2）女（人）", span=13)
+r = header(ws, r, _HD)
+for a in J.AGE:
+    r = body(ws, r, ["", J.AGEL[a]] + [ANC[y]["女"][a] for y in JY],
+             height=18, fills={j: IN_Y for j in range(3, 14)}, fmt=_FMT,
+             align=_AL)
+r = body(ws, r, ["", "第2号被保険者"] + [J.jo("第2号", y) for y in JY],
+         height=18, fills={j: IN_Y for j in range(3, 14)}, fmt=_FMT,
+         align=_AL)
+r = body(ws, r, ["", "第1号被保険者（自動）"]
+         + [sum(ANC[y]["女"].values()) for y in JY],
+         height=18, fills={j: GRAY for j in range(1, 14)}, fmt=_FMT,
+         align=_AL)
+
+r += 1
+r = lead(ws, r, "4　入力後に画面が表示する値（自動計算）と現在値の対照", span=13)
+r = header(ws, r, _HD)
+r = body(ws, r, ["", "第1号被保険者 案C"] + [_i1(y) for y in JY],
+         height=20, fills={j: OK_G for j in range(3, 14)}, fmt=_FMT,
+         align=_AL, bold=True)
+r = body(ws, r, ["", "第1号被保険者 画面"] + [J.ichigo(y) for y in JY],
+         height=20, fmt=_FMT, align=_AL)
+r = body(ws, r, ["", "差（案C−画面）"]
+         + [_i1(y) - J.ichigo(y) for y in JY],
+         height=20, fills={j: GRAY for j in range(1, 14)},
+         fmt={j: "+#,##0;-#,##0;0" for j in range(3, 14)}, align=_AL)
+r = body(ws, r, ["", "後期（75歳〜）の割合 案C"]
+         + [round(_kouki(ANC[y]) / _i1(y), 4) for y in JY],
+         height=20, fmt={j: "0.0000" for j in range(3, 14)}, align=_AL)
+r = body(ws, r, ["", "同 画面"]
+         + [round(sum(J.kei(a, y) for a in J.AGE[2:]) / J.ichigo(y), 4)
+            for y in JY],
+         height=20, fmt={j: "0.0000" for j in range(3, 14)}, align=_AL)
+r = note(ws, r,
+         "注1）**令和6年度・令和7年度は実績であるため画面の値をそのまま入れます。**"
+         "令和8年度以降が案Cによる値です。\n"
+         "注2）**令和8年度の第1号被保険者数は案Cでも9,117人で画面と同じ**であり、"
+         "動くのは年齢階級別の内訳だけです。\n"
+         "注3）当方の案Cは65歳以上を65〜74歳・75〜84歳・85歳以上の3区分で推計"
+         "しています。**5歳階級への分け方と男女の分け方は、"
+         "画面が現に表示している補正データの同じ年の構成比によっています。**"
+         "住民基本台帳の5歳階級の趨勢をそのまま延ばすと、"
+         "65〜69歳が年▲4.2％・70〜74歳が年＋1.0％という"
+         "特定の世代が移っていく動きをそのまま繰り返すことになり、"
+         "令和11年度の65〜69歳の割合が0.41（画面は0.51）まで下がります。"
+         "3区分より細かい構成は画面の側によるのが妥当と考えます。\n"
+         "注4）**第2号被保険者（40歳から64歳）は画面の値をそのままとしています。**"
+         "案Cは総人口と65歳以上の趨勢を定めるもので、"
+         "40歳から64歳の内訳を持っていません。"
+         "第1号被保険者の保険料の算定には用いられません。\n"
+         "注5）**後期高齢者の割合が画面より高くなります**"
+         "（令和11年度 0.6340対0.6174）。"
+         "調整交付金の後期高齢者加入割合補正係数が上がるため、"
+         "調整交付金見込額が増え保険料を下げる向きに働きます。"
+         "一方で認定者数が増えるため給付費は上がる向きに働きます。"
+         "**どちらが上回るかは入力後の算定によります。**",
+         span=13, height=140)
+
+r += 1
+r = lead(ws, r, "5　併せて入れ直すもの", span=13)
+r = header(ws, r, ["#", "画面", "入れ直す内容", "", "", "", "", "", "",
+                   "", "", "", ""])
+for _i, (_a, _b) in enumerate([
+        ("所得段階別第1号被保険者数①（標準段階区分）",
+         "計が案Cの第1号被保険者数（9,147／9,179／9,213／9,211／9,250／"
+         "9,491／9,395／9,127人）になる表に入れ直す。"
+         "これにより加入割合の合計が全年度で1.0000になる"),
+        ("所得段階別第1号被保険者数②（弾力化）",
+         "当連合の条例による16段階で入れる。"
+         "①と②の計は同じ第1号被保険者数にそろえる"),
+        ("実績及び推計方法の設定（認定率・利用率の伸び）",
+         "「令和6年度→令和7年度の伸び」のままでよい（変更は要らない）"),
+        ("保険料額の算定（保険料収納必要額）",
+         "地域支援事業費を入れる。人口の設定とは別の作業である")],
+        start=1):
+    r = body(ws, r, [_i, _a, _b] + [""] * 10, height=34)
+r = note(ws, r,
+         "注）人口の設定を改めると、認定者数・サービス見込量・給付費・"
+         "保険料のすべてが計算し直されます。"
+         "所得段階別の表を入れ直さないと、"
+         "加入割合の合計が1.0にならない状態が残ります。",
+         span=13, height=34)
+
+
+# ============================================================ 08 自己点検
+ws = sheet("08_自己点検", "自己点検",
            "本表の内的整合を機械で確かめた記録です。"
            "1件でも不適合があると出力そのものを止めます。",
            [6, 44, 34, 34, 10])
@@ -760,9 +958,70 @@ chk(18, "弾力化にした場合の月額が標準13段階より低くなるこ
     GETSU16 < MI_GETSU)
 
 _pi = [v for v in K.META.values()]
-chk(19, "個人を特定する値を収めていないこと",
-    "担当者名・電話番号・メールアドレスの形を走査",
-    "0件", True)
+chk(19.1, "画面の被保険者数の読み取りが受領した出力と一致すること",
+    "6階級の和＝1_推計値サマリの第1号被保険者数",
+    "第10期3か年 %s／受領 %s"
+    % ([J.ichigo(y) for y in ("R9", "R10", "R11")],
+       [K.HIHO[y] for y in ("R9", "R10", "R11")]),
+    all(J.ichigo(y) == K.HIHO[y] for y in JY))
+
+chk(19.2, "画面の第1号＋第2号が受領した出力の総数と一致すること",
+    "第1号＋第2号（男女計）＝1_推計値サマリの総数",
+    "R6 %d人" % (J.ichigo("R6") + J.dan("第2号", "R6")
+                 + J.jo("第2号", "R6")),
+    J.ichigo("R6") + J.dan("第2号", "R6") + J.jo("第2号", "R6") == 18386)
+
+_ai = [y for y in JY if y not in JITSU
+       and _i1(y) != _r0(sum(pop_juki(c, J.SEIREKI[y]) for c in CL3))]
+chk(19.3, "案Cの入力値の和が当方の推計と一致すること（整数化で合計を保つ）",
+    "男6階級＋女6階級の和 ＝ 案Cの65歳以上",
+    "合わない年度 %s" % ("・".join(_ai) if _ai else "なし"), not _ai)
+
+_r67 = [y for y in JITSU
+        if ANC[y]["男"] != {a: J.dan(a, y) for a in J.AGE}
+        or ANC[y]["総人口"] != J.SOJINKO[y]]
+chk(19.4, "令和6年度・令和7年度は画面の値をそのまま用いていること",
+    "実績年の入力値＝画面の値",
+    "変えている年度 %s" % ("・".join(_r67) if _r67 else "なし"), not _r67)
+
+chk(19.5, "令和11年度の第1号被保険者数が当方の算定と一致すること",
+    "案Cの令和11年度 ＝ 9,213人",
+    "%d人" % _i1("R11"), _i1("R11") == 9213)
+
+chk(19.6, "後期高齢者の割合が画面より高くなること（案Cの趨勢による）",
+    "75歳以上÷65歳以上を第10期3か年で比べる",
+    "案C %s／画面 %s"
+    % ([round(_kouki(ANC[y]) / _i1(y), 4) for y in ("R9", "R10", "R11")],
+       [round(sum(J.kei(a, y) for a in J.AGE[2:]) / J.ichigo(y), 4)
+        for y in ("R9", "R10", "R11")]),
+    all(_kouki(ANC[y]) / _i1(y)
+        > sum(J.kei(a, y) for a in J.AGE[2:]) / J.ichigo(y)
+        for y in ("R9", "R10", "R11")))
+
+_ast = []
+for _w in wb.worksheets:
+    for _row in _w.iter_rows():
+        for _c in _row:
+            if isinstance(_c.value, str) and "**" in _c.value:
+                _ast.append("%s!%s" % (_w.title, _c.coordinate))
+chk(19, "強調の指定（**）がセルに残っていないこと",
+    "全シートの全セルを走査（xlsx は Markdown を解釈しない）",
+    "%d件" % len(_ast), not _ast)
+
+import re as _re
+_PI = [_re.compile(r"\d{2,4}-\d{2,4}-\d{3,4}"),
+       _re.compile(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}")]
+_pi = []
+for _w in wb.worksheets:
+    for _row in _w.iter_rows():
+        for _c in _row:
+            if isinstance(_c.value, str):
+                for _p in _PI:
+                    if _p.search(_c.value):
+                        _pi.append("%s!%s" % (_w.title, _c.coordinate))
+chk(20, "個人を特定する値を収めていないこと",
+    "電話番号・メールアドレスの形を全セルで走査",
+    "%d件" % len(_pi), not _pi)
 
 r = header(ws, 4, ["No.", "点検した内容", "式・条件", "結果", "判定"])
 for c in CHECKS:
