@@ -32,7 +32,8 @@
   05_保険料の対照
   06_サービス別の対照
   07_人口の設定の入力値
-  08_自己点検
+  08_弾力化の入力値（基準所得金額と割合）
+  09_自己点検
 
 出力
   output/第10期計画_見える化_推計結果の受領点検.xlsx
@@ -50,6 +51,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
+import data_mieru_danryoku as GD
 import data_mieru_jinko as J
 import data_mieru_kekka as K
 import repo_paths as RP
@@ -857,8 +859,134 @@ r = note(ws, r,
          span=13, height=34)
 
 
-# ============================================================ 08 自己点検
-ws = sheet("08_自己点検", "自己点検",
+# ============================================================ 08 弾力化の入力値
+def _stage():
+    """当連合の16段階の定義をソースから読む。
+
+    `build_premium_bracket_review.py` の `STAGE` を `ast` で読み、
+    段階・対象者要件・割合（公費軽減前）と、対象者要件の
+    「合計所得金額○○万円以上」から基準所得金額を求める。
+    固定値を書き写すと、段階の定義を改めたときに本表とずれる。
+    """
+    import ast
+    import re
+    src = io.open(os.path.join(RP.ROOT, "build_premium_bracket_review.py"),
+                  encoding="utf-8").read()
+    m = re.search(r"^STAGE = (\[.*?\n\])\s*$", src, re.S | re.M)
+    if not m:
+        raise RuntimeError("STAGE が見つからない")
+    out = []
+    for row in ast.literal_eval(m.group(1)):
+        g = re.search(r"合計所得金額([0-9,]+)万円以上", row[1])
+        out.append((row[0], row[1].replace("\n", ""), row[2],
+                    int(g.group(1).replace(",", "")) * 10000 if g else None))
+    return out
+
+
+STAGE16 = _stage()
+_DAN_YM = dict(zip(GD.YEARS, ("2027", "2028", "2029", "2030", "2035",
+                              "2040", "2045", "2050")))
+_DAN_TO = _load_dankai = runpy.run_path(
+    os.path.join(RP.ROOT, "build_shotoku_dankai.py"))["DANKAI"]
+
+ws = sheet("08_弾力化の入力値",
+           "「②保険料基準額に対する割合の弾力化」に入れる基準所得金額と割合",
+           "画面には既に所得段階別第1号被保険者数（16段階）が入っており、"
+           "**未入力は基準所得金額と基準額に対する割合の2つ**です。"
+           "本シートはその2つに入れる値です。"
+           "基準所得金額は第7段階から第16段階の10件、"
+           "割合は16段階すべてで、いずれも年度によらず同じ値です。",
+           [4, 42, 11, 15, 13, 13, 30])
+r = 4
+_ALS = {3: "center", 4: "right", 5: "right", 6: "center"}
+r = lead(ws, r, "1　基準所得金額と基準額に対する割合（全年度共通）", span=7)
+r = header(ws, r, ["段階", "対象者要件", "割合", "基準所得金額（円）",
+                   "画面の現在値", "標準13段階の割合", "備考"])
+for _no, _yoken, _jor, _kin in STAGE16:
+    _std = GAMEN13_JOR[_no - 1] if _no <= 13 else None
+    _bik = []
+    if _no <= 3:
+        _bik.append("公費軽減の対象（割合は軽減前）")
+    if _std is None:
+        _bik.append("多段階化した分。標準13段階にない")
+    elif abs(_std - _jor) > 1e-9:
+        _bik.append("標準と違う")
+    if _kin is None:
+        _bik.append("基準所得金額の欄なし")
+    r = body(ws, r, [_no, _yoken, _jor,
+                     _kin if _kin else "―",
+                     "0" if _kin else "―",
+                     _std if _std is not None else "―",
+                     "／".join(_bik) or ""],
+             fills={3: IN_Y, 4: (IN_Y if _kin else GRAY)},
+             fmt={4: "#,##0", 3: "0.000", 6: "0.0000"},
+             align=_ALS, height=30)
+r = note(ws, r,
+         "注1）**割合は公費軽減前の値です。**"
+         "第1段階から第3段階は公費軽減の対象ですが、"
+         "補正後被保険者数はこの割合で算定します。"
+         "見える化システムが「①標準段階区分・割合」の画面に表示する"
+         "0.4550・0.6850・0.6900…も公費軽減前の値であり、基準がそろっています。"
+         "公費軽減後の値（第1段階0.285など）は入れません。\n"
+         "注2）**基準所得金額は第7段階から第16段階の10件です。**"
+         "第1段階から第6段階は本人の合計所得金額の下限による区分ではないため"
+         "（生活保護受給・世帯の課税状況・合計所得金額＋課税年金収入額による）"
+         "画面も当該欄を受け付けません。"
+         "第7段階から第13段階の額は画面が標準として表示している額と一致し、"
+         "第14段階から第16段階が多段階化した分です。\n"
+         "注3）**割合は9つの段階で標準13段階と違い、"
+         "第14段階から第16段階は標準にありません。**"
+         "これが弾力化を要する理由です。\n"
+         "注4）第10期の段階数・割合・基準所得金額は政令改正により"
+         "変わり得ます（確認事項No.33）。"
+         "令和8年3月の全国課長会議資料は、保険料段階の基準額を"
+         "80.9万円から82.65万円に改める政令改正が済んでおり、"
+         "**条例改正の手続を要する**としています。"
+         "本表は第9期の条例による暫定の値です。",
+         span=7, height=140)
+
+r += 1
+r = lead(ws, r, "2　画面に入力済みの第1号被保険者数と当方の値の対照（人）",
+         span=7)
+r = header(ws, r, ["", "年度", "画面の計", "当方の計（案C）", "差", "段階別",
+                   "備考"])
+for _i, _y in enumerate(GD.YEARS, start=1):
+    _to = _DAN_TO[_DAN_YM[_y]]
+    _sa = GD.KEI[_y] - sum(_to)
+    _ng = [j + 1 for j in range(GD.NDAN) if GD.HIHO[_y][j] != _to[j]]
+    r = body(ws, r, [_i, GD.YEARSL[_i - 1], GD.KEI[_y], sum(_to), _sa,
+                     "一致" if not _ng else "違い 第%s段階"
+                     % "・".join(str(x) for x in _ng),
+                     "画面の計＝段階別の和" if sum(GD.HIHO[_y]) == GD.KEI[_y]
+                     else "画面の計と段階別の和が合わない"],
+             fills={6: (OK_G if not _ng else NG_O)},
+             fmt={3: "#,##0", 4: "#,##0", 5: "+#,##0;-#,##0;0"},
+             align={3: "right", 4: "right", 5: "right", 6: "center"},
+             height=20)
+r = note(ws, r,
+         "注1）画面に入っている16段階の人数は、"
+         "当方が人口の設定（案C）からお示しした値と全年度・全段階で"
+         "一致しています。"
+         "**人数の入れ直しは要りません。**"
+         "第10期と令和12年度以降が同じ人口の系列でそろっており、"
+         "01シートに掲げた「第10期と令和12年度以降で別の人口による」"
+         "（加入割合の合計が1.0を超える）は、この画面では解消しています。\n"
+         "注2）**画面の上部に表示されている保険料額は暫定値であり、"
+         "従前の写しから動いています**"
+         "（第10期 %s円から%s円、令和12年度以降 %s円から%s円）。"
+         "地域支援事業費が0のままであることなど、"
+         "01シートの修正が済むまでは当方の算定と突き合わせられません。\n"
+         "注3）第17段階から第30段階は空欄のままとします"
+         "（当連合の所得段階は16段階です）。"
+         % ("{:,}".format(GD.HOKENRYO_ZENKAI["第10期"]),
+            "{:,}".format(GD.HOKENRYO_GAMEN["第10期"]),
+            "{:,}".format(GD.HOKENRYO_ZENKAI["令和12年度以降"]),
+            "{:,}".format(GD.HOKENRYO_GAMEN["令和12年度以降"])),
+         span=7, height=104)
+
+
+# ============================================================ 09 自己点検
+ws = sheet("09_自己点検", "自己点検",
            "本表の内的整合を機械で確かめた記録です。"
            "1件でも不適合があると出力そのものを止めます。",
            [6, 44, 34, 34, 10])
@@ -997,6 +1125,39 @@ chk(19.6, "後期高齢者の割合が画面より高くなること（案Cの�
     all(_kouki(ANC[y]) / _i1(y)
         > sum(J.kei(a, y) for a in J.AGE[2:]) / J.ichigo(y)
         for y in ("R9", "R10", "R11")))
+
+_dk_ng = [(_y, _j + 1) for _y in GD.YEARS for _j in range(GD.NDAN)
+          if GD.HIHO[_y][_j] != _DAN_TO[_DAN_YM[_y]][_j]]
+chk(19.7, "画面に入力済みの16段階の人数が当方の値と一致すること",
+    "弾力化②の画面の写し ＝ 所得段階別の将来推計（案C）",
+    "全%d年度×%d段階＝%d件／違い %s"
+    % (len(GD.YEARS), GD.NDAN, len(GD.YEARS) * GD.NDAN,
+       _dk_ng or "なし"), not _dk_ng)
+
+_kei_ng = [_y for _y in GD.YEARS if sum(GD.HIHO[_y]) != GD.KEI[_y]]
+chk(19.8, "画面の段階別の和が画面の「計」の行と一致すること",
+    "読み取りの検算（Σ第1〜16段階 ＝ 計）",
+    "全%d年度／合わない %s" % (len(GD.YEARS), _kei_ng or "なし"),
+    not _kei_ng)
+
+_ks = [x[3] for x in STAGE16]
+_ks_none = [x[0] for x in STAGE16 if x[3] is None]
+_ks_val = [x for x in _ks if x is not None]
+chk(19.9, "基準所得金額が第7段階から第16段階の10件で昇順であること",
+    "第1〜6段階は欄なし／第7段階以降は金額かつ昇順",
+    "欄なし 第%s段階／金額%d件（%s〜%s円）"
+    % ("・".join(str(x) for x in _ks_none), len(_ks_val),
+       "{:,}".format(_ks_val[0]), "{:,}".format(_ks_val[-1])),
+    _ks_none == [1, 2, 3, 4, 5, 6] and len(_ks_val) == 10
+    and all(a < b for a, b in zip(_ks_val, _ks_val[1:])))
+
+_jor_sa = [x[0] for x in STAGE16
+           if x[0] <= 13 and abs(x[2] - GAMEN13_JOR[x[0] - 1]) > 1e-9]
+chk(19.95, "条例の割合が標準13段階と違う段階を拾えていること",
+    "第1〜13段階で 条例の割合 ≠ 標準の割合 となる段階を数える",
+    "違う %d段階（第%s段階）／標準にない 第14〜16段階"
+    % (len(_jor_sa), "・".join(str(x) for x in _jor_sa)),
+    len(_jor_sa) == 9)
 
 _ast = []
 for _w in wb.worksheets:

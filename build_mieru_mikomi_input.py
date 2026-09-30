@@ -144,6 +144,33 @@ def _sueoki_kubun():
 
 SUEOKI_KUBUN = _sueoki_kubun()
 
+
+def _kijun_shotoku():
+    """所得段階別の基準所得金額（円）をソースから読む。
+
+    `build_premium_bracket_review.py` の `STAGE`（当連合の16段階の定義）を
+    `ast` で読み、対象者要件の「合計所得金額○○万円以上」から求める。
+    固定値を書き写すと、段階の定義を改めたときに本表とずれる
+    （CLAUDE.md §4）。
+    第1段階から第6段階は本人の合計所得金額の下限による区分ではないため
+    基準所得金額を持たない（画面も入力を受け付けない）。
+    """
+    import ast
+    import re
+    src = io.open(os.path.join(RP.ROOT, "build_premium_bracket_review.py"),
+                  encoding="utf-8").read()
+    m = re.search(r"^STAGE = (\[.*?\n\])\s*$", src, re.S | re.M)
+    if not m:
+        raise RuntimeError("STAGE が見つからない")
+    out = []
+    for row in ast.literal_eval(m.group(1)):
+        g = re.search(r"合計所得金額([0-9,]+)万円以上", row[1])
+        out.append(int(g.group(1).replace(",", "")) * 10000 if g else None)
+    return out
+
+
+KIJUN_SHOTOKU = _kijun_shotoku()
+
 SVC = _S["SVC"]
 DO = _S["DO"]
 MIKOMI = _S["MIKOMI"]                 # {年度: {サービス: 要介護度別 人/月}}
@@ -914,51 +941,67 @@ ws = sheet("08_所得段階別被保険者数",
            "**当連合の所得段階は16段階です**（第9期の条例。"
            "見える化システムの標準は13段階であるため"
            "所得段階の設定を「弾力化」とします）。" % KOSEI_SAIYO,
-           [4, 16, 8] + [10] * len(YALL) + [10], freeze="D5")
+           [4, 16, 8, 13] + [10] * len(YALL) + [10], freeze="E5")
 r = 4
 _AL_D = {3: "center"}
-_AL_D.update({j: "right" for j in range(4, 5 + len(YALL))})
-r = lead(ws, r, "1　所得段階別第1号被保険者数（人）", span=4 + len(YALL))
-r = header(ws, r, ["", "段階", "乗率"] + YALLL + ["R7実績"])
+_AL_D.update({j: "right" for j in range(4, 6 + len(YALL))})
+r = lead(ws, r, "1　所得段階別第1号被保険者数（人）・割合・基準所得金額",
+         span=5 + len(YALL))
+r = header(ws, r, ["", "段階", "割合", "基準所得金額（円）"]
+           + YALLL + ["R7実績"])
 _N_R7_DAN = [__import__("data_nenpo").SHOTOKU[k]["R7"]
              for k in _D["DANKAI_KEY"]]
 for _i in range(NDAN):
-    _f = {j: IN_Y for j in range(4, 4 + len(YALL))}
-    if _i < 3:
-        _f[2] = IN_Y
-    r = body(ws, r, [_i + 1, DANKAI_NAME[_i], JORITSU[_i]]
+    _f = {j: IN_Y for j in range(5, 5 + len(YALL))}
+    _f[3] = IN_Y
+    if KIJUN_SHOTOKU[_i] is not None:
+        _f[4] = IN_Y
+    r = body(ws, r, [_i + 1, DANKAI_NAME[_i], JORITSU[_i],
+                     KIJUN_SHOTOKU[_i] if KIJUN_SHOTOKU[_i] else "―"]
              + [DANKAI[y][_i] for y in YALL] + [_N_R7_DAN[_i]],
-             fills=_f, fmt={j: "#,##0" for j in range(4, 5 + len(YALL))},
+             fills=_f, fmt={j: "#,##0" for j in range(4, 6 + len(YALL))},
              align=_AL_D, height=18)
-r = body(ws, r, ["", "計", "―"] + [sum(DANKAI[y]) for y in YALL]
+r = body(ws, r, ["", "計", "―", "―"] + [sum(DANKAI[y]) for y in YALL]
          + [sum(_N_R7_DAN)],
-         fills={i: MID_B for i in range(1, 5 + len(YALL))}, bold=True,
-         fmt={j: "#,##0" for j in range(4, 5 + len(YALL))},
+         fills={i: MID_B for i in range(1, 6 + len(YALL))}, bold=True,
+         fmt={j: "#,##0" for j in range(4, 6 + len(YALL))},
          align=_AL_D, height=20)
-r = body(ws, r, ["", "補正後被保険者数", "―"]
+r = body(ws, r, ["", "補正後被保険者数", "―", "―"]
          + [round(sum(a * b for a, b in zip(DANKAI[y], JORITSU)), 1)
             for y in YALL] + ["―"],
-         fills={i: OK_G for i in range(1, 5 + len(YALL))}, bold=True,
-         fmt={j: "#,##0.0" for j in range(4, 4 + len(YALL))},
+         fills={i: OK_G for i in range(1, 6 + len(YALL))}, bold=True,
+         fmt={j: "#,##0.0" for j in range(5, 5 + len(YALL))},
          align=_AL_D, height=20)
 r = note(ws, r,
          "注1）" + ZANTEI + "\n"
-         "注2）第1段階から第3段階は公費軽減の対象です。"
-         "乗率は**公費軽減前**の値であり、補正後被保険者数はこの乗率で"
-         "算定します（公費軽減分は国・都道府県・市町村の公費で補填されます）。"
+         "注2）**割合は公費軽減前の値です。**"
+         "第1段階から第3段階は公費軽減の対象ですが、"
+         "補正後被保険者数はこの割合で算定します"
+         "（公費軽減分は国・都道府県・市町村の公費で補填されます）。"
+         "見える化システムが「①標準段階区分・割合」の画面に表示する"
+         "0.4550・0.6850・0.6900…も公費軽減前の値であり、基準がそろっています。"
          "**保険料収入と低所得者軽減公費を別々に置く様式では、"
-         "この乗率で計算した収入に軽減公費を重ねて加えないでください。**\n"
-         "注3）構成比は%sの実績で固定しています。"
+         "この割合で計算した収入に軽減公費を重ねて加えないでください。**\n"
+         "注3）**基準所得金額は第7段階から第16段階の10件です。**"
+         "第1段階から第6段階は本人の合計所得金額の下限による区分ではないため"
+         "（生活保護受給・世帯の課税状況・合計所得金額＋課税年金収入額による）"
+         "基準所得金額を持ちません。画面も当該欄は入力を受け付けません。"
+         "第7段階から第13段階の額は、画面が標準として表示している"
+         "1,200,000円から7,200,000円と一致します。\n"
+         "注4）構成比は%sの実績で固定しています。"
          "当方の保険料算定が採用している係数（%.6f）と同じであり、"
          "本表の人数からシステムが算定する補正後被保険者数は"
          "当方の値と一致します。"
          "令和7年度の構成比に改めると係数は%.6fとなり、"
          "**算定上の月額が163円下がります**。"
          "これは構成比の作り方ではなく係数の選択そのものです。\n"
-         "注4）第10期の段階数・乗率は政令改正により変わり得ます"
-         "（確認事項No.33）。本表は第9期の16段階・乗率による暫定の値です。"
+         "注5）第10期の段階数・割合・基準所得金額は政令改正により変わり得ます"
+         "（確認事項No.33）。本表は第9期の条例の16段階・割合による暫定の値です。"
+         "令和8年3月の全国課長会議資料は、保険料段階の基準額を"
+         "80.9万円から82.65万円に改める政令改正が済んでおり、"
+         "**条例改正の手続を要する**としています。"
          % (KOSEI_SAIYO, KEISU_SAIYO, KEISU_R7),
-         span=4 + len(YALL), height=104)
+         span=5 + len(YALL), height=150)
 
 # ---- 「①標準段階区分・割合」の画面にそのまま入れる場合の値
 # 画面の標準は13段階であり、当連合の第13段階の多段階化（第14〜16段階）を
@@ -992,23 +1035,23 @@ DAN13 = {y: _saidai_joyo(sum(DANKAI[y]), _KOSEI13) for y in YALL}
 r += 1
 r = lead(ws, r, "2　「①標準段階区分・割合」の画面に入れる場合（13段階へ束ねる）",
          span=4 + len(YALL))
-r = header(ws, r, ["", "段階", "画面の割合"] + YALLL + ["基準所得金額"])
+r = header(ws, r, ["", "段階", "画面の割合", "基準所得金額（円）"] + YALLL)
 for _i in range(13):
-    r = body(ws, r, [_i + 1, "第%d段階" % (_i + 1), GAMEN13_JOR[_i]]
-             + [DAN13[y][_i] for y in YALL]
-             + [GAMEN13_SHOTOKU[_i] if GAMEN13_SHOTOKU[_i] else "―"],
-             fills={j: IN_Y for j in range(4, 4 + len(YALL))},
+    r = body(ws, r, [_i + 1, "第%d段階" % (_i + 1), GAMEN13_JOR[_i],
+                     GAMEN13_SHOTOKU[_i] if GAMEN13_SHOTOKU[_i] else "―"]
+             + [DAN13[y][_i] for y in YALL],
+             fills={j: IN_Y for j in range(5, 5 + len(YALL))},
              fmt={j: "#,##0" for j in range(4, 5 + len(YALL))},
              align=_AL_D, height=18)
-r = body(ws, r, ["", "計", "―"] + [sum(DAN13[y]) for y in YALL] + ["―"],
+r = body(ws, r, ["", "計", "―", "―"] + [sum(DAN13[y]) for y in YALL],
          fills={i: MID_B for i in range(1, 5 + len(YALL))}, bold=True,
          fmt={j: "#,##0" for j in range(4, 5 + len(YALL))},
          align=_AL_D, height=20)
 _H13 = {y: sum(a * b for a, b in zip(DAN13[y], GAMEN13_JOR)) for y in YALL}
-r = body(ws, r, ["", "補正後被保険者数", "―"]
-         + [round(_H13[y], 1) for y in YALL] + ["―"],
+r = body(ws, r, ["", "補正後被保険者数", "―", "―"]
+         + [round(_H13[y], 1) for y in YALL],
          fills={i: GRAY for i in range(1, 5 + len(YALL))},
-         fmt={j: "#,##0.0" for j in range(4, 4 + len(YALL))},
+         fmt={j: "#,##0.0" for j in range(5, 5 + len(YALL))},
          align=_AL_D, height=20)
 _H16_3 = sum(sum(a * b for a, b in zip(DANKAI[y], JORITSU)) for y in Y3)
 _H13_3 = sum(_H13[y] for y in Y3)
@@ -1046,24 +1089,23 @@ r = note(ws, r,
 r += 1
 r = lead(ws, r, "3　人口の設定を改めない場合（計を画面の第1号被保険者数に合わせる）",
          span=4 + len(YALL))
-r = header(ws, r, ["", "段階", "画面の割合"] + YALLL + ["基準所得金額"])
+r = header(ws, r, ["", "段階", "画面の割合", "基準所得金額（円）"] + YALLL)
 DAN13_G = {y: _saidai_joyo(GAMEN13_HIHO[y], _KOSEI13) for y in GAMEN13_HIHO}
 for _i in range(13):
-    r = body(ws, r, [_i + 1, "第%d段階" % (_i + 1), GAMEN13_JOR[_i]]
-             + [DAN13_G[y][_i] for y in YALLL]
-             + [GAMEN13_SHOTOKU[_i] if GAMEN13_SHOTOKU[_i] else "―"],
-             fills={j: IN_Y for j in range(4, 4 + len(YALL))},
+    r = body(ws, r, [_i + 1, "第%d段階" % (_i + 1), GAMEN13_JOR[_i],
+                     GAMEN13_SHOTOKU[_i] if GAMEN13_SHOTOKU[_i] else "―"]
+             + [DAN13_G[y][_i] for y in YALLL],
+             fills={j: IN_Y for j in range(5, 5 + len(YALL))},
              fmt={j: "#,##0" for j in range(4, 5 + len(YALL))},
              align=_AL_D, height=18)
-r = body(ws, r, ["", "計", "―"] + [sum(DAN13_G[y]) for y in YALLL] + ["―"],
+r = body(ws, r, ["", "計", "―", "―"] + [sum(DAN13_G[y]) for y in YALLL],
          fills={i: MID_B for i in range(1, 5 + len(YALL))}, bold=True,
          fmt={j: "#,##0" for j in range(4, 5 + len(YALL))},
          align=_AL_D, height=20)
-r = body(ws, r, ["", "画面と案Cの差（案C−画面）", "―"]
-         + [sum(DANKAI[y]) - GAMEN13_HIHO[yl] for y, yl in zip(YALL, YALLL)]
-         + ["―"],
+r = body(ws, r, ["", "画面と案Cの差（案C−画面）", "―", "―"]
+         + [sum(DANKAI[y]) - GAMEN13_HIHO[yl] for y, yl in zip(YALL, YALLL)],
          fills={i: GRAY for i in range(1, 5 + len(YALL))},
-         fmt={j: "+#,##0;-#,##0;0" for j in range(4, 4 + len(YALL))},
+         fmt={j: "+#,##0;-#,##0;0" for j in range(5, 5 + len(YALL))},
          align=_AL_D, height=20)
 r = note(ws, r,
          "注1）" + ZANTEI + "\n"
@@ -1373,7 +1415,31 @@ chk(20, "画面の写しの年度が算定の年度と過不足なく一致す�
      "画面の写し%d年度／算定%d年度"
      % (len(GAMEN13_HIHO), len(YALLL)), _g13_y)
 
-NG_WORDS = ["に由来する", "と整合する", "1件も", "有意差がないため関係がない",
+# 基準所得金額（第7段階から第16段階の10件。第1段階から第6段階は持たない）
+_ks_none = [i + 1 for i in range(NDAN) if KIJUN_SHOTOKU[i] is None]
+_ks_val = [KIJUN_SHOTOKU[i] for i in range(NDAN)
+           if KIJUN_SHOTOKU[i] is not None]
+_ks_ok = (_ks_none == [1, 2, 3, 4, 5, 6]
+          and len(_ks_val) == NDAN - 6
+          and all(a < b for a, b in zip(_ks_val, _ks_val[1:])))
+chk(21, "基準所得金額が第7段階から第16段階の10件で昇順であること",
+     "第1〜6段階は None（画面も入力欄なし）／第7段階以降は金額かつ昇順",
+     "欄なし 第%s段階／金額%d件（%s〜%s円）"
+     % ("・".join(str(x) for x in _ks_none), len(_ks_val),
+        "{:,}".format(_ks_val[0]) if _ks_val else "―",
+        "{:,}".format(_ks_val[-1]) if _ks_val else "―"), _ks_ok)
+
+_ks13 = [KIJUN_SHOTOKU[i] for i in range(6, 13)]
+_ks13_ok = _ks13 == GAMEN13_SHOTOKU[6:13]
+chk(22, "第7段階から第13段階の基準所得金額が画面の標準の額と一致すること",
+     "STAGE から求めた額 ＝ 「①標準段階区分・割合」の画面が表示する額",
+     "%s／画面 %s"
+     % ("・".join("{:,}".format(x) for x in _ks13),
+        "一致" if _ks13_ok else "・".join("{:,}".format(x)
+                                         for x in GAMEN13_SHOTOKU[6:13])),
+     _ks13_ok)
+
+NG_WORDS =["に由来する", "と整合する", "1件も", "有意差がないため関係がない",
             "全国トップ級"]
 
 r = header(ws, 4, ["No.", "点検した内容", "式・条件", "結果", "判定"])
