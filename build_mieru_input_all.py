@@ -32,7 +32,8 @@
       （４）居宅介護支援の3つ。**施策反映は利用率によって行う。**
       利用率の分母は認定者数−施設・居住系サービス利用者数であり、
       要介護度別の列の前に「全体」の列がある。
-      利用回（日）数は別の欄で、1月当たりの延べ回（日）数である。
+      利用回（日）数は別画面で、入れるのは**1人1月あたり**の回（日）数であり、
+      1月当たりの延べ回（日）数ではない（合計の列もない）。
   手順6・7 地域支援事業　**量（人）と事業費（円）が同じ1つの表に混在する。**
       **量の欄があるのは4項目だけ**で、ほかの事業は事業費の欄しかない。
       年度は11年度。４．の計はシステムが１．から３．の和として計算する。
@@ -149,6 +150,7 @@ KAISU_MAP = _M["KAISU_MAP"]
 riyosha, riyosha_r7 = _M["riyosha"], _M["riyosha_r7"]
 to_int, to_dec1 = _M["to_int"], _M["to_dec1"]
 kaisu_do, masked = _M["kaisu_do"], _M["masked"]
+kaisu_tanka_do = _M["kaisu_tanka_do"]
 short, kubun = _M["short"], _M["kubun"]
 SOGO_RYO, KAYOI_RYO = _M["SOGO_RYO"], _M["KAYOI_RYO"]
 sg3, SG = _M["sg3"], _M["SG"]
@@ -283,10 +285,18 @@ for i, (a, b) in enumerate([
          "利用回（日）数の欄は小数第1位までです。"
          "本表はその桁に合わせて掲げています。"),
         ("画面ごとに様式が違うこと",
-         "施設・居住系・在宅・地域支援事業は入力の様式が違います。"
+         "施設・居住系・在宅・利用回（日）数・地域支援事業は"
+         "入力の様式が違います。"
          "施設・居住系は利用者数（人）、在宅は利用率（％）、"
-         "地域支援事業は量（人）と事業費（円）が同じ表に並びます。"
+         "利用回（日）数は1人1月あたりの回（日）数、"
+         "地域支援事業は量（人）と事業費（円）です。"
          "本表は画面ごとの様式に合わせて分けています。"),
+        ("同じ「回（日）数」でも画面により意味が違うこと",
+         "手順5の施策反映の画面に入れるのは**1人1月あたり**の回（日）数です"
+         "（08シート）。"
+         "手順2の令和8年度の実績見込み値の欄に入れるのは"
+         "**1月当たりの延べ**の回（日）数です（04シート）。"
+         "延べの値を施策反映の画面に入れると桁が大きく違います。"),
         ("「―」の意味",
          "制度上その要介護度の区分がないもの（画面に列がないもの）です。"
          "0とは意味が違います。0は「区分はあるが計上がない」ことを表します。"),
@@ -387,7 +397,8 @@ ICHIRAN = [
      "この画面は利用率で施策反映する。分母は認定者数−施設・居住系利用者数",
      ""),
     ("手順5", "施策反映　在宅", "利用回（日）数（令和9年度以降）",
-     "当方の算定値を入れる", "08", "小数第1位まで", ""),
+     "当方の算定値を入れる", "08",
+     "別画面。入れるのは1人1月あたり（延べではない）。小数第1位まで", ""),
     ("手順6", "地域支援事業の見込み量推計", "登録の方法",
      "「サービスごとの総数で登録する」を選ぶ", "09",
      "年齢階級別の実人数を持たないため", ""),
@@ -666,7 +677,8 @@ for _no, _ttl, _src, _unit, _dec in (
                    fmt={j: "#,##0" for j in range(4, 12)})
 
 r += 1
-r = lead(ws, r, "4　在宅サービス利用回（日）数（回・日／月）", span=11)
+r = lead(ws, r, "4　在宅サービス利用回（日）数（**1月当たりの延べ**・回・日）",
+         span=11)
 r = header(ws, r, ["", "サービス", "単位"] + DO_COLS + ["計"])
 for i, row in enumerate(_R8["KAISU"], start=1):
     _lab, _u, _vals = row[0], row[1], _R8["to_dec1"](row[2])
@@ -683,8 +695,15 @@ r = note(ws, r,
          "注5）**認知症対応型共同生活介護の要支援2（月0.42人）のように、"
          "月1人に満たない区分は整数の欄では0になります。**"
          "システムのワーニングチェックで挙がりますが、"
-         "整数の欄である以上ほかに置きようがないため、理由の記入で足ります。",
-         span=11, height=74)
+         "整数の欄である以上ほかに置きようがないため、理由の記入で足ります。\n"
+         "注6）**4の回（日）数は1月当たりの延べです。**"
+         "手順5の施策反映の画面（08シート）に入れるのは"
+         "1人1月あたりの回（日）数であり、同じ「回（日）数」でも"
+         "画面により意味が違います。"
+         "本表の値は年報の年間延べを12で除したもので、"
+         "3の利用者数で除した1人1月あたりが"
+         "総括表詳細（３）と3％以内で一致することを確かめています。",
+         span=11, height=96)
 
 # ============================================================ 05
 ws = sheet("05_認定者数",
@@ -906,47 +925,62 @@ r = note(ws, r,
 ws = sheet("08_在宅の利用回日数",
            "在宅サービスの利用回（日）数の施策反映（手順5の別画面）",
            ZANTEI + "　"
-           "在宅サービスの画面の「利用回（日）数の施策反映へ」から開く画面に"
-           "入れる値です。"
-           "**1月当たりの延べ回（日）数**であり、1人1月あたりではありません。"
-           "利用回（日）数の欄は小数第1位まで受け付けます。"
-           "1人1月あたり回（日）数を令和7年度で固定し、利用者数に乗じています。",
-           [4, 26, 7, 13, 10] + [9] * 7, freeze="E5")
+           "**画面はサービスのプルダウンで1サービスにつき1つ開きます。**"
+           "入れるのは**%s**であり、"
+           "1月当たりの延べ回（日）数ではありません。"
+           "**画面に合計の列はありません**（列は要支援1・要支援2・"
+           "要介護1〜5の7つだけです）。欄は小数第1位まで受け付けます。"
+           % YS.KAISU_SEISHITSU,
+           [4, 26, 7, 13] + [9] * 7, freeze="E5")
 r = 4
+r = note(ws, r,
+         "【画面の説明文（逐語）】\n" + YS.KAISU_SETSUMEI + "\n"
+         "プルダウンに並ぶのは回（日）数の計上がある%d区分だけです"
+         "（居宅療養管理指導・福祉用具貸与・月包括報酬によるものは並びません）。"
+         % sum(len(x[1]) for x in YS.KAISU_KUBUN),
+         span=11, height=52, fill=MID_B)
+r += 1
 N_KAISU = 0
 _i = 0
-for no, labs in _ZAI_GROUPS:
-    _ls = [l for l in labs if l in KAISU_MAP]
-    if not _ls:
-        continue
-    r = lead(ws, r, no + "　利用回（日）数（回・日／月・小数第1位）", span=12)
-    r = header(ws, r, ["", "サービス", "単位", "年度", "合計"] + DO_COLS)
-    for lab in _ls:
+for no, names in YS.KAISU_KUBUN:
+    r = lead(ws, r, no + "　【入力】1人1月あたりの利用回（日）数"
+             "（回・日／月・小数第1位）", span=11)
+    r = header(ws, r,
+               ["", "サービス（プルダウンで選ぶ）", "単位", "年度"] + DO_COLS)
+    for nm in names:
+        lab = _BY_NAME[nm]
         _i += 1
-        i = _i
         N_KAISU += 1
         u = KAISU_MAP[lab][2]
-        rows = [("令和7年度\n（実績）",
-                 to_dec1(kaisu_do(lab, masked(lab, JISSEKI[lab]))), False)]
-        for y, yl in zip(YALL, YALLL):
-            rows.append(
-                (yl, to_dec1(kaisu_do(lab, masked(lab, MIKOMI[y][lab]))),
-                 True))
-        for j, (yl, vals, is_in) in enumerate(rows):
-            r = do_row_kei(ws, r, [i if j == 0 else "",
-                                   short(lab) if j == 0 else "",
-                                   u if j == 0 else "", yl], vals,
-                           i_fill=({k: IN_Y for k in range(6, 13)}
-                                   if is_in else {4: GRAY, 5: GRAY}),
-                           fmt={k: "0.0" for k in range(5, 13)})
+        vals = [None if v is None else round(v, 1)
+                for v in kaisu_tanka_do(lab)]
+        rows = [("令和7年度\n（実績）", False)]
+        rows += [(yl, True) for yl in YALLL]
+        for j, (yl, is_in) in enumerate(rows):
+            r = body(ws, r,
+                     [_i if j == 0 else "", nm if j == 0 else "",
+                      u if j == 0 else "", yl]
+                     + ["―" if x is None else x for x in vals],
+                     fills=({k: IN_Y for k in range(5, 12)} if is_in
+                            else {4: GRAY}),
+                     align={k: "right" for k in range(5, 12)},
+                     fmt={k: "0.0" for k in range(5, 12)}, height=18)
 r = note(ws, r,
          "注1）" + ZANTEI + "\n"
-         "注2）**通所介護・地域密着型通所介護・通所リハビリテーション・"
+         "注2）**1人1月あたりを令和7年度で固定しているため、"
+         "令和9年度以降は令和7年度と同じ値になります。**"
+         "利用者数の側が動くことにより延べの回（日）数は年度ごとに変わります。\n"
+         "注3）年報（令和7年度）の要介護度別の利用回（日）数を"
+         "同じ区分の受給者数で除して求めた値です。"
+         "**画面が令和7年度に表示している値と一致します**"
+         "（14シート 点検23）。\n"
+         "注4）**通所介護・地域密着型通所介護・通所リハビリテーション・"
          "認知症対応型通所介護の単位は「回」です**（年報・総括表による）。"
          "短期入所2種別は「日」です。\n"
-         "注3）月包括報酬によるもの・支給決定によるものは"
-         "回（日）数の計上がないため掲げていません。",
-         span=12, height=52)
+         "注5）「―」は画面にその要介護度の列がないものです。"
+         "画面と同じく合計の列は置いていません"
+         "（1人1月あたりは各列の和になりません）。",
+         span=11, height=90)
 
 # ============================================================ 09
 # 地域支援事業は手順6（量）と手順7（事業費）の2つの画面に分かれ、
@@ -1247,6 +1281,23 @@ ws = sheet("12_入力後の確かめ方",
            "差が残ります。",
            [4, 34, 24, 24, 44], freeze="A5")
 r = 4
+# 利用回（日）数の延べ（令和11年度）。画面は1人1月あたりを要介護度別に
+# 入れるため、システムが求める延べは要介護度の構成の動きを取り込む。
+# 計画本文は要支援・要介護の群でまとめた1人1月あたりによっている。
+_kaisu_mikomi = _S["kaisu_mikomi"]
+_KAI_G = _KAI_D = 0.0
+_KAI_MAX, _KAI_MAXN = 0.0, "―"
+for _l in [l for l in SVC if l in KAISU_MAP]:
+    _a = _kaisu_mikomi(_l, Y3[2])
+    _td = kaisu_tanka_do(_l)
+    _b = sum((MIKOMI[Y3[2]][_l][i] or 0.0) * (_td[i] or 0.0)
+             for i in range(7))
+    _KAI_G += _a
+    _KAI_D += _b
+    if _a and abs(_b / _a - 1) > abs(_KAI_MAX):
+        _KAI_MAX, _KAI_MAXN = _b / _a - 1, short(_l)
+_KAI_MAXS = "{:+.2f}％".format(_KAI_MAX * 100)
+
 r = lead(ws, r, "1　一致するはずの値", span=5)
 r = header(ws, r, ["#", "確かめる値", "当方の算定", "どこで見るか", "備考"])
 _KAKU = [
@@ -1292,6 +1343,13 @@ _SA = [
      "上記の積み重ねと調整交付金の作り方の違いによります"),
     ("保険料基準額（月額）", "{:,}円".format(KIJUN_GAKU), "―",
      "算定上の月額を百円未満四捨五入した値です"),
+    ("利用回（日）数（延べ・令和11年度）",
+     "計画本文は{:,.1f}回・日／月".format(_KAI_G),
+     "本表の入力から {:,.1f}回・日／月".format(_KAI_D),
+     "画面は1人1月あたりを要介護度別に入れるため、"
+     "システムが求める延べは要介護度の構成の動きを取り込みます。"
+     "計画本文は要支援・要介護の群でまとめた1人1月あたりによっており、"
+     "差は最大 %s（%s）です。保険料には入りません" % (_KAI_MAXS, _KAI_MAXN)),
 ]
 for i, (a, b, c, d) in enumerate(_SA, start=1):
     r = body(ws, r, [i, a, b, c, d], fills={3: MID_B},
@@ -1402,11 +1460,14 @@ chk(11, "一覧の全ての行に操作が書かれていること",
     "操作の欄が空でないこと",
     "%d件中 空 %d件" % (len(ICHIRAN), len(_so_ng)), not _so_ng)
 
+# 08_在宅の利用回日数 は画面に合計の列がないため対象外
+# （1人1月あたりは各列の和にならない。07シートの利用率と同じ）。
+_KEI_SHEETS = ("04_令和8年度の実績見込み値", "05_認定者数",
+               "06_施設居住系の利用者数", "07_在宅の利用率と利用者数")
 _kei_ng, _kei_n = [], 0
+_kei_by = {s: 0 for s in _KEI_SHEETS}
 for _w in wb.worksheets:
-    if _w.title not in ("05_認定者数", "06_施設居住系の利用者数",
-                        "07_在宅の利用率と利用者数", "08_在宅の利用回日数",
-                        "04_令和8年度の実績見込み値"):
+    if _w.title not in _KEI_SHEETS:
         continue
     _hd = _kei = None
     for _row in _w.iter_rows():
@@ -1425,13 +1486,18 @@ for _w in wb.worksheets:
         if not _num or not isinstance(_tot, (int, float)):
             continue
         _kei_n += 1
+        _kei_by[_w.title] += 1
         if abs(sum(_num) - _tot) > 0.051:
             _kei_ng.append("%s!%d" % (_w.title, _row[0].row))
+# 件数が0のときは、数えられているかを先に疑う（CLAUDE.md §4）。
+_kei_zero = [s for s, n in _kei_by.items() if n == 0]
 chk(12, "書き出した表の内訳の和と「合計」の欄が一致すること",
-    "04・05・06・07・08シートの全行を読み直して検算"
+    "04・05・06・07シートの全行を読み直して検算"
     "（合計の欄は画面と同じく左端。従前の右端の「計」も拾う）",
-    "%d行を検算／合わない %s" % (_kei_n, _kei_ng or "なし"),
-    not _kei_ng and _kei_n > 300)
+    "%d行を検算（%s）／合わない %s／数えられていないシート %s"
+    % (_kei_n, "・".join("%s %d" % (s[:2], _kei_by[s]) for s in _KEI_SHEETS),
+       _kei_ng or "なし", _kei_zero or "なし"),
+    not _kei_ng and not _kei_zero)
 
 chk(12.5, "地域支援事業の量の件数が0でないこと",
     "画面に欄がある量・欄がない量の行数",
@@ -1540,6 +1606,58 @@ chk(21, "地域支援事業の画面の年度が令和6年度から令和11年�
 chk(22, "施設・居住系と在宅の画面が11年度を1つの表に並べること",
     "実績3年度＋第10期3年度＋中長期5年次",
     "%d年度" % len(YS.NENDO_SHISAKU), len(YS.NENDO_SHISAKU) == 11)
+
+# 利用回（日）数の画面（手順5の別画面。令和8年9月30日受領の写しによる）
+_kk = [n for _, ns in YS.KAISU_KUBUN for n in ns]
+_km = [short(l) for l in SVC if l in KAISU_MAP]
+_kk_ng = sorted(set(_kk) ^ set(_km))
+chk(22.5, "利用回（日）数の画面の区分が当方の回（日）数の区分と一致すること",
+    "画面のプルダウン ＝ 回（日）数の計上がある区分",
+    "画面%d区分・当方%d区分／差 %s"
+    % (len(_kk), len(_km), _kk_ng or "なし"), not _kk_ng and len(_kk) == 12)
+
+# 見出し行は「要支援1」を含む行として探す（行番号を書かない）。
+# 見出しだけを見ると、行を書く側が計を足していても気づかないため、
+# 値の入っている行が見出しより右に及んでいないことも見る。
+_w08 = wb["08_在宅の利用回日数"]
+_h08 = [[c.value for c in _row] for _row in _w08.iter_rows()
+        if "要支援1" in [c.value for c in _row]]
+# iter_rows は max_column まで空セルを付けて返すため、
+# 見出しの列数は「中身のある最も右の列」で数える
+# （len() で数えると、右に値を足した行があっても見出しも同じ長さになり気づけない）。
+_n08 = (1 + max(k for k, x in enumerate(_h08[0]) if x not in (None, ""))
+        if _h08 else 0)
+_x08 = []
+for _row in _w08.iter_rows():
+    _v = [c.value for c in _row]
+    if len(_v) < 4 or not str(_v[3] or "").startswith("令和"):
+        continue
+    _last = max((k for k, x in enumerate(_v) if x not in (None, "")),
+                default=-1)
+    if _last + 1 > _n08:
+        _x08.append("%d行目" % _row[0].row)
+chk(22.7, "利用回（日）数の表に合計の列を置いていないこと",
+    "画面に合計の列がない（見出しと値の行の両方を見る）",
+    "見出し%d列（%s）／見出しより右に値のある行 %s"
+    % (_n08, "・".join(str(x) for x in (_h08[0] if _h08 else []) if x),
+       _x08[:3] or "なし"),
+    bool(_h08) and not _x08
+    and all("合計" not in h and "計" not in h for h in _h08))
+
+_kg, _kgn = [], 0
+for _nm, _v in YS.KAISU_GAMEN_R7.items():
+    _t = kaisu_tanka_do(_BY_NAME[_nm])
+    for _i, _d in enumerate(DO_COLS):
+        if _d not in _v:                # 画面の写しで読み取れていない欄
+            continue
+        _kgn += 1
+        _a = None if _t[_i] is None else round(_t[_i], 1)
+        if _a != _v[_d]:
+            _kg.append("%s %s（当方%s／画面%s）" % (_nm, _d, _a, _v[_d]))
+chk(23, "令和7年度の1人1月あたりが画面の表示値と一致すること",
+    "画面の写し（訪問介護・訪問看護）と当方の年報の要介護度別明細による算定",
+    "%d区分・%d欄／合わない %s"
+    % (len(YS.KAISU_GAMEN_R7), _kgn, _kg or "なし"), not _kg and _kgn >= 10)
 
 r = header(ws, 4, ["No.", "点検した内容", "式・条件", "結果", "判定"])
 for c in CHECKS:
