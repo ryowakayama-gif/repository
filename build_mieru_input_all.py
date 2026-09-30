@@ -949,8 +949,10 @@ ws = sheet("09_地域支援事業の量と事業費",
            "**この画面は量（利用者数）と事業費（円）が同じ表に並ぶ様式です。**"
            "事業費は年間累計の円、利用者数は1月当たりの人数です。"
            "**量の欄があるのは4項目だけ**で、ほかの事業は事業費の欄しか"
-           "ありません。行の並びは国の様式（ワークシート）によります。",
-           [4, 46, 14] + [13] * len(_CY), freeze="D5")
+           "ありません。行の並びは国の様式（ワークシート）によります。"
+           "**量（手順6）と事業費（手順7）が別の画面になっている場合は、"
+           "「手順」の欄で行を絞ってお使いください。**",
+           [4, 46, 8, 14] + [13] * len(_CY), freeze="E5")
 r = 4
 r = note(ws, r,
          "【この画面の値は特に暫定の度合いが高いものです】\n"
@@ -959,40 +961,46 @@ r = note(ws, r,
          "入れられるのは総合事業費の計と包括的支援事業・任意事業費の計、"
          "及び量3項目です。"
          "**未受領の欄は空欄のままとし、0を入れません**"
-         "（0を入れると「計上がない」ことを表してしまいます）。",
-         span=3 + len(_CY), height=56, fill=NG_O)
+         "（0を入れると「計上がない」ことを表してしまいます）。\n"
+         "**量（手順6）と事業費（手順7）は、システムでは別の画面に"
+         "分かれていることがあります。**"
+         "その場合は「手順」の欄で行を絞り、"
+         "手順6には量（人／月）の行、手順7には事業費（円）の行を"
+         "お入れください。行の並びと項目名はどちらの画面でも同じです。",
+         span=4 + len(_CY), height=72, fill=NG_O)
 r += 1
 N_SOGO = N_KAYOI = 0
 _CHI_ROWS = 0
 _RYO_ROWS = 0
 for _gno, (_gname, _items) in enumerate(YS.CHIIKI_KUBUN, start=1):
-    r = lead(ws, r, _gname, span=3 + len(_CY))
-    r = header(ws, r, ["", "サービス種別・項目", "区分"] + _CY)
+    r = lead(ws, r, _gname, span=4 + len(_CY))
+    r = header(ws, r, ["", "サービス種別・項目", "手順", "区分"] + _CY)
     for _nm, _has_ryo in _items:
         _CHI_ROWS += 1
         # 事業費の行
         if _gno == 4:
             _bk = "システムが計算します"
             _vals = ["" for _ in _CY]
-            _fl = {j: GRAY for j in range(1, 4 + len(_CY))}
+            _fl = {j: GRAY for j in range(1, 5 + len(_CY))}
         elif _nm == "包括的支援事業(地域包括支援センターの運営)":
             _bk = "事業費（円）"
             _vals = ["" for _ in _CY]
-            _fl = {j: NG_O for j, y in enumerate(_CY, start=4)
+            _fl = {j: NG_O for j, y in enumerate(_CY, start=5)
                    if y in _CY_IN}
         elif _gno == 2 or _gno == 3:
             _bk = "事業費（円）"
             _vals = ["" for _ in _CY]
-            _fl = {j: NG_O for j, y in enumerate(_CY, start=4)
+            _fl = {j: NG_O for j, y in enumerate(_CY, start=5)
                    if y in _CY_IN}
         else:
             _bk = "事業費（円）"
             _vals = ["" for _ in _CY]
-            _fl = {j: NG_O for j, y in enumerate(_CY, start=4)
+            _fl = {j: NG_O for j, y in enumerate(_CY, start=5)
                    if y in _CY_IN}
-        r = body(ws, r, ["", _nm, _bk] + _vals, fills=_fl,
-                 align={j: "right" for j in range(4, 4 + len(_CY))},
-                 fmt={j: "#,##0" for j in range(4, 4 + len(_CY))},
+        r = body(ws, r, ["", _nm, "―" if _gno == 4 else "手順7", _bk]
+                 + _vals, fills=_fl,
+                 align={j: "right" for j in range(5, 5 + len(_CY))},
+                 fmt={j: "#,##0" for j in range(5, 5 + len(_CY))},
                  height=18, bold=(_gno == 4))
         if not _has_ryo:
             continue
@@ -1000,7 +1008,7 @@ for _gno, (_gname, _items) in enumerate(YS.CHIIKI_KUBUN, start=1):
         _in = _RYO_IN.get(_nm)
         if _in is None:
             _vals = ["" for _ in _CY]
-            _fl = {j: NG_O for j, y in enumerate(_CY, start=4)
+            _fl = {j: NG_O for j, y in enumerate(_CY, start=5)
                    if y in _CY_IN}
         else:
             _b, _fy, _nb = _in
@@ -1009,11 +1017,11 @@ for _gno, (_gname, _items) in enumerate(YS.CHIIKI_KUBUN, start=1):
                      (round(_fy[y], 1) if y in _CY_IN else "")
                      for y in _CY]
             _fl = {j: (IN_Y if y in _CY_IN else GRAY)
-                   for j, y in enumerate(_CY, start=4)}
-        r = body(ws, r, ["", "　(利用者数：人)", "量（人／月）"] + _vals,
-                 fills=_fl,
-                 align={j: "right" for j in range(4, 4 + len(_CY))},
-                 fmt={j: "0.0" for j in range(4, 4 + len(_CY))},
+                   for j, y in enumerate(_CY, start=5)}
+        r = body(ws, r, ["", "　(利用者数：人)", "手順6", "量（人／月）"]
+                 + _vals, fills=_fl,
+                 align={j: "right" for j in range(5, 5 + len(_CY))},
+                 fmt={j: "0.0" for j in range(5, 5 + len(_CY))},
                  height=18)
 
 r = note(ws, r,
@@ -1039,25 +1047,25 @@ r = note(ws, r,
 
 r += 1
 r = lead(ws, r, "参考　当方が用意できる計（手順8の地域支援事業費の欄に入れる額）",
-         span=3 + len(_CY))
-r = header(ws, r, ["", "事業区分", "区分", "令和9年度", "令和10年度",
+         span=4 + len(_CY))
+r = header(ws, r, ["", "事業区分", "手順", "区分", "令和9年度", "令和10年度",
                    "令和11年度"] + [""] * (len(_CY) - 3))
 for _i2, (_nm2, _v2) in enumerate(
         [("介護予防・日常生活支援総合事業費", SOGO_R6),
          ("包括的支援事業（センター運営）及び任意事業費"
           "／包括的支援事業（社会保障充実分）", HOKATSU_R6),
          ("地域支援事業費（計。保険料算定上のB）", CHIIKI_R6)], start=1):
-    r = body(ws, r, [_i2, _nm2, "事業費（円）", _v2, _v2, _v2]
+    r = body(ws, r, [_i2, _nm2, "手順8", "事業費（円）", _v2, _v2, _v2]
              + [""] * (len(_CY) - 3),
-             fills={4: IN_Y, 5: IN_Y, 6: IN_Y},
-             fmt={j: "#,##0" for j in range(4, 7)},
-             align={j: "right" for j in range(4, 7)},
+             fills={5: IN_Y, 6: IN_Y, 7: IN_Y},
+             fmt={j: "#,##0" for j in range(5, 8)},
+             align={j: "right" for j in range(5, 8)},
              height=26, bold=(_i2 == 3))
 r = note(ws, r,
          "注）令和6年度決算の水準を3年据え置いたものです。"
          "内訳が未受領のため2区分までしか分けられません（確認事項No.5）。"
          "この額を入れると算定上の月額が約＋332円上がります。",
-         span=3 + len(_CY), height=32)
+         span=4 + len(_CY), height=32)
 
 # ============================================================ 10
 ws = sheet("10_地域支援事業費の計と入力欄のない量",
