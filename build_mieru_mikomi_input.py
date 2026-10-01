@@ -349,15 +349,11 @@ def kaisu_do(lab, vals):
     列はあるが令和7年度の実績がなく1人1月あたりを出せない欄は0とする
     （利用者数も0であるため回数も0になる）。
     """
-    t = kaisu_tanka(lab)
+    t = _S["kaisu_tanka_do"](lab)
     if t is None:
         return None
-    out = []
-    for i in range(7):
-        v = vals[i]
-        u = t[0] if i < 2 else t[1]
-        out.append(None if v is None else (0.0 if u is None else v * u))
-    return out
+    return [None if vals[i] is None else (vals[i] * (t[i] or 0.0))
+            for i in range(7)]
 
 
 def kaisu_tanka_do(lab):
@@ -365,17 +361,14 @@ def kaisu_tanka_do(lab):
 
     利用回（日）数の入力画面に入れるのはこの値であり、
     1月当たりの延べ回（日）数ではない（令和8年9月30日 画面の写しによる）。
-    年報（令和7年度）の要介護度別の利用回（日）数を
-    同じ区分の受給者数で除して求める。
-    画面にその要介護度の列がない欄と、受給者がいない欄は None を返す。
+    **値そのものは算定（`build_mikomiryo_santei.py`）から読む。**
+    ここでは画面に列のない欄を None にするだけである。
     """
-    c = nenpo_kaisu_do(lab)
-    if c is None:
+    t = _S["kaisu_tanka_do"](lab)
+    if t is None:
         return None
-    n = nenpo_do(lab)
     m = masked(lab, [1] * 7)          # 画面に列のない欄は None
-    return [None if (m[i] is None or not n[i]) else c[i] / n[i]
-            for i in range(7)]
+    return [None if m[i] is None else t[i] for i in range(7)]
 
 
 # ==================================================== 体裁
@@ -1223,12 +1216,17 @@ r = header(ws, r, ["", "事項", "区分", "当方の置き方", "月額への�
 _N_A = sum(1 for v in SUEOKI_KUBUN.values() if v == "A")
 _N_B = sum(1 for v in SUEOKI_KUBUN.values() if v == "B")
 _N_C = sum(1 for v in SUEOKI_KUBUN.values() if v == "C")
+# Z＝受託者の側で確定し、据え置きを解消したもの（令和8年10月1日）
+_N_Z = sum(1 for v in SUEOKI_KUBUN.values() if v == "Z")
 for no, s in enumerate(SUEOKI, start=1):
     k = SUEOKI_KUBUN.get(no, "―")
     r = body(ws, r, [no, "%s　%s" % (s[0], s[1]), k, s[3], s[5], s[4]],
-             fills={3: (OK_G if k == "A" else NG_O if k == "C" else IN_Y)},
+             fills={3: (OK_G if k in ("A", "Z") else
+                        NG_O if k == "C" else IN_Y)},
              height=40)
 r = note(ws, r,
+         "注0）解消済み（%d件）は令和8年10月1日に当方で確定したものです"
+         "（要介護度別の単価・要介護度別の1人1月あたり利用回（日）数）。\n"
          "注1）区分A（%d件）は受託者の側で確定できるもので、資料を要しません。\n"
          "注2）区分B（%d件）は発注者・3町の資料待ちですが、"
          "届かなければ据え置きのまま確定します。算定は止まりません。\n"
@@ -1238,8 +1236,8 @@ r = note(ws, r,
          "令和9年4月新設の3区分です。\n"
          "注4）**発注者・3町から追加の資料がまったく届かなくても、"
          "国の告示さえ出れば計画は確定します。**"
-         % (_N_A, _N_B, _N_C),
-         span=6, height=76)
+         % (_N_Z, _N_A, _N_B, _N_C),
+         span=6, height=86)
 
 r += 1
 r = lead(ws, r, "2　この入力値を動かす未受領資料")
@@ -1363,9 +1361,10 @@ _svc_ok = (len(_SHISETSU) + len(_ZAITAKU) == len(SVC))
 chk(10, "施設・居住系と在宅の区分の数の和が総括表の区分の数と一致すること",
      "%d＋%d" % (len(_SHISETSU), len(_ZAITAKU)), "%d区分" % len(SVC), _svc_ok)
 
-chk(11, "据え置きの区分がA・B・Cに漏れなく分かれていること",
-     "A%d＋B%d＋C%d" % (_N_A, _N_B, _N_C), "%d件" % len(SUEOKI),
-     _N_A + _N_B + _N_C == len(SUEOKI))
+chk(11, "据え置きの区分が解消済み・A・B・Cに漏れなく分かれていること",
+     "Z%d＋A%d＋B%d＋C%d" % (_N_Z, _N_A, _N_B, _N_C),
+     "%d件" % len(SUEOKI),
+     _N_Z + _N_A + _N_B + _N_C == len(SUEOKI))
 
 chk(12, "保険料基準額が算定上の月額の百円未満四捨五入であること",
      "round(%d/100)*100" % GETSU, "{:,}円".format(KIJUN_GAKU),
@@ -1569,13 +1568,17 @@ FUHEN = [
     ("在宅サービス利用者数（21区分）", "同上", "同じ", "変わらない"),
     ("在宅サービス利用回（日）数（12区分）",
      "1月当たりの延べ回（日）数として掲げていた",
-     "**1人1月あたりに改めた**（画面の写しによる。値の性質が変わったもので、"
-     "延べに戻せば9月18日版と同じ）", "掲げ方を改めた"),
+     "**1人1月あたりに改めた**（画面の写しによる）。"
+     "令和8年10月1日に要介護度別の1人1月あたりに改めたため、"
+     "延べに戻しても9月18日版と完全には一致しない（最大＋0.09％）",
+     "掲げ方と置き方を改めた"),
     ("地域支援事業の見込み量", "令和6年度の利用者実人数を据え置き",
      "同じ（据え置きのまま）", "変わらない"),
-    ("総給付費（第10期3か年計）", "9,031,900,444円", "9,031,900,444円",
-     "変わらない"),
-    ("算定上の月額基準額", "6,436円", "6,436円", "変わらない"),
+    ("総給付費（第10期3か年計）", "9,031,900,444円", "**9,035,114,142円**"
+     "（令和8年10月1日に要介護度別の単価を採用したことによる。＋0.036％）",
+     "動いた"),
+    ("算定上の月額基準額", "6,436円", "**6,438円**（同上。＋2.17円）",
+     "動いた"),
     ("保険料基準額（百円未満四捨五入）", "6,400円", "6,400円", "変わらない"),
 ]
 for i, (a, b, c, d) in enumerate(FUHEN, start=1):
@@ -1692,8 +1695,8 @@ print("施設・居住系 令和11年度 %.1f人／月・在宅 %.1f人／月"
          sum(sogaku(l, Y3[2]) for l in _ZAITAKU)))
 print("総給付費（3か年計）%s円／算定上の月額 %s円（保険料基準額 %s円）"
       % (yen(SOU3), "{:,}".format(GETSU), "{:,}".format(KIJUN_GAKU)))
-print("据え置き %d件＝A%d（受託者）＋B%d（発注者・3町）＋C%d（国）"
-      % (len(SUEOKI), _N_A, _N_B, _N_C))
+print("据え置き %d件＝解消済み%d＋A%d（受託者）＋B%d（発注者・3町）＋C%d（国）"
+      % (len(SUEOKI), _N_Z, _N_A, _N_B, _N_C))
 print("**本表の値は必要資料が未受領であることによる暫定値です。**")
 print("自己点検 %d件：適合%d件・不適合%d件"
       % (len(CHECKS), len(CHECKS) - len(_ng), len(_ng)))

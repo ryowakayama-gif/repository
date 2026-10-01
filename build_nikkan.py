@@ -59,6 +59,7 @@ import repo_paths as RP
 
 sys.path.insert(0, RP.ROOT)
 import data_progress as DP                                    # noqa: E402
+import data_kitei as DK                                      # noqa: E402
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
@@ -202,9 +203,8 @@ CHECK = _literal("build_process_control.py", "CHECK")
 # 資料提供依頼。(0)No (1)領域 (2)資料 (3)内容 (4)確定する主張 (5)入手先
 #               (6)希望時期 (7)優先度 (8)状態 (9)備考
 LACK = _literal("build_process_control.py", "LACK")
-# 決着しない場合の当方の扱い（既定値）
-KITEI = dict(_literal("build_soan_kadai.py", "KITEI"))
-KITEI.update(_literal("build_chiiki_kadai_10.py", "KITEI_ADD"))
+# 決着しない場合の当方の扱い（既定値）。1か所から引く。
+KITEI = DK.all_kitei()
 # 据え置きの出どころ（A＝受託者で確定できる／B＝発注者・3町／C＝国）
 KUBUN = _literal("build_mikomi_juryo_nashi.py", "KUBUN")
 
@@ -227,13 +227,22 @@ def _kigen_m(s):
 # ============================================================ 月額への効き
 # 据え置きの「効き」の欄から、月額を何円動かし得るかを読む。
 # 確認事項No. は据え置きの「関係する確認事項」の欄から拾う。
-_YEN = re.compile(r"([＋+▲−-]?)\s*([0-9,]+)\s*円")
+_YEN = re.compile(r"([0-9,]+)\s*円")
 _NO = re.compile(r"No\.\s*([0-9]+)")
+# 「月額」に続く範囲だけを月額とみる。
+# 効きの欄には月額でない額も現れる（「差5,854,697円で月額約▲7円」のように、
+# 同じ文に総額と月額が並ぶ）。文中の円を無差別に拾うと総額を月額と読む。
+_TSUKI_WIN = 24          # 「月額」の後ろ何文字までを月額の記載とみるか
+GETSU_MAX = 2000         # 1件の月額の効きとしてあり得る上限（点検に用いる）
 
 
 def _max_yen(text):
-    """文中に現れる月額の円のうち最大のものを返す。無ければ None。"""
-    v = [int(m.group(2).replace(",", "")) for m in _YEN.finditer(text or "")]
+    """「月額」に続いて現れる円のうち最大のものを返す。無ければ None。"""
+    t = text or ""
+    v = []
+    for m in re.finditer("月額", t):
+        seg = t[m.end():m.end() + _TSUKI_WIN]
+        v += [int(x.replace(",", "")) for x in _YEN.findall(seg)]
     return max(v) if v else None
 
 
@@ -475,7 +484,7 @@ r = note(ws, r,
          "注2）「決着しない場合の当方の扱い」が空のものは、"
          % (BAND[0][1], BAND[1][1], BAND[1][2], BAND[2][2]) +
          "**決まらないと当方の作業が止まります。** 先に扱いを決めます。\n"
-         "注3）国の告示・公布を待つものは催促できないため点を1下げています。"
+         "注3）国の告示・公布を待つものは催促できないため点を2下げています。"
          "待つ以外にできることがないという意味であり、重要でないという意味ではありません。",
          span=9, height=56)
 
@@ -547,6 +556,8 @@ r += 1
 r = lead(ws, r, "3　据え置きの出どころ（区分）", span=5)
 r = header(ws, r, ["", "区分", "意味", "件数", "翌日の作業になるか"])
 for i, (k, imi, naru) in enumerate([
+    ("Z", "受託者の側で確定し、据え置きを解消した",
+     "**ならない。** 終わっている"),
     ("A", "受託者の側で確定できる。資料は要らない", "**なる。** 04シートに掲げる"),
     ("B", "発注者・3町の資料待ち。届かなければ据え置きで確定する",
      "催促が作業になる。算定は止まらない"),
@@ -554,8 +565,9 @@ for i, (k, imi, naru) in enumerate([
      "**ならない。** 待つ以外にできることがない"),
 ], start=1):
     n = sum(1 for v in KUBUN.values() if v == k)
-    r = body(ws, r, [i, k, imi, "%d件" % n, naru],
-             fills={2: (OK_G if k == "A" else (IN_Y if k == "B" else GRAY))},
+    r = body(ws, r, [i, ("解消済み" if k == "Z" else k), imi, "%d件" % n, naru],
+             fills={2: (OK_G if k in ("A", "Z") else
+                        (IN_Y if k == "B" else GRAY))},
              height=30, align={1: "center", 2: "center", 4: "center"})
 
 # ============================================================ 04
@@ -621,12 +633,19 @@ r = 4
 JUNI = []
 for k, a, b, src in TSUZUKI[:8]:
     JUNI.append(("進める", a, b, src))
+# 催促・照会は優先以上の上位 N_SAISOKU 件まで。
+# 既定値を置いたことで至急が0件になることがあるが、
+# **相手のある作業は決着しない場合の扱いがあっても出す。**
+N_SAISOKU = 5
 for pt, uchi, x in SCORED:
-    if pt >= BAND[0][1]:
-        JUNI.append(("催促・照会", "%s（%s）" % (x[3], x[6]),
-                     "点%d。%s" % (pt, "／".join(
-                         "%s %s" % (u[0], u[1]) for u in uchi)),
-                     "確認事項No.%d" % x[0]))
+    if pt < BAND[1][1]:
+        break
+    if sum(1 for j in JUNI if j[0] == "催促・照会") >= N_SAISOKU:
+        break
+    JUNI.append(("催促・照会", "%s（%s）" % (x[3], x[6]),
+                 "点%d。%s" % (pt, "／".join(
+                     "%s %s" % (u[0], u[1]) for u in uchi)),
+                 "確認事項No.%d" % x[0]))
 r = header(ws, r, ["順", "種別", "作業", "なぜ翌日か", "出どころ"])
 for i, (k, a, b, src) in enumerate(JUNI, start=1):
     r = body(ws, r, [i, k, a, b, src],
@@ -636,8 +655,9 @@ r = note(ws, r,
          "注1）「進める」は決定を待たずに着手できるもの、"
          "「催促・照会」は相手のある作業です。"
          "**相手のある作業は午前のうちに出します**（返事に日数がかかるため）。\n"
-         "注2）04シートの作業継続可能なものは上位8件までを掲げています。"
-         "残りは04シートを見ます。\n"
+         "注2）04シートの作業継続可能なものは上位8件まで、"
+         "催促・照会は優先以上の上位5件までを掲げています。"
+         "残りは02・04シートを見ます。\n"
          "注3）**この並びは機械が付けたものです。** 会議の日程・相手のご都合・"
          "作業の段取りは入っていません。並べ替えたときは理由を進捗の理由に残します。",
          span=5, height=62)
@@ -675,12 +695,24 @@ chk(5, "02シートで用いた観点が03シートの規則に全て載って�
     % (len(_rule_kan), len(_rule_def), sorted(_rule_kan - _rule_def) or "なし"),
     not (_rule_kan - _rule_def))
 
-_na, _nb, _nc = (sum(1 for v in KUBUN.values() if v == k) for k in "ABC")
+# Z＝受託者の側で確定し、据え置きを解消したもの
+_na, _nb, _nc, _nz = (sum(1 for v in KUBUN.values() if v == k)
+                      for k in "ABCZ")
+_yen_ng = ["No.%d %s円（%s）" % (no, "{:,}".format(y), nm)
+           for no, (y, nm) in GETSUGAKU.items() if y > GETSU_MAX]
+chk(5.5, "月額への効きとして総額を拾っていないこと",
+    "「月額」に続く範囲だけを拾い、%s円を超えるものがないこと"
+    % "{:,}".format(GETSU_MAX),
+    "%d件を拾った（最大%s円）／上限超え %s"
+    % (len(GETSUGAKU),
+       "{:,}".format(max([v[0] for v in GETSUGAKU.values()] or [0])),
+       _yen_ng or "なし"), not _yen_ng)
+
 chk(6, "据え置きの区分の件数が据え置きの件数と合うこと",
-    "A＋B＋C ＝ 据え置き",
-    "%d＋%d＋%d＝%d／据え置き%d件" % (_na, _nb, _nc, _na + _nb + _nc,
-                                      len(SUEOKI)),
-    _na + _nb + _nc == len(SUEOKI))
+    "Z（解消済み）＋A＋B＋C ＝ 据え置き",
+    "%d＋%d＋%d＋%d＝%d／据え置き%d件"
+    % (_nz, _na, _nb, _nc, _nz + _na + _nb + _nc, len(SUEOKI)),
+    _nz + _na + _nb + _nc == len(SUEOKI))
 
 _pv = [v for _n, _nm, v, _s, _d in DP.PROGRESS if v is not None]
 chk(7, "進捗率が0から1の間にあること",
