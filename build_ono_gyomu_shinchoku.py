@@ -18,6 +18,7 @@
   17_業務進捗管理/小野町_業務進捗管理表_障がい_YYYYMMDD.xlsx
 """
 
+import datetime
 import pathlib
 import re
 from collections import Counter
@@ -33,6 +34,7 @@ ROOT = pathlib.Path(__file__).parent
 OUT = ROOT / "小野町_引継ぎ_整理済" / "17_業務進捗管理"
 ASOF = "20261001"
 ASOF_JP = "令和8年10月1日"
+ASOF_ISO = "2026-10-01"
 
 HEAD = PatternFill("solid", fgColor="1F3864")
 SUB = PatternFill("solid", fgColor="DDEBF7")
@@ -1434,7 +1436,141 @@ def sheet_phase(wb, rows, last, bottleneck):
     return ws, tot, phases
 
 
-def sheet_dash(wb, plan, tot_row, phases, headline, milestones, alerts, blocks):
+# ============================================================ 進捗の乖離
+# 「遅れているか」は、進捗率を眺めていても分からない。
+# 予定（いつ始めていつ終えるか）と基準日から「この日までに何％進んでいるはずか」を
+# 算出し、実績と引き算する。工数の重みで加重するので、
+# 製本1件の遅れと見込量推計1件の遅れが同じ重さにならない。
+
+def _ym(s):
+    """'2026-10' → (2026, 10)。"""
+    y, m = str(s).split("-")
+    return int(y), int(m)
+
+
+def _month_start(s):
+    y, m = _ym(s)
+    return datetime.date(y, m, 1)
+
+
+def _month_end(s):
+    y, m = _ym(s)
+    return datetime.date(y + (m == 12), m % 12 + 1, 1) - datetime.timedelta(days=1)
+
+
+def _months_between(a, b):
+    """a から b までの月数（a, b は 'YYYY-MM'）。"""
+    ya, ma = _ym(a)
+    yb, mb = _ym(b)
+    return (yb - ya) * 12 + (mb - ma)
+
+
+def plan_pct(start, end, asof):
+    """基準日時点で、その作業が何％進んでいるはずか。
+
+    予定開始の月初から予定完了の月末までを直線で見る。
+    予定完了の月に入っただけでは100％にしない（その月まるごと猶予がある）。
+    """
+    s, e = _month_start(start), _month_end(end)
+    if asof >= e:
+        return 100.0
+    if asof <= s:
+        return 0.0
+    return round(100.0 * (asof - s).days / (e - s).days, 1)
+
+
+# 乖離の判定。±10ポイントは、月単位の予定を日割りしたことによる誤差の幅。
+KAIRI_BAND = 10.0
+
+
+def kairi_rows(rows, asof_str):
+    asof = datetime.date.fromisoformat(asof_str)
+    asof_ym = f"{asof.year:04d}-{asof.month:02d}"
+    out = []
+    for r in rows:
+        pv = plan_pct(r[6], r[7], asof)
+        ev = float(r[9])
+        d = ev - pv
+        if pv >= 100.0 and ev < 100.0:
+            okure = _months_between(r[7], asof_ym)
+            han = f"期限超過（{okure}か月）" if okure > 0 else "今月が期限・未完了"
+        elif d < -KAIRI_BAND:
+            han = "遅れ"
+        elif d > KAIRI_BAND:
+            han = "前倒し"
+        else:
+            han = "おおむね予定どおり"
+        out.append((r[0], r[1], r[2], r[5], r[6], r[7], r[8], ev, pv,
+                    round(d, 1), r[10], han, r[12]))
+    return out
+
+
+HAN_FILL = {
+    "遅れ": PatternFill("solid", fgColor="FCE4E4"),
+    "前倒し": PatternFill("solid", fgColor="DDEBF7"),
+    "おおむね予定どおり": PatternFill("solid", fgColor="C6EFCE"),
+    "今月が期限・未完了": PatternFill("solid", fgColor="FFF2CC"),
+}
+
+
+def sheet_kairi(wb, rows, asof_str):
+    """11_進捗の乖離。予定どおりに進んでいるかを、工数の重みで加重して測る。"""
+    kr = kairi_rows(rows, asof_str)
+    ws = wb.create_sheet("11_進捗の乖離")
+    ws.append(["段階", "No", "作業", "担当", "予定開始", "予定完了", "状態",
+               "実績進捗率", "予定進捗率", "乖離", "重み", "判定",
+               "前提条件・ブロッカー"])
+    # 遅れの大きい順。同じ乖離なら重みの大きい順（工数の重いものを上に出す）。
+    for r in sorted(kr, key=lambda x: (x[9], -x[10])):
+        ws.append(list(r))
+    head_row(ws)
+    last = ws.max_row
+    for i in range(len(kr)):
+        rr = 2 + i
+        st = ws[f"G{rr}"].value
+        if st in ST_FILL:
+            ws[f"G{rr}"].fill = ST_FILL[st]
+            ws[f"G{rr}"].alignment = Alignment(horizontal="center", vertical="center")
+        han = str(ws[f"L{rr}"].value)
+        ws[f"L{rr}"].fill = HAN_FILL.get(han, PatternFill("solid", fgColor="F8CBAD"))
+        ws[f"L{rr}"].alignment = Alignment(horizontal="center", vertical="center")
+        for col in "HIJ":
+            ws[f"{col}{rr}"].number_format = '0.0"%"'
+            ws[f"{col}{rr}"].alignment = Alignment(horizontal="right")
+        ws[f"K{rr}"].alignment = Alignment(horizontal="center")
+    body_style(ws, wrap_cols=(0, 2, 12), max_row=last)
+    widths(ws, (16, 6, 36, 12, 10, 10, 11, 11, 11, 9, 6, 18, 58))
+    ws.freeze_panes = "C2"
+    ws.auto_filter.ref = f"A1:M{last}"
+
+    den = sum(r[10] for r in kr)
+    ev = sum(r[7] * r[10] for r in kr) / den
+    pv = sum(r[8] * r[10] for r in kr) / den
+    c = Counter(r[11] for r in kr)
+    ws.append([])
+    ws.append([f"加重の実績進捗率 {ev:.1f}％　対　予定進捗率 {pv:.1f}％　"
+               f"乖離 {ev - pv:+.1f}ポイント"])
+    ws.cell(ws.max_row, 1).font = Font(bold=True, size=11, color="1F3864")
+    for nm in ("期限超過", "遅れ", "おおむね予定どおり", "前倒し",
+               "今月が期限・未完了"):
+        n = sum(v for k, v in c.items() if k.startswith(nm))
+        if n:
+            ws.append([f"　{nm} {n}件"])
+            ws.cell(ws.max_row, 1).font = Font(size=9)
+    for n in ("※ 予定進捗率＝予定開始の月初から予定完了の月末までを直線で見たとき、"
+              "基準日に何％進んでいるはずかの値です。",
+              f"※ 判定は実績と予定の差が±{KAIRI_BAND:.0f}ポイント以内なら"
+              "「おおむね予定どおり」としています。月単位の予定を日割りした誤差の幅です。",
+              "※ 予定完了の月を過ぎてなお完了していないものを「期限超過」としています。",
+              "※ 加重は工数の目安（重み1〜5）です。"
+              "製本1件の遅れと見込量推計1件の遅れを同じ重さにしないためです。"):
+        ws.append([n])
+        ws.cell(ws.max_row, 1).font = Font(size=8)
+    return ws, ev, pv, c
+
+
+def sheet_dash(wb, plan, tot_row, phases, headline, milestones, alerts, blocks,
+               ev=None, pv=None, kc=None):
     ws = wb.create_sheet("00_ダッシュボード")
     wb.move_sheet(ws, -(len(wb.sheetnames) - 1))
     ws.append([f"小野町　{plan}　業務進捗管理表"])
@@ -1450,6 +1586,26 @@ def sheet_dash(wb, plan, tot_row, phases, headline, milestones, alerts, blocks):
     ws["B4"].number_format = "0.0%"
     for cell in ("A4", "D4", "G4"):
         ws[cell].font = Font(bold=True, size=10)
+    if pv is not None:
+        ws.append([])
+        ws.append(["■ 予定との乖離（11_進捗の乖離）"])
+        ws[f"A{ws.max_row}"].font = Font(bold=True, size=11)
+        ws.append(["予定進捗率", pv / 100, "実績進捗率", ev / 100,
+                   "乖離", (ev - pv) / 100])
+        kr = ws.max_row
+        for col in ("B", "D", "F"):
+            ws[f"{col}{kr}"].number_format = "0.0%"
+            ws[f"{col}{kr}"].font = Font(bold=True, size=12)
+            ws[f"{col}{kr}"].fill = CALC_FILL
+            ws[f"{col}{kr}"].alignment = Alignment(horizontal="center")
+        for col in ("A", "C", "E"):
+            ws[f"{col}{kr}"].font = Font(bold=True, size=10)
+        ws[f"F{kr}"].number_format = "+0.0%;-0.0%;0.0%"
+        naka = "／".join(f"{k} {v}件" for k, v in sorted(
+            kc.items(), key=lambda x: -x[1]))
+        ws.append([naka])
+        ws[f"A{ws.max_row}"].font = Font(size=9)
+        ws[f"A{ws.max_row}"].alignment = Alignment(wrap_text=True, vertical="top")
     ws.append([])
     ws.append(["段階", "作業数", "加重進捗率", "律速要因"])
     r0 = ws.max_row              # ヘッダ行（空行appendではmax_rowが進まないため実測する）
@@ -1755,7 +1911,9 @@ def build(plan, wbs, spec, spec_order, no_task, blocks, block_note, seikahin, ko
                         "※ 様式は 02_キックオフ・業務計画/小野町_工程変更協議資料 の第5節。"])
     sheet_spec_map(wb, spec, wbs, spec_order, no_task)
     sheet_block(wb, wbs, blocks, last, block_note)
-    sheet_dash(wb, plan, tot_row, phases, headline, milestones, alerts, blocks)
+    _, ev, pv, kc = sheet_kairi(wb, wbs, ASOF_ISO)
+    sheet_dash(wb, plan, tot_row, phases, headline, milestones, alerts, blocks,
+               ev, pv, kc)
     path = OUT / fname
     wb.save(path)
     c = Counter(r[8] for r in wbs)  # 状態（挿入前のタプル基準）
@@ -1763,6 +1921,10 @@ def build(plan, wbs, spec, spec_order, no_task, blocks, block_note, seikahin, ko
     den = sum(r[10] for r in wbs)
     print(f"出力: {path}")
     print(f"  作業 {len(wbs)}件／段階 {len(phases)}／加重進捗率 {num / den / 100:.1%}／{dict(c)}")
+    okure = sum(v for k, v in kc.items() if k.startswith("期限超過")) \
+        + kc.get("遅れ", 0)
+    print(f"  予定進捗率 {pv:.1f}％ 対 実績 {ev:.1f}％（{ev - pv:+.1f}pt）／"
+          f"遅れ {okure}件／前倒し {kc.get('前倒し', 0)}件")
     return num / den / 100
 
 
