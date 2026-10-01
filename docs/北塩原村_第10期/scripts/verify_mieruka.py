@@ -118,7 +118,10 @@ def cmp_series(no, name, got, want, tol=0.051, gp=None, wp=None):
         chk(no, name, False, "見える化の側に該当の行がない")
         return
     if gp and wp:
-        gm = {k: v for k, v in zip(gp, got) if k}
+        # **両側を正規化する。** 片側だけを寄せると、見える化と成果品が同じ
+        # 書き方をしている系列（令和2年3月末など）で1件も突き合わない。
+        # _pkey は冪等であり、すでに寄せた名を渡しても結果は変わらない。
+        gm = {_pkey(k): v for k, v in zip(gp, got) if k}
         wm = {_pkey(k): v for k, v in zip(wp, want)}
         keys = [k for k in wm if k in gm]
         if not keys:
@@ -555,6 +558,59 @@ def main():
     chk(22, "認定の状況が令和8年3月末で揃っていること", not bad22,
         "／".join(bad22[:2]) if bad22
         else f"3月末（{v3:.0f}人・{p3}%）を本文に用い、5月末（{v5:.0f}人・{p5}%）は注記のみ")
+
+    # ── 23　性・年齢調整済み認定率が見える化 B5-a・B6-a・B6-b と一致すること ──
+    #    「注目する地域のみ」と「他地域と比較」で同じ本村の値が異なるため、
+    #    どちらを用いているかを明示したうえで突き合わせる。
+    try:
+        import collections as _col23
+        BAT = os.path.join(BASE, "data", "mieruka_batch.csv")
+        d23 = _col23.defaultdict(dict)
+        with open(BAT, encoding="utf-8") as f:
+            for r in _csv.DictReader(f):
+                if r["region"] != "北塩原村" or "注目" not in r["indicator"]:
+                    continue
+                per = r["period"].replace("時点", "")
+                if r["file"].startswith("B5-a_"):
+                    d23[r["indicator"]][per] = float(r["value"])
+                elif r["file"].startswith("B6-a_"):
+                    d23["重度"][per] = float(r["value"])
+                elif r["file"].startswith("B6-b_"):
+                    d23["軽度"][per] = float(r["value"])
+        PER23 = DZ.cats("fig2-21_調整済み認定率")
+        tot = [d23["【注目する地域のみ】合計調整済み認定率"].get(p) for p in PER23]
+        ni2 = [round(sum(d23["【注目する地域のみ】調整済み認定率（要介護%d）" % g].get(p, 0)
+                         for g in (2, 3, 4, 5)), 2) for p in PER23]
+        cmp_series(23, "調整済み認定率（合計）が見える化 B5-a と一致すること",
+                   tot, DZ.vals("fig2-21_調整済み認定率", "合計"), gp=PER23, wp=PER23)
+        cmp_series(24, "調整済み認定率（軽度）が見える化 B6-b と一致すること",
+                   [d23["軽度"].get(p) for p in PER23],
+                   DZ.vals("fig2-21_調整済み認定率", "軽度（要支援1〜要介護2）"),
+                   gp=PER23, wp=PER23)
+        cmp_series(25, "調整済み認定率（重度）が見える化 B6-a と一致すること",
+                   [d23["重度"].get(p) for p in PER23],
+                   DZ.vals("fig2-21_調整済み認定率", "重度（要介護3以上）"),
+                   gp=PER23, wp=PER23)
+        cmp_series(26, "調整済み要介護2以上が B5-a の要介護2〜5の和と一致すること",
+                   ni2, DZ.vals("fig2-21_調整済み認定率", "要介護2以上"),
+                   gp=PER23, wp=PER23)
+        # 国の評価指標の8.65%（令和5年度）と、令和6年3月末の値が一致すること
+        v65 = dict(zip(PER23, DZ.vals("fig2-21_調整済み認定率", "要介護2以上")))["令和6年3月末"]
+        chk(27, "調整済み要介護2以上が国の評価指標の8.65%（令和5年度）と一致すること",
+            abs(v65 - 8.65) <= 0.051,
+            f"令和6年3月末 {v65}% と 8.65%（端数は要介護度ごとの小数第1位による）"
+            if abs(v65 - 8.65) <= 0.051 else f"令和6年3月末 {v65}% ≠ 8.65%")
+        # 軽度＋重度が合計に一致すること（区分の取り方の確かめ）
+        bad23 = []
+        for i, p in enumerate(PER23):
+            g = (d23["軽度"].get(p, 0) + d23["重度"].get(p, 0))
+            if abs(g - tot[i]) > 0.11:
+                bad23.append(f"{p} 軽度＋重度{g:.1f}≠合計{tot[i]}")
+        chk(28, "調整済み認定率の軽度＋重度が合計と一致すること", not bad23,
+            "／".join(bad23[:2]) if bad23
+            else f"{len(PER23)}点すべて一致（軽度＝要支援1〜要介護2、重度＝要介護3以上）")
+    except Exception as e:
+        chk(23, "調整済み認定率が見える化と一致すること", False, f"照合できない（{e}）")
 
     # ── 見える化に収録されていない期（突合できない値）─────────────
     UNCOV = []

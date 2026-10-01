@@ -202,6 +202,44 @@ def fig_2_5():
     ax.set_title("要支援・要介護認定率の推移（村・福島県・全国）", loc="left", pad=10)
     save(fig, "fig2-5_認定率推移.png")
 
+# ══════════ 性・年齢調整済み認定率の推移 ══════════
+def fig_2_21():
+    """全国の人口構成に合わせて年齢構成の違いを取り除いた認定率。
+
+    粗い認定率（図2-5）は高齢化が進むだけでも上がる。調整済みの認定率で
+    なお上がっているかどうかが、自立支援・重度化防止の成果を表す。
+    国の評価指標（支援Ⅰ）が求める分析にあたる。
+    """
+    lab = ["令和2年\n3月末", "令和3年\n3月末", "令和4年\n3月末", "令和5年\n3月末",
+           "令和6年\n3月末", "令和7年\n3月末", "令和8年\n3月末"]
+    x = list(range(len(lab)))
+    tot = V("fig2-21_調整済み認定率", "合計")
+    kei = V("fig2-21_調整済み認定率", "軽度（要支援1〜要介護2）")
+    ni2 = V("fig2-21_調整済み認定率", "要介護2以上")
+    juu = V("fig2-21_調整済み認定率", "重度（要介護3以上）")
+    fig, ax = plt.subplots(figsize=(7.2, 4.0))
+    ax.plot(x, tot, label="合計", **S_MURA)
+    ax.plot(x, kei, label="軽度（要支援1〜要介護2）",
+            color=K["m"], ls="--", marker="s", ms=5.5, lw=1.8, zorder=4)
+    ax.plot(x, ni2, label="要介護2以上（国の成果指標）",
+            color=K["d"], ls="-.", marker="D", ms=5, lw=1.6, zorder=3)
+    ax.plot(x, juu, label="重度（要介護3以上）", **S_ZEN)
+    label_last(ax, x, tot, f"{tot[-1]:.1f}%")
+    label_last(ax, x, kei, f"{kei[-1]:.1f}%", color=K["m"])
+    label_last(ax, x, ni2, f"{ni2[-1]:.1f}%", dy=7, color=K["d"])
+    label_last(ax, x, juu, f"{juu[-1]:.1f}%", dy=-9, color="#808080")
+    ax.set_xlim(-0.4, 6.9)
+    ax.set_ylim(4, 26)
+    ax.set_xticks(x); ax.set_xticklabels(lab, fontsize=8.5)
+    # 目盛りは5刻みに固定する。matplotlib に任せると 17.5 や 22.5 が置かれ、
+    # 整数に丸めた表示（18%・22%）が実際の目盛りと食い違う
+    ax.set_yticks([5, 10, 15, 20, 25])
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, p: f"{v:.0f}%"))
+    style_ax(ax, ylab="性・年齢調整済み認定率")
+    ax.legend(loc="upper left", fontsize=8.5, ncols=2)
+    ax.set_title("性・年齢調整済み認定率の推移（要介護度の区分別）", loc="left", pad=10)
+    save(fig, "fig2-21_調整済み認定率.png")
+
 # ══════════ 図2-6 要介護度別認定者数の推移（積上げ）══════════
 def fig_2_6():
     lab = ["令和2年\n3月末", "令和3年\n3月末", "令和4年\n3月末", "令和5年\n3月末",
@@ -803,7 +841,7 @@ def fig_hokenryo_jorei():
 
 
 if __name__ == "__main__":
-    fig_2_5(); fig_2_6(); fig_2_7(); fig_2_8()
+    fig_2_5(); fig_2_6(); fig_2_7(); fig_2_8(); fig_2_21()
     fig_2_9(); fig_2_10(); fig_2_11(); fig_2_12()
     fig_2_13(); fig_2_14(); fig_2_15(); fig_2_16()
     fig_2_17(); fig_2_18(); fig_2_19(); fig_2_20()

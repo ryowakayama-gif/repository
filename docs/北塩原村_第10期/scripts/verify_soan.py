@@ -357,7 +357,10 @@ def main():
     for sec in SC.CH[1]['sections']:
         if sec['no'] == '2-3':
             for b in sec['blocks']:
-                if b['t'] == 'table' and b['head'][0] == '時点' and '合計' in b['head']:
+                # 要介護度別の認定者数の表。2-3には「時点」で始まる表が
+                # 認定率・調整済み認定率にもあるため、要支援1の列で絞る
+                if (b['t'] == 'table' and b['head'][0] == '時点'
+                        and '合計' in b['head'] and '要支援1' in b['head']):
                     t23 = b
     bad25 = []
     if not b3 or t23 is None:
@@ -1112,7 +1115,8 @@ def main():
                 bad48.append(f"{nm48}：送りで7割を超える空白が{len(huge)}件")
         chk(48, '紙面が成り立つこと（推定。目視の代わりにはならない）', not bad48,
             '・'.join(bad48[:3]) if bad48
-            else f'図25点はいずれも1頁に収まり、上限の値は docx 側と一致')
+            else f'図{len(__import__("figures_map").FIGS)}点はいずれも1頁に収まり、'
+                 f'上限の値は docx 側と一致')
     except Exception as e:
         chk(48, '紙面が成り立つこと（推定。目視の代わりにはならない）', False,
             f'照合できない（{e}）')
