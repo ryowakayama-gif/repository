@@ -449,6 +449,76 @@ def main():
         chk(18, "交付金：見える化の令和5年度が素案の令和6年度と一致すること", False,
             "mieruka_batch.csv がない（parse_mieruka_batch.py を実行してください）")
 
+    # ── 一括受領分から加えた記載の突合 ──────────────────────────
+    if os.path.exists(BATCH):
+        BR = []
+        with io.open(BATCH, encoding="utf-8") as f:
+            BR = [r for r in _csv.DictReader(f) if "北塩原" in r["region"]]
+
+        def bval(ind, per=None, fpre=None):
+            for r in BR:
+                if r["indicator"] != ind:
+                    continue
+                if per is not None and r["period"] != per:
+                    continue
+                if fpre and not r["file"].startswith(fpre):
+                    continue
+                return float(r["value"])
+            return None
+
+        # 20 村内に所在する事業所の数（素案2-5）
+        t20 = soan_table("2-5", head0="サービス")
+        bad20, n20 = [], 0
+        if t20 is None:
+            bad20.append("2-5に村内の事業所数の表がない")
+        else:
+            YY = [h for h in t20["head"][1:]]
+            for row in t20["rows"]:
+                for i, y in enumerate(YY):
+                    g = bval("サービス提供事業所数（%s）" % row[0], y)
+                    if g is None:
+                        continue
+                    n20 += 1
+                    if not near(g, num(row[1 + i])):
+                        bad20.append("%s %s：見える化%.0f≠素案%s" % (row[0], y, g, row[1 + i]))
+        chk(20, "素案2-5の村内の事業所数が見える化と一致すること",
+            not bad20 and n20 > 0,
+            "／".join(bad20[:2]) if bad20
+            else (f"{n20}点を照合" if n20 else "突き合わせる値がない"))
+
+        # 21 指標群別の得点（素案2-8）
+        t21b = soan_table("2-8", head0="指標群")
+        bad21, n21 = [], 0
+        if t21b is None:
+            bad21.append("2-8に指標群別の表がない")
+        else:
+            MAP = {"取組・体制指標群": "取組・体制指標群合計",
+                   "活動指標群": "活動指標群合計",
+                   "成果指標群": "成果指標群合計",
+                   "計": "指標群別合計"}
+            for row in t21b["rows"]:
+                ind = MAP.get(row[0])
+                if not ind:
+                    continue
+                for i, fpre in enumerate(("W128", "W130")):
+                    g = bval(ind, fpre=fpre)
+                    if g is None:
+                        continue
+                    n21 += 1
+                    if not near(g, num(row[1 + i])):
+                        bad21.append("%s %s：見える化%.0f≠素案%s"
+                                     % (row[0], "推進" if i == 0 else "支援", g, row[1 + i]))
+                # 計の列
+                a1, a2_ = bval(ind, fpre="W128"), bval(ind, fpre="W130")
+                if a1 is not None and a2_ is not None and len(row) > 3:
+                    n21 += 1
+                    if not near(a1 + a2_, num(row[3])):
+                        bad21.append("%s 計：見える化%.0f≠素案%s" % (row[0], a1 + a2_, row[3]))
+        chk(21, "素案2-8の指標群別の得点が見える化と一致すること",
+            not bad21 and n21 > 0,
+            "／".join(bad21[:2]) if bad21
+            else (f"{n21}点を照合" if n21 else "突き合わせる値がない"))
+
     # ── 見える化に収録されていない期（突合できない値）─────────────
     UNCOV = []
     for fig, bk in [("fig2-2_高齢化率推移", "P1_"), ("fig2-3_将来推計人口", "P1_"),
