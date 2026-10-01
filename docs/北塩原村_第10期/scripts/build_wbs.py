@@ -2,6 +2,8 @@
 """第10期北塩原村高齢者福祉計画・介護保険事業計画策定業務 WBS／進捗管理表（Ver.2）
    wbs_data.W（仕様書の分解）＋ wbs_progress.P（実績反映）＋ wbs_kakunin.K（村への確認事項）から生成。
    基準日：wbs_progress.BASE_DATE"""
+import sys
+sys.dont_write_bytecode = True   # 古い .pyc で古い成果品ができるのを防ぐ
 import os, sys, datetime
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from openpyxl import Workbook

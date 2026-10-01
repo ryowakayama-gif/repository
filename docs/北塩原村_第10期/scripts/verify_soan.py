@@ -921,6 +921,68 @@ def main():
     except Exception as e:
         chk(44, '図の数値の正本が1か所であること', False, f'照合できない（{e}）')
 
+    # ── 45　2-8 の目標別の推移が算定と一致し、計が交付金別の得点と合うこと ──
+    #    目標別の得点は該当状況調査票集計表の「Ⅰ 合計」等の行による。
+    #    同じ表に明細の列もあるため、足し合わせると二重になる。
+    try:
+        import analyze_kofukin as AK45
+        out45, tot45 = AK45.mokuhyo_suii()
+        Y45 = ['令和6年度', '令和7年度', '令和8年度']
+        t45 = None
+        for c in SC.CH:
+            for sec in c['sections']:
+                if sec['no'] != '2-8':
+                    continue
+                for b in sec['blocks']:
+                    if b['t'] == 'table' and '交付金・目標（各100点）' in b['head'][0]:
+                        t45 = b
+        bad45 = []
+        if t45 is None:
+            bad45.append('2-8に目標別の推移の表がない')
+        else:
+            got = {r[0]: r[1:4] for r in t45['rows']}
+            # 各目標の値が算定と一致すること
+            for k, t, v, _h in out45:
+                key = next((x for x in got if x.startswith('%s 目標%s' % (k[:2], t))), None)
+                if key is None:
+                    bad45.append('%s目標%sの行がない' % (k[:2], t))
+                    continue
+                for i, y in enumerate(Y45):
+                    if abs(float(got[key][i]) - v[y]) > 1e-9:
+                        bad45.append('%s目標%s %s：算定%.0f≠素案%s'
+                                     % (k[:2], t, y, v[y], got[key][i]))
+            # 計が交付金別の得点の表と合うこと
+            t1 = None
+            for c in SC.CH:
+                for sec in c['sections']:
+                    if sec['no'] != '2-8':
+                        continue
+                    for b in sec['blocks']:
+                        if b['t'] == 'table' and b['head'][:2] == ['', '令和6年度']:
+                            t1 = b
+            if t1:
+                m = {r[0]: r[1:4] for r in t1['rows']}
+                for kind, lab in [('推進交付金', '保険者機能強化推進交付金（400点）'),
+                                  ('支援交付金', '介護保険保険者努力支援交付金（400点）')]:
+                    if lab not in m:
+                        continue
+                    for i, y in enumerate(Y45):
+                        if abs(tot45[(kind, y)] - float(str(m[lab][i]).replace(',', ''))) > 1e-9:
+                            bad45.append('%s %s：目標別の計%.0f≠得点の表%s'
+                                         % (kind[:2], y, tot45[(kind, y)], m[lab][i]))
+                if '合計（800点）' in m:
+                    for i, y in enumerate(Y45):
+                        g = sum(tot45[(k, y)] for k in ('推進交付金', '支援交付金'))
+                        if abs(g - float(str(m['合計（800点）'][i]).replace(',', ''))) > 1e-9:
+                            bad45.append('合計 %s：目標別の計%.0f≠得点の表%s'
+                                         % (y, g, m['合計（800点）'][i]))
+        chk(45, '2-8 の目標別の推移が算定と一致し計が得点の表と合うこと', not bad45,
+            '・'.join(bad45[:3]) if bad45
+            else '8目標×3か年と、推進・支援・合計の計が一致')
+    except Exception as e:
+        chk(45, '2-8 の目標別の推移が算定と一致し計が得点の表と合うこと', False,
+            f'照合できない（{e}）')
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')

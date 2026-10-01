@@ -7,6 +7,8 @@
 
    A4縦 11906×16838 twip／余白 上下1418・左右1134 → 本文 9638×14002 twip
 """
+import sys
+sys.dont_write_bytecode = True   # 古い .pyc で古い成果品ができるのを防ぐ
 import json, math, os, struct, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 

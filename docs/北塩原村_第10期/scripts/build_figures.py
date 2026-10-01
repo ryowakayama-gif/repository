@@ -3,6 +3,8 @@
    成果品はモノクロ印刷（仕様書）のため、色相ではなく
    明度差＋線種＋マーカー形状＋ハッチングの二重符号化で系列を識別する。
    出力: output/figures/*.png（300dpi）"""
+import sys
+sys.dont_write_bytecode = True   # 古い .pyc で古い成果品ができるのを防ぐ
 import os
 import matplotlib
 matplotlib.use("Agg")

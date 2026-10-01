@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """soan_content.py から 素案のMarkdownとdocx用JSONを生成する"""
+import sys
+sys.dont_write_bytecode = True   # 古い .pyc で古い成果品ができるのを防ぐ
 import os, sys, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import soan_content as S

@@ -127,6 +127,35 @@ def load():
     return rows, K
 
 
+def mokuhyo_suii():
+    """目標別の得点の3か年の推移を返す。
+
+    交付金評価指標_3か年.csv は明細の列と集計の列の両方を収めている。
+    **足し合わせてはならない**（明細と集計が二重になる）。
+    目標別の得点は「Ⅰ 合計」のように集計された行（配点100）による。
+
+    返すのは [(交付金, 目標, {年度: 得点}, 配点), ...] と、
+    交付金ごとの計 {(交付金, 年度): 計}。
+    """
+    rows = list(csv.DictReader(open(os.path.join(DATA, '交付金評価指標_3か年.csv'),
+                                    encoding='utf-8-sig')))
+    pat = re.compile(r'^([ⅠⅡⅢⅣ])\s*合計$')
+    got, hai = collections.defaultdict(dict), {}
+    for r in rows:
+        m = pat.match(r['指標'].strip())
+        if not m:
+            continue
+        key = (r['交付金'], m.group(1))
+        got[key][r['年度']] = float(r['北塩原村'] or 0)
+        hai[key] = float(r['配点'] or 0)
+    out = [(k[0], k[1], dict(v), hai[k]) for k, v in sorted(got.items())]
+    tot = collections.defaultdict(float)
+    for k, y, v, _h in out:
+        for yy, s2 in v.items():
+            tot[(k, yy)] += s2
+    return out, dict(tot)
+
+
 def suii(K):
     """3か年そろっている項目を、改善・悪化・3年連続0点・満点維持に分ける。"""
     up, dn, zero, man, other = [], [], [], [], []
