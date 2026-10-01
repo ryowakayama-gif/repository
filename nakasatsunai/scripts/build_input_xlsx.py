@@ -12,8 +12,10 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.utils import get_column_letter
 
 SRC, DST = sys.argv[1], sys.argv[2]
+HIST_SRC = sys.argv[3] if len(sys.argv) > 3 else None
 D = json.load(open(SRC, encoding='utf-8'))
 ITEMS = D['items']
+HIST = json.load(open(HIST_SRC, encoding='utf-8')) if HIST_SRC else []
 
 FONT = 'Yu Gothic'
 INK, TEAL, GREY = '1A2422', '0E5E62', '5E6B67'
@@ -140,6 +142,80 @@ ws.page_setup.fitToHeight = 0
 ws.sheet_properties.pageSetUpPr.fitToPage = True
 ws.print_options.horizontalCentered = True
 
+# ══════════════════ シート2：本文修正履歴 ══════════════════
+if HIST:
+    hs = wb.create_sheet('本文修正履歴')
+    HCOLS = [('No', 5), ('事業', 10), ('適用日', 12), ('版', 15), ('頁', 7),
+             ('箇所', 30), ('種別', 7), ('修正前', 44), ('修正後', 44),
+             ('根拠・指示元', 26), ('関連ID', 13), ('備考', 32)]
+    BIZ_COLOR = {'下水道': TEAL, '簡易水道': '1F6F8B'}
+
+    hs['A1'] = '中札内村　経営戦略（案）　本文修正履歴'
+    style(hs['A1'], size=14, bold=True, wrap=False, va='center', border=False)
+    hs.merge_cells('A1:F1')
+    days = sorted({h['適用日'] for h in HIST})
+    ge = sum(1 for h in HIST if h['事業'] == '下水道')
+    ka = len(HIST) - ge
+    hs['A2'] = (f"全{len(HIST)}件（下水道{ge}件・簡易水道{ka}件／本文"
+                f"{sum(1 for h in HIST if h['種別']=='本文')}件・図表"
+                f"{sum(1 for h in HIST if h['種別']=='図表')}件）"
+                f"　／　適用日 {' ・ '.join(days)}")
+    style(hs['A2'], size=9, color=GREY, wrap=False, va='center', border=False)
+    hs.merge_cells('A2:L2')
+    hs['A3'] = ('※　修正前／修正後の文言は、実際に適用したスクリプトから機械的に起こし、'
+                '各版のファイル本体と突合（修正後の文言が存在し、修正前の文言が残っていないこと）を確認したもの。')
+    style(hs['A3'], size=9, color=GREY, wrap=False, va='center', border=False)
+    hs.merge_cells('A3:L3')
+    for r_, hgt in ((1, 24), (2, 18), (3, 16)):
+        hs.row_dimensions[r_].height = hgt
+
+    HHEAD = 5
+    for j, (name, w) in enumerate(HCOLS, start=1):
+        hs.column_dimensions[get_column_letter(j)].width = w
+        style(hs.cell(row=HHEAD, column=j, value=name),
+              size=10, bold=True, bg=HEADBG, ha='center', va='center')
+    hs.row_dimensions[HHEAD].height = 28
+
+    for n, h in enumerate(HIST):
+        r_ = HHEAD + 1 + n
+        zebra = ZEBRA if n % 2 else None
+        vals = [h['No'], h['事業'], h['適用日'], h['版'], h['頁'], h['箇所'], h['種別'],
+                h['修正前'], h['修正後'], h['根拠'], h['関連ID'], h['備考']]
+        for j, v in enumerate(vals, start=1):
+            c = hs.cell(row=r_, column=j, value=v)
+            col = get_column_letter(j)
+            if col == 'A':
+                style(c, size=9, bold=True, bg=zebra, ha='center', va='center')
+            elif col == 'B':
+                style(c, size=9, bold=True, color=BIZ_COLOR.get(h['事業'], INK),
+                      bg=zebra, ha='center', va='center')
+            elif col in ('C', 'D', 'E'):
+                style(c, size=9, bg=zebra, ha='center', va='center')
+            elif col == 'G':
+                style(c, size=9, bold=True, color=(AMBER if h['種別'] == '図表' else INK),
+                      bg=zebra, ha='center', va='center')
+            elif col == 'H':
+                style(c, size=9, color=RED, bg=zebra)
+            elif col == 'I':
+                style(c, size=9, color=GREEN, bg=zebra)
+            elif col == 'K':
+                style(c, size=9, bold=True, color=AMBER, bg=zebra, ha='center', va='center')
+            else:
+                style(c, size=9, bg=zebra)
+        longest = max(len(str(h['修正前'])), len(str(h['修正後'])))
+        hs.row_dimensions[r_].height = max(30, min(120, 14 + (longest // 24) * 12))
+
+    HLAST = HHEAD + len(HIST)
+    hs.auto_filter.ref = f'A{HHEAD}:L{HLAST}'
+    hs.freeze_panes = f'F{HHEAD+1}'
+    hs.print_title_rows = f'{HHEAD}:{HHEAD}'
+    hs.page_setup.orientation = 'landscape'
+    hs.page_setup.paperSize = hs.PAPERSIZE_A3
+    hs.page_setup.fitToWidth = 1
+    hs.page_setup.fitToHeight = 0
+    hs.sheet_properties.pageSetUpPr.fitToPage = True
+    hs.print_options.horizontalCentered = True
+
 # ══════════════════ シート2：凡例・記入要領 ══════════════════
 lg = wb.create_sheet('凡例・記入要領')
 for col, w in zip('ABCDEF', (4, 16, 20, 46, 20, 20)):
@@ -250,7 +326,10 @@ dt.sheet_properties.pageSetUpPr.fitToPage = True
 # Excelで開いた時点で数式を計算させる（この環境では再計算できないため）
 wb.calculation.fullCalcOnLoad = True
 # シート順：入力 → 凡例 → 詳細 → 選択肢マスタ
-wb.move_sheet('選択肢マスタ', offset=len(wb.sheetnames) - 1 - wb.sheetnames.index('選択肢マスタ'))
+for nm in ['本文修正履歴', '凡例・記入要領', '確認事項の詳細', '選択肢マスタ']:
+    if nm in wb.sheetnames:
+        want = ['確認結果入力', '本文修正履歴', '凡例・記入要領', '確認事項の詳細', '選択肢マスタ'].index(nm)
+        wb.move_sheet(nm, offset=want - wb.sheetnames.index(nm))
 wb.active = 0
 wb.save(DST)
 print(f'wrote {DST} / {len(ITEMS)} items / sheets: {wb.sheetnames}')
