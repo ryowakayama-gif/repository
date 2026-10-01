@@ -723,3 +723,36 @@ def f_nyutaiin(rows):
     ax.set_xlabel("得点（配点8点）と全保険者の中での位置")
     _xgrid(ax)
     return _save(fig, "f46_nyutaiin")
+
+
+def f_ninchisho(rows):
+    """認知症施策の体制と活動。
+
+    体制（推進員・カフェ）と活動（初期集中支援チームの訪問実績）を
+    同じ2時点で並べ、体制だけが伸びていることを示す。
+
+    rows: [(指標名, 単位, 前の時点, 前の値, 後の時点, 後の値, 県内順位, 県内件数)]
+    """
+    n = len(rows)
+    fig, axes = plt.subplots(1, n, figsize=(7.8, 3.0))
+    if n == 1:
+        axes = [axes]
+    for ax, (nm, tani, t0, v0, t1, v1, rk, ken) in zip(axes, rows):
+        col = RED if v1 == 0 else (BLUE if v1 > v0 else GREY)
+        ax.bar([0, 1], [v0, v1], width=0.56, color=[GREY, col])
+        top = max(v0, v1, 1) * 1.55
+        for i, v in enumerate((v0, v1)):
+            c = NAVY if (i == 0 or v1 != 0) else RED
+            ax.text(i, v + top * 0.05, "%g" % v, color=c, ha="center",
+                    va="bottom", fontsize=11, fontweight="bold")
+        ax.set_xticks([0, 1])
+        ax.set_xticklabels([t0, t1], fontsize=8.5)
+        ax.set_ylim(0, top)
+        ax.set_yticks([])
+        ax.set_title("%s\n（%s）" % (nm, tani), fontsize=9.5, pad=6)
+        ax.text(0.5, -0.30, "県内%d位／%d" % (rk, ken), transform=ax.transAxes,
+                ha="center", va="top", fontsize=8.5, color=GREY)
+        for sp in ("top", "right", "left"):
+            ax.spines[sp].set_visible(False)
+    fig.subplots_adjust(wspace=0.32, bottom=0.22)
+    return _save(fig, "f47_ninchisho")
