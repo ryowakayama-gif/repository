@@ -27,14 +27,20 @@ function pngSize(buf) {              // PNG IHDR: 幅=16..19 / 高さ=20..23（�
 }
 function figure(b) {
   const buf = fs.readFileSync(path.join(FIGDIR, b.file));
+  // 本文高さは 14570 twip ＝ 10.12in。表題・出典・前後の空きを除くと図に使えるのは
+  // 9.3in までである。縦長の図は幅を縮めて1頁に収める（Word は画像を縮めない）。
+  const MAX_H_IN = 9.3;
   const dim = pngSize(buf);
-  const wIn = b.width || 6.3, hIn = wIn * dim.h / dim.w;
+  let wIn = b.width || 6.3, hIn = wIn * dim.h / dim.w;
+  if (hIn > MAX_H_IN) { hIn = MAX_H_IN; wIn = hIn * dim.w / dim.h; }
   const out = [new Paragraph({
     alignment: AlignmentType.CENTER, spacing: {before: 160, after: 60},
+    keepNext: true, keepLines: true,   // 図・表題・出典を頁の境目で引き離さない
     children: [new ImageRun({type: 'png', data: buf,
                transformation: {width: Math.round(wIn * 96), height: Math.round(hIn * 96)}})],
   }), new Paragraph({
     alignment: AlignmentType.CENTER, spacing: {after: b.source ? 40 : 200},
+    keepNext: true, keepLines: true,
     children: [new TextRun({text: b.caption, font: FONTG, size: 18, bold: true, color: NAVY})],
   })];
   if (b.source) out.push(new Paragraph({
@@ -53,6 +59,7 @@ const TBLW = 9360;
 const p = (text, o = {}) => new Paragraph({
   spacing: {after: o.after ?? 120, line: o.line ?? 300},
   alignment: o.align, indent: o.indent, border: o.border,
+  keepNext: o.keep, keepLines: o.keep,   // 見出しを次の要素から切り離さない
   shading: o.shade ? {type: ShadingType.CLEAR, fill: o.shade} : undefined,
   children: [new TextRun({text, font: o.font ?? FONT, size: o.size ?? 21,
                           bold: o.bold, color: o.color})],
@@ -74,8 +81,8 @@ function table(head, rows, widths) {
   });
   return new Table({
     columnWidths: cols, width: {size: TBLW, type: WidthType.DXA},
-    rows: [new TableRow({tableHeader: true, children: head.map((h, i) => cell(h, i, true))}),
-           ...rows.map(r => new TableRow({children: r.map((v, i) => cell(v, i, false))}))],
+    rows: [new TableRow({tableHeader: true, cantSplit: true, children: head.map((h, i) => cell(h, i, true))}),
+           ...rows.map(r => new TableRow({cantSplit: true, children: r.map((v, i) => cell(v, i, false))}))],
   });
 }
 
@@ -119,6 +126,7 @@ C.chapters.forEach((ch, ci) => {
   if (ci > 0) kids.push(new Paragraph({children: [new PageBreak()]}));
   kids.push(new Paragraph({
     heading: HeadingLevel.HEADING_1, spacing: {before: 0, after: 300},
+    keepNext: true, keepLines: true,   // 見出しだけが頁の最後に取り残されるのを防ぐ
     shading: {type: ShadingType.CLEAR, fill: NAVY},
     children: [new TextRun({text: `${ch.no}　${ch.title}`, font: FONTG, size: 30, bold: true, color: 'FFFFFF'})],
   }));
@@ -126,13 +134,14 @@ C.chapters.forEach((ch, ci) => {
     if (!sec.no.endsWith('-0')) {
       kids.push(new Paragraph({
         heading: HeadingLevel.HEADING_2, spacing: {before: 320, after: 180},
+        keepNext: true, keepLines: true,
         border: {bottom: {style: BorderStyle.SINGLE, size: 12, color: BLUE, space: 4}},
         children: [new TextRun({text: `${sec.no}　${sec.title}`, font: FONTG, size: 25, bold: true, color: NAVY})],
       }));
     }
     sec.blocks.forEach(b => {
       if (b.t === 'p') kids.push(p(b.v));
-      else if (b.t === 'h3') kids.push(p(b.v, {size: 22, bold: true, font: FONTG, color: BLUE, after: 100}));
+      else if (b.t === 'h3') kids.push(p(b.v, {size: 22, bold: true, font: FONTG, color: BLUE, after: 100, keep: true}));
       else if (b.t === 'bullets') b.v.forEach(x => kids.push(new Paragraph({
         numbering: {reference: 'bul', level: 0}, spacing: {after: 60, line: 300},
         children: [new TextRun({text: x, font: FONT, size: 20})],

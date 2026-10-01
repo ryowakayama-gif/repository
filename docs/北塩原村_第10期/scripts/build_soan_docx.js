@@ -35,6 +35,7 @@ const TBLW = 9360;   // A4 縦 本文幅（DXA）
 const p = (text, o = {}) => new Paragraph({
   spacing: {after: o.after ?? 120, line: o.line ?? 300},
   alignment: o.align, indent: o.indent,
+  keepNext: o.keep, keepLines: o.keep,   // 見出し・図の表題を次の要素から切り離さない
   border: o.border,
   shading: o.shade ? {type: ShadingType.CLEAR, fill: o.shade} : undefined,
   children: [new TextRun({text, font: o.font ?? FONT, size: o.size ?? 21,
@@ -59,8 +60,8 @@ function table(head, rows, widths) {
   return new Table({
     columnWidths: cols,
     width: {size: TBLW, type: WidthType.DXA},
-    rows: [new TableRow({tableHeader: true, children: head.map((h, i) => cell(h, i, true))}),
-           ...rows.map(r => new TableRow({children: r.map((v, i) => cell(v, i, false))}))],
+    rows: [new TableRow({tableHeader: true, cantSplit: true, children: head.map((h, i) => cell(h, i, true))}),
+           ...rows.map(r => new TableRow({cantSplit: true, children: r.map((v, i) => cell(v, i, false))}))],
   });
 }
 
@@ -68,16 +69,23 @@ const FIGDIR = '/home/user/repository/output/figures';
 function figure(f) {
   const buf = fs.readFileSync(path.join(FIGDIR, f.file));
   // 本文幅 9360 DXA = 6.5in。300dpiのPNGを幅6.3inに収める
+  // 本文高さは 14002 twip ＝ 9.72in。表題・出典・前後の空き（約0.8in）を除くと
+  // 図に使えるのは 8.9in までである。縦長の図は幅を縮めて1頁に収める。
+  // Word は行内の画像を縮めないため、ここで収めないと頁からあふれる。
+  const MAX_H_IN = 8.9;
   const dim = pngSize(buf);
-  const wIn = 6.3, hIn = wIn * dim.h / dim.w;
+  let wIn = 6.3, hIn = wIn * dim.h / dim.w;
+  if (hIn > MAX_H_IN) { hIn = MAX_H_IN; wIn = hIn * dim.w / dim.h; }
   return [
     new Paragraph({
       alignment: AlignmentType.CENTER, spacing: {before: 160, after: 60},
+      keepNext: true, keepLines: true,   // 図・表題・出典を頁の境目で引き離さない
       children: [new ImageRun({type: 'png', data: buf,
                                transformation: {width: Math.round(wIn*96), height: Math.round(hIn*96)}})],
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER, spacing: {after: 40},
+      keepNext: true, keepLines: true,
       children: [new TextRun({text: f.caption, font: FONTG, size: 18, bold: true, color: NAVY})],
     }),
     new Paragraph({
@@ -124,6 +132,8 @@ C.chapters.forEach((ch, ci) => {
   kids.push(new Paragraph({
     heading: HeadingLevel.HEADING_1,
     spacing: {before: 0, after: 300},
+    keepNext: true,            // 章見出しだけが頁の最後に取り残されるのを防ぐ
+    keepLines: true,
     shading: {type: ShadingType.CLEAR, fill: NAVY},
     children: [new TextRun({text: `${ch.no}　${ch.title}`, font: FONTG, size: 30,
                             bold: true, color: 'FFFFFF'})],
@@ -132,6 +142,8 @@ C.chapters.forEach((ch, ci) => {
     kids.push(new Paragraph({
       heading: HeadingLevel.HEADING_2,
       spacing: {before: 320, after: 180},
+      keepNext: true,          // 見出しだけが頁の最後に取り残されるのを防ぐ
+      keepLines: true,
       border: {bottom: {style: BorderStyle.SINGLE, size: 12, color: BLUE, space: 4}},
       children: [new TextRun({text: `${sec.no}　${sec.title}`, font: FONTG, size: 25,
                               bold: true, color: NAVY})],
@@ -140,7 +152,7 @@ C.chapters.forEach((ch, ci) => {
     sec.blocks.forEach(b => {
       if (b.t === 'p') kids.push(p(b.v));
       else if (b.t === 'h3') kids.push(p(b.v, {size: 22, bold: true, font: FONTG,
-                                               color: BLUE, after: 100}));
+                                               color: BLUE, after: 100, keep: true}));
       else if (b.t === 'bullets') b.v.forEach(x => kids.push(new Paragraph({
         numbering: {reference: 'bul', level: 0}, spacing: {after: 60, line: 300},
         children: [new TextRun({text: x, font: FONT, size: 20})],

@@ -24,6 +24,24 @@ def png_size(path):
         b = f.read(24)
     return struct.unpack(">II", b[16:24])
 
+# 図に使える高さの上限（インチ）。build_soan_docx.js／build_shiryo_docx.js の
+# MAX_H_IN と同じ値でなければ頁数の積算が狂う。
+MAX_FIG_H = 8.9
+SH_MAX_FIG_H = 9.3
+
+def fig_in(path, w_in=6.3, max_h=None):
+    """図の寸法（インチ）。縦長の図は幅を縮めて1頁に収める。
+
+    docx 側と同じ縮め方をしないと、推定と実際の紙面が食い違う。
+    """
+    w, h = png_size(path)
+    h_in = w_in * h / w
+    lim = MAX_FIG_H if max_h is None else max_h
+    if h_in > lim:
+        h_in = lim
+        w_in = h_in * w / h
+    return w_in, h_in
+
 def para_h(text, pt=10.5, line=300, after=120):
     n = max(1, math.ceil(len(text) / chars_per_line(pt)))
     return n * line + after
@@ -71,8 +89,8 @@ def run():
             h += 320 + 25 * 20 + 180            # 節見出し 12.5pt
             for fn in figs.get(f'{ch["no"]}|{sec["no"]}', []):
                 nf += 1
-                w, hh = png_size(os.path.join(FIGDIR, fn))
-                h += 160 + (6.3 * hh / w) * 1440 + 60 + 18 * 20 + 40 + 16 * 20 + 200
+                _, h_in = fig_in(os.path.join(FIGDIR, fn))
+                h += 160 + h_in * 1440 + 60 + 18 * 20 + 40 + 16 * 20 + 200
             for b in sec["blocks"]:
                 if b["t"] in ("table", "kpi"):
                     nt += 1
@@ -119,8 +137,9 @@ def shiryo_block_h(b):
     if t == "bullets":
         return sum(para(x, pt=10, after=60) for x in b["v"])
     if t == "fig":
-        w, hh = png_size(os.path.join(SH_FIGDIR, b["file"]))
-        return 160 + (b.get("width", 6.3) * hh / w) * 1440 + 60 + 18 * 20 + 40 + 200
+        _, h_in = fig_in(os.path.join(SH_FIGDIR, b["file"]),
+                         b.get("width", 6.3), SH_MAX_FIG_H)
+        return 160 + h_in * 1440 + 60 + 18 * 20 + 40 + 200
     if t == "table":
         cols = len(b["head"])
         wid = b.get("widths") or [100 / cols] * cols

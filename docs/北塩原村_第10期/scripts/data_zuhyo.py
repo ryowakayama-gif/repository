@@ -313,11 +313,20 @@ def by_name():
     return {d["name"]: d for d in ZU}
 
 
+_CACHE = {}
+
 def read_book(path=None):
-    """台帳のデータシートから数値を読み戻す。{name: [(系列名, 値), ...]}"""
+    """台帳のデータシートから数値を読み戻す。{name: [(系列名, 値), ...]}
+
+    同じ台帳を何度も開かないよう、更新時刻を鍵にして覚えておく。
+    台帳を直せば更新時刻が変わるため、直した内容は次の呼び出しに効く。
+    """
     path = path or BOOK
     if not os.path.exists(path):
         return {}
+    key = (path, os.path.getmtime(path), os.path.getsize(path))
+    if key in _CACHE:
+        return _CACHE[key]
     from openpyxl import load_workbook
     wb = load_workbook(path, read_only=True, data_only=True)
     got = {}
@@ -341,6 +350,8 @@ def read_book(path=None):
             continue
         got[nm] = [(head[1 + i], [r[1 + i] for r in body]) for i in range(ncol)]
     wb.close()
+    _CACHE.clear()        # 覚えておくのは最後に読んだ1つだけにする
+    _CACHE[key] = got
     return got
 
 

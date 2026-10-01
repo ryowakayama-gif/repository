@@ -1077,6 +1077,46 @@ def main():
         chk(47, '素案の表が図の数値の正本を参照していること', False,
             f'照合できない（{e}）')
 
+    # ── 48　紙面が成り立つこと（図が1頁に収まり、送りが行き過ぎないこと）──────
+    #    この環境では docx を PDF に変換できず紙面を目視できない。
+    #    代わりに estimate_layout.py の積み上げにより、紙面として成り立たない
+    #    箇所がないことを確かめる。**目視の代わりにはならない。**
+    try:
+        import estimate_layout as EL
+        import estimate_pages as EP48
+        import re as _re48
+        bad48 = []
+        # (a) docx 側の上限と推定側の上限が同じ値であること（定数の二重管理の検出）
+        for js, attr in (("build_soan_docx.js", "MAX_FIG_H"),
+                         ("build_shiryo_docx.js", "SH_MAX_FIG_H")):
+            with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), js),
+                      encoding="utf-8") as f48:
+                m48 = _re48.search(r"MAX_H_IN\s*=\s*([0-9.]+)", f48.read())
+            if not m48:
+                bad48.append(f"{js} に図の高さの上限がない")
+            elif abs(float(m48.group(1)) - getattr(EP48, attr)) > 1e-9:
+                bad48.append(f"{js} の上限{m48.group(1)}in ≠ "
+                             f"estimate_pages.{attr} {getattr(EP48, attr)}in")
+        # (b) 1頁に収まらない要素が表だけであること（図は分割できない）
+        for items, ph, nm48 in ((EL.soan_items(), EL.BODY_H, "素案"),
+                                (EL.shiryo_items(), EL.SH_H, "委員会資料")):
+            _, out48 = EL.flow(items, ph)
+            over = [o for o in out48 if o[0] == "頁超" and "表（" not in o[2]]
+            if over:
+                bad48.append(f"{nm48}：1頁に収まらない図がある（"
+                             + "・".join(o[2][:30] for o in over[:2]) + "）")
+            # (c) 送りで生じる空白が頁の7割を超えないこと（紙面が破れている徴候）
+            huge = [o for o in out48 if o[0] in ("送り", "見出しの送り")
+                    and o[3] >= ph * 0.70]
+            if huge:
+                bad48.append(f"{nm48}：送りで7割を超える空白が{len(huge)}件")
+        chk(48, '紙面が成り立つこと（推定。目視の代わりにはならない）', not bad48,
+            '・'.join(bad48[:3]) if bad48
+            else f'図25点はいずれも1頁に収まり、上限の値は docx 側と一致')
+    except Exception as e:
+        chk(48, '紙面が成り立つこと（推定。目視の代わりにはならない）', False,
+            f'照合できない（{e}）')
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
