@@ -32,7 +32,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 sys.path.insert(0, "07_ソーススクリプト")
-from data_zuhyo import KOFU, KOUHO, ZU  # noqa: E402
+from data_zuhyo import KOFU, KOUHO, WAKU, ZU  # noqa: E402
 
 OUT = "05_試算・管理シート/川崎町_図表データ管理台帳_R8.9.30.xlsx"
 SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.8_第9期対比版.docx"
@@ -381,6 +381,16 @@ def main():
         f"参照{len(refs)}件・食い違い なし" if not bad_ref
         else "／".join(bad_ref),
         not bad_ref)
+    # 未作成の候補には、数値が届いたらすぐ作れるよう枠を置いてあるか
+    #   （08_作業順位 の順位9。到着後の手戻りを防ぐため）
+    midone = [k[0] for k in KOUHO if str(k[5]).startswith("未作成")]
+    waku_no = {w["kou"] for w in WAKU}
+    nowaku = [n for n in midone if n not in waku_no]
+    add("未作成の図に、作図の枠が用意されていること",
+        "KOUHO の未作成 ⊆ WAKU の候補番号",
+        f"未作成 {len(midone)}件・枠 {len(WAKU)}件・枠なし なし"
+        if not nowaku else "枠がない候補：" + "／".join(nowaku),
+        not nowaku)
     stale = sorted(pngs - used)
     add("08_図表 に使っていない画像が残っていないこと",
         "08_図表/*.png - ZU の png",
