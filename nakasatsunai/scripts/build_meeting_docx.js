@@ -17,7 +17,7 @@ const RULE = 'C8D2CE', HEADBG = 'E6EDEB', ZEBRA = 'F5F8F7', CARDBG = 'EFF4F2';
 const W = 9638;                                   // A4・余白20mm の本文幅
 
 const IMPACT_COLOR = { '大': RED, '中': AMBER, '小': GREEN };
-const STATE_COLOR = { '反映済': GREEN, '仮反映済': GREEN, '照会中': AMBER, '方針待ち': AMBER, '未確認': GREY };
+const STATE_COLOR = { '反映済': GREEN, '仮反映済': GREEN, '反映不要': GREEN, '照会中': AMBER, '方針待ち': AMBER, '要再確認': RED, '未確認': GREY };
 
 /* ---------- 小物 ---------- */
 const run = (text, o = {}) => new TextRun({ text, font: o.font || JP, size: o.size || 20, bold: o.bold, color: o.color || INK });
