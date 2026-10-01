@@ -35,8 +35,8 @@ sys.path.insert(0, "07_ソーススクリプト")
 from data_zuhyo import KOFU, KOUHO, ZU  # noqa: E402
 
 OUT = "05_試算・管理シート/川崎町_図表データ管理台帳_R8.9.30.xlsx"
-SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.6_図表整理版.docx"
-SOAN_ALT = "01_第10期_最新版成果品/川崎町_計画書素案_v2.5_書体統一版.docx"
+SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.7_図表追加版.docx"
+SOAN_ALT = "01_第10期_最新版成果品/川崎町_計画書素案_v2.6_図表整理版.docx"
 FIGDIR = "08_図表"
 
 THIN = Side(style="thin", color="BFBFBF")
@@ -102,16 +102,24 @@ def read_soan():
     """素案から、図のキャプション・資料7の一覧・表の数値を読む。"""
     p = soan_path()
     d = docx.Document(p)
-    caps, order = {}, []
+    caps, order, refs = {}, [], []
     kids = list(d.element.body.iterchildren())
+    sec = None
     for i, el in enumerate(kids):
         if el.tag != qn("w:p"):
             continue
         t = "".join(n.text or "" for n in el.iter(qn("w:t"))).strip()
+        ms = re.match(r"^(\d+-\d+)[　 ]", t)
+        if ms:
+            sec = ms.group(1)
         m = re.match(r"^(図\d+-\d+)　(.+)$", t)
         if m:
             caps[m.group(1)] = m.group(2)
             order.append(m.group(1))
+            continue
+        # 本文からの参照（キャプションそのものは除く）
+        for mr in re.finditer(r"図\d+-\d+", t):
+            refs.append((mr.group(0), sec, t[:60]))
     shiryo7 = []
     for t in d.tables:
         h = [c.text.strip() for c in t.rows[0].cells]
@@ -124,7 +132,7 @@ def read_soan():
     tables = []
     for t in d.tables:
         tables.append([[c.text.strip() for c in r.cells] for r in t.rows])
-    return p, caps, order, shiryo7, n_img, tables, d
+    return p, caps, order, shiryo7, n_img, tables, d, refs
 
 
 def find_in_tables(tables, *needles):
@@ -140,7 +148,7 @@ def find_in_tables(tables, *needles):
 def main():
     wb = openpyxl.Workbook()
     wb.remove(wb.active)
-    p_soan, caps, order, shiryo7, n_img, tables, doc = read_soan()
+    p_soan, caps, order, shiryo7, n_img, tables, doc, refs = read_soan()
     pngs = {os.path.basename(x) for x in glob.glob(f"{FIGDIR}/*.png")}
     used = {d["png"] for d in ZU}
 
@@ -217,17 +225,10 @@ def main():
                ["図表番号", "図の表題", "突合の手掛かり", "素案に見つかったもの",
                 "判定"], [8, 40, 52, 56, 12])
     rows02 = []
-    NEEDLE = {
-        "図2-1": ("1,745", "1,498"),
-        "図2-2": ("41.4",),
-        "図2-3": ("679", "3,240"),
-        "図2-4": ("261.8", "450.0"),
-        "図2-5": ("9.98",),
-        "図9-1": ("6,822", "6,143", "5,464"),
-    }
+    # 突合の手掛かりは data_zuhyo.py の needle が正本（2か所に持たない）
     for d in ZU:
         hits = []
-        for nd in NEEDLE[d["no"]]:
+        for nd in d["needle"]:
             f = find_in_tables(tables, nd)
             if f is None:
                 body = "\n".join(p.text for p in doc.paragraphs)
@@ -363,6 +364,23 @@ def main():
     add("巻末の図表番号一覧が実際の差し込みと一致すること",
         "05シートの突合",
         "食い違い なし" if not bad05 else "／".join(bad05), not bad05)
+    # 本文の参照が、その図のある節と食い違っていないか
+    #   図番号を振り直したときに本文の参照が追随しないことが実際に起きた
+    #   （2-2 の本文が高齢化率の図を「図2-5」と参照していた）。
+    secs = {d["no"]: d["sec"].split()[0] for d in ZU}
+    bad_ref = []
+    for no, sec, txt in refs:
+        if no not in secs:
+            bad_ref.append(f"{no}（素案にない図・{sec}）")
+        elif sec is not None and sec != secs[no] and not sec.startswith("1-"):
+            # 第1章は計画の全体を述べる章であり、他章の図を指すことがある
+            bad_ref.append(f"{no}を{sec}の本文が参照（図は{secs[no]}）")
+    add("本文の図の参照が、その図のある節と合っていること",
+        "本文の段落の「図N-M」の節 == data_zuhyo.py の sec"
+        "（表の中の参照は巻末の一覧と重なるため見ていない）",
+        f"参照{len(refs)}件・食い違い なし" if not bad_ref
+        else "／".join(bad_ref),
+        not bad_ref)
     stale = sorted(pngs - used)
     add("08_図表 に使っていない画像が残っていないこと",
         "08_図表/*.png - ZU の png",
