@@ -60,7 +60,8 @@ import data_nenpo_meisai as NM
 import data_shien_tool as ST
 import repo_paths as RP
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+if isinstance(sys.stdout, io.TextIOWrapper):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 ODIR = RP.OUTPUT
 OUT = os.path.join(ODIR, "第10期計画_管理の統合と成果品の棚卸し.xlsx")

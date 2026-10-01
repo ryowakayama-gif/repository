@@ -73,8 +73,8 @@ import repo_paths as RP
 import data_zuhyo as DZ
 import data_kofukin_item as KI
 
-if hasattr(sys.stdout, "buffer"):
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+if isinstance(sys.stdout, io.TextIOWrapper):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 OUT = os.path.join(RP.OUTPUT, "第10期計画_図表データ管理台帳.xlsx")
 ZUHYOSHU = os.path.join(RP.OUTPUT, "第10期計画_図表集_白黒.xlsx")

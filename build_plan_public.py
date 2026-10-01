@@ -57,8 +57,9 @@ import docx_fix
 import repo_paths as RP
 import data_service_desc as SD
 
-if hasattr(sys.stdout, "buffer"):      # 他から読み込まれた場合は差し替えない
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+# 他から読み込まれた場合は差し替えられた出力を壊さない
+if isinstance(sys.stdout, io.TextIOWrapper):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 OUT = RP.ROOT + "/output/第10期介護保険事業計画_公表版.docx"
 PAGEMAP = RP.ROOT + "/output/_toc_pages_public.json"

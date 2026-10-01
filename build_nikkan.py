@@ -61,7 +61,8 @@ sys.path.insert(0, RP.ROOT)
 import data_progress as DP                                    # noqa: E402
 import data_kitei as DK                                      # noqa: E402
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+if isinstance(sys.stdout, io.TextIOWrapper):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 ODIR = RP.OUTPUT
 OUT = os.path.join(ODIR, "第10期計画_日次の状況と翌日の作業順位.xlsx")
@@ -777,6 +778,23 @@ _ast_n = sum(1 for _ws in wb.worksheets
 chk(14, "強調の指定（**）がセルに残っていないこと",
     "xlsx は Markdown を解釈しないため書き出しの時点で落とす",
     "残り%d件" % _ast_n, _ast_n == 0)
+
+# 単価の趨勢の効き（確認事項No.137）は算定で求める値である。
+# 台帳は literal で読まれるため額を書き写さざるを得ない箇所があり、
+# 算定を改めたときにずれる。台帳の記述と算定の値が合うことを確かめる。
+_SUSEI = _S["susei_haba"]()
+_SUSEI_S = "＋%d〜＋%d円" % (round(_SUSEI[0]), round(_SUSEI[1]))
+_LEDGER = "".join(str(x) for c in CHECK for x in c) \
+    + "".join(str(x) for c in LACK for x in c)
+_SUSEI_NG = [s for s in ("＋185〜＋374円", "＋185円から＋374円")
+             if s in _LEDGER]
+chk(15, "台帳に書かれた単価の趨勢の効きが算定と一致すること",
+    "算定 %s（年率%.2f％〜%.2f％）"
+    % (_SUSEI_S, _S["SUSEI_RITSU"][0] * 100, _S["SUSEI_RITSU"][1] * 100),
+    "台帳に%s／古い記述 %s"
+    % ("あり" if _SUSEI_S in _LEDGER else "**なし**",
+       "なし" if not _SUSEI_NG else "・".join(_SUSEI_NG)),
+    _SUSEI_S in _LEDGER and not _SUSEI_NG)
 
 ws = sheet("06_自己点検", "自己点検",
            "本表の値が台帳・算定と合っていることを機械で確かめたものです。"

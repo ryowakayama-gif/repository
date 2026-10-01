@@ -68,7 +68,8 @@ from openpyxl.utils import get_column_letter
 import data_mieru_suikei as MS
 import repo_paths as RP
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+if isinstance(sys.stdout, io.TextIOWrapper):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 ODIR = RP.ROOT + "/output"
 OUT = os.path.join(ODIR, "第10期計画_見える化_将来推計の設定資料の受領点検.xlsx")

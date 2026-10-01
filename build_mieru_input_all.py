@@ -92,7 +92,8 @@ import data_mieru_yoshiki as YS
 import mieru_anc as AN
 import repo_paths as RP
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+if isinstance(sys.stdout, io.TextIOWrapper):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 OUT = os.path.join(RP.OUTPUT, "第10期計画_見える化_入力箇所と入力値.xlsx")
 KIJUNBI = "令和8年9月30日"

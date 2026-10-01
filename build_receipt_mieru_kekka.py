@@ -60,7 +60,8 @@ import data_mieru_jinko as J
 import data_mieru_kekka as K
 import repo_paths as RP
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+if isinstance(sys.stdout, io.TextIOWrapper):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 OUT = os.path.join(RP.OUTPUT, "第10期計画_見える化_推計結果の受領点検.xlsx")
 KIJUNBI = "令和8年9月30日"

@@ -57,7 +57,8 @@ from openpyxl.utils import get_column_letter
 import data_chiiki_bunseki as CB
 import repo_paths as RP
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+if isinstance(sys.stdout, io.TextIOWrapper):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 OUT = os.path.join(RP.OUTPUT, "第10期計画_地域分析・検討シート_記載案.xlsx")
 KIJUNBI = "令和8年9月30日"

@@ -71,7 +71,8 @@ import data_survey_cross as C
 import data_survey2025 as S
 import repo_paths as RP
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+if isinstance(sys.stdout, io.TextIOWrapper):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 ODIR = RP.OUTPUT
 OUT = os.path.join(ODIR, "第10期計画_調査結果と年報実績の突合クロス集計.xlsx")

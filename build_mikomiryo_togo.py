@@ -77,7 +77,8 @@ from openpyxl.utils import get_column_letter
 import data_dispatch as DP
 import repo_paths as RP
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+if isinstance(sys.stdout, io.TextIOWrapper):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 ODIR = RP.ROOT + "/output"
 OUT = os.path.join(ODIR, "第10期計画_サービス見込量算定_統合報告書.xlsx")
@@ -396,7 +397,8 @@ KOTEI = [
      "単価は改定の有無に関係なく年率1.75％で伸びている"
      "（構成を固定した連鎖ラスパイレス指数で7年＋12.93％）。"
      "令和9年度は報酬改定の年（3年周期。平成30・令和3・令和6の次）。"
-     "固定していることは月額で＋185〜＋374円に当たる",
+     "固定していることは単価の趨勢を落としており、"
+     "月額への効きは第10章及び第6章による",
      "D06", "No.109"),
 ]
 for a, b, c, d, e, f in KOTEI:
@@ -514,7 +516,7 @@ for a, b, c, d, e, f in [
      "令和8年9月25日の再提供により3町合計と広域連合単位が"
      "要介護度別まで円単位で一致した"),
     ("2", "単価を令和7年度で固定するか趨勢を置くか", "No.109", "R8.10",
-     "＋185〜＋374円", "令和9年度は報酬改定の年に当たる"),
+     "第10章による", "令和9年度は報酬改定の年に当たる"),
     ("3", "採用パターン（基準年度・出所・シナリオ）", "No.100・101", "R8.9",
      "±825円の幅", "7パターンで6,224〜7,049円"),
     ("4", "伸びを一律から補正に改めるか", "No.106", "R8.9",

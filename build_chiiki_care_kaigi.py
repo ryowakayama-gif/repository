@@ -75,7 +75,8 @@ import data_kofukin_item as IT
 import data_sogo_r6 as SG
 import repo_paths as RP
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+if isinstance(sys.stdout, io.TextIOWrapper):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 ODIR = RP.ROOT + "/output"
 OUT = os.path.join(ODIR, "第10期計画_地域ケア会議_受領点検とKPI設計案.xlsx")

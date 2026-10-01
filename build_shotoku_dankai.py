@@ -75,8 +75,8 @@ import repo_paths as RP
 
 # 直接実行したときだけ標準出力を UTF-8 に包み直す。
 # 他のスクリプトから runpy で読まれるときは差し替えられた出力を壊さない。
-if hasattr(sys.stdout, "buffer"):
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+if isinstance(sys.stdout, io.TextIOWrapper):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 ODIR = RP.OUTPUT
 OUT = os.path.join(ODIR, "第10期計画_所得段階別第1号被保険者数の将来推計.xlsx")

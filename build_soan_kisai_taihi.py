@@ -71,7 +71,8 @@ from openpyxl.utils import get_column_letter
 
 import repo_paths as RP
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+if isinstance(sys.stdout, io.TextIOWrapper):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 ODIR = RP.OUTPUT
 OUT = os.path.join(ODIR, "第10期計画_計画素案の記載内容の洗い出しと対比.xlsx")
@@ -579,6 +580,10 @@ DOKUJI = {
         "法定", "残す", "法第117条第3項が勘案事項として挙げるもの。"
         "第9期計画及び従前の素案に記載がなかった（確認事項No.113）。"
         "定めないこととする旨を記載している。令和8年10月1日に新設した。"),
+    ("第6章", "第3節", "認知症総合支援事業の実施状況"): (
+        "法定", "残す", "法第117条第2項第2号の地域支援事業の量の見込みに係る"
+        "ものである。量を立てられないため、構成3町の実施状況を掲げている"
+        "（確認事項No.150）。令和8年10月1日に新設した。"),
     ("第6章", "第5節", "入所の経路からみた整備の考え方"): (
         "独自", "残す", "整備方針（法第117条第3項第3号）の根拠となる。"),
     ("第6章", "第6節", "第9期の状況"): (
