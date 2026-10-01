@@ -138,6 +138,48 @@ class Doc:
                 a_ext.set('cx', str(cx)); a_ext.set('cy', str(cy))
         log.append(('差替', f'段落{pidx}', f'{old_cx/EMU:.2f}×{old_cy/EMU:.2f}in → {name} {cx/EMU:.2f}×{cy/EMU:.2f}in', why))
 
+    def replace_all(self, pidx, old, new, why):
+        """段落内のすべての出現を置換する（テキストボックスと本文の重複に対応）。"""
+        n = 0
+        while replace_in_para(self.ps[pidx], old, new):
+            n += 1
+            if n > 10:
+                break
+        if n:
+            log.append(('本文', f'段落{pidx}', f'{old[:22]}… → {new[:22]}…（{n}箇所）', why))
+        return n
+
+    def fit_textbox(self, pidx, width_in, why=''):
+        """浮動テキストボックスの左位置と幅を本文幅に合わせる。
+
+        元のレイアウトは横置きを前提に幅9.88in・左オフセット−4.64inで配置されており、
+        縦置き（本文幅6.54in）のページでは用紙の外へはみ出す。
+        """
+        cx = int(width_in * EMU)
+        hit = 0
+        for dr in self.ps[pidx].iter(W + 'drawing'):
+            anc = dr.find(WP + 'anchor')
+            if anc is None or dr.find('.//' + W + 'txbxContent') is None:
+                continue
+            ph = anc.find(WP + 'positionH')
+            if ph is not None:
+                ph.set('relativeFrom', 'margin')
+                for ch in list(ph):
+                    ph.remove(ch)
+                off = etree.SubElement(ph, WP + 'posOffset')
+                off.text = '0'
+            ext = anc.find(WP + 'extent')
+            old_cx = int(ext.get('cx'))
+            ext.set('cx', str(cx))
+            for xf in anc.iter(A + 'xfrm'):
+                for a_ext in xf.findall(A + 'ext'):
+                    a_ext.set('cx', str(cx))
+            hit += 1
+            log.append(('図形', f'段落{pidx}',
+                        f'テキストボックス 幅{old_cx/EMU:.2f}in・左−4.64in → 幅{cx/EMU:.2f}in・左0',
+                        why))
+        return hit
+
     def edit(self, pidx, old, new, why):
         if not replace_in_para(self.ps[pidx], old, new):
             raise SystemExit(f'!! 段落{pidx} に該当文字列なし: {old[:30]}')
