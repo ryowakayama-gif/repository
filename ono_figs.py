@@ -756,3 +756,70 @@ def f_ninchisho(rows):
             ax.spines[sp].set_visible(False)
     fig.subplots_adjust(wspace=0.32, bottom=0.22)
     return _save(fig, "f47_ninchisho")
+
+
+def f_kayoi(ken, chosa):
+    """通いの場の実施状況と、調査の回答との食い違い。
+
+    左　見える化システムの箇所数の推移（週1回以上／月1回以上）。
+    　　令和3年度以降は同システムにデータがないため、網掛けで示す。
+    右　令和7年度調査の参加頻度（n=1,835）。
+
+    ken   {"年": [...], "週": [...], "月": [...]}
+    chosa [(区分, ％)] 参加頻度の内訳。合計100％になるもの
+    """
+    fig, (ax1, ax2) = plt.subplots(
+        1, 2, figsize=(7.9, 3.2), gridspec_kw={"width_ratios": [1.25, 1.0]})
+
+    # ---- 左：見える化の箇所数
+    ys, wk, mt = ken["年"], ken["週"], ken["月"]
+    x = range(len(ys))
+    ax1.bar([i - 0.19 for i in x], mt, width=0.36, color=BLUE,
+            label="月1回以上")
+    ax1.bar([i + 0.19 for i in x], wk, width=0.36, color=RED,
+            label="週1回以上")
+    top = max(max(mt), max(wk), 1) * 1.45
+    for i, v in enumerate(mt):
+        if v:
+            _lab(ax1, i - 0.19, v + top * 0.03, "%g" % v, BLUE, ha="center", sz=8)
+    for i, v in enumerate(wk):
+        if v:
+            _lab(ax1, i + 0.19, v + top * 0.03, "%g" % v, RED, ha="center", sz=8)
+    # 令和3年度以降はデータがない
+    ax1.axvspan(len(ys) - 0.5, len(ys) + 1.6, color="#F2F2F2")
+    ax1.text(len(ys) + 0.55, top * 0.52, "令和3年度\n以降は\nデータなし",
+             color=GREY, ha="center", va="center", fontsize=8.5)
+    ax1.set_xlim(-0.7, len(ys) + 1.6)
+    ax1.set_ylim(0, top)
+    ax1.set_xticks(list(x))
+    ax1.set_xticklabels([y.replace("年度", "") for y in ys], fontsize=7.5,
+                        rotation=45, ha="right")
+    ax1.set_ylabel("箇所数")
+    ax1.set_title("見える化システム　通いの場の箇所数", fontsize=9.5, pad=6)
+    ax1.legend(fontsize=8, frameon=False, loc="upper left")
+    ax1.yaxis.grid(True, color="#E6E6E6", lw=0.8)
+    ax1.set_axisbelow(True)
+
+    # ---- 右：調査の参加頻度（横棒を上から並べる）
+    cols = [RED, ORANGE, "#FFD966", PALE, GREY]
+    names = [nm for nm, _v in chosa]
+    vals = [v for _nm, v in chosa]
+    y = list(range(len(chosa)))
+    ax2.barh(y, vals, height=0.56, color=cols)
+    for i, v in enumerate(vals):
+        ax2.text(v + 1.6, i, "%.1f％" % v, color=NAVY, ha="left",
+                 va="center", fontsize=9, fontweight="bold")
+    ax2.set_yticks(y)
+    ax2.set_yticklabels(names, fontsize=9)
+    ax2.invert_yaxis()
+    ax2.set_xlim(0, 100)
+    ax2.set_xticks([0, 50, 100])
+    ax2.set_xticklabels(["0", "50", "100％"], fontsize=8)
+    ax2.set_title("令和7年度調査　通いの場への参加頻度\n（n=1,835）",
+                  fontsize=9.5, pad=6)
+    _xgrid(ax2)
+    for sp in ("top", "right", "left"):
+        ax2.spines[sp].set_visible(False)
+
+    fig.subplots_adjust(wspace=0.46, bottom=0.26)
+    return _save(fig, "f48_kayoi")
