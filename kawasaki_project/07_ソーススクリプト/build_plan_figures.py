@@ -382,6 +382,52 @@ def fig31(d):
     return save(fig, d)
 
 
+def fig32(d):
+    """第9期の計画値と実績値の対比（横並びの棒＋達成率）
+
+    計画と実績の2本を並べ、達成率を棒の上に添える。
+    総給付費は区分の合計であるため、間を空けて置く。
+    """
+    fig, ax = plt.subplots(figsize=(9.0, 5.6), dpi=150)
+    rows = d["rows"]
+    lab = [r[0] for r in rows]
+    kei = [r[1] / 1000 for r in rows]       # 千円 → 百万円
+    jis = [r[2] / 1000 for r in rows]
+    # 総給付費は合計であるため、1つ分の間を空ける
+    x = [0, 1, 2, 3.4]
+    w = 0.38
+    ax.bar([i - w / 2 for i in x], kei, w, color=LBLUE, edgecolor=BLUE,
+           linewidth=1.6, label="計画値（第9期計画書）")
+    ax.bar([i + w / 2 for i in x], jis, w, color=ORANGE, edgecolor=ORANGE,
+           linewidth=1.6, label="実績値（年報・令和7年度）")
+    for i, (a, b) in zip(x, zip(kei, jis)):
+        ax.text(i - w / 2, a + 8, f"{a:,.0f}", ha="center",
+                fontproperties=JP_S, color=BLUE)
+        ax.text(i + w / 2, b + 8, f"{b:,.0f}", ha="center",
+                fontproperties=JP_S, color=ORANGE)
+        r = b / a * 100
+        col = GREEN if r >= 100 else RED
+        ax.annotate(f"達成率 {r:.1f}%", xy=(i, max(a, b) + 58),
+                    ha="center", fontproperties=JP_M, color=col,
+                    fontweight="bold")
+    ax.axvline(2.7, color=GRAY, linestyle=":", linewidth=1.2)
+    ax.set_xticks(x)
+    ax.set_xticklabels(lab, fontproperties=JP_S)
+    ax.set_ylabel("給付費（百万円／年）", fontproperties=JP)
+    ax.set_ylim(0, max(max(kei), max(jis)) * 1.22)
+    ax.set_xlim(-0.7, 4.1)
+    ax.grid(axis="y", linestyle=":", alpha=0.4)
+    for sp in ("top", "right"):
+        ax.spines[sp].set_visible(False)
+    ax.legend(prop=JP_S, loc="upper left", frameon=True)
+    if d["note"]:
+        fig.text(0.015, 0.002, d["note"], ha="left", va="bottom",
+                 fontproperties=JP_S, color=GRAY)
+    title(ax, d)
+    fig.subplots_adjust(bottom=0.26)
+    return save(fig, d)
+
+
 def fig61(d):
     """認知症施策のKPIの3層構造（概念図）
 
@@ -451,7 +497,8 @@ def fig61(d):
 
 DRAW = {"図2-1": fig21, "図2-2": fig22, "図2-3": fig23,
         "図2-4": fig24, "図2-5": fig25, "図2-6": fig26,
-        "図3-1": fig31, "図6-1": fig61, "図9-1": fig91}
+        "図3-1": fig31, "図3-2": fig32,
+        "図6-1": fig61, "図9-1": fig91}
 
 
 def main():
