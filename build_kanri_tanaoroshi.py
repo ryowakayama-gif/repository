@@ -893,7 +893,7 @@ KAKUNIN = [
      "③給付費（確認事項No.87）も同じ性質の差であり、"
      "併せて整理する。"
      .format(CHIGAI_KEI[0], CHIGAI_KEI[1], CHIGAI_KEI[2]),
-     "町別データシート\nサービス見込量 第1次概算",
+     "町別データシート\nサービス見込量の算定",
      "発注者", "R8.9"),
 ]
 for no, ken, naiyo, tome, saki, kigen in KAKUNIN:

@@ -121,7 +121,7 @@ def _load(name):
         _sys.stdout = old
 
 
-_M = _load("build_mikomiryo_santei.py")      # サービス見込量 第1次概算
+_M = _load("build_mikomiryo_santei.py")      # サービス見込量の算定
 _X = _load("build_survey_jisseki_cross.py")  # 調査結果と年報実績の突合
 
 _JIS, _SOG = _M["JISSEKI"], _M["sogaku"]

@@ -140,7 +140,7 @@ def _load(name):
 
 _M = _load("build_mieru_mikomi_input.py")     # 令和9年度以降の見込量
 _R8 = _load("build_mieru_r8_input.py")        # 令和8年度の実績見込み値
-_S = _M["_S"]                                 # サービス見込量 第1次概算
+_S = _M["_S"]                                 # サービス見込量の算定
 
 SVC, DO_COLS = _M["SVC"], _M["DO_COLS"]
 YALL, YALLL = _M["YALL"], _M["YALLL"]
