@@ -207,6 +207,9 @@ LACK = _literal("build_process_control.py", "LACK")
 KITEI = DK.all_kitei()
 # 据え置きの出どころ（A＝受託者で確定できる／B＝発注者・3町／C＝国）
 KUBUN = _literal("build_mikomi_juryo_nashi.py", "KUBUN")
+# 既定値のとおり計画素案へ反映し終えた確認事項（ご決定はなお待っているもの）。
+# 反映し終えたものを翌日の作業として繰り返し挙げないために除く。
+HANEI = {x[0] for x in _literal("build_ikenkokankai.py", "SUSUMETA")}
 
 _S = _run("build_mikomiryo_santei.py")
 # 据え置き。(0)区分 (1)項目 (2)理由 (3)当方の扱い (4)関係する確認事項 (5)効き
@@ -587,7 +590,7 @@ for i, s in enumerate(SUEOKI, start=1):
                     "見込量算定の据え置き %d" % i))
 for pt, uchi, x in SCORED:
     kt = KITEI.get(x[0])
-    if kt:
+    if kt and x[0] not in HANEI:
         TSUZUKI.append(("既定値で進める", x[3], kt,
                         "確認事項No.%d（点%d）" % (x[0], pt)))
 
@@ -605,8 +608,12 @@ r = note(ws, r,
          "**決定を待たずに作業を進められる**ものです。"
          "決定を受けた時点で見直します。\n"
          "注3）ここに現れないもの（既定値を置けていない確認事項）は、"
-         "**扱いを決めること自体が翌日の作業**になります。02シートを見ます。",
-         span=5, height=62)
+         "**扱いを決めること自体が翌日の作業**になります。02シートを見ます。\n"
+         "注4）既定値のとおり計画素案へ反映し終えたもの%d件"
+         "（確認事項No.%s）は、作業としては終わっているため"
+         "本表から除いています。ご決定はなお待っています。"
+         % (len(HANEI), "・No.".join(str(x) for x in sorted(HANEI))),
+         span=5, height=76)
 
 r += 1
 _NOKITEI = [x for _p, _u, x in SCORED

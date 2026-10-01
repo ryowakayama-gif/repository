@@ -233,12 +233,32 @@ def _literal(fn, name):
     raise RuntimeError("%s に %s が見つからない" % (fn, name))
 
 
-def all_kitei():
-    """既定値の全件（従前の2か所と本モジュールを束ねたもの）。
+def _from_ledger():
+    """台帳（業務工程管理表）の回答欄に書かれている既定値。
 
-    **読む側はこれを使う。** 3か所を個別に読まない。
+    回答欄に「決着しない場合は…」と書いてあるものは、それが既定値である。
+    読む側がそれぞれ回答欄を切り出していると、同じ切り出しが幾つもできる。
+    本モジュールで1度だけ切り出す。
     """
-    out = dict(_literal("build_soan_kadai.py", "KITEI"))
+    out = {}
+    for c in _literal("build_process_control.py", "CHECK"):
+        kotae = str(c[9])
+        if "決着しない場合" not in kotae:
+            continue
+        v = kotae.split("決着しない場合", 1)[-1].lstrip("はは、 　").strip()
+        if v:
+            out[c[0]] = v.rstrip("。")
+    return out
+
+
+def all_kitei():
+    """既定値の全件（台帳の回答欄・従前の2か所・本モジュールを束ねたもの）。
+
+    **読む側はこれを使う。** 4か所を個別に読まない。
+    後に書いたものが優先する（台帳の回答欄が最も弱い）。
+    """
+    out = _from_ledger()
+    out.update(_literal("build_soan_kadai.py", "KITEI"))
     out.update(_literal("build_chiiki_kadai_10.py", "KITEI_ADD"))
     out.update(KITEI)
     return out
@@ -247,12 +267,12 @@ def all_kitei():
 if __name__ == "__main__":
     import sys
     a = all_kitei()
-    print("既定値 全%d件（うち本モジュール%d件）" % (len(a), len(KITEI)))
+    print("既定値 全%d件（うち本モジュール%d件・台帳の回答欄%d件）"
+          % (len(a), len(KITEI), len(_from_ledger())))
     C = _literal("build_process_control.py", "CHECK")
     KANRYO = ("完了", "了承済", "了承済（保管せず廃棄）",
               "代替により解消", "解決")
     M = [x for x in C if x[7] not in KANRYO]
-    nai = [x[0] for x in M
-           if x[0] not in a and "決着しない場合" not in str(x[9])]
+    nai = [x[0] for x in M if x[0] not in a]
     print("未決%d件／既定値のないもの %s" % (len(M), nai or "なし"))
     sys.exit(1 if nai else 0)
