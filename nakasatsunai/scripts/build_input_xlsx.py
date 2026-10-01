@@ -24,6 +24,7 @@ RULE = 'C8D2CE'
 thin = Side(style='thin', color=RULE)
 BOX = Border(left=thin, right=thin, top=thin, bottom=thin)
 IMPACT_COLOR = {'大': RED, '中': AMBER, '小': GREEN}
+STATE_COLOR = {'仮反映済': GREEN, '照会中': AMBER, '方針待ち': AMBER, '未確認': GREY}
 
 def style(c, *, size=10, bold=False, color=INK, bg=None, wrap=True,
           ha='left', va='top', border=True):
@@ -41,25 +42,25 @@ ws = wb.active
 ws.title = '確認結果入力'
 
 COLS = [
-    ('ID', 8), ('区分', 20), ('影響度', 8), ('確認事項', 28),
-    ('確認したいこと', 52), ('選択肢', 34),
-    ('ご回答', 30), ('補足・回答内容', 38), ('決定者', 12), ('決定日', 12), ('社内メモ', 26),
+    ('ID', 8), ('区分', 20), ('影響度', 8), ('状態', 10), ('確認事項', 26),
+    ('確認したいこと', 48), ('選択肢', 32),
+    ('ご回答', 28), ('補足・回答内容', 36), ('決定者', 12), ('決定日', 12), ('社内メモ', 24),
 ]
-INPUT_COLS = ('G', 'H', 'I', 'J')          # 村にご記入いただく列
-ANSWER_COL = 'G'
+INPUT_COLS = ('H', 'I', 'J', 'K')          # 村にご記入いただく列
+ANSWER_COL = 'H'
 
 # タイトル行
 ws['A1'] = D['meta']['subtitle'] + '　確認結果入力シート'
 style(ws['A1'], size=14, bold=True, color=INK, bg=None, wrap=False, va='center', border=False)
-ws.merge_cells('A1:F1')
-ws['G1'] = '← 黄色のセルにご記入ください'
-style(ws['G1'], size=10, bold=True, color=AMBER, wrap=False, va='center', border=False)
-ws.merge_cells('G1:K1')
+ws.merge_cells('A1:G1')
+ws['H1'] = '← 黄色のセルにご記入ください'
+style(ws['H1'], size=10, bold=True, color=AMBER, wrap=False, va='center', border=False)
+ws.merge_cells('H1:L1')
 ws.row_dimensions[1].height = 24
 
 ws['A2'] = f"作成日 {D['meta']['date']}　／　全{len(ITEMS)}件（影響度 大{sum(1 for i in ITEMS if i['impact']=='大')}件・中{sum(1 for i in ITEMS if i['impact']=='中')}件・小{sum(1 for i in ITEMS if i['impact']=='小')}件）　／　IDは別添Wordの確認事項IDと対応"
 style(ws['A2'], size=9, color=GREY, wrap=False, va='center', border=False)
-ws.merge_cells('A2:K2')
+ws.merge_cells('A2:L2')
 ws.row_dimensions[2].height = 18
 
 HEAD = 4
@@ -95,9 +96,9 @@ for n, it in enumerate(ITEMS):
     for j, o in enumerate(opts):
         style(mst.cell(row=mr, column=2 + j, value=o), size=9)
 
-    vals = [it['id'], f"{it['cat']}．{D['categories'][it['cat']]}", it['impact'],
+    vals = [it['id'], f"{it['cat']}．{D['categories'][it['cat']]}", it['impact'], it.get('state', '未確認'),
             it['title'], it['ask'], '／'.join(it['options']) if it['options'] else '（資料のご提供）',
-            None, None, None, None, None]
+            None, None, None, None, it.get('note')]
     zebra = ZEBRA if n % 2 else None
     for j, v in enumerate(vals, start=1):
         col = get_column_letter(j)
@@ -108,9 +109,11 @@ for n, it in enumerate(ITEMS):
             style(c, size=10, bold=True, bg=zebra, ha='center', va='center')
         elif col == 'C':
             style(c, size=10, bold=True, color=IMPACT_COLOR[it['impact']], bg=zebra, ha='center', va='center')
+        elif col == 'D':
+            style(c, size=9, bold=True, color=STATE_COLOR.get(it.get('state'), GREY), bg=zebra, ha='center', va='center')
         else:
             style(c, size=9, bg=zebra)
-    ws.cell(row=r, column=10).number_format = 'yyyy/mm/dd'
+    ws.cell(row=r, column=11).number_format = 'yyyy/mm/dd'
 
     longest = max(len(it['ask']), len(it['title']) * 2)
     ws.row_dimensions[r].height = max(46, min(132, 14 + (longest // 26) * 13))
@@ -126,8 +129,8 @@ for n, it in enumerate(ITEMS):
     dv.add(ws[f'{ANSWER_COL}{r}'])
 
 LAST = HEAD + len(ITEMS)
-ws.auto_filter.ref = f'A{HEAD}:K{LAST}'
-ws.freeze_panes = f'D{HEAD+1}'
+ws.auto_filter.ref = f'A{HEAD}:L{LAST}'
+ws.freeze_panes = f'E{HEAD+1}'
 ws.sheet_view.zoomScale = 90
 ws.print_title_rows = f'{HEAD}:{HEAD}'
 ws.page_setup.orientation = 'landscape'
@@ -152,10 +155,10 @@ lg.row_dimensions[1].height = 24
 
 put(3, 2, '１．ご記入いただく列', size=11, bold=True, color=TEAL, wrap=False)
 rows = [
-    ('G　ご回答', '一覧から選択（セルをクリックすると選択肢が出ます）。該当がなければ「その他」を選び、H列に内容をご記入ください。'),
-    ('H　補足・回答内容', '自由記述。資料をご提供いただく事項（A-1・A-6）はファイル名や提供時期をご記入ください。'),
-    ('I　決定者', 'ご決定された方・部署名。'),
-    ('J　決定日', '2026/10/15 の形式。'),
+    ('H　ご回答', '一覧から選択（セルをクリックすると選択肢が出ます）。該当がなければ「その他」を選び、H列に内容をご記入ください。'),
+    ('I　補足・回答内容', '自由記述。資料をご提供いただく事項（A-1・A-6）はファイル名や提供時期をご記入ください。'),
+    ('J　決定者', 'ご決定された方・部署名。'),
+    ('K　決定日', '2026/10/15 の形式。'),
 ]
 r = 4
 for a, b in rows:
@@ -164,7 +167,7 @@ for a, b in rows:
     lg.merge_cells(start_row=r, start_column=3, end_row=r, end_column=6)
     lg.row_dimensions[r].height = 30
     r += 1
-put(r, 2, 'K　社内メモ', size=10, bold=True, border=True)
+put(r, 2, 'L　社内メモ', size=10, bold=True, border=True)
 put(r, 3, '当方の作業メモ欄です。ご記入は不要です。', size=9, color=GREY, border=True)
 lg.merge_cells(start_row=r, start_column=3, end_row=r, end_column=6)
 r += 2
@@ -214,9 +217,9 @@ lg.sheet_view.showGridLines = False
 
 # ══════════════════ シート3：確認事項の詳細（参照用） ══════════════════
 dt = wb.create_sheet('確認事項の詳細')
-for col, w in zip('ABCDEF', (8, 8, 26, 60, 34, 34)):
+for col, w in zip('ABCDEFG', (8, 8, 10, 24, 58, 32, 32)):
     dt.column_dimensions[col].width = w
-head = ['ID', '影響度', '確認事項', '背景・現状', '影響範囲', '未決の場合']
+head = ['ID', '影響度', '状態', '確認事項', '背景・現状', '影響範囲', '未決の場合']
 for j, h in enumerate(head, start=1):
     c = dt.cell(row=1, column=j, value=h)
     style(c, size=10, bold=True, bg=HEADBG, ha='center', va='center')
@@ -224,17 +227,20 @@ dt.row_dimensions[1].height = 26
 for n, it in enumerate(ITEMS):
     r = 2 + n
     zebra = ZEBRA if n % 2 else None
-    for j, v in enumerate([it['id'], it['impact'], it['title'], it['background'], it['scope'], it['risk']], start=1):
+    for j, v in enumerate([it['id'], it['impact'], it.get('state', '未確認'), it['title'],
+                           it['background'], it['scope'], it['risk']], start=1):
         c = dt.cell(row=r, column=j, value=v)
         if j == 1:
             style(c, size=10, bold=True, bg=zebra, ha='center', va='center')
         elif j == 2:
             style(c, size=10, bold=True, color=IMPACT_COLOR[it['impact']], bg=zebra, ha='center', va='center')
+        elif j == 3:
+            style(c, size=9, bold=True, color=STATE_COLOR.get(it.get('state'), GREY), bg=zebra, ha='center', va='center')
         else:
             style(c, size=9, bg=zebra)
     dt.row_dimensions[r].height = max(50, min(150, 14 + (len(it['background']) // 60) * 13))
-dt.freeze_panes = 'C2'
-dt.auto_filter.ref = f'A1:F{1+len(ITEMS)}'
+dt.freeze_panes = 'D2'
+dt.auto_filter.ref = f'A1:G{1+len(ITEMS)}'
 dt.page_setup.orientation = 'landscape'
 dt.page_setup.paperSize = dt.PAPERSIZE_A3
 dt.page_setup.fitToWidth = 1

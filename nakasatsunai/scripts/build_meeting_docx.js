@@ -17,6 +17,7 @@ const RULE = 'C8D2CE', HEADBG = 'E6EDEB', ZEBRA = 'F5F8F7', CARDBG = 'EFF4F2';
 const W = 9638;                                   // A4・余白20mm の本文幅
 
 const IMPACT_COLOR = { '大': RED, '中': AMBER, '小': GREEN };
+const STATE_COLOR = { '仮反映済': GREEN, '照会中': AMBER, '方針待ち': AMBER, '未確認': GREY };
 
 /* ---------- 小物 ---------- */
 const run = (text, o = {}) => new TextRun({ text, font: o.font || JP, size: o.size || 20, bold: o.bold, color: o.color || INK });
@@ -113,6 +114,8 @@ function card(it) {
           run(it.id, { size: 20, bold: true, color: INK }),
           new TextRun({ text: '', break: 1 }),
           run('影響度 ' + it.impact, { size: 17, bold: true, color: IMPACT_COLOR[it.impact] }),
+          new TextRun({ text: '', break: 1 }),
+          run(it.state || '未確認', { size: 16, bold: true, color: STATE_COLOR[it.state] || GREY }),
         ],
       }), LW, { bg: CARDBG }),
       cell(new Paragraph({
@@ -146,6 +149,7 @@ function card(it) {
   }
   add('影響範囲', it.scope);
   add('未決の場合', it.risk);
+  if (it.note) add('現在の状況', it.note);
 
   return new Table({
     columnWidths: [LW, RW],
@@ -227,9 +231,10 @@ body.push(table(
 
 body.push(h2('■　優先してご確認いただきたい事項（影響度 大）'));
 body.push(para('次の5件は、決まらないと本文または収支計画を確定できない。打合せではこの5件を先にお願いしたい。'));
-body.push(table([900, 3100, W - 4000], ['ID', '確認事項', '決まらないと止まること'],
+body.push(table([760, 2700, 1100, W - 4560], ['ID', '確認事項', '状態', '決まらないと止まること'],
   items.filter((i) => i.impact === '大').map((i) => [
-    [i.id, { align: AlignmentType.CENTER, bold: true }], i.title, i.risk,
+    [i.id, { align: AlignmentType.CENTER, bold: true }], i.title,
+    [i.state || '未確認', { align: AlignmentType.CENTER, bold: true, color: STATE_COLOR[i.state] || GREY }], i.risk,
   ]), { top: true }));
 
 /* 4 確認事項 */
