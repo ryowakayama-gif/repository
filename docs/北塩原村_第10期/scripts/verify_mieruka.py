@@ -519,6 +519,43 @@ def main():
             "／".join(bad21[:2]) if bad21
             else (f"{n21}点を照合" if n21 else "突き合わせる値がない"))
 
+    # ── 22 認定の状況が令和8年3月末で揃っていること ──────────────
+    #    見える化には3月末と5月末の2時点がある。村のご判断により本計画は
+    #    3月末による。5月末の値（認定者211人・認定率20.7%）が本文に紛れ込むと、
+    #    同じ指標に2つの値が並ぶ。順位だけは5月末のものしか公表がないため例外。
+    rs22 = rows_of(book("P2_"))
+    gp22 = periods(book("P2_"))
+    nin22 = pick(rs22, "認定者数", "（人）",
+                 exclude=("要支援", "要介護", "経過的", "グラフ"))
+    ninr22 = pick(rs22, "認定率", "（%）", exclude=("福島県", "全国"))
+    m22 = {k: v for k, v in zip(gp22, nin22)}
+    r22 = {k: v for k, v in zip(gp22, ninr22)}
+    # 期のキーは _pkey が決める（和暦は西暦に寄せる）。決め打ちしない
+    K3, K5 = _pkey("令和8年3月末"), _pkey("令和8年5月末")
+    v3, v5 = m22.get(K3), m22.get(K5)
+    p3, p5 = r22.get(K3), r22.get(K5)
+    bad22 = []
+    if v3 is None or v5 is None:
+        bad22.append("見える化に3月末・5月末の両方がない")
+    else:
+        # 3月末の値が本文にあること
+        if f"{v3:.0f}人" not in txt:
+            bad22.append(f"3月末の認定者数{v3:.0f}人が本文にない")
+        if f"{p3}%" not in txt:
+            bad22.append(f"3月末の認定率{p3}%が本文にない")
+        # 5月末の値は、時点を断った注記の中にだけあってよい
+        notes = "\n".join(str(b2.get("v", "")) for ch in SC.CH
+                           for sec in ch["sections"] for b2 in sec["blocks"]
+                           if b2["t"] == "note")
+        for val, lab in ((f"{v5:.0f}人", "認定者数"), (f"{p5}%", "認定率")):
+            n_all = txt.count(val)
+            n_note = notes.count(val)
+            if n_all > n_note:
+                bad22.append(f"5月末の{lab}{val}が注記の外にある（本文{n_all}件・注記{n_note}件）")
+    chk(22, "認定の状況が令和8年3月末で揃っていること", not bad22,
+        "／".join(bad22[:2]) if bad22
+        else f"3月末（{v3:.0f}人・{p3}%）を本文に用い、5月末（{v5:.0f}人・{p5}%）は注記のみ")
+
     # ── 見える化に収録されていない期（突合できない値）─────────────
     UNCOV = []
     for fig, bk in [("fig2-2_高齢化率推移", "P1_"), ("fig2-3_将来推計人口", "P1_"),
