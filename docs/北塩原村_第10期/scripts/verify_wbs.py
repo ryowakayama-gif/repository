@@ -19,6 +19,8 @@
    点検14 未完了のWBSが READY か HOLD_REASON のいずれかで扱われていること
    点検15 進捗の実績日の整合（完了に実績完了日があること、着手に実績開始日があること、
           未着手に実績日がないこと、実績完了日が実績開始日より後であること）
+   点検16 納品物の収録範囲が、実際に作られているすべてのファイルを覆っていること
+          （新しいファイルを置いたら区分を書くまで通らない）
 """
 import os, re, sys
 sys.dont_write_bytecode = True   # 古いバイトコードで誤った結果が出ることを防ぐ
@@ -28,6 +30,7 @@ from wbs_data import W
 from wbs_kakunin import K, SOLVED
 from wbs_progress import P
 from wbs_pending import LEVEL, IMPACT, BUNDLE, READY, HOLD_REASON
+from nohin_data import N as NOHIN, MIKAN, MOUSHIOKURI
 
 NG = []
 def chk(no, name, ok, detail=""):
@@ -206,10 +209,51 @@ chk(15, "進捗の実績日の整合", not bad15,
     "／".join(bad15) if bad15 else f"進捗反映{len(P)}件すべて整合")
 
 
+# 16
+import os as _os16
+# scripts/ → 北塩原村_第10期/ → docs/ → repository/
+BASE16 = _os16.path.dirname(_os16.path.dirname(_os16.path.abspath(__file__)))
+ROOT16 = _os16.path.dirname(_os16.path.dirname(BASE16))
+GEN16 = {"output": _os16.path.join(ROOT16, "output"),
+         "data": _os16.path.join(BASE16, "data")}
+aru16, bad16 = set(), []
+for pre, d in GEN16.items():
+    if not _os16.path.isdir(d):
+        bad16.append(f"{d} がない")
+        continue
+    for nm in _os16.listdir(d):
+        if nm.startswith("."):
+            continue
+        aru16.add(f"{pre}/{nm}")
+kiji16 = {x[0] for x in NOHIN}
+mibunrui = sorted(aru16 - kiji16)
+amari16 = sorted(kiji16 - aru16)
+if mibunrui:
+    bad16.append("区分が書かれていない " + "・".join(mibunrui[:4])
+                 + (f" ほか{len(mibunrui) - 4}件" if len(mibunrui) > 4 else ""))
+if amari16:
+    bad16.append("実在しないのに区分がある " + "・".join(amari16[:4]))
+KUBUN16 = {"成果品", "関連", "収録しない"}
+warui = [x[0] for x in NOHIN if x[1] not in KUBUN16]
+if warui:
+    bad16.append("区分の名が違う " + "・".join(warui[:3]))
+naiyou = [x[0] for x in NOHIN if not x[3].strip()]
+if naiyou:
+    bad16.append("理由が書かれていない " + "・".join(naiyou[:3]))
+n_syu = sum(1 for x in NOHIN if x[1] == "成果品")
+n_kan = sum(1 for x in NOHIN if x[1] == "関連")
+n_nai = sum(1 for x in NOHIN if x[1] == "収録しない")
+chk(16, "納品物の収録範囲の網羅", not bad16,
+    "／".join(bad16[:2]) if bad16
+    else f"実在{len(aru16)}件すべてに区分あり（成果品{n_syu}／関連{n_kan}／"
+         f"収録しない{n_nai}）＋納品時に作るもの{len(MIKAN)}件")
+
+
 print()
 if NG:
     print(f"不適合 {len(NG)}件")
     for n in NG:
         print("  -", n)
     sys.exit(1)
-print(f"適合：仕様書の要求事項 {len(S)}件／WBS {len(W)}件／確認事項の参照 {refs_k}件／影響度の判定 {len(IMPACT)}件／照会の束 {len(BUNDLE)}束／翌営業日の作業 {len(READY)}件")
+print(f"適合：仕様書の要求事項 {len(S)}件／WBS {len(W)}件／確認事項の参照 {refs_k}件／影響度の判定 {len(IMPACT)}件／照会の束 {len(BUNDLE)}束／翌営業日の作業 {len(READY)}件"
+      f"／納品物の区分 {len(NOHIN)}件")

@@ -21,6 +21,7 @@ from wbs_kakunin import K, SOLVED
 from spec_data import S, SHIEN, GAIBU
 from wbs_pending import (LEVEL, IMPACT, BUNDLE, READY, HOLD_REASON,
                          NEXT_DATE)
+from nohin_data import N as NOHIN, MIKAN, MOUSHIOKURI
 
 OUT = "/home/user/repository/output/05_北塩原村第10期_WBS進捗管理表.xlsx"
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
@@ -766,6 +767,83 @@ for w in W:
     rw += 1
 
 wp_.sheet_view.zoomScale = 90
+
+
+# ══════════════════ Sheet6: 納品物の構成 ══════════════════
+wn = wb.create_sheet("納品物の構成")
+wn.column_dimensions["A"].width = 3
+title_bar(wn, "A2:F2", "納品物に収録する範囲（仕様書5③-b／WBS Ⅳ-114）", size=13, h=26)
+
+rw = 4
+sub_bar(wn, f"A{rw}:F{rw}",
+        "■ 考え方　— 仕様書は「成果品及び関連データ」とするのみで範囲を定めていない。"
+        "個人情報は収録しない（doc16 §5-1・§5-2・§6）", fill=C["sub"])
+wn[f"A{rw}"].font = Font(name=F, size=10, bold=True, color=C["white"])
+rw += 2
+
+sub_bar(wn, f"A{rw}:F{rw}", "■ 村へ申し送る事項", fill=C["band"])
+rw += 1
+for m in MOUSHIOKURI:
+    wn.merge_cells(f"A{rw}:F{rw}")
+    c = wn.cell(row=rw, column=1, value="・" + m)
+    c.font = Font(name=F, size=9)
+    c.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True, indent=1)
+    for j in range(1, 7):
+        wn.cell(row=rw, column=j).border = BD
+    wn.row_dimensions[rw].height = 30
+    rw += 1
+rw += 1
+
+KU_FILL = {"成果品": C["done"], "関連": C["doing"], "収録しない": C["solved"]}
+for ku in ("成果品", "関連", "収録しない"):
+    sel = [x for x in NOHIN if x[1] == ku]
+    sub_bar(wn, f"A{rw}:F{rw}", f"■ {ku}　{len(sel)}件", fill=C["sub"])
+    wn[f"A{rw}"].font = Font(name=F, size=10, bold=True, color=C["white"])
+    rw += 1
+    head_row(wn, rw, ["区分", "ファイル", "媒体での置き場所", "理由", "", ""],
+             [10, 44, 18, 70, 10, 10], h=20)
+    wn.merge_cells(f"D{rw}:F{rw}")
+    rw += 1
+    for path, k, loc, why in sorted(sel, key=lambda x: (x[2], x[0])):
+        wn.merge_cells(f"D{rw}:F{rw}")
+        for j, v in enumerate([k, path, loc, why], 1):
+            c = wn.cell(row=rw, column=j, value=v)
+            c.font = Font(name=F, size=9)
+            c.border = BD
+            c.alignment = Alignment(horizontal="center" if j in (1, 3) else "left",
+                                    vertical="top", wrap_text=True,
+                                    indent=1 if j in (2, 4) else 0)
+        for j in range(4, 7):
+            wn.cell(row=rw, column=j).border = BD
+        wn.cell(row=rw, column=1).fill = PatternFill("solid", fgColor=KU_FILL[ku])
+        wn.row_dimensions[rw].height = 26
+        rw += 1
+    rw += 1
+
+sub_bar(wn, f"A{rw}:F{rw}", f"■ 納品の時点で作るもの　{len(MIKAN)}件（まだ存在しない）",
+        fill=C["sub"])
+wn[f"A{rw}"].font = Font(name=F, size=10, bold=True, color=C["white"])
+rw += 1
+head_row(wn, rw, ["区分", "成果品", "媒体での置き場所", "作る時点", "", ""],
+         [10, 44, 18, 70, 10, 10], h=20)
+wn.merge_cells(f"D{rw}:F{rw}")
+rw += 1
+for nm, k, loc, why in MIKAN:
+    wn.merge_cells(f"D{rw}:F{rw}")
+    for j, v in enumerate([k, nm, loc, why], 1):
+        c = wn.cell(row=rw, column=j, value=v)
+        c.font = Font(name=F, size=9)
+        c.border = BD
+        c.alignment = Alignment(horizontal="center" if j in (1, 3) else "left",
+                                vertical="top", wrap_text=True,
+                                indent=1 if j in (2, 4) else 0)
+    for j in range(4, 7):
+        wn.cell(row=rw, column=j).border = BD
+    wn.cell(row=rw, column=1).fill = PatternFill("solid", fgColor=C["key"])
+    wn.row_dimensions[rw].height = 24
+    rw += 1
+
+wn.sheet_view.zoomScale = 90
 
 
 wb.save(OUT)
