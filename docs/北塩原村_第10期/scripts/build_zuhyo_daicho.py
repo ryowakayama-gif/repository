@@ -258,11 +258,21 @@ def _num(v):
         return None
 
 
+GENGO = {"S": 1925, "H": 1988, "R": 2018}
+
 def _key(c):
-    """区分の名を突き合わせるための正規化。改行・空白・年度の表記ゆれを落とす"""
+    """区分の名を突き合わせるための正規化。
+
+    改行・空白・年度の表記ゆれを落とし、**和暦を西暦に寄せる**。
+    図は「2010年」、素案の表は「平成22年」のように元号が違うため、
+    寄せないと1件も突き合わないまま「対応する表なし」と出てしまう。
+    """
     t = re.sub(r"[\s\u3000]", "", str(c))
     t = t.replace("年度", "年").replace("平成", "H").replace("令和", "R")
-    t = t.replace("元年", "1年")
+    t = t.replace("昭和", "S").replace("元年", "1年")
+    m = re.match(r"^([SHR])(\d+)年(.*)$", t)
+    if m:
+        t = str(GENGO[m.group(1)] + int(m.group(2))) + "年" + m.group(3)
     return t
 
 
@@ -306,13 +316,17 @@ def find_in_soan(cats, vals):
 
 ws = sheet("02_素案の表との突合", "02　計画素案の表との突合",
            "図の数値と同じ並びが計画素案の表にもないかを機械で探しています。"
-           "「同じ数値が表にもある」図は、数値を直すときに表の側も直す必要があります。"
-           "対応する表がない図は、図だけが数値を持っています。",
+           "区分の名で突き合わせており、和暦と西暦の違いは寄せています。"
+           "「素案の表はこの系列を参照しています」の行は、表が数値を持たず本表から"
+           "引いているため、ここで直せば図と表の両方が変わります。"
+           "「★表に数値がじか書きされています」の行があれば、同じ数値が2か所にあり"
+           "片方だけが直る恐れがあります。対応する表がない図は、図だけが数値を持っています。",
            [9, 34, 22, 9, 22, 34])
 header(ws, HEAD_ROW, ["図番号", "表題", "系列", "一致した数",
                       "同じ数値を持つ素案の表", "扱い"])
 _r = HEAD_ROW + 1
 N_HIT = N_MISS = 0
+N_LINK = N_KASA = 0
 N_CHIGAI = 0
 CHIGAI = []
 for nm, d in Z.items():
@@ -325,12 +339,27 @@ for nm, d in Z.items():
                           f"{hit[2]}／食い違い{hit[3]}", f"{hit[0]}　{hit[1]}",
                           "★図と表で値が食い違っています。どちらが正しいかを確かめてください"],
                  fills={3: NG_O, 5: NG_O})
+        elif hit and (nm, sname) in getattr(DZ, "LINKED", {}):
+            N_LINK += 1
+            body(ws, _r, [zu_no(nm), d["title"], sname, hit[2],
+                          f"{hit[0]}　{hit[1]}",
+                          "素案の表はこの系列を参照しています。本表のデータシートで直せば"
+                          "図と表の両方が変わります（片方だけが変わることはありません）"],
+                 fills={5: OK_G})
+        elif hit and (nm, sname) in getattr(DZ, "KASANARI", {}):
+            N_KASA += 1
+            body(ws, _r, [zu_no(nm), d["title"], sname, hit[2],
+                          f"{hit[0]}　{hit[1]}",
+                          "図と図が同じ数値を持ちます（" + DZ.KASANARI[(nm, sname)] + "）。"
+                          "素案の表は重なり先の図を参照しています"],
+                 fills={5: MID_B})
         elif hit:
             N_HIT += 1
             body(ws, _r, [zu_no(nm), d["title"], sname, hit[2],
                           f"{hit[0]}　{hit[1]}",
-                          "表と図が同じ数値を持ちます。数値を直すときは両方を直してください"],
-                 fills={5: MID_B})
+                          "★表に数値がじか書きされています。数値を直すときは両方を直す"
+                          "必要があります。正本から引く形に改めてください"],
+                 fills={5: NG_O})
         else:
             N_MISS += 1
             body(ws, _r, [zu_no(nm), d["title"], sname, "―", "対応する表なし",
@@ -515,10 +544,19 @@ chk(14, "データシートにネイティブグラフが置かれているこ�
      all(len(wb[s]._charts) == 1 for s in dsheets))
 chk(15, "図の数値が計画素案の表と重複していないか整理されていること",
      "02シートの全行に扱いがある",
-     f"重複{N_HIT}系列／図のみ{N_MISS}系列／食い違い{N_CHIGAI}系列",
-     (N_HIT + N_MISS + N_CHIGAI) == sum(len(d["series"]) for d in Z.values()))
+     f"正本を参照{N_LINK}系列／図の間の重なり{N_KASA}系列／"
+     f"じか書き{N_HIT}系列／図のみ{N_MISS}系列／食い違い{N_CHIGAI}系列",
+     (N_HIT + N_LINK + N_KASA + N_MISS + N_CHIGAI)
+     == sum(len(d["series"]) for d in Z.values()))
 chk(16, "図と計画素案の表で数値が食い違っていないこと",
      "02シートの食い違い == 0", f"{N_CHIGAI}系列", N_CHIGAI == 0)
+chk(18, "素案の表に数値がじか書きされていないこと",
+     "02シートのじか書き == 0",
+     f"{N_HIT}系列（正本を参照しているもの{N_LINK}系列）", N_HIT == 0)
+chk(19, "正本を参照していると称した系列が、実際に素案の表と同じ数値を持つこと",
+     "LINKED の全件が02シートで突き合わさる",
+     f"{N_LINK}／{len(getattr(DZ, 'LINKED', {}))}系列",
+     N_LINK == len(getattr(DZ, "LINKED", {})))
 chk(17, "台帳の上で直された数値が、正本に取り込まれていること",
      "台帳の値 == data_zuhyo.py の値", f"取り込まれていない値{len(SASHI)}件",
      not SASHI)

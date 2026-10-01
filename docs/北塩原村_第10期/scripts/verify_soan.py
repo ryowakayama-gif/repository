@@ -983,6 +983,100 @@ def main():
         chk(45, '2-8 の目標別の推移が算定と一致し計が得点の表と合うこと', False,
             f'照合できない（{e}）')
 
+    # ── 46　図と図が同じ数値を持つところが食い違っていないこと ──────────
+    #    人口の図（図2-1・図2-3・図2-4・図2-2）は同じ数値を別の切り口で持つ。
+    #    片方だけを直すと静かに食い違うため、恒等式として突き合わせる。
+    try:
+        import data_zuhyo as _DZ46
+        def _s46(fig, ser):
+            return dict(zip(_DZ46.cats(fig), _DZ46.vals(fig, ser)))
+        P3 = {k: _s46('fig2-3_将来推計人口', k)
+              for k in ('15歳未満', '15〜64歳', '65歳以上', '総人口')}
+        P4 = {k: _s46('fig2-4_前期後期高齢者', k) for k in ('65〜74歳', '75歳以上')}
+        P2 = _s46('fig2-2_高齢化率推移', '北塩原村')
+        P1 = {k: _s46('fig2-1_人口構成比較', k)
+              for k in ('平成22年（2010年）', '令和7年（2025年）')}
+        bad46, n46 = [], 0
+        for y in P3['総人口']:
+            n46 += 1
+            g = P3['15歳未満'][y] + P3['15〜64歳'][y] + P3['65歳以上'][y]
+            # 国勢調査の年は年齢不詳の分だけ3区分の計が総人口に満たない。
+            # 認めるのは data_zuhyo.FUSHO に宣言した分だけである。
+            g += getattr(_DZ46, 'FUSHO', {}).get(y, 0)
+            if abs(g - P3['総人口'][y]) > 1e-9:
+                bad46.append(f'図2-3 {y}：3区分の計{g:.0f}≠総人口{P3["総人口"][y]:.0f}')
+            n46 += 1
+            g = P4['65〜74歳'][y] + P4['75歳以上'][y]
+            if abs(g - P3['65歳以上'][y]) > 1e-9:
+                bad46.append(f'図2-4 {y}：前期＋後期{g:.0f}≠図2-3の65歳以上'
+                             f'{P3["65歳以上"][y]:.0f}')
+            n46 += 1
+            r = P3['65歳以上'][y] / P3['総人口'][y] * 100
+            if abs(round(r, 1) - P2[y]) > 0.051:
+                bad46.append(f'図2-2 {y}：図2-3から求めた高齢化率{r:.1f}%'
+                             f'≠{P2[y]}%')
+        # 図2-1（年齢階級別）は図2-3・図2-4の同じ年と重なる
+        for ser, y in (('平成22年（2010年）', '2010年'), ('令和7年（2025年）', '2025年')):
+            d = P1[ser]
+            for nm, got, want in (
+                    ('15歳未満', d['15歳未満'], P3['15歳未満'][y]),
+                    ('生産年齢人口', d['15〜39歳'] + d['40〜64歳'], P3['15〜64歳'][y]),
+                    ('65〜74歳', d['65〜74歳'], P4['65〜74歳'][y]),
+                    ('75歳以上', d['75歳以上'], P4['75歳以上'][y])):
+                n46 += 1
+                if abs(got - want) > 1e-9:
+                    bad46.append(f'図2-1 {ser} {nm}：{got:.0f}≠{want:.0f}')
+        chk(46, '図と図が同じ数値を持つところが一致すること', not bad46,
+            '・'.join(bad46[:3]) if bad46 else f'人口の恒等式{n46}本が一致（年齢不詳は宣言した'
+            f'{sum(getattr(_DZ46, "FUSHO", {}).values())}人のみ）')
+    except Exception as e:
+        chk(46, '図と図が同じ数値を持つところが一致すること', False, f'照合できない（{e}）')
+
+    # ── 47　素案の表が図の数値の正本を参照していること（摂動試験）──────────
+    #    正本（data_zuhyo）の値を動かしたときに素案の表の出力も動くことを確かめる。
+    #    動かないなら表の側に数値がじか書きされている。
+    #    data_zuhyo.LINKED が「参照している」と称している系列を1つずつ試す。
+    try:
+        import importlib
+        import data_zuhyo as _DZ47
+        def _cells():
+            """素案のすべての表のセルを1本の文字列にする"""
+            out = []
+            for c in SC.CH:
+                for sec in c['sections']:
+                    for b in sec['blocks']:
+                        if b.get('t') == 'table':
+                            for r in b['rows']:
+                                out.extend(str(x) for x in r)
+            return '\u0001'.join(out)
+        orig47 = _DZ47.vals
+        base47 = _cells()
+        bad47, n47 = [], 0
+        for fig, ser in _DZ47.LINKED:
+            def patched(name, series_name, use_book=True, _f=fig, _s=ser):
+                v = orig47(name, series_name, use_book)
+                if (name, series_name) == (_f, _s):
+                    return [x + 1000 for x in v]
+                return v
+            _DZ47.vals = patched
+            try:
+                importlib.reload(SC)
+                moved = _cells() != base47
+            finally:
+                _DZ47.vals = orig47
+                importlib.reload(SC)
+            n47 += 1
+            if not moved:
+                bad47.append(f'{fig}／{ser}：正本を動かしても表が変わらない')
+        if _cells() != base47:
+            bad47.append('摂動を戻したのに表が元に戻っていない')
+        chk(47, '素案の表が図の数値の正本を参照していること', not bad47,
+            '・'.join(bad47[:3]) if bad47
+            else f'{n47}系列を1つずつ動かし、いずれも表に伝わった')
+    except Exception as e:
+        chk(47, '素案の表が図の数値の正本を参照していること', False,
+            f'照合できない（{e}）')
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
