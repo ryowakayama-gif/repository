@@ -24,7 +24,7 @@ RULE = 'C8D2CE'
 thin = Side(style='thin', color=RULE)
 BOX = Border(left=thin, right=thin, top=thin, bottom=thin)
 IMPACT_COLOR = {'大': RED, '中': AMBER, '小': GREEN}
-STATE_COLOR = {'仮反映済': GREEN, '照会中': AMBER, '方針待ち': AMBER, '未確認': GREY}
+STATE_COLOR = {'反映済': GREEN, '仮反映済': GREEN, '照会中': AMBER, '方針待ち': AMBER, '未確認': GREY}
 
 def style(c, *, size=10, bold=False, color=INK, bg=None, wrap=True,
           ha='left', va='top', border=True):
