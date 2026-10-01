@@ -19,6 +19,8 @@ def wareki(ymd):
 BD_JP = None
 from wbs_kakunin import K, SOLVED
 from spec_data import S, SHIEN, GAIBU
+from wbs_pending import (LEVEL, IMPACT, BUNDLE, READY, HOLD_REASON,
+                         NEXT_DATE)
 
 OUT = "/home/user/repository/output/05_北塩原村第10期_WBS進捗管理表.xlsx"
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
@@ -506,7 +508,268 @@ for n in notes:
     ws2.cell(row=nr, column=2, value=n).font = Font(name=F, size=8)
     nr += 1
 
+# ══════════════════ Sheet5: ペンディング・作業順位 ══════════════════
+import re as _re
+NEXT_JP = wareki(NEXT_DATE)
+PROG = {}
+for _w in W:
+    _e = P.get(_w[3])
+    PROG[_w[0]] = (_e[1] if _e else 0.0, _e[0] if _e else "未着手", _w[3])
+
+def _ids(k):
+    return [x.strip() for x in _re.split(r"[,、]\s*", k[3])
+            if x.strip() and x.strip() != "―"]
+
+def _lv(i, k):
+    """影響度。IMPACT にあればその値。関連WBSがすべてⅠ群なら5（調査工程）。"""
+    if i in IMPACT:
+        return IMPACT[i][0]
+    ids = _ids(k)
+    if ids and all(x.startswith("Ⅰ") for x in ids):
+        return 5
+    return None
+
+def _bundle(k):
+    ids = set(_ids(k))
+    for no, nm, wids, _ in BUNDLE:
+        if ids & set(wids):
+            return no
+    return "―"
+
+wp_ = wb.create_sheet("ペンディング・作業順位")
+wp_.column_dimensions["A"].width = 3
+title_bar(wp_, "A2:H2",
+          f"ペンディングの影響度と作業順位（基準日 {BD_JP}／対象の翌営業日 {NEXT_JP}）",
+          size=13, h=26)
+
+rw = 4
+sub_bar(wp_, f"A{rw}:H{rw}", "■ 影響度の定義（当方の作業に対する影響）", fill=C["sub"])
+wp_[f"A{rw}"].font = Font(name=F, size=10, bold=True, color=C["white"])
+rw += 1
+head_row(wp_, rw, ["影響度", "呼び方", "意味", "", "", "", "", ""],
+         [8, 10, 30, 22, 22, 22, 18, 24], h=20)
+wp_.merge_cells(f"C{rw}:H{rw}")
+rw += 1
+for lv in sorted(LEVEL):
+    nm, mean = LEVEL[lv]
+    wp_.cell(row=rw, column=1, value=lv)
+    wp_.cell(row=rw, column=2, value=nm)
+    wp_.merge_cells(f"C{rw}:H{rw}")
+    wp_.cell(row=rw, column=3, value=mean)
+    for col in range(1, 9):
+        c = wp_.cell(row=rw, column=col)
+        c.font = Font(name=F, size=9)
+        c.border = BD
+        c.alignment = Alignment(horizontal="center" if col <= 2 else "left",
+                                vertical="top", wrap_text=True, indent=0 if col <= 2 else 1)
+    wp_.row_dimensions[rw].height = 26
+    rw += 1
+
+# ── 影響度別の件数 ──
+rw += 1
+sub_bar(wp_, f"A{rw}:H{rw}", "■ 未解決の確認事項 187件の内訳（影響度 × 優先度）", fill=C["sub"])
+wp_[f"A{rw}"].font = Font(name=F, size=10, bold=True, color=C["white"])
+rw += 1
+head_row(wp_, rw, ["影響度", "呼び方", "優先度S", "優先度A", "優先度B", "優先度C",
+                   "小計", "備考"],
+         [8, 10, 10, 10, 10, 10, 10, 60], h=22)
+rw += 1
+cnt = {}
+for i, k in enumerate(K, 1):
+    lv = _lv(i, k)
+    cnt.setdefault(lv, {}).setdefault(k[5], 0)
+    cnt[lv][k[5]] += 1
+NOTE_LV = {
+ 0: "当方で確かめれば解消する。ペンディングとして数えない。",
+ 1: "回答がないと成果品の数値が確定しない。最優先で照会する。",
+ 2: "仮定を置いて進めている。確定時に再算定と差替えが生じる。",
+ 3: "記載は済んでいる。回答により文言・施策の内容が変わる。",
+ 4: "当方の作業は止まらない。村の内部手続または日程の決定を待つ。",
+ 5: "調査票は他メンバーが作成しているため当方では作業しない。",
+ None: "優先度B・Cのうち計画策定側のもの。第2回策定委員会以降の照会を予定しており影響度は判定していない。ただしこのうち進捗0.90以上のWBSを止めているものは下段の見直し候補に掲げた。",
+}
+tot = {}
+for lv in [0, 1, 2, 3, 4, 5, None]:
+    d = cnt.get(lv, {})
+    if not d:
+        continue
+    nm = LEVEL[lv][0] if lv in LEVEL else "判定未了"
+    vals = [d.get(x, 0) for x in ("S", "A", "B", "C")]
+    row = [lv if lv is not None else "―", nm] + vals + [sum(vals), NOTE_LV.get(lv, "")]
+    for j, v in enumerate(row, 1):
+        c = wp_.cell(row=rw, column=j, value=v)
+        c.font = Font(name=F, size=9, bold=(j == 7))
+        c.border = BD
+        c.alignment = Alignment(horizontal="left" if j in (2, 8) else "center",
+                                vertical="center", wrap_text=(j == 8), indent=1 if j == 8 else 0)
+        if lv in (1, 2):
+            c.fill = PatternFill("solid", fgColor=C["prioS"] if lv == 1 else C["prioA"])
+        elif lv == 5:
+            c.fill = PatternFill("solid", fgColor=C["solved"])
+    for x in ("S", "A", "B", "C"):
+        tot[x] = tot.get(x, 0) + d.get(x, 0)
+    wp_.row_dimensions[rw].height = 22
+    rw += 1
+row = ["", "合計"] + [tot.get(x, 0) for x in ("S", "A", "B", "C")] + [sum(tot.values()), ""]
+for j, v in enumerate(row, 1):
+    c = wp_.cell(row=rw, column=j, value=v)
+    c.font = Font(name=F, size=9, bold=True)
+    c.border = BD
+    c.fill = PatternFill("solid", fgColor=C["band"])
+    c.alignment = Alignment(horizontal="center", vertical="center")
+rw += 2
+
+# ── 影響度1・2の明細 ──
+sub_bar(wp_, f"A{rw}:H{rw}",
+        "■ 影響度1（停止）・2（仮置き）の明細　— 村への照会はこの順で起案する", fill=C["sub"])
+wp_[f"A{rw}"].font = Font(name=F, size=10, bold=True, color=C["white"])
+rw += 1
+head_row(wp_, rw, ["影響度", "No.", "優先度", "確認事項", "止まる対象",
+                   "当方の手当（現時点の扱い）", "回答が必要な時期", "束"],
+         [8, 8, 8, 40, 26, 46, 20, 8], h=30)
+rw += 1
+det = []
+for i, k in enumerate(K, 1):
+    if i in IMPACT and IMPACT[i][0] in (0, 1, 2):
+        det.append((IMPACT[i][0], i, k))
+det.sort(key=lambda x: (x[0] if x[0] else 99, x[1]))
+for lv, i, k in det:
+    row = [lv, f"K-{i:03d}", k[5], k[1], IMPACT[i][1], IMPACT[i][2], IMPACT[i][3],
+           _bundle(k)]
+    for j, v in enumerate(row, 1):
+        c = wp_.cell(row=rw, column=j, value=v)
+        c.font = Font(name=F, size=9)
+        c.border = BD
+        c.alignment = Alignment(horizontal="center" if j in (1, 2, 3, 8) else "left",
+                                vertical="top", wrap_text=True, indent=1 if j >= 4 else 0)
+    wp_.cell(row=rw, column=1).fill = PatternFill(
+        "solid", fgColor={0: C["band"], 1: C["prioS"], 2: C["prioA"]}[lv])
+    wp_.row_dimensions[rw].height = 52
+    rw += 1
+rw += 1
+
+# ── 照会の束 ──
+sub_bar(wp_, f"A{rw}:H{rw}",
+        "■ 照会の束　— 1通にまとめて起案する単位（未解決の確認事項を関連WBSで束ねたもの）", fill=C["sub"])
+wp_[f"A{rw}"].font = Font(name=F, size=10, bold=True, color=C["white"])
+rw += 1
+head_row(wp_, rw, ["束", "名称", "未解決", "うちS", "うちA", "止まるWBS",
+                   "照会の方法", ""], [8, 24, 10, 10, 10, 26, 60, 10], h=24)
+rw += 1
+BN = {}
+for i, k in enumerate(K, 1):
+    BN.setdefault(_bundle(k), []).append((i, k))
+for no, nm, wids, how in BUNDLE:
+    sel = BN.get(no, [])
+    s_ = sum(1 for _, k in sel if k[5] == "S")
+    a_ = sum(1 for _, k in sel if k[5] == "A")
+    stop = sorted({x for _, k in sel for x in _ids(k) if x in wids})
+    wp_.merge_cells(f"G{rw}:H{rw}")
+    row = [no, nm, len(sel), s_, a_, "、".join(stop), how]
+    for j, v in enumerate(row, 1):
+        c = wp_.cell(row=rw, column=j, value=v)
+        c.font = Font(name=F, size=9, bold=(j == 1))
+        c.border = BD
+        c.alignment = Alignment(horizontal="center" if j in (1, 3, 4, 5) else "left",
+                                vertical="top", wrap_text=True, indent=1 if j >= 2 else 0)
+    wp_.cell(row=rw, column=8).border = BD
+    wp_.row_dimensions[rw].height = 46
+    rw += 1
+rw += 1
+
+# ── 優先度の見直し候補 ──
+cand = []
+for i, k in enumerate(K, 1):
+    if k[5] not in ("B", "C"):
+        continue
+    hi = [x for x in _ids(k) if 0.90 <= PROG.get(x, (0,))[0] < 1.0]
+    if hi:
+        cand.append((i, k, hi))
+sub_bar(wp_, f"A{rw}:H{rw}",
+        f"■ 優先度の見直し候補　— 優先度B・Cのうち、進捗0.90以上のWBSの"
+        f"最後の未確定要素になっているもの {len(cand)}件", fill=C["sub"])
+wp_[f"A{rw}"].font = Font(name=F, size=10, bold=True, color=C["white"])
+rw += 1
+head_row(wp_, rw, ["No.", "優先度", "区分", "確認事項", "止めているWBS",
+                   "進捗", "束", ""], [8, 8, 10, 54, 34, 8, 8, 10], h=22)
+rw += 1
+for i, k, hi in cand:
+    wp_.merge_cells(f"G{rw}:H{rw}")
+    row = [f"K-{i:03d}", k[5], k[0], k[1],
+           "、".join(f"{x} {PROG[x][2]}" for x in hi),
+           "、".join(f"{PROG[x][0]:.2f}" for x in hi), _bundle(k)]
+    for j, v in enumerate(row, 1):
+        c = wp_.cell(row=rw, column=j, value=v)
+        c.font = Font(name=F, size=9)
+        c.border = BD
+        c.alignment = Alignment(horizontal="center" if j in (1, 2, 3, 6, 7) else "left",
+                                vertical="top", wrap_text=True, indent=1 if j in (4, 5) else 0)
+    wp_.cell(row=rw, column=8).border = BD
+    wp_.row_dimensions[rw].height = 30
+    rw += 1
+rw += 1
+
+# ── 翌営業日の作業順位 ──
+sub_bar(wp_, f"A{rw}:H{rw}",
+        f"■ {NEXT_JP}の作業順位　— ペンディングがなく進められるもの", fill=C["sub"])
+wp_[f"A{rw}"].font = Font(name=F, size=10, bold=True, color=C["white"])
+rw += 1
+head_row(wp_, rw, ["順位", "WBS No.", "作業項目", "現進捗", "行うこと",
+                   "完了の判定", "所要", ""], [8, 10, 24, 8, 54, 40, 10, 10], h=24)
+rw += 1
+for no, wid, doing, judge, hrs in READY:
+    pr, st, nm = PROG.get(wid, (0.0, "未着手", "―"))
+    wp_.merge_cells(f"G{rw}:H{rw}")
+    row = [no, wid, nm, f"{pr:.2f}", doing, judge, hrs]
+    for j, v in enumerate(row, 1):
+        c = wp_.cell(row=rw, column=j, value=v)
+        c.font = Font(name=F, size=9, bold=(j == 1))
+        c.border = BD
+        c.alignment = Alignment(horizontal="center" if j in (1, 2, 4, 7) else "left",
+                                vertical="top", wrap_text=True, indent=1 if j in (3, 5, 6) else 0)
+    wp_.cell(row=rw, column=8).border = BD
+    wp_.row_dimensions[rw].height = 48
+    rw += 1
+rw += 1
+
+# ── 翌営業日に着手しない未完了のWBSとその理由 ──
+sub_bar(wp_, f"A{rw}:H{rw}",
+        "■ 翌営業日に着手しない未完了のWBSとその理由", fill=C["sub"])
+wp_[f"A{rw}"].font = Font(name=F, size=10, bold=True, color=C["white"])
+rw += 1
+head_row(wp_, rw, ["WBS No.", "作業項目", "状況", "進捗", "着手しない理由", "", "", ""],
+         [10, 30, 10, 8, 70, 10, 10, 10], h=22)
+rw += 1
+ready_ids = {r[1] for r in READY}
+for w in W:
+    wid = w[0]
+    pr, st, nm = PROG.get(wid, (0.0, "未着手", w[3]))
+    if pr >= 1.0 or st == "対象外" or wid in ready_ids:
+        continue
+    if wid.startswith("Ⅰ"):
+        why = "調査工程。調査票は他メンバーが作成しているため当方では作業しない。" \
+              if int(wid.split("-")[1]) not in (39, 40, 41, 42, 43, 44, 45, 46) else \
+              "集計・分析は当方の担当。調査票の回収を待つ（ダミーデータによる検証は済み）。"
+    else:
+        why = HOLD_REASON.get(wid, "")
+    wp_.merge_cells(f"E{rw}:H{rw}")
+    row = [wid, nm, st, f"{pr:.2f}", why]
+    for j, v in enumerate(row, 1):
+        c = wp_.cell(row=rw, column=j, value=v)
+        c.font = Font(name=F, size=9)
+        c.border = BD
+        c.alignment = Alignment(horizontal="center" if j in (1, 3, 4) else "left",
+                                vertical="top", wrap_text=True, indent=1 if j in (2, 5) else 0)
+    for j in range(5, 9):
+        wp_.cell(row=rw, column=j).border = BD
+    wp_.row_dimensions[rw].height = 22
+    rw += 1
+
+wp_.sheet_view.zoomScale = 90
+
+
 wb.save(OUT)
 print(f"保存: {OUT}")
 print(f"WBS: {LAST-HR}件 / 確認事項: {len(K)}件（解決済{len(SOLVED)}件） / 受領資料: {DLAST-DHR}件")
 print(f"進捗反映: {len(P)}件")
+print(f"影響度の判定: {len(IMPACT)}件 / 照会の束: {len(BUNDLE)}件 / 翌営業日の作業: {len(READY)}件 / 見直し候補: {len(cand)}件")
