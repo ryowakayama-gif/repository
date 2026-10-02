@@ -175,6 +175,109 @@ SOAN = [
     ], []),
 ]
 
+# ------------------------------------------------ 3町のヒアリングと打合せ
+# 構成3町（東川町・美瑛町・東神楽町）の町別ヒアリング及び打合せで用いる資料を、
+# 使う場面ごとに4つに分けて1つにまとめたもの。
+# 町ごとの個別協議（令和8年10月中旬〜下旬）に持参する一式である。
+# 送付区分が内部保管・対象外のものは入れない（build_machi が確かめる）。
+MACHI_NAME = "第10期計画_3町ヒアリング・打合せ資料一式_令和8年10月.zip"
+MACHI_GROUPS = [
+    ("01_ヒアリング", [
+        ("第10期計画_3町ヒアリング資料.docx",
+         "町別ヒアリングで用いる資料。伺う事項と当方の整理を章立てで示す"),
+        ("第10期計画_キックオフ会議ヒアリングシート.docx",
+         "ヒアリングの記録用紙。伺った内容をその場で書き留める"),
+        ("第10期計画_3町別の論点整理.xlsx",
+         "町ごとの現在地と論点、3町共通の論点、協議の進め方"),
+    ]),
+    ("02_協議（令和8年10月）", [
+        ("第10期計画_3町合同意見交換会資料.docx",
+         "3町合同の意見交換会（10月上旬）で用いる資料。"
+         "策定の状況・保険料の月額を動かす前提・地域課題・共通の確認事項"),
+        ("第10期計画_10月 地域課題の整理と3町協議の確認事項.xlsx",
+         "地域課題15件と、町ごとの確認事項（東川町・美瑛町・東神楽町の各シート）"),
+        ("第10期計画_構成町の意見への回答と工程の前倒し案.docx",
+         "構成町からいただいた意見への回答と、工程を前倒しする案"),
+    ]),
+    ("03_町別の基礎データ", [
+        ("第10期計画_町別データシート.xlsx",
+         "町ごとの人口・認定者数・サービスの利用状況・総合事業（町別の3シート）"),
+        ("第10期計画_3町の社会資源一覧との突合.xlsx",
+         "3町の社会資源一覧と公表名簿との突合"),
+        ("第10期計画_社人研推計の町別データの受領点検.xlsx",
+         "町別の将来人口の基礎データの点検"),
+        ("第10期計画_交付金 市町村分評価指標と3町の評価.xlsx",
+         "保険者機能強化推進交付金等の評価指標と3町の得点"),
+        ("第10期計画_交付金 市町村分評価指標と3町の評価.pdf",
+         "同じ内容を紙面で読む形にしたもの"),
+        ("第10期計画_交付金評価の取りまとめと第10期への反映.xlsx",
+         "3か年の推移、全国との比較、一部の町のみ得点している項目"),
+        ("第10期計画_交付金評価の取りまとめと第10期への反映.pdf",
+         "同じ内容を紙面で読む形にしたもの"),
+    ]),
+    ("04_協議の前提となる算定", [
+        ("第10期計画_サービス見込量の算定_第2次概算.xlsx",
+         "第2次概算（令和8年10月30日）の組立て。"
+         "第1次概算からの差分と、月額を動かす前提"),
+        ("第10期計画_サービス見込量の算定.xlsx",
+         "サービス見込量・給付費・保険料の算定"),
+        ("第10期計画_資料を受領できない場合のサービス見込量.docx",
+         "資料のご提供がない場合に確定する値と、確定しない値"),
+        ("第10期計画_認知症施策推進計画の位置づけと見込量への反映.xlsx",
+         "市町村認知症施策推進計画を3町が策定することの整理と、見込量への反映"),
+    ]),
+]
+
+
+def build_machi(missing):
+    """3町のヒアリングと打合せの資料を、使う場面ごとに分けて1つにまとめる。"""
+    from data_dispatch import dispatch_of
+
+    lines = ["第10期介護保険事業計画　3町ヒアリング・打合せ資料一式",
+             "",
+             "大雪地区広域連合の構成3町（東川町・美瑛町・東神楽町）の",
+             "町別ヒアリング及び打合せで用いる資料をまとめたものです。",
+             "使う場面ごとに4つのフォルダに分けています。",
+             "",
+             "「お諮りする内容を含む」とあるものは、ご判断・ご協議をお願いする",
+             "事項や当方の仮置きを含みます。ご決定の内容により置き直します。",
+             ""]
+    n, bad = 0, []
+    with zipfile.ZipFile(os.path.join(DEST, MACHI_NAME), "w",
+                         zipfile.ZIP_DEFLATED) as z:
+        for sub, items in MACHI_GROUPS:
+            lines.append("■ " + sub)
+            for fn, yoto in items:
+                src = os.path.join(ROOT, fn)
+                if not os.path.exists(src):
+                    missing.append(fn)
+                    continue
+                kb = dispatch_of(fn)[0]
+                if kb in ("内部保管", "対象外"):
+                    bad.append(fn)
+                    continue
+                add(z, "%s/%s" % (sub, fn), src)
+                n += 1
+                lines.append("  ・%s" % fn)
+                lines.append("    %s" % yoto)
+                lines.append("    区分：%s"
+                             % ("そのまま送付できるもの" if kb == "送付"
+                                else "お諮りする内容を含むもの"))
+            lines.append("")
+        txt = "\n".join(lines).rstrip() + "\n"
+        info = zipfile.ZipInfo("00_この一式について.txt")
+        info.flag_bits |= 0x800
+        info.compress_type = zipfile.ZIP_DEFLATED
+        z.writestr(info, txt.encode("utf-8"))
+        n += 1
+
+    size = os.path.getsize(os.path.join(DEST, MACHI_NAME)) / 1024
+    print("  %-52s %3d件 %6.0f KB" % (MACHI_NAME, n, size))
+    if bad:
+        print("  内部保管・対象外が混ざっています:", "、".join(bad))
+    return n, txt, bad
+
+
 # ------------------------------------------------ 中間報告の検証用エビデンス
 # 第三者が中間報告の記述を検証するための一式。
 # 報告本体・根拠対照表・根拠となる成果品・原データを1つにまとめる。
@@ -316,6 +419,9 @@ if __name__ == "__main__":
     print("【工程提出用（第9期評価）】")
     nt = sum(build(nm, base, f, d, missing) for nm, base, f, d in TEISHUTSU)
 
+    print("【3町ヒアリング・打合せ資料一式】")
+    nm_, machi_txt, machi_bad = build_machi(missing)
+
     print("【送付区分別】")
     n_so, n_na = build_by_dispatch(missing)
 
@@ -348,6 +454,8 @@ if __name__ == "__main__":
     print()
     print("成果物 %d件／エビデンス %d件／素案一式 %d件／"
           "工程提出用 %d件／検証用 %d件" % (ns, ne, nso, nt, nk))
+    print("3町ヒアリング・打合せ %d件（%d群）"
+          % (nm_, len(MACHI_GROUPS)))
     print("送付用 %d件／内部保管 %d件" % (n_so, n_na))
     print("欠落: %s" % ("なし" if not missing else "、".join(missing)))
 
@@ -378,3 +486,30 @@ if __name__ == "__main__":
     print("送付用ZIPの点検: %s"
           % ("内部保管・対象外は含まれていない" if not bad
              else "混入 " + "、".join(bad)))
+
+    # 3町ヒアリング・打合せ資料一式の点検
+    import re as _re
+    with zipfile.ZipFile(os.path.join(DEST, MACHI_NAME)) as z:
+        _names = z.namelist()
+    _mbad = [a for a in _names if not a.endswith(".txt")
+             and dispatch_of(os.path.basename(a))[0] in ("内部保管", "対象外")]
+    _msub = sorted({a.split("/")[0] for a in _names if "/" in a})
+    _NAIBU = ["固定値", "実物から", "章節ごとに", "判定している", "読んで判定",
+              "スクリプト", "runpy", ".py", "再実行", "書き写して",
+              "個票がなくても", "モジュール", "終了コード"]
+    _NG = ["に由来する", "と整合する", "1件も", "有意差がないため関係がない",
+           "全国トップ級"]
+    _mn = [w for w in _NAIBU if w in machi_txt]
+    _mg = [w for w in _NG if w in machi_txt]
+    _mp = _re.search(r"0\d{1,3}-\d{2,4}-\d{4}|[\w.+-]+@[\w-]+\.[\w.]+",
+                     machi_txt)
+    print("3町ヒアリング・打合せZIPの点検: 群%d（%s）／%s／%s／%s／%s"
+          % (len(_msub), "・".join(_msub),
+             "内部保管・対象外なし" if not _mbad and not machi_bad
+             else "混入 " + "、".join(_mbad + machi_bad),
+             "内部の仕組みの語なし" if not _mn else "検出 " + "・".join(_mn),
+             "禁止表現なし" if not _mg else "検出 " + "・".join(_mg),
+             "個人情報の形なし" if not _mp else "検出あり"))
+    if _mbad or machi_bad or _mn or _mg or _mp:
+        import sys as _sys2
+        _sys2.exit(1)
