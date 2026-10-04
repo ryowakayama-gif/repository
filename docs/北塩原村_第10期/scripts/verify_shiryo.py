@@ -4,7 +4,7 @@
    資料は計画素案と交付金の算定から数値を書き写しているため、
    元を直したときの取り残しを検出する。不適合があれば終了コード1を返す。
 """
-import csv, os, sys
+import csv, os, re, sys
 sys.dont_write_bytecode = True   # 古いバイトコードで誤った結果が出ることを防ぐ
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import shiryo_content as SH
@@ -501,8 +501,38 @@ if tA is not None:
 chk(20, "見込量・保険料の表が計画素案と委員会資料で一致すること", not bad20,
     "・".join(bad20[:3]) if bad20 else f"{n20}表（認定率・認定者数・バックテスト・保険料パターン・所得段階別・感応度・中長期ほか）とA案の値が一致")
 
+# ── 21　第3回資料の骨子：【要確定】がすべて追えること ──────────────
+#    骨子は数値を入れていない。入っていないことを隠さず、何が決まれば埋まるかを
+#    一つずつ書く。その出どころ（TRACE）が、村への確認事項（wbs_kakunin.K）の
+#    見出しに実在するか、「外：」で外の決まりごとを指すかを確かめる。
+#    どちらでもないものは当方の思いつきであり、枠を増やしてはならない。
+try:
+    import shiryo3_content as SH3
+    import wbs_kakunin as _WK21
+    midashi = [k[1] for k in _WK21.K] + [k[1] for k in _WK21.SOLVED]
+    bad21 = []
+    for nani, moto in SH3.TRACE:
+        if moto.startswith("外："):
+            continue
+        if not any(moto in m for m in midashi):
+            bad21.append(f"{nani[:18]} の出どころ「{moto[:26]}」が確認事項にない")
+    # 資料に載せた枠の数と TRACE の数が合うこと（書き漏れの検出）
+    n_waku = sum(1 for c in SH3.CH for sec in c["sections"] for b in sec["blocks"]
+                 if b["t"] == "table"
+                 for r in b["rows"] if str(r[0]).startswith("【要確定】"))
+    if n_waku != len(SH3.TRACE):
+        bad21.append(f"資料の枠{n_waku}件と出どころ{len(SH3.TRACE)}件が合わない")
+    n_soto = sum(1 for _, m in SH3.TRACE if m.startswith("外："))
+    chk(21, "第3回資料の骨子の【要確定】が確認事項に追えること", not bad21,
+        "・".join(bad21[:3]) if bad21
+        else f"{len(SH3.TRACE)}件（確認事項{len(SH3.TRACE) - n_soto}件／"
+             f"外の決まりごと{n_soto}件）がすべて追える")
+except Exception as e:
+    chk(21, "第3回資料の骨子の【要確定】が確認事項に追えること", False,
+        f"照合できない（{e}）")
+
 w = max(len(n) for _, n, _, _ in R)
-print("■ 第2回策定委員会 資料の自己点検")
+print("■ 策定委員会 資料の自己点検（第2回＋第3回の骨子）")
 ng = 0
 for no, name, ok, detail in R:
     print(f"  {no:>3}  {name:<{w}}  {'適合' if ok else '不適合'}" + (f"  {detail}" if detail else ""))

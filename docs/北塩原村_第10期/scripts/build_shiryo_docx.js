@@ -1,15 +1,24 @@
-// 第2回策定委員会 資料 Word生成（shiryo_content.py が出力した /tmp/shiryo.json を読む）
+// 策定委員会 資料 Word生成（*_content.py が出力した JSON を読む）
+//   node scripts/build_shiryo_docx.js            第2回（既定）
+//   node scripts/build_shiryo_docx.js 3          第3回
+// 回ごとに別の組立てを書くと体裁が食い違うため、同じ組立てを使い回す。
 const fs = require('fs');
 const d = require('/tmp/node_modules/docx');
 const {Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBreak,
        Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, LevelFormat,
        TableOfContents, Footer, PageNumber, ImageRun, TableLayoutType} = d;
 const path = require('path');
+const KAI = (process.argv[2] === '3') ? 3 : 2;
+const SRC_PY = KAI === 3 ? 'shiryo3_content.py' : 'shiryo_content.py';
+const JSON_PATH = KAI === 3 ? '/tmp/shiryo3.json' : '/tmp/shiryo.json';
+const OUT_PATH = KAI === 3
+  ? '/home/user/repository/output/12_北塩原村第10期_第3回策定委員会資料.docx'
+  : '/home/user/repository/output/08_北塩原村第10期_第2回策定委員会資料.docx';
 // 入力のJSONが元データより古いときは止める（古い成果品を作らないため）
 (function () {
   // __dirname 基準にする。cwd に依らず走らせるため
-  const src = path.join(__dirname, "shiryo_content.py");
-  const js  = "/tmp/shiryo.json";
+  const src = path.join(__dirname, SRC_PY);
+  const js  = JSON_PATH;
   if (!fs.existsSync(js)) {
     console.error('入力の ' + js + ' がありません。先に ' + src + ' を実行してください。');
     process.exit(1);
@@ -61,7 +70,7 @@ function figure(b) {
   return out;
 }
 
-const C = JSON.parse(fs.readFileSync('/tmp/shiryo.json', 'utf8'));
+const C = JSON.parse(fs.readFileSync(JSON_PATH, 'utf8'));
 // 書式は計画素案と同じ体裁（本文 游ゴシック 10.5pt）に合わせる。図表の色味は現行のまま
 const FONT = '游ゴシック', FONTG = '游ゴシック';
 const NAVY = '1F3864', BLUE = '2E75B6', BAND = 'DDEBF7', NOTE = 'FFF3F3', KEYB = 'FFF2CC', GREY = '595959';
@@ -205,7 +214,7 @@ const doc = new Document({
   }],
 });
 
-const OUT = '/home/user/repository/output/08_北塩原村第10期_第2回策定委員会資料.docx';
+const OUT = OUT_PATH;
 Packer.toBuffer(doc).then(buf => {
   fs.writeFileSync(OUT, buf);
   console.log('保存: ' + OUT + ' ' + Math.round(buf.length / 1024) + ' KB');
