@@ -21,6 +21,8 @@
           未着手に実績日がないこと、実績完了日が実績開始日より後であること）
    点検16 納品物の収録範囲が、実際に作られているすべてのファイルを覆っていること
           （新しいファイルを置いたら区分を書くまで通らない）
+   点検17 納品する電子媒体が組み立てられること（収録すると定めたものが実在し、
+          置き場所が媒体の構成にあり、収録しないものが紛れないこと）
 """
 import os, re, sys
 sys.dont_write_bytecode = True   # 古いバイトコードで誤った結果が出ることを防ぐ
@@ -222,7 +224,9 @@ for pre, d in GEN16.items():
         bad16.append(f"{d} がない")
         continue
     for nm in _os16.listdir(d):
-        if nm.startswith("."):
+        # 先頭が . や _ のものは組み立ての置き場であり、元のファイルではない
+        # （output/_納品媒体 は build_nohin.py が写しを並べる場所）
+        if nm.startswith(".") or nm.startswith("_"):
             continue
         aru16.add(f"{pre}/{nm}")
 kiji16 = {x[0] for x in NOHIN}
@@ -247,6 +251,21 @@ chk(16, "納品物の収録範囲の網羅", not bad16,
     "／".join(bad16[:2]) if bad16
     else f"実在{len(aru16)}件すべてに区分あり（成果品{n_syu}／関連{n_kan}／"
          f"収録しない{n_nai}）＋納品時に作るもの{len(MIKAN)}件")
+
+
+# 17
+try:
+    import build_nohin as _BN
+    rows17, bad17 = _BN.plan()
+    n17 = {}
+    for loc, _r, _d, _s in rows17:
+        n17[loc] = n17.get(loc, 0) + 1
+    chk(17, "納品する電子媒体が組み立てられること", not bad17,
+        "／".join(bad17[:3]) if bad17
+        else "／".join(f"{k} {v}件" for k, v in sorted(n17.items()))
+             + f"（計{len(rows17)}件）")
+except Exception as e:
+    chk(17, "納品する電子媒体が組み立てられること", False, f"照合できない（{e}）")
 
 
 print()

@@ -277,10 +277,17 @@ def single_lab(r, col):
     return None
 
 
-def build_index(wb, book, n_needs, n_zai):
+def build_index(wb, book, n_needs, n_zai, dummy=False):
     ws = wb.create_sheet("目次", 0)
-    sheet_header(ws, "第10期北塩原村 アンケート調査　集計結果",
-                 "集計仕様書（doc25）に基づく。設問の定義はコードブック（data/集計_コードブック.json）による。")
+    # ダミーデータで作ったものを本番の集計と取り違えないよう、表紙に明示する。
+    # 書かないと、見た目は本番と変わらないまま村へ渡ってしまう。
+    sub = ("集計仕様書（doc25）に基づく。"
+           "設問の定義はコードブック（data/集計_コードブック.json）による。")
+    if dummy:
+        sub = ("★★ これはダミーデータによる検証用です。実際の回答ではありません ★★　"
+               + sub + "　調査票の回収後、本番のデータで作り直します。")
+    sheet_header(ws, "第10期北塩原村 アンケート調査　集計結果"
+                 + ("（ダミーデータによる検証用）" if dummy else ""), sub)
     write_table(ws, ["シート", "内容"],
                 [["ニーズ単純集計", "介護予防・日常生活圏域ニーズ調査の単純集計"],
                  ["ニーズ軸別集計", "同上を地区・年齢階級・性別・認定状況・生活機能4層で分けたもの"],
@@ -353,7 +360,10 @@ def main():
 
     wb = Workbook()
     wb.remove(wb.active)
-    build_index(wb, book, len(needs), len(zai))
+    # 入力がダミーのままなら、その旨を成果品の表紙に書く
+    dummy = ("dummy_" in os.path.basename(a.needs)
+             or "dummy_" in os.path.basename(a.zaitaku))
+    build_index(wb, book, len(needs), len(zai), dummy=dummy)
     build_tanjun(wb, book, needs, ("ニーズ",), "ニーズ単純集計")
     build_axis(wb, book, needs, ("ニーズ",), "ニーズ軸別集計", ["B", "C", "D", "E", "H"])
     build_tanjun(wb, book, zai, ("在宅A", "在宅B"), "在宅単純集計")

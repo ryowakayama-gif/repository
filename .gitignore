@@ -1,1 +1,5 @@
 __pycache__/
+
+
+# 納品媒体の組み立て先（build_nohin.py が作る写し。元は output/ と data/ にある）
+output/_納品媒体/
