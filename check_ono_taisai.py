@@ -108,12 +108,19 @@ def check(path):
     if "**" in raw:
         bad.append(f"強調マーカー ** が本文に {raw.count('**')}か所")
 
-    # ---- 図：キャプションと出典が対になっていること
-    caps = re.findall(r"【図(\d+)】", raw)
+    # ---- 図表：キャプションが連番であること
+    #   キャプションは本文の段落に置く。表の中に出てくる【図N】【表N】は
+    #   資料編の図表番号一覧であってキャプションではないため、
+    #   XML全文ではなく本文の段落だけを見る
+    #   （python-docx の paragraphs は表の中の段落を含まない）。
+    heads = [q.text for q in d.paragraphs]
+    caps = [m.group(1) for m in (re.match(r"【図(\d+)】", t) for t in heads) if m]
+    tcaps = [m.group(1) for m in (re.match(r"【表(\d+)】", t) for t in heads) if m]
+    for nm, seq in (("図", caps), ("表", tcaps)):
+        if seq and [int(c) for c in seq] != list(range(1, len(seq) + 1)):
+            bad.append(f"{nm}番号が連番でない {seq[:12]}")
     if caps:
-        if [int(c) for c in caps] != list(range(1, len(caps) + 1)):
-            bad.append(f"図番号が連番でない {caps}")
-        imgs = sum(1 for p in d.paragraphs if "graphicData" in p._p.xml)
+        imgs = sum(1 for q in d.paragraphs if "graphicData" in q._p.xml)
         if imgs != len(caps):
             bad.append(f"図の数 {imgs} とキャプション {len(caps)} が合わない")
 
