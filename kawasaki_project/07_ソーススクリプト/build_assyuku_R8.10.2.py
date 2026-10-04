@@ -33,9 +33,14 @@ import docx
 import pypdf
 from docx.oxml.ns import qn
 
-SRC = "01_第10期_最新版成果品/川崎町_計画書素案_v2.8_第9期対比版.docx"
-DST = "01_第10期_最新版成果品/川崎町_計画書素案_v2.8c_圧縮案_R8.10.2.docx"
-BESSATSU = "01_第10期_最新版成果品/川崎町_計画書_別冊_詳細分析_R8.10.2.docx"
+# 既定は Ver.2.8。引数で版を指定できる（例：v2.9 の圧縮案を作る）
+#   python3 build_assyuku_R8.10.2.py <素案のパス> <圧縮案のパス> <別冊のパス>
+SRC = (sys.argv[1] if len(sys.argv) > 3 else
+       "01_第10期_最新版成果品/川崎町_計画書素案_v2.8_第9期対比版.docx")
+DST = (sys.argv[2] if len(sys.argv) > 3 else
+       "01_第10期_最新版成果品/川崎町_計画書素案_v2.8c_圧縮案_R8.10.2.docx")
+BESSATSU = (sys.argv[3] if len(sys.argv) > 3 else
+            "01_第10期_最新版成果品/川崎町_計画書_別冊_詳細分析_R8.10.2.docx")
 
 # （節, 小見出しの冒頭, 別冊での章立て）
 MOVE = [

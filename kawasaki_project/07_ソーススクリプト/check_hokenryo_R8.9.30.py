@@ -16,7 +16,7 @@
 
 使い方：
   python3 07_ソーススクリプト/check_hokenryo_R8.9.30.py \
-      01_第10期_最新版成果品/川崎町_計画書素案_v2.8_第9期対比版.docx
+      01_第10期_最新版成果品/川崎町_計画書素案_v2.9_事業内容版.docx
 """
 import re
 import sys
@@ -54,7 +54,7 @@ def find(tbls, head):
 
 def main():
     path = sys.argv[1] if len(sys.argv) > 1 else (
-        "01_第10期_最新版成果品/川崎町_計画書素案_v2.8_第9期対比版.docx")
+        "01_第10期_最新版成果品/川崎町_計画書素案_v2.9_事業内容版.docx")
     doc = docx.Document(path)
     tbls = tables(doc)
     body = "\n".join(p.text for p in doc.paragraphs)
