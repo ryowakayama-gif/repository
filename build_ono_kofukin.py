@@ -44,8 +44,14 @@ from openpyxl.utils import get_column_letter
 
 ROOT = pathlib.Path(__file__).parent
 OUT = ROOT / "小野町_引継ぎ_整理済" / "08_協議会資料"
-SRC = pathlib.Path("/root/.claude/uploads/d7dca1d7-b918-515d-8b6d-9309b5e7ef32"
-                   "/31df052b-001732598.xlsx")
+# 受領原本はリポジトリに置く。
+# セッションのアップロード先（/root/.claude/uploads/<セッションID>/…）を
+# 直に読んでいると、環境が作り直された時点でこのスクリプトが動かなくなる。
+# 金ケ崎町の案件で、本文をリポジトリ外に置いていたために
+# 成果品を組み直せなくなった事例がある。
+SRC = (ROOT / "小野町_引継ぎ_整理済" / "21_給付適正化・交付金"
+       / "原本_受領_20260925"
+       / "【受領】令和8年度交付金_該当状況調査票集計表_都道府県分_20260925.xlsx")
 ASOF = "20260925"
 ASOF_JP = "令和8年9月25日"
 JP_MIN = "游明朝"
