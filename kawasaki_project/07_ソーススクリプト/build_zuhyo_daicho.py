@@ -35,8 +35,8 @@ sys.path.insert(0, "07_ソーススクリプト")
 from data_zuhyo import KOFU, KOUHO, WAKU, ZU  # noqa: E402
 
 OUT = "05_試算・管理シート/川崎町_図表データ管理台帳_R8.9.30.xlsx"
-SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.9_事業内容版.docx"
-SOAN_ALT = "01_第10期_最新版成果品/川崎町_計画書素案_v2.8_第9期対比版.docx"
+SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.10_制度改正補完版.docx"
+SOAN_ALT = "01_第10期_最新版成果品/川崎町_計画書素案_v2.9_事業内容版.docx"
 FIGDIR = "08_図表"
 
 THIN = Side(style="thin", color="BFBFBF")

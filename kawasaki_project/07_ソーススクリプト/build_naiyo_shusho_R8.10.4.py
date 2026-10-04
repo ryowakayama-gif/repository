@@ -28,7 +28,7 @@ from openpyxl.utils import get_column_letter
 sys.path.insert(0, "07_ソーススクリプト")
 import fix_soan_v290_naiyo as V29              # noqa: E402
 
-SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.9_事業内容版.docx"
+SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.10_制度改正補完版.docx"
 OUT = "05_試算・管理シート/川崎町_事業の内容の出所_R8.10.4.xlsx"
 
 TITLE = PatternFill("solid", fgColor="1F4E78")

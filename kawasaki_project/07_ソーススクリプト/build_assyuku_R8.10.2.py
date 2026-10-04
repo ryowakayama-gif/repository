@@ -222,8 +222,8 @@ def main():
     bp = pages(BESSATSU)
     print("本文の圧縮案")
     print(f"  移した小見出し {len(picked)}／要素 {removed}")
-    print(f"  本文　Ver.2.8 {before}頁 → 圧縮案 {after}頁"
-          f"（{after - before:+d}頁）")
+    print(f"  本文　{os.path.basename(SRC)} {before}頁"
+          f" → 圧縮案 {after}頁（{after - before:+d}頁）")
     print(f"  別冊「詳細分析」{bp}頁")
     print(f"  計画書（本文＋資料編13頁）"
           f"　現行 {before + 13}頁 → 圧縮案 {after + 13}頁")

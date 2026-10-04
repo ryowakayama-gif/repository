@@ -14,8 +14,8 @@
 
 使い方：
   python3 07_ソーススクリプト/check_2kai_selfcheck_R8.9.28.py \
-      03_委員会・説明資料/川崎町_第2回策定委員会資料_R8.11_v6.docx \
-      01_第10期_最新版成果品/川崎町_計画書素案_v2.9_事業内容版.docx
+      03_委員会・説明資料/川崎町_第2回策定委員会資料_R8.11_v7.docx \
+      01_第10期_最新版成果品/川崎町_計画書素案_v2.10_制度改正補完版.docx
 """
 import json
 import re
@@ -177,7 +177,7 @@ def main(shiryo, soan):
 
 if __name__ == "__main__":
     a = sys.argv[1] if len(sys.argv) > 1 else \
-        "03_委員会・説明資料/川崎町_第2回策定委員会資料_R8.11_v6.docx"
+        "03_委員会・説明資料/川崎町_第2回策定委員会資料_R8.11_v7.docx"
     b = sys.argv[2] if len(sys.argv) > 2 else \
-        "01_第10期_最新版成果品/川崎町_計画書素案_v2.9_事業内容版.docx"
+        "01_第10期_最新版成果品/川崎町_計画書素案_v2.10_制度改正補完版.docx"
     sys.exit(main(a, b))

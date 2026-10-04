@@ -34,7 +34,7 @@ from docx.shared import Emu, Pt               # noqa: E402
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from data_zuhyo import ZU                      # noqa: E402
 
-SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.9_事業内容版.docx"
+SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.10_制度改正補完版.docx"
 OUT = "01_第10期_最新版成果品/川崎町_計画素案_概要版_R8.10.4.docx"
 FIGDIR = "08_図表/概要版"
 EMU_IN = 914400
