@@ -23,11 +23,32 @@ import sys
 import zipfile
 
 SKIP = ("docProps/core.xml", "docProps/app.xml")
+IMG = (".png", ".jpg", ".jpeg")
+
+
+def img_bytes(b):
+    """画像の中身を画素で表す。
+
+    **PNG は作り直すと付帯情報だけが変わるため、バイトで比べると
+    全件が「変わった」と出て本当の違いが埋もれる**（CLAUDE.md §4）。
+    """
+    from PIL import Image
+    with Image.open(io.BytesIO(b)) as im:
+        return im.convert("RGBA").tobytes()
+
+
+def _body(n, b):
+    if n.lower().endswith(IMG):
+        try:
+            return img_bytes(b)
+        except Exception:                                # noqa: BLE001
+            return b
+    return b
 
 
 def members(b):
     z = zipfile.ZipFile(io.BytesIO(b))
-    return {n: z.read(n) for n in z.namelist() if n not in SKIP}
+    return {n: _body(n, z.read(n)) for n in z.namelist() if n not in SKIP}
 
 
 def main(dry=False):
@@ -42,9 +63,12 @@ def main(dry=False):
                              capture_output=True).stdout
         new = open(f, "rb").read()
         try:
-            eq = (members(old) == members(new)
-                  if f.endswith((".docx", ".xlsx", ".odt", ".zip"))
-                  else old == new)
+            if f.endswith((".docx", ".xlsx", ".odt", ".zip")):
+                eq = members(old) == members(new)
+            elif f.lower().endswith(IMG):
+                eq = img_bytes(old) == img_bytes(new)
+            else:
+                eq = old == new
         except zipfile.BadZipFile:
             eq = old == new
         (same if eq else diff).append(f)
