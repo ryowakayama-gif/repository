@@ -16,6 +16,17 @@
 
 ### 作業の場所
 
-体裁と図の実装は **`docs/kanegasaki/style/fmt.py`（体裁のヘルパー）・`docs/kanegasaki/style/figs.py`（図）** に置いている。**新しいセッションではこの2つをスクラップパッドに複写して使う。**各文書の本文（`ch_*.py`）とビルド結果はスクラップパッドに置き、**リポジトリには記録用のMDと上記の体裁ファイルのみを残す。**
+**リポジトリに追跡させるもの**
 
-ビルドは `{ cat fmt.py; echo; cat ch_XXX.py; } > mkf_XXX.py && python3 mkf_XXX.py`。図は先に `python3 figs.py` で生成する（`matplotlib` と `IPAGothic` が要る）。
+| 置き場所 | 内容 |
+|---|---|
+| `docs/kanegasaki/style/` | 体裁のヘルパー `fmt.py`／図 `figs.py`・`figs_soan.py` |
+| **`docs/kanegasaki/build/`** | **各文書の本文 `ch_*.py`／目次 `mk_toc.py`／照合用 `chk_*.py`** |
+| `docs/kanegasaki/` | 記録用のMD |
+
+**追跡させないもの**　―　ビルド結果（docx・png）。生成物であり、上記から再生成できる。
+
+**新しいセッションでは `style/` と `build/` をスクラップパッドに複写して使い、直したら必ずリポジトリに戻してコミットすること。**
+スクラップパッドは作業環境が作り直されると空になる。令和8年10月4日にこれが起き、本文 `ch_*.py` と成果品8点を失った。追跡下にあった体裁ファイルと図は戻った。
+
+ビルドは `{ cat fmt.py; echo; cat ch_XXX.py; } > mkf_XXX.py && python3 mkf_XXX.py`。図は先に `python3 figs.py`・`python3 figs_soan.py` で生成する（`matplotlib` と `IPAGothic` が要る）。
