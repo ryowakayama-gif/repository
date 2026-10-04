@@ -110,6 +110,9 @@ class Report:
         self.headings = []            # (level, text, bookmark名)
         self.figno = 0
         self.tblno = 0
+        # 図表番号一覧（資料編）を組むための控え。(番号, 見出し) を順に積む。
+        self.figlist = []
+        self.tbllist = []
         self._toc_anchor = None
         self._landscape = landscape
         self._setup_section(self.doc.sections[0])
@@ -265,12 +268,24 @@ class Report:
             m.append(e)
         pr.append(m)
 
-    def tbl(self, rows, widths=None, fs=TBL_PT, header=True, right=()):
+    def tbl(self, rows, widths=None, fs=TBL_PT, header=True, right=(),
+            caption=None):
         """rows[0] を見出し行として表を置く。
 
         widths を省くと中身の長さから決め、合計を本文幅にそろえる。
         right に列番号（0起点）を渡すとその列を右寄せにする。
+        caption を渡すと表の上に【表N】を置き、図表番号一覧に控える。
+        渡さなければ番号を振らない（従前どおり）。
         """
+        if caption:
+            self.tblno += 1
+            self.tbllist.append((self.tblno, caption))
+            q = self.doc.add_paragraph()
+            q.paragraph_format.space_before = Pt(10)
+            q.paragraph_format.space_after = Pt(2)
+            q.paragraph_format.keep_with_next = True
+            _set_font(q.add_run("【表%d】%s" % (self.tblno, caption)),
+                      sz=11, b=True, color=C_H3)
         rows = [list(r) for r in rows]
         ncol = max(len(r) for r in rows)
         for r in rows:
@@ -320,6 +335,7 @@ class Report:
     def fig(self, path, caption, width=14.0, src=None):
         """図を1つ置く。キャプションは図の上、出典は図の下に置く。"""
         self.figno += 1
+        self.figlist.append((self.figno, caption))
         q = self.doc.add_paragraph()
         q.paragraph_format.space_before = Pt(10)
         q.paragraph_format.space_after = Pt(2)
