@@ -823,3 +823,75 @@ def f_kayoi(ken, chosa):
 
     fig.subplots_adjust(wspace=0.46, bottom=0.26)
     return _save(fig, "f48_kayoi")
+
+
+def f_yokaigo(shihyo, nintei):
+    """要介護度の維持・改善（交付金 目標Ⅳ 成果指標群）。
+
+    左　指標別の得点を2時点で並べる。4指標は伸びたが、健康寿命は0点のまま。
+    右　その健康寿命（性・年齢調整済み要介護2以上の認定率）の中身。
+    　　認定率そのものが高いことが0点の理由である。
+
+    shihyo [(指標名, 前の得点, 後の得点, 配点)]
+    nintei {"時点": "令和5年", "ラベル": [地域名], "認定率": [...], "変化率": [...]}
+    """
+    fig, (ax1, ax2) = plt.subplots(
+        1, 2, figsize=(7.9, 3.3), gridspec_kw={"width_ratios": [1.5, 1.0]})
+
+    # ---- 左：指標別の得点（2時点）
+    names = [s[0] for s in shihyo]
+    v0 = [s[1] for s in shihyo]
+    v1 = [s[2] for s in shihyo]
+    hai = shihyo[0][3]
+    y = list(range(len(shihyo)))
+    ax1.barh([i - 0.19 for i in y], v0, height=0.36, color=PALE,
+             label="令和6年度交付金")
+    ax1.barh([i + 0.19 for i in y], v1, height=0.36,
+             color=[RED if v == 0 else BLUE for v in v1],
+             label="令和8年度交付金")
+    for i, v in enumerate(v0):
+        _lab(ax1, v + hai * 0.025, i - 0.19, "%g" % v, GREY, va="center", sz=8)
+    for i, v in enumerate(v1):
+        _lab(ax1, v + hai * 0.025, i + 0.19, "%g" % v,
+             RED if v == 0 else NAVY, va="center", sz=9)
+    ax1.set_yticks(y)
+    ax1.set_yticklabels(names, fontsize=8.5)
+    ax1.invert_yaxis()
+    ax1.set_xlim(0, hai * 1.2)
+    ax1.set_xticks([0, hai / 2, hai])
+    ax1.set_xticklabels(["0", "%g" % (hai / 2), "%g点（満点）" % hai], fontsize=8)
+    ax1.set_title("成果指標群（目標Ⅳ）の指標別得点\n"
+                  "合計 %g点 → %g点／100点" % (sum(v0), sum(v1)),
+                  fontsize=9.5, pad=6)
+    ax1.legend(fontsize=8, frameon=False, loc="lower right")
+    _xgrid(ax1)
+    for sp in ("top", "right", "left"):
+        ax1.spines[sp].set_visible(False)
+
+    # ---- 右：0点のままの健康寿命の中身
+    lab = nintei["ラベル"]
+    rate = nintei["認定率"]
+    chg = nintei["変化率"]
+    cols = [GREY] * (len(lab) - 1) + [RED]
+    x = list(range(len(lab)))
+    ax2.bar(x, rate, width=0.64, color=cols)
+    top = max(rate) * 1.45
+    for i, (v, c) in enumerate(zip(rate, chg)):
+        _lab(ax2, i, v + top * 0.035, "%.2f％" % v,
+             RED if i == len(lab) - 1 else NAVY, ha="center", sz=9)
+        _lab(ax2, i, v / 2, _pm(c, "％", 2), "#FFFFFF" if i == len(lab) - 1
+             else "#595959", ha="center", va="center", sz=7.5)
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(lab, fontsize=9)
+    ax2.set_ylim(0, top)
+    ax2.set_yticks([])
+    ax2.set_title("健康寿命延伸の状況（0点の中身）\n"
+                  "性・年齢調整済み 要介護2以上の認定率（%s）" % nintei["時点"],
+                  fontsize=9.5, pad=6)
+    ax2.text(0.5, -0.17, "棒の中は前年からの変化率", transform=ax2.transAxes,
+             ha="center", va="top", fontsize=8, color=GREY)
+    for sp in ("top", "right", "left"):
+        ax2.spines[sp].set_visible(False)
+
+    fig.subplots_adjust(wspace=0.42, bottom=0.20, left=0.26)
+    return _save(fig, "f49_yokaigo")
