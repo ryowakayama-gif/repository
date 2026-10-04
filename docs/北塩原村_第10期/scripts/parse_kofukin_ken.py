@@ -9,10 +9,15 @@
    受領物は都道府県分であり、本村および福島県内59市町村の得点は載っていない。
    本村の評価は既収録の市町村分（2026/09/02受領）による。
 """
+import os
+import os as _os_p
+import sys as _sys_p
+_sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
+import paths as _P   # 置き場所はここで決める（じか書きしない）
 import csv, os, sys
 
 SRC = "/root/.claude/uploads/134138ca-61f7-57d3-9e9b-5f081a1a345d/06a90cb2-001732598.xlsx"
-OUT = "/home/user/repository/docs/北塩原村_第10期/data/交付金_都道府県分_令和8年度.csv"
+OUT = os.path.join(_P.DATA, "交付金_都道府県分_令和8年度.csv")
 
 # 都道府県分 集計表の合計列（0起点）。ヘッダーを縦に連結して同定した
 COL = {"推進Ⅰ": 39, "推進Ⅱ": 59, "推進Ⅲ": 124, "推進Ⅳ": 157, "推進合計": 158,

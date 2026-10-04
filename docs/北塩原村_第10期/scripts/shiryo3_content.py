@@ -14,6 +14,10 @@
 確認事項（wbs_kakunin.K）または素案5-12に書かれていることを確かめている。
 """
 import sys
+import os as _os_p
+import sys as _sys_p
+_sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
+import paths as _P
 sys.dont_write_bytecode = True
 import json
 import os as _os
@@ -312,7 +316,7 @@ CH.append({"no": "資料8", "title": "パブリックコメントと今後の日
 
 if __name__ == "__main__":
     out = {**META, "chapters": CH}
-    json.dump(out, open("/tmp/shiryo3.json", "w"), ensure_ascii=False, indent=1)
+    json.dump(out, open(_P.build("shiryo3.json"), "w"), ensure_ascii=False, indent=1)
     ns = sum(len(c["sections"]) for c in CH)
     nb = sum(len(s["blocks"]) for c in CH for s in c["sections"])
     nt = sum(1 for c in CH for s in c["sections"] for b in s["blocks"] if b["t"] == "table")

@@ -3,6 +3,10 @@
    成果品はモノクロ印刷（仕様書）のため、色相ではなく
    明度差＋線種＋マーカー形状＋ハッチングの二重符号化で系列を識別する。
    出力: output/figures/*.png（300dpi）"""
+import os as _os_p
+import sys as _sys_p
+_sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
+import paths as _P   # 置き場所はここで決める（じか書きしない）
 import sys
 sys.dont_write_bytecode = True   # 古い .pyc で古い成果品ができるのを防ぐ
 import os
@@ -11,7 +15,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
-OUT = "/home/user/repository/output/figures"
+OUT = _P.FIGURES
 os.makedirs(OUT, exist_ok=True)
 
 # 数値の正本。台帳（xlsx）が置かれていればその値が優先される
@@ -656,7 +660,7 @@ def fig_2_14():
 def fig_jukyuritsu_uchiwake():
     import csv as _csv, io as _io, collections as _c
     rows = list(_csv.reader(_io.open(
-        "/home/user/repository/docs/北塩原村_第10期/data/mieruka_tidy.csv",
+        os.path.join(_P.DATA, "mieruka_tidy.csv"),
         encoding="utf-8")))
     d = _c.defaultdict(dict)
     for r in rows[1:]:
@@ -699,7 +703,7 @@ def fig_jukyuritsu_uchiwake():
 def fig_jigyosho_ichi():
     import csv as _csv, io as _io, collections as _c
     rows = list(_csv.reader(_io.open(
-        "/home/user/repository/docs/北塩原村_第10期/data/mieruka_tidy.csv",
+        os.path.join(_P.DATA, "mieruka_tidy.csv"),
         encoding="utf-8")))
     d = _c.defaultdict(dict)
     for r in rows[1:]:
@@ -798,7 +802,7 @@ def fig_juyo_kyokyu():
 def fig_hokenryo_jorei():
     import csv as _csv, io as _io
     rows = list(_csv.reader(_io.open(
-        "/home/user/repository/docs/北塩原村_第10期/data/第10期_保険料パターン.csv",
+        os.path.join(_P.DATA, "第10期_保険料パターン.csv"),
         encoding="utf-8")))[1:]
     K9 = 6700                            # 第9期の条例基準額
     pats = [(r[0], r[1], r[2], int(r[4])) for r in rows]

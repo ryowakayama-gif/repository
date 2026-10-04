@@ -4,6 +4,11 @@
    資料は計画素案と交付金の算定から数値を書き写しているため、
    元を直したときの取り残しを検出する。不適合があれば終了コード1を返す。
 """
+import os
+import os as _os_p
+import sys as _sys_p
+_sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
+import paths as _P   # 置き場所はここで決める（じか書きしない）
 import csv, os, re, sys
 sys.dont_write_bytecode = True   # 古いバイトコードで誤った結果が出ることを防ぐ
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -12,8 +17,8 @@ import soan_content as SO
 import shukei_data as SK
 from shihyo_dict import S as SHIHYO
 
-MD26 = "/home/user/repository/docs/北塩原村_第10期/26_第2回策定委員会_資料構成.md"
-MD24 = "/home/user/repository/docs/北塩原村_第10期/24_アンケート調査報告書_骨子案.md"
+MD26 = os.path.join(_P.BASE, "26_第2回策定委員会_資料構成.md")
+MD24 = os.path.join(_P.BASE, "24_アンケート調査報告書_骨子案.md")
 
 R = []
 def chk(no, name, ok, detail=""):
@@ -44,7 +49,7 @@ chk(1, "資料4-4 の施策一覧が計画素案と一致", len(soan) == len(shi
     else "施策28本すべて一致")
 
 # 2 資料2-4 の目標別表が交付金の算定と一致すること
-F = "/home/user/repository/docs/北塩原村_第10期/data/交付金_目標別の県内比較_令和8年度.csv"
+F = os.path.join(_P.DATA, "交付金_目標別の県内比較_令和8年度.csv")
 t = tbl("2-4", "交付金・目標")
 if not os.path.exists(F) or t is None:
     chk(2, "資料2-4 の目標別表と交付金の算定の一致", False, "CSVまたは表がない")
@@ -84,7 +89,7 @@ else:
 # 4 資料に貼る図のファイルが実在すること
 figs = [b for c in SH.CH for s in c["sections"] for b in s["blocks"] if b["t"] == "fig"]
 miss = [b["file"] for b in figs
-        if not os.path.exists(f"/home/user/repository/output/figures/{b['file']}")]
+        if not os.path.exists(os.path.join(_P.FIGURES, b['file']))]
 chk(4, "資料に貼る図のファイルの実在", figs and not miss,
     f"欠落 {miss}" if miss else f"{len(figs)}点すべて実在")
 
@@ -493,7 +498,7 @@ tA = _find(SH_S['5-2'], lambda b: b['head'][0] == '案')
 if tA is not None:
     rowA = [r for r in tA['rows'] if r[0] == 'A案']
     if rowA:
-        so_md = open("/home/user/repository/docs/北塩原村_第10期/18_計画素案.md",
+        so_md = open(os.path.join(_P.BASE, "18_計画素案.md"),
                      encoding="utf-8").read()
         miss = [v for v in rowA[0][2:] if str(v).replace('人', '') not in so_md]
         if miss:

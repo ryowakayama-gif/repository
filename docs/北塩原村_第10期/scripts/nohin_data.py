@@ -18,9 +18,14 @@
 分類の網羅は verify_wbs.py 点検16で確かめている。
 新しいファイルを置いたら、ここに区分を書くまで点検が通らない。
 """
+import os
+import os as _os_p
+import sys as _sys_p
+_sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
+import paths as _P   # 置き場所はここで決める（じか書きしない）
 
-OUT = "/home/user/repository/output"
-DATA = "/home/user/repository/docs/北塩原村_第10期/data"
+OUT = _P.OUT
+DATA = _P.DATA
 
 # (パス, 区分, 媒体での置き場所, 理由)
 N = [

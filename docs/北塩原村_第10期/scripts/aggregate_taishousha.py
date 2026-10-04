@@ -13,12 +13,17 @@
      DAHIHOKENSHA … 介護予防・日常生活圏域ニーズ調査の対象者
      DBJUKYUSHA   … 在宅介護実態調査の対象者（要介護度を含む）
 """
+import os
+import os as _os_p
+import sys as _sys_p
+_sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
+import paths as _P   # 置き場所はここで決める（じか書きしない）
 import csv, os, sys, collections
 
 SRC_DIR = "/root/.claude/uploads/134138ca-61f7-57d3-9e9b-5f081a1a345d"
 F_NEEDS = os.path.join(SRC_DIR, "3e0d9fcc-______.xlsx")
 F_HOME = os.path.join(SRC_DIR, "d8ec6417-________.xlsx")
-OUT = "/home/user/repository/docs/北塩原村_第10期/data/第10期_調査対象者の属性集計.csv"
+OUT = os.path.join(_P.DATA, "第10期_調査対象者の属性集計.csv")
 MASK = 10          # この数未満の区分は伏せる
 
 AGE = [(0, 64, "65歳未満"), (65, 74, "65〜74歳"), (75, 84, "75〜84歳"), (85, 200, "85歳以上")]

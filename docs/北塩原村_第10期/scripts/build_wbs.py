@@ -2,6 +2,10 @@
 """第10期北塩原村高齢者福祉計画・介護保険事業計画策定業務 WBS／進捗管理表（Ver.2）
    wbs_data.W（仕様書の分解）＋ wbs_progress.P（実績反映）＋ wbs_kakunin.K（村への確認事項）から生成。
    基準日：wbs_progress.BASE_DATE"""
+import os as _os_p
+import sys as _sys_p
+_sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
+import paths as _P   # 置き場所はここで決める（じか書きしない）
 import sys
 sys.dont_write_bytecode = True   # 古い .pyc で古い成果品ができるのを防ぐ
 import os, sys, datetime
@@ -23,7 +27,7 @@ from wbs_pending import (LEVEL, IMPACT, BUNDLE, READY, HOLD_REASON,
                          NEXT_DATE)
 from nohin_data import N as NOHIN, MIKAN, MOUSHIOKURI
 
-OUT = "/home/user/repository/output/05_北塩原村第10期_WBS進捗管理表.xlsx"
+OUT = os.path.join(_P.OUT, "05_北塩原村第10期_WBS進捗管理表.xlsx")
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 F = "游ゴシック"
 C = {"header":"1F3864","sub":"2E75B6","band":"DDEBF7","alt":"F7FAFC",

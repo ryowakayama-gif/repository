@@ -4,13 +4,17 @@
    分母と指標の定義が、集計が始まってから崩れることを防ぐ。
    不適合があれば終了コード1を返す。
 """
+import os as _os_p
+import sys as _sys_p
+_sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
+import paths as _P   # 置き場所はここで決める（じか書きしない）
 import os, re, sys
 sys.dont_write_bytecode = True   # 古いバイトコードで誤った結果が出ることを防ぐ
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from shukei_data import N, Z, DERIVED, CROSS, AXES, SHU_HO
 
-MD = "/home/user/repository/docs/北塩原村_第10期/25_集計仕様書.md"
-MD24 = "/home/user/repository/docs/北塩原村_第10期/24_アンケート調査報告書_骨子案.md"
+MD = os.path.join(_P.BASE, "25_集計仕様書.md")
+MD24 = os.path.join(_P.BASE, "24_アンケート調査報告書_骨子案.md")
 R = []
 def chk(no, name, ok, detail=""):
     R.append((no, name, ok, detail))

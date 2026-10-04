@@ -1,4 +1,8 @@
 import openpyxl, json
+import os as _os_p
+import sys as _sys_p
+_sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
+import paths as _P
 FILES={
  '令和6年度':'/root/.claude/uploads/134138ca-61f7-57d3-9e9b-5f081a1a345d/00bbc0fc-001474341.xlsx',
  '令和7年度':'/root/.claude/uploads/134138ca-61f7-57d3-9e9b-5f081a1a345d/8283fa24-001732645.xlsx',
@@ -49,5 +53,5 @@ def load(year):
 if __name__=='__main__':
     for y in FILES:
         out,tgt,start,stat=load(y)
-        json.dump(out,open(f'/tmp/kofukin_detail_{y}.json','w'),ensure_ascii=False)
+        json.dump(out, open(_P.build(f'kofukin_detail_{y}.json'), 'w'), ensure_ascii=False)
         print(y,'村行',tgt,'開始列',start,'項目数',len(out),'統計行',stat)

@@ -23,6 +23,8 @@
           （新しいファイルを置いたら区分を書くまで通らない）
    点検17 納品する電子媒体が組み立てられること（収録すると定めたものが実在し、
           置き場所が媒体の構成にあり、収録しないものが紛れないこと）
+   点検18 成果品を組み直すのに要るものがすべて版管理にあり、置き場所をじか書き
+          していないこと（作業環境が作り直されても組み直せること）
 """
 import os, re, sys
 sys.dont_write_bytecode = True   # 古いバイトコードで誤った結果が出ることを防ぐ
@@ -266,6 +268,62 @@ try:
              + f"（計{len(rows17)}件）")
 except Exception as e:
     chk(17, "納品する電子媒体が組み立てられること", False, f"照合できない（{e}）")
+
+
+# 18
+#   金ケ崎町の案件では、本文が版管理の外（スクラッチパッド）にあり、
+#   作業環境が作り直された時点で消えた。同じことが起きないかを機械で見る。
+#     (a) 本文・体裁・データの各モジュールが版管理にあること
+#     (b) 置き場所をじか書きしていないこと（別の場所に復元しても組み直せる）
+#     (c) 外部のライブラリの版が宣言されていること
+import subprocess as _sp18
+try:
+    bad18 = []
+    SCR18 = _os16.path.dirname(_os16.path.abspath(__file__))
+    tracked = set(_sp18.check_output(
+        ["git", "-C", BASE16, "ls-files"], text=True).split("\n"))
+    # (a) 組立てに要るモジュールが追跡されていること
+    IRU = ["soan_content.py", "shiryo_content.py", "shiryo3_content.py",
+           "figures_map.py", "data_zuhyo.py", "wbs_data.py", "wbs_progress.py",
+           "wbs_kakunin.py", "wbs_pending.py", "spec_data.py", "nohin_data.py",
+           "shukei_data.py", "shihyo_dict.py", "paths.py", "docxlib.js",
+           "build_soan.py", "build_soan_docx.js", "build_shiryo_docx.js",
+           "build_figures.py", "build_wbs.py", "build_zuhyo_daicho.py"]
+    for nm in IRU:
+        if ("scripts/" + nm) not in tracked:
+            bad18.append(f"{nm} が版管理にない")
+    # (b) 置き場所のじか書き。
+    #     この点検自身が探す語を素のまま持つと自分を拾ってしまうため、組み立てる。
+    JIKA = "/home/user/" + "repository"
+    TMPLIB = "/tmp/node_" + "modules"
+    import glob as _g18
+    jika = []
+    for f18 in sorted(_g18.glob(_os16.path.join(SCR18, "*.py"))
+                      + _g18.glob(_os16.path.join(SCR18, "*.js"))):
+        nm = _os16.path.basename(f18)
+        if nm in ("paths.py", "docxlib.js"):      # ここだけが置き場所を知ってよい
+            continue
+        with open(f18, encoding="utf-8") as fh:
+            src = fh.read()
+        if JIKA in src:
+            jika.append(nm)
+        if TMPLIB in src:
+            jika.append(nm + "（/tmp のライブラリ）")
+    if jika:
+        bad18.append("置き場所のじか書き " + "・".join(sorted(set(jika))[:4]))
+    # (c) 外部のライブラリの版の宣言
+    pkg = _os16.path.join(BASE16, "package.json")
+    if not _os16.path.exists(pkg):
+        bad18.append("package.json がなく docx の版が宣言されていない")
+    elif not _sp18.check_output(
+            ["git", "-C", BASE16, "ls-files", pkg], text=True).strip():
+        bad18.append("package.json が版管理にない")
+    chk(18, "成果品を組み直せること（版管理と置き場所）", not bad18,
+        "／".join(bad18[:3]) if bad18
+        else f"組立てに要る{len(IRU)}件が版管理にあり、置き場所のじか書きなし、"
+             f"docx の版は package.json で固定")
+except Exception as e:
+    chk(18, "成果品を組み直せること（版管理と置き場所）", False, f"照合できない（{e}）")
 
 
 print()

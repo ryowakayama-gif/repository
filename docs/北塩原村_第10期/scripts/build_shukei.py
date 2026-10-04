@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """第10期北塩原村 アンケート調査 集計仕様書（xlsx）
    shukei_data.py から生成。"""
+import os as _os_p
+import sys as _sys_p
+_sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
+import paths as _P   # 置き場所はここで決める（じか書きしない）
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from openpyxl import Workbook
@@ -8,7 +12,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from shukei_data import N, Z, DERIVED, CROSS, AXES, SHU_HO
 
-OUT = "/home/user/repository/output/07_北塩原村第10期_集計仕様書.xlsx"
+OUT = os.path.join(_P.OUT, "07_北塩原村第10期_集計仕様書.xlsx")
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 F = "游ゴシック"
 C = {"header":"1F3864","sub":"2E75B6","band":"DDEBF7","alt":"F7FAFC",

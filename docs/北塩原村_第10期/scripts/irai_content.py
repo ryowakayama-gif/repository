@@ -2,6 +2,10 @@
 """北塩原村への資料提供・確認依頼書（第10期計画策定業務）
    wbs_kakunin.K のうち村に判断・提供をお願いする事項を、期限別に整理したもの。"""
 import json
+import os as _os_p
+import sys as _sys_p
+_sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
+import paths as _P
 
 META = {
  "title": "第10期北塩原村高齢者福祉計画・",
@@ -214,6 +218,6 @@ SECTIONS.append(sec(
 
 if __name__ == "__main__":
     out = {**META, "lead": LEAD, "sections": SECTIONS}
-    json.dump(out, open("/tmp/irai.json", "w"), ensure_ascii=False, indent=1)
+    json.dump(out, open(_P.build("irai.json"), "w"), ensure_ascii=False, indent=1)
     n = sum(len(s["rows"]) for s in SECTIONS)
     print(f"章 {len(SECTIONS)}／依頼事項 {n}件")

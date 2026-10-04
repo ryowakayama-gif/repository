@@ -1,10 +1,15 @@
-// 資料提供・確認依頼書 Word生成（irai_content.py が出力した /tmp/irai.json を読む）
+// 資料提供・確認依頼書 Word生成（irai_content.py が出力した output/_build/irai.json を読む）
 const fs = require('fs');
-const d = require('/tmp/node_modules/docx');
+const path = require('path');
+// 置き場所は自分の位置から数える（じか書きしない）。
+//   scripts/ → 北塩原村_第10期/ → docs/ → リポジトリの根
+const ROOT = require('path').resolve(__dirname, '..', '..', '..');
+const OUTDIR = require('path').join(ROOT, 'output');
+const d = require(require('path').join(__dirname, 'docxlib.js'));
 const {Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBreak,
        Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, Footer, PageNumber} = d;
 
-const C = JSON.parse(fs.readFileSync('/tmp/irai.json', 'utf8'));
+const C = JSON.parse(fs.readFileSync(path.join(OUTDIR, '_build', 'irai.json'), 'utf8'));
 const FONT = '游明朝', FONTG = '游ゴシック';
 const NAVY = '1F3864', BLUE = '2E75B6', NOTE = 'FFF3F3', KEYB = 'FFF2CC', GREY = '595959';
 const TBLW = 9360;
@@ -95,7 +100,7 @@ const doc = new Document({
   }],
 });
 
-const OUT = '/home/user/repository/output/09_北塩原村第10期_資料提供確認依頼書.docx';
+const OUT = path.join(OUTDIR, '09_北塩原村第10期_資料提供確認依頼書.docx');
 Packer.toBuffer(doc).then(buf => {
   fs.writeFileSync(OUT, buf);
   console.log('保存: ' + OUT + ' ' + Math.round(buf.length / 1024) + ' KB');

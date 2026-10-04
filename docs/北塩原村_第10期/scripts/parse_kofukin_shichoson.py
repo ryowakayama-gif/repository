@@ -9,10 +9,15 @@
    既収録の doc20 と照合したうえで、従前できなかった
    「目標別の県内比較」（福島県59市町村の平均・中央値・本村の県内順位）を算出する。
 """
+import os
+import os as _os_p
+import sys as _sys_p
+_sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
+import paths as _P   # 置き場所はここで決める（じか書きしない）
 import csv, os, sys
 
 SRC = "/root/.claude/uploads/134138ca-61f7-57d3-9e9b-5f081a1a345d/78f982ca-001732614.xlsx"
-OUT = "/home/user/repository/docs/北塩原村_第10期/data/交付金_目標別の県内比較_令和8年度.csv"
+OUT = os.path.join(_P.DATA, "交付金_目標別の県内比較_令和8年度.csv")
 HROWS = 18          # 見出し行数（9〜17行に配点・全国合計・平均点・項目平均・平均得点率・中央値・標準偏差・該当市町村数・該当率）
 FUKUSHIMA = 7       # 都道府県番号
 MURA = "北塩原村"

@@ -3,17 +3,22 @@
 //   node scripts/build_shiryo_docx.js 3          第3回
 // 回ごとに別の組立てを書くと体裁が食い違うため、同じ組立てを使い回す。
 const fs = require('fs');
-const d = require('/tmp/node_modules/docx');
+const d = require(require('path').join(__dirname, 'docxlib.js'));
 const {Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBreak,
        Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, LevelFormat,
        TableOfContents, Footer, PageNumber, ImageRun, TableLayoutType} = d;
 const path = require('path');
+// 置き場所は自分の位置から数える（じか書きしない）。
+//   scripts/ → 北塩原村_第10期/ → docs/ → リポジトリの根
+const ROOT = require('path').resolve(__dirname, '..', '..', '..');
+const OUTDIR = require('path').join(ROOT, 'output');
 const KAI = (process.argv[2] === '3') ? 3 : 2;
 const SRC_PY = KAI === 3 ? 'shiryo3_content.py' : 'shiryo_content.py';
-const JSON_PATH = KAI === 3 ? '/tmp/shiryo3.json' : '/tmp/shiryo.json';
+const JSON_PATH = path.join(OUTDIR, '_build',
+  KAI === 3 ? 'shiryo3.json' : 'shiryo.json');
 const OUT_PATH = KAI === 3
-  ? '/home/user/repository/output/12_北塩原村第10期_第3回策定委員会資料.docx'
-  : '/home/user/repository/output/08_北塩原村第10期_第2回策定委員会資料.docx';
+  ? path.join(OUTDIR, '12_北塩原村第10期_第3回策定委員会資料.docx')
+  : path.join(OUTDIR, '08_北塩原村第10期_第2回策定委員会資料.docx');
 // 入力のJSONが元データより古いときは止める（古い成果品を作らないため）
 (function () {
   // __dirname 基準にする。cwd に依らず走らせるため
@@ -30,7 +35,7 @@ const OUT_PATH = KAI === 3
 })();
 
 
-const FIGDIR = '/home/user/repository/output/figures';
+const FIGDIR = path.join(OUTDIR, 'figures');
 function pngSize(buf) {              // PNG IHDR: 幅=16..19 / 高さ=20..23（ビッグエンディアン）
   return {w: buf.readUInt32BE(16), h: buf.readUInt32BE(20)};
 }

@@ -11,6 +11,11 @@
   python3 scripts/verify_soan.py
   すべて適合すれば終了コード0、1件でも不適合があれば1を返す。
 """
+import os
+import os as _os_p
+import sys as _sys_p
+_sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
+import paths as _P   # 置き場所はここで決める（じか書きしない）
 import csv, json, os, re, sys, subprocess
 sys.dont_write_bytecode = True   # 古いバイトコードで誤った結果が出ることを防ぐ
 
@@ -219,7 +224,7 @@ def main():
 
     # ── 18　2-8 目標別の内訳が交付金の集計表の算定と一致すること ──────
     import csv as _csv
-    f18 = '/home/user/repository/docs/北塩原村_第10期/data/交付金_目標別の県内比較_令和8年度.csv'
+    f18 = os.path.join(_P.DATA, '交付金_目標別の県内比較_令和8年度.csv')
     if not os.path.exists(f18):
         chk(18, '2-8 目標別の内訳と交付金の算定の一致', False, 'CSVがない（parse_kofukin_shichoson.py を実行）')
     else:
@@ -282,7 +287,7 @@ def main():
     # ── 21　3-4 の施策体系図が登録され、ファイルが実在すること ──────────
     from figures_map import FIGS
     f21 = [x for x in FIGS if x[0] == "第3章|3-4"]
-    fp = "/home/user/repository/output/figures/fig3-1_施策体系図.png"
+    fp = os.path.join(_P.FIGURES, "fig3-1_施策体系図.png")
     chk(21, "3-4 施策体系図の登録とファイルの実在",
         len(f21) == 1 and os.path.exists(fp),
         "図表マップに未登録" if len(f21) != 1 else ("PNGがない（build_figure_taikei.py を実行）"
@@ -850,7 +855,7 @@ def main():
     try:
         from figures_map import FIGS as F43
         import os as _os2
-        FIGDIR = '/home/user/repository/output/figures'
+        FIGDIR = _P.FIGURES
         placed = {}
         for c in SC.CH:
             for sec in c['sections']:

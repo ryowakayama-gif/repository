@@ -34,8 +34,13 @@ load() は台帳が置かれているときはその数値を優先して返す�
 算定スクリプトから読むため、台帳では参照のみとし編集の対象としない（SANTEI）。
 """
 import os
+import os as _os_p
+import sys as _sys_p
+_sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
+import paths as _P   # 置き場所はここで決める（じか書きしない）
+import os
 
-BOOK = "/home/user/repository/output/11_北塩原村第10期_図表データ管理台帳.xlsx"
+BOOK = os.path.join(_P.OUT, "11_北塩原村第10期_図表データ管理台帳.xlsx")
 
 # 算定・元データから読む図。台帳では編集の対象としない
 SANTEI = {

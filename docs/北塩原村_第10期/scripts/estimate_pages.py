@@ -7,6 +7,11 @@
 
    A4縦 11906×16838 twip／余白 上下1418・左右1134 → 本文 9638×14002 twip
 """
+import os
+import os as _os_p
+import sys as _sys_p
+_sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
+import paths as _P   # 置き場所はここで決める（じか書きしない）
 import sys
 sys.dont_write_bytecode = True   # 古い .pyc で古い成果品ができるのを防ぐ
 import json, math, os, struct, sys
@@ -14,7 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 BODY_W = 11906 - 1134 * 2          # 9638 twip
 BODY_H = 16838 - 1418 * 2          # 14002 twip
-FIGDIR = "/home/user/repository/output/figures"
+FIGDIR = _P.FIGURES
 
 def chars_per_line(pt):            # 全角は1文字＝フォントサイズと同じ幅
     return (BODY_W / 20) / pt
@@ -146,7 +151,7 @@ FRONT = [("表紙", 1), ("本書の見方", 1), ("目次", 2)]
 # ══════ 第2回策定委員会 資料（build_shiryo_docx.js のレイアウト値） ══════
 # A4縦 11906×16838／余白 上下左右とも1134 → 本文 9638×14570 twip
 SH_W, SH_H = 11906 - 1134 * 2, 16838 - 1134 * 2
-SH_FIGDIR = "/home/user/repository/output/figures"
+SH_FIGDIR = _P.FIGURES
 
 
 def shiryo_block_h(b):

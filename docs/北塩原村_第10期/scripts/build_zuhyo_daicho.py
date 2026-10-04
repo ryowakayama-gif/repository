@@ -36,6 +36,11 @@
 
 自己点検で1件でも不適合があると終了コード1で終わる。
 """
+import os
+import os as _os_p
+import sys as _sys_p
+_sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
+import paths as _P   # 置き場所はここで決める（じか書きしない）
 import io
 import os
 import re
@@ -53,8 +58,8 @@ import data_zuhyo as DZ
 import figures_map as FM
 import soan_content as SC
 
-OUT = "/home/user/repository/output/11_北塩原村第10期_図表データ管理台帳.xlsx"
-FIGDIR = "/home/user/repository/output/figures"
+OUT = os.path.join(_P.OUT, "11_北塩原村第10期_図表データ管理台帳.xlsx")
+FIGDIR = _P.FIGURES
 KIJUNBI = "令和8年9月29日"
 
 FONT = "游ゴシック"

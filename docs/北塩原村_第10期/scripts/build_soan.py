@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 """soan_content.py から 素案のMarkdownとdocx用JSONを生成する"""
+import os as _os_p
+import sys as _sys_p
+_sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
+import paths as _P   # 置き場所はここで決める（じか書きしない）
 import sys
 sys.dont_write_bytecode = True   # 古い .pyc で古い成果品ができるのを防ぐ
 import os, sys, json
@@ -7,8 +11,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import soan_content as S
 from figures_map import FIGS
 
-MD = "/home/user/repository/docs/北塩原村_第10期/18_計画素案.md"
-JS = "/tmp/soan.json"
+MD = os.path.join(_P.BASE, "18_計画素案.md")
+JS = _P.build("soan.json")
 
 figs = {}          # 節の冒頭に出す図
 figs_inline = {}   # soan_content の {"t":"fig"} の位置に出す図（ファイル名で引く）

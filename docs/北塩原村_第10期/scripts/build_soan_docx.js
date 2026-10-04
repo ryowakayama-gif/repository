@@ -1,14 +1,20 @@
-// 第10期計画 素案 Word生成（soan_content.py が出力した /tmp/soan.json を読む）
+// 第10期計画 素案 Word生成（soan_content.py が出力した output/_build/soan.json を読む）
 const fs = require('fs');
-const d = require('/tmp/node_modules/docx');
+const d = require(require('path').join(__dirname, 'docxlib.js'));
 const path = require('path');
+const BUILDJSON = path.join(
+  path.resolve(__dirname, '..', '..', '..'), 'output', '_build', 'soan.json');
+// 置き場所は自分の位置から数える（じか書きしない）。
+//   scripts/ → 北塩原村_第10期/ → docs/ → リポジトリの根
+const ROOT = require('path').resolve(__dirname, '..', '..', '..');
+const OUTDIR = require('path').join(ROOT, 'output');
 // 入力のJSONが元データより古いときは止める（古い成果品を作らないため）
 (function () {
   // 元データは本文だけでなく図の対応表も含む。どちらが新しくても組み直す
   // __dirname 基準にする。cwd に依らず走らせるため
   const srcs = ["soan_content.py", "figures_map.py"]
                  .map(f => require('path').join(__dirname, f));
-  const js   = "/tmp/soan.json";
+  const js   = BUILDJSON;
   if (!fs.existsSync(js)) {
     console.error('入力の ' + js + ' がありません。先に build_soan.py を実行してください。');
     process.exit(1);
@@ -25,7 +31,7 @@ const {Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBr
        Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, LevelFormat,
        TableOfContents, Header, Footer, PageNumber, TableLayoutType} = d;
 
-const C = JSON.parse(fs.readFileSync('/tmp/soan.json', 'utf8'));
+const C = JSON.parse(fs.readFileSync(BUILDJSON, 'utf8'));
 // 書式は協議用素案の体裁（本文 游ゴシック 10.5pt）に合わせる。図表の色味は現行のまま
 const FONT = '游ゴシック';
 const FONTG = '游ゴシック';
@@ -68,7 +74,7 @@ function table(head, rows, widths) {
   });
 }
 
-const FIGDIR = '/home/user/repository/output/figures';
+const FIGDIR = path.join(OUTDIR, 'figures');
 // 本文の高さ（9.72in）のこの割合を超える図は、頁の頭から置く。
 // 途中から置くと入りきらずに丸ごと次頁へ送られ、前の頁に大きな空白が残る。
 // あらかじめ改頁して1頁の図版として扱えば、空白は意図したものになる。
@@ -222,7 +228,7 @@ const doc = new Document({
 });
 
 Packer.toBuffer(doc).then(buf => {
-  const out = '/home/user/repository/output/06_北塩原村第10期_計画素案.docx';
+  const out = path.join(OUTDIR, '06_北塩原村第10期_計画素案.docx');
   fs.writeFileSync(out, buf);
   console.log('保存:', out, (buf.length / 1024).toFixed(0) + ' KB');
 });

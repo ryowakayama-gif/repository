@@ -7,6 +7,10 @@
      python3 shukei_run.py                       # ダミーデータで実行
      python3 shukei_run.py --needs <csv> --zaitaku <csv> --out <xlsx>
 """
+import os as _os_p
+import sys as _sys_p
+_sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
+import paths as _P   # 置き場所はここで決める（じか書きしない）
 import os, sys, json, csv, argparse, collections
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -347,7 +351,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--needs", default=os.path.join(BASE, "data", "dummy_ニーズ.csv"))
     ap.add_argument("--zaitaku", default=os.path.join(BASE, "data", "dummy_在宅.csv"))
-    ap.add_argument("--out", default="/home/user/repository/output/10_集計結果.xlsx")
+    ap.add_argument("--out", default=os.path.join(_P.OUT, "10_集計結果.xlsx"))
     a = ap.parse_args()
 
     book = json.load(open(os.path.join(BASE, "data", "集計_コードブック.json"), encoding="utf-8"))

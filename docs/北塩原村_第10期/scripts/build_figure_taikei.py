@@ -6,6 +6,10 @@
    明度と枠線の太さで識別する。
    出力: output/figures/fig3-1_施策体系図.png（300dpi）
 """
+import os as _os_p
+import sys as _sys_p
+_sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
+import paths as _P   # 置き場所はここで決める（じか書きしない）
 import os, sys, textwrap
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import matplotlib
@@ -14,7 +18,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch
 import soan_content as S
 
-OUT = "/home/user/repository/output/figures/fig3-1_施策体系図.png"
+OUT = os.path.join(_P.FIGURES, "fig3-1_施策体系図.png")
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 plt.rcParams.update({"font.family": "IPAGothic", "figure.facecolor": "white"})
 

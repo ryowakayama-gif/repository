@@ -3,6 +3,10 @@
    資料2（第9期計画の進捗と評価）／資料5・6・7（骨格）
    doc26 の資料構成に基づく。数値の出所は doc12・doc13・doc14・doc17・doc20・doc02。"""
 import sys
+import os as _os_p
+import sys as _sys_p
+_sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
+import paths as _P
 sys.dont_write_bytecode = True   # 古い .pyc で古い成果品ができるのを防ぐ
 import json
 
@@ -1199,7 +1203,7 @@ CH.append({"no": "資料8", "title": "今後のスケジュール", "sections": 
 
 if __name__ == "__main__":
     out = {**META, "chapters": CH}
-    json.dump(out, open("/tmp/shiryo.json", "w"), ensure_ascii=False, indent=1)
+    json.dump(out, open(_P.build("shiryo.json"), "w"), ensure_ascii=False, indent=1)
     ns = sum(len(c["sections"]) for c in CH)
     nb = sum(len(s["blocks"]) for c in CH for s in c["sections"])
     nt = sum(1 for c in CH for s in c["sections"] for b in s["blocks"] if b["t"] == "table")

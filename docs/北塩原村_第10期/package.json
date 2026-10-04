@@ -1,0 +1,9 @@
+{
+  "name": "kitashiobara-dai10ki",
+  "private": true,
+  "description": "第10期北塩原村高齢者福祉計画・第10期北塩原村介護保険事業計画の成果品の組立て",
+  "comment": "作業環境が作り直されると node_modules は消えます。scripts/*.js を動かす前に `npm install --prefix docs/北塩原村_第10期` を実行してください。docx の版はここで固定しています。",
+  "dependencies": {
+    "docx": "9.7.1"
+  }
+}
