@@ -1165,6 +1165,121 @@ def main():
     except Exception as e:
         chk(49, '頁数の2つの推定が矛盾しないこと', False, f'照合できない（{e}）')
 
+    # ── 50　計画の名称と期間の表記が統一されていること ─────────────────
+    #    同じものを別の言い方で書くと、計画書と委員会資料で食い違う。
+    #    本則の形を決め、認める例外を明示する。素案と委員会資料の両方を見る。
+    try:
+        import re as _re50
+        import shiryo_content as _SH50
+        import shiryo3_content as _SH350
+
+        def _text50(mod):
+            o = []
+            for c in mod.CH:
+                o.append(f'{c["no"]}　{c["title"]}')
+                for sec in c["sections"]:
+                    o.append(f'{sec["no"]}　{sec.get("title", "")}')
+                    for b in sec["blocks"]:
+                        if b["t"] == "table":
+                            o.append("　".join(map(str, b["head"])))
+                            for r in b["rows"]:
+                                o.append("　".join(map(str, r)))
+                        elif "v" in b:
+                            o.append(str(b["v"]))
+            return "\n".join(o)
+
+        # (言い方, 本則か, 認める箇所)
+        YURE = [
+            (r"北塩原村第10期高齢者福祉計画", False, "計画の名称は「第10期北塩原村…」"),
+            (r"北塩原村第10期介護保険事業計画", False, "計画の名称は「第10期北塩原村…」"),
+            (r"令和9年度[〜～]令和11年度", False, "期間は「令和9年度から令和11年度まで」"),
+            (r"3年間", False, "期間の数え方は「3か年」"),
+            (r"三か年", False, "期間の数え方は「3か年」"),
+            (r"令和9年度から令和11年度迄", False, "「まで」を用いる"),
+        ]
+        bad50 = []
+        for nm50, txt50 in (("素案", open(MD, encoding="utf-8").read()),
+                            ("第2回資料", _text50(_SH50)),
+                            ("第3回骨子", _text50(_SH350))):
+            for pat, honsoku, naze in YURE:
+                hit = _re50.findall(pat, txt50)
+                if hit and not honsoku:
+                    bad50.append(f"{nm50}：{hit[0]} が{len(hit)}件（{naze}）")
+        # 本則の形が実際に使われていること（言い方を決めただけで使っていない事故を防ぐ）
+        so50 = open(MD, encoding="utf-8").read()
+        for honsoku in ("第10期北塩原村高齢者福祉計画", "第10期北塩原村介護保険事業計画",
+                        "令和9年度から令和11年度まで"):
+            if honsoku not in so50:
+                bad50.append(f"素案に本則の「{honsoku}」がない")
+        chk(50, "計画の名称と期間の表記が統一されていること", not bad50,
+            "・".join(bad50[:3]) if bad50
+            else "本則3通りが素案にあり、素案・第2回資料・第3回骨子に表記のゆれなし"
+                 "（表の見出しの「令和9〜11年度」は字数の制約により認める）")
+    except Exception as e:
+        chk(50, "計画の名称と期間の表記が統一されていること", False, f"照合できない（{e}）")
+
+    # ── 51　空欄の並ぶ表が5-12に掲げられていること ────────────────────
+    #    成果品に「―」や【要設定】が並ぶ表があるのに、据え置いた項目の一覧
+    #    （5-12）に載っていないと、何を待っているのかが誰にも分からなくなる。
+    #    4-6（高齢者福祉サービスの量の目標）が12行すべて空欄のまま載っていなかった。
+    try:
+        KARA = ("―", "【要設定】", "")
+        # 資料編の枠は、計画の数値ではなく策定の記録を後から入れるものである。
+        # 5-12（据え置いた数値の一覧）に載せると性格の違うものが混ざるため除く。
+        # ただし**除くのは、その節に何を待っているかの編集注記があるときだけ**とする。
+        # 注記もなく空欄が並ぶのは、ただの書き漏れである。
+        MENJO = {"資2", "資3", "資4", "資6"}
+        sora = {}
+        for c in SC.CH:
+            for sec in c["sections"]:
+                for b in sec["blocks"]:
+                    if b["t"] not in ("table", "kpi"):
+                        continue
+                    n = sum(1 for r in b["rows"] for v in r[1:]
+                            if str(v).strip() in KARA)
+                    if n >= 3:
+                        sora[sec["no"]] = sora.get(sec["no"], 0) + n
+        # 5-12 の「節」欄に挙がっている節番号を集める
+        kakage = set()
+        for c in SC.CH:
+            for sec in c["sections"]:
+                if sec["no"] != "5-12":
+                    continue
+                for b in sec["blocks"]:
+                    if b["t"] == "table":
+                        for r in b["rows"]:
+                            for part in str(r[0]).replace("・", "／").split("／"):
+                                part = part.strip()
+                                if part:
+                                    kakage.add(part)
+                                    # 5-4(3) のような枝番は親の節でも照合できるように
+                                    kakage.add(part.split("(")[0])
+        # 「第4章」と書いてあるときは、第4章の各施策の節を覆っているとみなす
+        if "第4章" in kakage:
+            for c in SC.CH:
+                if c["no"] == "第4章":
+                    for sec in c["sections"]:
+                        kakage.add(sec["no"])
+        # 除くと定めた節に、待っているものを書いた編集注記があること
+        note_aru = set()
+        for c in SC.CH:
+            for sec in c["sections"]:
+                if any(b["t"] == "note" for b in sec["blocks"]):
+                    note_aru.add(sec["no"])
+        bad51 = [f"{k}（空欄{v}）" for k, v in sorted(sora.items())
+                 if k not in MENJO and k not in kakage
+                 and k.split("(")[0] not in kakage]
+        bad51 += [f"{k}：除くと定めたが編集注記がない" for k in sorted(MENJO)
+                  if k in sora and k not in note_aru]
+        chk(51, "空欄の並ぶ表が5-12に掲げられていること", not bad51,
+            "・".join(bad51[:4]) if bad51
+            else f"空欄の並ぶ表は{len(sora)}節にあり、"
+                 f"{len(sora) - len([k for k in sora if k in MENJO])}節が5-12に、"
+                 f"{len([k for k in sora if k in MENJO])}節が資料編の枠として"
+                 f"編集注記つきで除かれている")
+    except Exception as e:
+        chk(51, "空欄の並ぶ表が5-12に掲げられていること", False, f"照合できない（{e}）")
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
