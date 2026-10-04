@@ -21,6 +21,10 @@
   あわせて、レビューv8【9】の「空の見出し」があれば取り除く。
 
   入力　令和8年9月25日受領の再修正版3文書
+        **09_元資料/R8調査データ/R8.9.25受領版/（リポジトリの中）**
+        ⚠ 受領当日のアップロード領域はセッションごとに作り直されるため、
+        そこを入力にしていると次のセッションで作り直せない。
+        原本はリポジトリに退避してあり、こちらを第一の入力とする。
   出力　01_第10期_最新版成果品/川崎町_ニーズ調査結果報告書_R8.10.2版.docx
         01_第10期_最新版成果品/川崎町_在宅介護実態調査結果報告書_R8.10.2版.docx
         01_第10期_最新版成果品/川崎町_在宅介護実態調査結果報告書_資料編_R8.10.2版.docx
@@ -38,11 +42,14 @@ import zipfile
 import docx
 from docx.oxml.ns import qn
 
-SRC_DIR = ("/root/.claude/uploads/4be8f82c-e2c9-52ac-b2a9-bad5154d0b13")
 OUT_DIR = "01_第10期_最新版成果品"
+# 受領した原本の置き場（リポジトリの中。これが第一の入力である）
 KEEP_DIR = "09_元資料/R8調査データ/R8.9.25受領版"
+# 受領した当日のアップロード領域。**セッションごとに作り直されるため、
+# 次のセッションでは消えている。** KEEP_DIR に原本がないときだけ使う。
+UPLOAD_DIR = "/root/.claude/uploads/4be8f82c-e2c9-52ac-b2a9-bad5154d0b13"
 
-# （受領したファイル名, 保存するファイル名, 略号, 段落数, 表数）
+# （アップロード時のファイル名, 保存するファイル名, 略号, 段落数, 表数）
 DOCS = [
     ("f2ba7be5-__________________.docx",
      "川崎町_ニーズ調査結果報告書_R8.10.2版.docx", "A", 659, 103),
@@ -51,6 +58,27 @@ DOCS = [
     ("8de2134d-________________________.docx",
      "川崎町_在宅介護実態調査結果報告書_R8.10.2版.docx", "C", 455, 51),
 ]
+
+
+def keep_name(dst):
+    """成果品の名から、09_元資料 に残した原本の名を作る。"""
+    return os.path.join(KEEP_DIR, dst.replace("_R8.10.2版", "_R8.9.25受領版"))
+
+
+def src_of(up, dst):
+    """原本のパスと、どこから採ったかを返す。
+
+    ⚠ **リポジトリの中（09_元資料）を第一の入力とする。**
+    アップロード領域はセッションごとに作り直されるため、そこだけを
+    入力にしていると、次のセッションでは成果品を作り直せなくなる。
+    """
+    keep = keep_name(dst)
+    if os.path.exists(keep):
+        return keep, "09_元資料（リポジトリ）"
+    up = os.path.join(UPLOAD_DIR, up)
+    if os.path.exists(up):
+        return up, "アップロード領域（⚠ リポジトリへ退避します）"
+    return None, None
 
 MEMO_OLD = "※上記は第9期と第10期の配布数・回収数・回収率の違いなどから、"
 MEMO_NEW = ("※ 第9期調査とは配布数・回収数・回収率が異なるため、"
@@ -157,14 +185,15 @@ def main():
     os.makedirs(KEEP_DIR, exist_ok=True)
     ng = []
     for src, dst, mark, n_p, n_t in DOCS:
-        s = os.path.join(SRC_DIR, src)
-        if not os.path.exists(s):
-            ng.append(f"{mark} 受領ファイルがない：{src}")
+        s, whence = src_of(src, dst)
+        if s is None:
+            ng.append(f"{mark} 原本がない：{keep_name(dst)}")
             continue
-        # 受領した原本を 09_元資料 に残す
-        keep = os.path.join(KEEP_DIR, dst.replace("_R8.10.2版", "_R8.9.25受領版"))
+        # 受領した原本を 09_元資料 に残す（既にあればそれを使っている）
+        keep = keep_name(dst)
         if not os.path.exists(keep):
             shutil.copy(s, keep)
+        print(f"  {mark} 原本の出所：{whence}")
         out = os.path.join(OUT_DIR, dst)
         shutil.copy(s, out)
 
@@ -214,12 +243,19 @@ def main():
                     if nxt is None or nxt.tag != qn("w:tbl"):
                         ng.append("A 表73のキャプションの次が表でない")
                     break
+    # 原本がリポジトリに残っていること（次のセッションでも作り直せる）
+    for src, dst, mark, n_p, n_t in DOCS:
+        if not os.path.exists(keep_name(dst)):
+            ng.append(f"{mark} 原本が 09_元資料 に残っていない："
+                      f"{keep_name(dst)}")
     if ng:
         for m in ng:
             print("   ×", m)
         sys.exit(1)
     print("   ○ 作成者名の残存なし／目次の自動更新あり（A・C）／"
           "編集メモの残存なし／表73のキャプションは表の上")
+    print("   ○ 原本3点は 09_元資料/R8調査データ/R8.9.25受領版/ にある"
+          "（アップロード領域が消えても作り直せる）")
     print("  ⚠ 目次の頁番号は Word で開いた時点で確定します"
           "（当方の環境では確定できません）。")
 
