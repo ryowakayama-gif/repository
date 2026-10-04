@@ -70,10 +70,18 @@ def paths_in(src, fname):
     return out
 
 
+def git(*args):
+    """git を呼ぶ。日本語のファイル名が \\346\\234\\254… とエスケープされると
+    追跡の有無を取り違えるため、core.quotepath=false を明示する。
+    リポジトリ側の設定に結果が左右されないようにするためである。
+    """
+    r = subprocess.run(["git", "-C", str(ROOT), "-c", "core.quotepath=false",
+                        *args], capture_output=True, text=True)
+    return r.stdout
+
+
 def tracked_files():
-    r = subprocess.run(["git", "-C", str(ROOT), "ls-files"],
-                       capture_output=True, text=True)
-    return set(r.stdout.splitlines())
+    return set(git("ls-files").splitlines())
 
 
 def main():
@@ -98,10 +106,7 @@ def main():
                     bad.append((rel, ln, naze, v[:90]))
 
     # (2) 作業ディレクトリにあって追跡していないファイル（成果品・原本・スクリプト）
-    r = subprocess.run(
-        ["git", "-C", str(ROOT), "status", "--porcelain", "--untracked-files=all"],
-        capture_output=True, text=True)
-    for line in r.stdout.splitlines():
+    for line in git("status", "--porcelain", "--untracked-files=all").splitlines():
         if not line.startswith("??"):
             continue
         rel = line[3:].strip().strip('"')
