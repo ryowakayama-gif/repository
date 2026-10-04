@@ -425,10 +425,18 @@ def _caption(doc):
             ch, sec = text, ""
         elif lv == 2:
             sec = text
-    key = (ch + sec) or "―"
+    key = (ch + "/" + sec) or "―"
     n = _TBL_SEQ.get(key, 0) + 1
     _TBL_SEQ[key] = n
-    base = f"{ch.split('　')[0]}{sec}" if sec else ch
+    if not sec:
+        base = ch or "―"
+    elif re.match(r"^(第\d+章|資料編|参考)", ch):
+        # 「第6章　介護保険事業等の見込み」＋「10　中長期の見通し」
+        #   → 「第6章10　中長期の見通し」。節の見出しに番号が入っているため、
+        #   章は番号だけを取って続ける。
+        base = f"{ch.split('　')[0]}{sec}"
+    else:
+        base = f"{ch}　{sec}"
     return base if n == 1 else f"{base}（{n}）"
 
 
@@ -3490,7 +3498,8 @@ def main():
     print("出力:", path)
     print(f"  未確定 {sum(COUNTS.values())}箇所　"
           + "／".join(f"{k}{v}" for k, v in COUNTS.most_common()))
-    print(f"  図 {doc.figno}点／表 {doc.tblno}点／見出し {len(doc.headings)}件")
+    print(f"  図 {doc.figno}点／表 {doc.tblno}点（うち番号を振ったもの {doc.capno}点）"
+          f"／見出し {len(doc.headings)}件")
     return doc
 
 
@@ -3507,13 +3516,13 @@ def count_markers(rep):
         for r in t.rows:
             for c in r.cells:
                 texts.append(c.text)
-    # 【現状と課題】【施策の方向】は本文の見出しラベル、【図N】は図の番号であり、
-    # いずれも未確定箇所ではない
+    # 【現状と課題】【施策の方向】は本文の見出しラベル、
+    # 【図N】【表N】は図表の番号であり、いずれも未確定箇所ではない
     LABELS = {"【現状と課題】", "【施策の方向】"}
     c = collections.Counter()
     for t in texts:
         for m in re.findall(r"【[^】]{1,16}】", t):
-            if m in LABELS or re.fullmatch(r"【図\d+】", m):
+            if m in LABELS or re.fullmatch(r"【[図表]\d+】", m):
                 continue
             c[m] += 1
     return c

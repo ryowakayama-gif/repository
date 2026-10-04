@@ -109,7 +109,8 @@ class Report:
         self.doc = Document()
         self.headings = []            # (level, text, bookmark名)
         self.figno = 0
-        self.tblno = 0
+        self.tblno = 0          # 置いた表の総数（番号を振らないものも含む）
+        self.capno = 0          # 【表N】の番号。題を付けた表だけ数える
         # 図表番号一覧（資料編）を組むための控え。(番号, 見出し) を順に積む。
         self.figlist = []
         self.tbllist = []
@@ -278,13 +279,13 @@ class Report:
         渡さなければ番号を振らない（従前どおり）。
         """
         if caption:
-            self.tblno += 1
-            self.tbllist.append((self.tblno, caption))
+            self.capno += 1
+            self.tbllist.append((self.capno, caption))
             q = self.doc.add_paragraph()
             q.paragraph_format.space_before = Pt(10)
             q.paragraph_format.space_after = Pt(2)
             q.paragraph_format.keep_with_next = True
-            _set_font(q.add_run("【表%d】%s" % (self.tblno, caption)),
+            _set_font(q.add_run("【表%d】%s" % (self.capno, caption)),
                       sz=11, b=True, color=C_H3)
         rows = [list(r) for r in rows]
         ncol = max(len(r) for r in rows)
