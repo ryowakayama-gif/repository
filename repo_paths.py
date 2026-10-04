@@ -47,6 +47,51 @@ def draft_label():
     return "%d段落%d表%d図" % (p, t, z)
 
 
+def draft_sections():
+    """計画素案（docx）を章節ごとのテキストに分ける。
+
+    反映状況を固定値で書くと、素案を改訂したときに実際と合わなくなる。
+    （令和8年9月17日の点検で、12シートが第2章第4節・第6章を
+      いずれも「着手可」のままとしていたが、
+      第2章第4節は令和8年9月15日に、第6章は同月16日に反映済みであった。）
+    節を見ずに語の有無だけで判定すると偽陽性が出る。
+    （同じ点検で、「除雪」は第1章第7節の除雪率の記述に当たり、
+      「同規模保険者」は第3章第4節の記述に当たるため、
+      いずれも所見の反映先とは別の箇所であった。）
+
+    戻り値は {"第2章第4節": "その節の本文と表のテキスト", ...}。
+    読む側はそれぞれで切り出さず、本関数から引く（CLAUDE.md §4）。
+    """
+    if not os.path.exists(DRAFT):
+        return {}
+    import re
+    from docx import Document
+    from docx.table import Table
+    from docx.text.paragraph import Paragraph
+    d = Document(DRAFT)
+    sec, cur, chap, started = {}, None, None, False
+    for child in d.element.body.iterchildren():
+        if child.tag.endswith("}p"):
+            t = Paragraph(child, d).text.strip()
+            if re.match(r"^第\d+章", t):
+                # 目次（章節が連続して並ぶ部分）を読み飛ばす
+                started = True
+                cur = t.split("　")[0]
+                sec.setdefault(cur, [])
+                chap = cur
+                continue
+            if started and re.match(r"^第\d+節", t) and "\t" not in t:
+                cur = chap + t.split("　")[0].split(" ")[0]
+                sec.setdefault(cur, [])
+                continue
+            if cur:
+                sec[cur].append(t)
+        elif child.tag.endswith("}tbl") and cur:
+            for row in Table(child, d).rows:
+                sec[cur].extend(c.text for c in row.cells)
+    return {k: "\n".join(v) for k, v in sec.items()}
+
+
 # 過去の時点の素案の規模（段落・表・図）。
 # **過去の時点を記す資料（月次の業務進捗報告書・議事録）は、
 #   draft_label() ではなくこちらを用いる。**
