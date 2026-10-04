@@ -29,9 +29,8 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Mm, Pt, RGBColor
 
-from kitashiobara_common import SERVICES_ADULT, SERVICES_CHILD
+from kitashiobara_common import OUT_DIR, SERVICES_ADULT, SERVICES_CHILD
 
-OUT_DIR = "/home/user/repository/output"
 OUT_FILE = f"{OUT_DIR}/北塩原村_計画素案_概要版.docx"
 
 FONT = "BIZ UDPゴシック"

@@ -32,8 +32,9 @@ from docx.oxml.ns import qn
 from docx.shared import Cm, Pt, RGBColor
 from openpyxl import load_workbook
 
-OUT_DIR = "/home/user/repository/output/会議資料"
-SHIGEN_DIR = "/home/user/repository/source/障害福祉資源"
+REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+OUT_DIR = f"{REPO_ROOT}/output/会議資料"
+SHIGEN_DIR = f"{REPO_ROOT}/source/障害福祉資源"
 
 FONT = "BIZ UDPゴシック"
 HEADER_FILL = "1F3864"

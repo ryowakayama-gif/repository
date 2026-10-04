@@ -31,12 +31,14 @@
 """
 
 import importlib.util
+import os
 import sys
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 
-OUT_FILE = "/home/user/repository/output/北塩原村_業務進捗管理表.xlsx"
+REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+OUT_FILE = f"{REPO_ROOT}/output/北塩原村_業務進捗管理表.xlsx"
 
 TITLE = "北塩原村　第8期障がい福祉計画・第4期障がい児福祉計画　業務進捗管理表"
 KIJUNBI = "基準日：令和8年9月16日"
@@ -693,7 +695,7 @@ CHANGES = [
 def _load_progress():
     """北塩原村の進捗管理データを取り込む（資料受領・リスクの二重管理を避ける）。"""
     spec = importlib.util.spec_from_file_location(
-        "kitashiobara_progress", "/home/user/repository/build_kitashiobara_progress.py")
+        "kitashiobara_progress", f"{REPO_ROOT}/build_kitashiobara_progress.py")
     mod = importlib.util.module_from_spec(spec)
     sys.modules["kitashiobara_progress"] = mod
     spec.loader.exec_module(mod)

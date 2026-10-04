@@ -12,7 +12,8 @@ from openpyxl.drawing.image import Image as XLImage
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
-OUT_DIR  = "/home/user/repository/output"
+REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+OUT_DIR  = f"{REPO_ROOT}/output"
 IMG_DIR  = os.path.join(OUT_DIR, "images_basic")
 os.makedirs(IMG_DIR, exist_ok=True)
 

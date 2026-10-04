@@ -30,8 +30,9 @@ from docx.shared import Mm, Pt
 from docx.table import Table
 from docx.text.paragraph import Paragraph
 
-SRC_FILE = "/home/user/repository/source/北塩原村_骨子案_原本_20260731.docx"
-OUT_DIR = "/home/user/repository/output"
+REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+SRC_FILE = f"{REPO_ROOT}/source/北塩原村_骨子案_原本_20260731.docx"
+OUT_DIR = f"{REPO_ROOT}/output"
 OUT_FILE = f"{OUT_DIR}/北塩原村_計画素案.docx"
 
 FONT = "BIZ UDPゴシック"
@@ -1410,7 +1411,7 @@ def add_estimation_basis(doc):
     changes.append("第5章1：見込量の算定方法の根拠（告示第三の二・別表第一・別表第五）を追加")
 
 
-SHIGEN_DIR = "/home/user/repository/source/障害福祉資源"
+SHIGEN_DIR = f"{REPO_ROOT}/source/障害福祉資源"
 SHIGEN_MUNI = ["北塩原村", "猪苗代町", "磐梯町", "湯川村", "会津若松市", "喜多方市"]
 SHIGEN_SERVICES = ["居宅介護", "重度訪問介護", "生活介護", "就労継続支援（B型）",
                    "共同生活援助", "短期入所", "施設入所支援"]

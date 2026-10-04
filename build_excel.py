@@ -12,7 +12,8 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
-OUT_DIR = "/home/user/repository/output"
+REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+OUT_DIR = f"{REPO_ROOT}/output"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # ============================================================

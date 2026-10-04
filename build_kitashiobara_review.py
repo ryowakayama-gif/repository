@@ -38,11 +38,11 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
 from kitashiobara_common import (
-    COLORS, FONT, OUT_DIR, add_sheet, ensure_out_dir,
+    COLORS, FONT, OUT_DIR, SRC_DIR, add_sheet, ensure_out_dir,
     style_header_row, style_note, style_title, write_row,
 )
 
-KOSSHI = "/home/user/repository/source/北塩原村_骨子案_原本_20260731.docx"
+KOSSHI = f"{SRC_DIR}/北塩原村_骨子案_原本_20260731.docx"
 SUAN = f"{OUT_DIR}/北塩原村_計画素案.docx"
 OUT_FILE = f"{OUT_DIR}/北塩原村_骨子案レビュー_基本指針網羅性.xlsx"
 

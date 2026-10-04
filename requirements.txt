@@ -1,0 +1,13 @@
+# 北塩原村　第8期障がい福祉計画・第4期障がい児福祉計画
+# 成果物の生成に必要な外部ライブラリ
+#
+# 環境を作り直したときは最初に
+#     pip install -r requirements.txt
+# を実行する。これを省くと build_component_images.py が PIL を見つけられず、
+# 00_全計画マスター管理表.xlsx と 01_共通_基本コラム部品.xlsx の画像シートが
+# 欠けた状態で生成される（check_reproducibility.py の C-0・C-6 が検出する）。
+#
+# 動作を確認した版（Python 3.11.15）を下限として記す。
+openpyxl>=3.1.5
+python-docx>=1.2.0
+Pillow>=12.3.0

@@ -34,13 +34,15 @@
 
 import copy
 import math
+import os
 import re
 
 from docx import Document
 from docx.oxml.ns import nsmap, qn
 from docx.oxml import OxmlElement
 
-SRC = "/home/user/repository/output/北塩原村_計画素案.docx"
+REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+SRC = f"{REPO_ROOT}/output/北塩原村_計画素案.docx"
 OUT = SRC
 
 # 目次に載せる見出しの階層（1=章のみ、2=章＋節、3=章＋節＋小見出し）

@@ -12,7 +12,11 @@ import os
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
-OUT_DIR = "/home/user/repository/output"
+# リポジトリをどこに置いても動くよう、自分自身の位置から基準を決める
+# （絶対パスを直書きすると、別の場所にチェックアウトしたときに出力先が狂う）
+REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+OUT_DIR = f"{REPO_ROOT}/output"
+SRC_DIR = f"{REPO_ROOT}/source"
 
 # ============================================================
 # 配色（build_excel.py の規約に準拠。障がい計画＝オレンジ）

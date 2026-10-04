@@ -7,9 +7,11 @@
       Tables_f2023_kohi_ver1.0.xlsx      公費負担医療を含む集計
       いずれも 19〜21MB あり、リポジトリには格納しない。
       入手先は docs/北塩原村_長期入院患者基盤整備量_資料充足性確認.md を参照。
+      再入手したときは 00_概要 シートに記録した大きさと SHA-256 で同一性を確かめる。
 
 出力: output/福島県_精神医療指標抽出.xlsx
       基本指針 第二の二（成果目標）及び別表第四に必要な福島県分のみを抜き出す。
+      出力はリポジトリに追跡させているため、原典が手元になくても計画本文の執筆は進む。
 
 抽出する付表
   付表1.1 精神病床退院患者における地域平均生活日数   → 国基準 319.3日 の県実績
@@ -18,9 +20,10 @@
 
 使い方
   python3 build_fukushima_seishin_extract.py [通常集計.xlsx] [公費含む集計.xlsx]
-  引数を省略した場合は SRC_DEFAULT を参照する。
+  引数を省略した場合は NDB_DIRS の各所を順に探す。
 """
 
+import hashlib
 import os
 import re
 import sys
@@ -29,21 +32,27 @@ import warnings
 from openpyxl import Workbook, load_workbook
 
 from kitashiobara_common import (
-    COLORS, FONT, OUT_DIR, add_sheet, ensure_out_dir, style_header_row,
-    style_note, style_title, write_row,
+    COLORS, FONT, OUT_DIR, SRC_DIR, add_sheet, ensure_out_dir,
+    style_header_row, style_note, style_title, write_row,
 )
 
 warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
 
 OUT_FILE = f"{OUT_DIR}/福島県_精神医療指標抽出.xlsx"
-SRC_DEFAULT = [
-    "/root/.claude/uploads/6ba69703-c476-5e43-a82e-705be12592ce/a988ab72-Tables_f2013_2023_ver1.0.xlsx",
-    "/root/.claude/uploads/6ba69703-c476-5e43-a82e-705be12592ce/f5e69661-Tables_f2023_kohi_ver1.0.xlsx",
+
+# NDB集計の原典。容量の都合でリポジトリには置かないため、置き場所の候補を順に探す。
+# アップロード置き場は環境を作り直すと消えるので、再入手したものは NDB_DIRS の
+# 先頭（リポジトリ内 source/精神保健/NDB/）に置くこと。
+NDB_URL = "https://www.ncnp.go.jp/nimh/seisaku/data/"
+NDB_FILES = ["Tables_f2013_2023_ver1.0.xlsx", "Tables_f2023_kohi_ver1.0.xlsx"]
+NDB_DIRS = [
+    f"{SRC_DIR}/精神保健/NDB",
+    "/root/.claude/uploads/6ba69703-c476-5e43-a82e-705be12592ce",
 ]
 # 630調査 従来ベース集計（リポジトリに格納済み。20MB級のNDBと違い軽い）
-SRC_630 = "source/精神保健/630調査/630調査_令和5年度_従来ベース集計.xlsx"
+SRC_630 = f"{SRC_DIR}/精神保健/630調査/630調査_令和5年度_従来ベース集計.xlsx"
 # ReMHRAD 市町村タブから取得した北塩原村の在院者状況
-SRC_VILLAGE_DIR = "source/精神保健/村在院者"
+SRC_VILLAGE_DIR = f"{SRC_DIR}/精神保健/村在院者"
 PREF = "福島県"
 
 SHEET_SEIKATSU = "付表1.1 精神病床退院患者における地域平均生活日数"
@@ -63,6 +72,56 @@ AGE75 = {"75~84歳", "85歳以上"}
 INT = "#,##0"
 DEC1 = "#,##0.0"
 PCT1 = "0.0"
+
+
+def file_identity(path):
+    """大きさと SHA-256 を返す。再入手した原典が同一かを確かめるために記録する。"""
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return os.path.getsize(path), h.hexdigest()
+
+
+def find_ndb_sources():
+    """NDB_DIRS を順に探し、見つかった原典のパスを返す。
+
+    アップロード置き場では先頭に識別子が付くため、末尾一致で拾う。
+    """
+    found = []
+    for name in NDB_FILES:
+        hit = None
+        for d in NDB_DIRS:
+            if not os.path.isdir(d):
+                continue
+            cand = os.path.join(d, name)
+            if os.path.exists(cand):
+                hit = cand
+                break
+            for fn in sorted(os.listdir(d)):
+                if fn.endswith(name):
+                    hit = os.path.join(d, fn)
+                    break
+            if hit:
+                break
+        if hit:
+            found.append(hit)
+    return found
+
+
+def ndb_missing_message():
+    """原典が1つも見つからないときに、何をどこへ置けばよいかを示す。"""
+    return "\n".join([
+        "抽出元のNDB集計が1つも見つかりません。この成果物は原典が20MB級のため、",
+        "リポジトリには出力（output/福島県_精神医療指標抽出.xlsx）のみを追跡しています。",
+        "再実行するには次のいずれかを行ってください。",
+        f"  1) {NDB_URL} から下記を入手し、{NDB_DIRS[0]}/ に置く",
+        *[f"       - {n}" for n in NDB_FILES],
+        "  2) 引数でパスを直接指定する",
+        "       python3 build_fukushima_seishin_extract.py 通常集計.xlsx 公費含む集計.xlsx",
+        "同一性は追跡済みの output/福島県_精神医療指標抽出.xlsx の 00_概要 シートに",
+        "記録した大きさと SHA-256 で確認できます。",
+    ])
 
 
 def _num(v):
@@ -269,9 +328,16 @@ def sheet_overview(wb, sources):
     style_title(ws.cell(row=r, column=1), "抽出元", fill=COLORS["subhead"], size=11)
     r += 1
     for label, path in sources:
+        size, digest = file_identity(path)
         ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=4)
-        style_note(ws.cell(row=r, column=1), f"{label}：{os.path.basename(path)}")
+        style_note(ws.cell(row=r, column=1),
+                   f"{label}：{os.path.basename(path)}"
+                   f"（{size:,}バイト／SHA-256 {digest}）")
         r += 1
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=4)
+    style_note(ws.cell(row=r, column=1),
+               f"入手先：{NDB_URL}　再入手時は上記の大きさとSHA-256で同一性を確かめる。")
+    r += 1
     return ws
 
 
@@ -555,7 +621,7 @@ def sheet_beppyo4(wb, data):
 
 
 def main():
-    args = sys.argv[1:] or SRC_DEFAULT
+    args = sys.argv[1:] or find_ndb_sources()
     labels = ["通常集計", "公費含む"]
     sources = []
     loaded = []
@@ -568,7 +634,7 @@ def main():
         loaded.append((label, read_source(path)))
         sources.append((label, path))
     if not loaded:
-        raise SystemExit("抽出元ファイルが1つも見つかりません。引数でパスを指定してください。")
+        raise SystemExit(ndb_missing_message())
 
     ensure_out_dir()
     wb = Workbook()
