@@ -73,9 +73,16 @@ def _pkey(v):
     # 和暦を西暦に寄せる。素案の表は和暦（平成22年）、見える化のP1は西暦（2010）
     # であり、揃えないと1行も突き合わないまま「照合した」ことになってしまう
     GENGO = {"H": 1988, "R": 2018, "S": 1925}
+    # 元号の直後の「元」は1年。D47-aは「R元」のように年を付けずに呼ぶ
+    t = re.sub(r"^([HRS])元", r"\g<1>1", t)
     m = re.match(r"^([HRS])(\d+)年(.*)$", t)
     if m:
         t = str(GENGO[m.group(1)] + int(m.group(2))) + m.group(3)
+    else:
+        # 「H26」のように年を付けない呼び方（D47系列の歳入の年度）
+        m = re.match(r"^([HRS])(\d+)$", t)
+        if m:
+            t = str(GENGO[m.group(1)] + int(m.group(2)))
     t = t.replace("年", "")
     return t
 
@@ -118,16 +125,12 @@ COVER = {
     "fig2-10_費用額内訳": ("できない",
         "村の決算による在宅・居住系・施設別の費用額。見える化は利用者割合は持つが"
         "費用額の3区分を持たない"),
-    "fig2-11_在宅施設別給付月額": ("できない",
-        "村の給付実績による。見える化のD系列は介護保険事業状況報告ベースで区分が合わない"),
+    "fig2-11_在宅施設別給付月額": ("済", "D6-a・D6-b系列（点検38・39）"),
     "fig2-12_1人あたり定員": ("済", "D29・D30系列（点検30・31）"),
-    "fig2-13_地域支援事業費": ("できない",
-        "村の決算による地域支援事業費の内訳。見える化のF系列は令和3年3月で更新が止まっている"),
+    "fig2-13_地域支援事業費": ("済", "D48-c系列の決算の内訳（点検37）"),
     "fig2-14_サービス区分別変化": ("できない",
         "村の給付実績によるサービス区分別の給付月額。見える化に同じ区分の系列がない"),
-    "fig2-15_財政指数": ("できない",
-        "村の決算（保険給付費・地域支援事業費・保険料収入）。見える化のD47・D48は"
-        "款項の区分が異なり、単位も円で揃わない"),
+    "fig2-15_財政指数": ("済", "D48-b・D48-c・D47-a系列の決算（点検34〜36）"),
     "fig2-16_保険料比較": ("済", "P4系列（点検6）"),
     "fig2-17_保険料と必要額": ("済", "P4系列（点検7）"),
     "fig2-18_交付金指標群": ("済", "W系列（点検21）"),
@@ -709,6 +712,101 @@ def main():
                  f"実数の系列は「者数（要支援１）」）")
     except Exception as e:
         chk(29, "受領データで突き合わせられる図", False, f"照合できない（{e}）")
+
+    # ── 34〜37　村の決算による図（図2-16・図2-18）を見える化のD47・D48と突き合わせる ──
+    #    決算の系列は「平成27年3月末」のように**締めの日**で期を呼ぶ。
+    #    平成27年3月末に締めるのは平成26年度の決算であり、成果品の「H26年度」にあたる。
+    #    1年ずらさないと1件も突き合わない（交付金の年度の呼び方と同じ種類のずれ）。
+    #    歳入（保険料）D47-a だけは「H26」と年度そのもので呼ぶためずらさない。
+    try:
+        import collections as _c34
+        import re as _re34
+        BAT34 = os.path.join(BASE, "data", "mieruka_batch.csv")
+
+        def _nendo(period):
+            """決算の「N年3月末」を年度に直す。それ以外はそのまま。"""
+            k = _pkey(period)
+            m = _re34.match(r"^(\d{4})/3$", k)
+            return str(int(m.group(1)) - 1) if m else k
+
+        D = _c34.defaultdict(dict)
+        with open(BAT34, encoding="utf-8") as f:
+            for r in _csv.DictReader(f):
+                if r["region"] != "北塩原村":
+                    continue
+                bk = r["file"].split("_")[0]
+                if not (bk.startswith("D47") or bk.startswith("D48")):
+                    continue
+                try:
+                    D[(bk, r["indicator"])][_nendo(r["period"])] = float(r["value"])
+                except ValueError:
+                    pass
+
+        def _pick34(bk, ind, periods, warizan=1000.0):
+            d = D.get((bk, ind), {})
+            return [None if d.get(p) is None else d[p] / warizan for p in periods]
+
+        P34 = [_pkey(c) for c in DZ.cats("fig2-15_財政指数")]
+        for no, nm, bk, ind in ((34, "保険給付費", "D48-b", "合計"),
+                                (35, "地域支援事業費", "D48-c", "合計"),
+                                (36, "保険料収入", "D47-a", "保険料")):
+            cmp_series(no, f"図2-18の{nm}が見える化 {bk} の決算と一致すること",
+                       _pick34(bk, ind, P34), DZ.vals("fig2-15_財政指数", nm),
+                       tol=0.51, gp=P34, wp=P34)
+
+        # 37 図2-16 地域支援事業費の内訳（百万円）
+        P37 = [_pkey(c) for c in DZ.cats("fig2-13_地域支援事業費")]
+        bad37 = []
+        for nm, ind in (("一般介護予防事業費", "一般介護予防事業費"),
+                        ("介護予防・生活支援サービス事業費", "介護予防・生活支援サービス事業費"),
+                        ("包括的支援事業費", "包括的支援事業･任意事業")):
+            got = _pick34("D48-c", ind, P37, 1000000.0)
+            want = DZ.vals("fig2-13_地域支援事業費", nm)
+            for p, g, w in zip(P37, got, want):
+                if g is None:
+                    bad37.append(f"{nm} {p} が見える化にない")
+                elif abs(g - w) > 0.011:
+                    bad37.append(f"{nm} {p} 見える化{g:.2f}≠正本{w}")
+        # 内訳の和＋その他が合計に一致すること
+        gokei = _pick34("D48-c", "合計", P37, 1000000.0)
+        for i, p in enumerate(P37):
+            uchi = sum(DZ.vals("fig2-13_地域支援事業費", k)[i] for k in
+                       ("一般介護予防事業費", "介護予防・生活支援サービス事業費",
+                        "包括的支援事業費", "その他"))
+            if gokei[i] is not None and abs(uchi - gokei[i]) > 0.021:
+                bad37.append(f"{p} 内訳の和{uchi:.2f}≠合計{gokei[i]:.2f}")
+        chk(37, "図2-16の地域支援事業費の内訳が見える化 D48-c と一致すること", not bad37,
+            "／".join(bad37[:3]) if bad37
+            else f"3系列×{len(P37)}点と、内訳の和が合計に一致")
+        # 38・39 在宅／施設・居住系別の1人1月あたり給付月額（D6-a・D6-b）
+        D6 = _c34.defaultdict(dict)
+        with open(BAT34, encoding="utf-8") as f:
+            for r in _csv.DictReader(f):
+                if r["region"] != "北塩原村" or not r["file"].startswith("D6-"):
+                    continue
+                try:
+                    D6[(r["file"].split("_")[0], r["indicator"])][_pkey(r["period"])] = \
+                        float(r["value"])
+                except ValueError:
+                    pass
+        P38 = [_pkey(c) for c in DZ.cats("fig2-11_在宅施設別給付月額")]
+
+        def _p38(bk, kw):
+            for (b, i), d in D6.items():
+                if b == bk and kw in i:
+                    return [d.get(p) for p in P38]
+            return None
+        cmp_series(38, "図2-12の在宅サービスの給付月額が見える化 D6-a と一致すること",
+                   _p38("D6-a", "在宅サービス"),
+                   DZ.vals("fig2-11_在宅施設別給付月額", "在宅サービス"),
+                   tol=0.51, gp=P38, wp=P38)
+        cmp_series(39, "図2-12の施設・居住系の給付月額が見える化 D6-b と一致すること",
+                   _p38("D6-b", "施設および居住系"),
+                   DZ.vals("fig2-11_在宅施設別給付月額", "施設・居住系サービス"),
+                   tol=0.51, gp=P38, wp=P38)
+    except Exception as e:
+        chk(34, "村の決算による図が見える化 D47・D48 と一致すること", False,
+            f"照合できない（{e}）")
 
     # ── 32　正本のすべての図について、突合の状態が定められていること ──────
     #    突合していない図を黙って残さないための点検。
