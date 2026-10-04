@@ -19,6 +19,33 @@ FIGDIR = "/home/user/repository/output/figures"
 def chars_per_line(pt):            # 全角は1文字＝フォントサイズと同じ幅
     return (BODY_W / 20) / pt
 
+
+# 文字の幅（全角を1とした割合）。游ゴシックの実測ではなく、和文フォントの
+# 一般的な作りによる概算である。半角の英数字・記号は全角の約半分の幅を占める。
+# 表のセルは数字が多く、すべてを全角1文字と数えると行数を1.5〜2倍に見積もる。
+HANKAKU = 0.5      # 0-9 A-Z a-z および半角の記号・空白
+ZENKAKU = 1.0      # 仮名・漢字・全角の記号
+NARROW = 0.55      # 半角の約物のうち幅の狭いもの（. , : ; ! | ' " ( ) [ ] / -）
+_NARROW_CH = set(".,:;!|'\"()[]{}/-+<>=*")
+
+
+def text_w(t):
+    """文字列の幅を全角何文字ぶんかで返す。
+
+    len() で数えると、数字ばかりの表のセルを実際の2倍近くに見積もる。
+    紙面の推定はこの幅から行数を出すため、ここがずれると頁数もずれる。
+    """
+    w = 0.0
+    for ch in str(t):
+        o = ord(ch)
+        if o < 0x80:
+            w += NARROW if ch in _NARROW_CH else HANKAKU
+        elif 0xFF61 <= o <= 0xFF9F:      # 半角カタカナ
+            w += HANKAKU
+        else:
+            w += ZENKAKU
+    return w
+
 def png_size(path):
     with open(path, "rb") as f:
         b = f.read(24)
@@ -43,7 +70,7 @@ def fig_in(path, w_in=6.3, max_h=None):
     return w_in, h_in
 
 def para_h(text, pt=10.5, line=300, after=120):
-    n = max(1, math.ceil(len(text) / chars_per_line(pt)))
+    n = max(1, math.ceil(text_w(text) / chars_per_line(pt)))
     return n * line + after
 
 def block_h(b):
@@ -67,8 +94,9 @@ def block_h(b):
         for row in [b["head"]] + [list(map(str, r)) for r in b["rows"]]:
             lines = 1
             for i, cell in enumerate(row):
-                cw = (w[i] / tot) * (BODY_W - 90 * 2 * cols) / 20 / 8.5
-                lines = max(lines, math.ceil(len(str(cell)) / max(1, cw)))
+                # 列幅から引く。セル余白（左右90twip）はその列のぶんだけ引く
+                cw = ((w[i] / tot) * BODY_W - 90 * 2) / 20 / 8.5
+                lines = max(lines, math.ceil(text_w(cell) / max(1.0, cw)))
             h += lines * 240 + 120
         return h + 160
     return 0
@@ -123,7 +151,7 @@ SH_FIGDIR = "/home/user/repository/output/figures"
 
 def shiryo_block_h(b):
     def para(text, pt=10.5, line=300, after=120):
-        n = max(1, math.ceil(len(text) / ((SH_W / 20) / pt)))
+        n = max(1, math.ceil(text_w(text) / ((SH_W / 20) / pt)))
         return n * line + after
     t = b["t"]
     if t == "p":
@@ -148,8 +176,8 @@ def shiryo_block_h(b):
         for row in [b["head"]] + [list(map(str, r)) for r in b["rows"]]:
             lines = 1
             for i, cell in enumerate(row):
-                cw = (wid[i] / tot) * (SH_W - 90 * 2 * cols) / 20 / 8.5
-                lines = max(lines, math.ceil(len(str(cell)) / max(1, cw)))
+                cw = ((wid[i] / tot) * SH_W - 90 * 2) / 20 / 8.5
+                lines = max(lines, math.ceil(text_w(cell) / max(1.0, cw)))
             h += lines * 240 + 120
         return h + 160
     return 0
@@ -189,6 +217,20 @@ if __name__ == "__main__":
     print(f"\n  章単位で切り上げ（章の変わり目で改頁）　本文 {body}頁")
     print(f"  前付（{'・'.join(n for n, _ in FRONT)}）　　　　　　 {front}頁")
     print(f"  計画書全体　　　　　　　　　　　　　　 {body + front}頁")
+    # ここまでは要素の高さを足しただけで、送りによる空白を見ていない下限値である。
+    # 実際の紙面は estimate_layout.py が頁の境目まで追って出す。
+    try:
+        import estimate_layout as _EL
+        n_soan = _EL.pages(_EL.soan_items(False), _EL.BODY_H)
+        n_kei = _EL.pages(_EL.soan_items(True), _EL.BODY_H)
+        print(f"\n  ※ 上は要素の高さを足しただけの**下限値**である。"
+              f"見出しや図が次頁へ送られて生じる空白を見ていない。")
+        print(f"  　 送りを追った推定（estimate_layout.py）"
+              f"　素案のまま {n_soan}頁／計画書として {n_kei}頁（＋前付{front}頁）")
+        print(f"  　 計画書は編集注記と5-12（据え置いた項目）を載せないため"
+              f"{n_soan - n_kei}頁短くなる")
+    except Exception as e:
+        print(f"\n  ※ 送りを追った推定を出せない（{e}）")
 
     print("\n■ 第9期の実績との対比（第9期＝本文104頁）\n")
     print(f"{'章':6s} {'第9期':>7s} {'第10期':>8s} {'差':>7s}  {'構成比 第9期→第10期':>0s}")

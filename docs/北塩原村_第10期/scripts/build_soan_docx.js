@@ -23,7 +23,7 @@ const path = require('path');
 
 const {Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBreak, ImageRun,
        Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, LevelFormat,
-       TableOfContents, Header, Footer, PageNumber} = d;
+       TableOfContents, Header, Footer, PageNumber, TableLayoutType} = d;
 
 const C = JSON.parse(fs.readFileSync('/tmp/soan.json', 'utf8'));
 // 書式は協議用素案の体裁（本文 游ゴシック 10.5pt）に合わせる。図表の色味は現行のまま
@@ -59,6 +59,9 @@ function table(head, rows, widths) {
   });
   return new Table({
     columnWidths: cols,
+    // 列幅を宣言どおりに固定する。既定の自動調整だと Word が中身に合わせて
+    // 列幅を変えてしまい、widths で決めた割付も頁数の推定も当てにならなくなる。
+    layout: TableLayoutType.FIXED,
     width: {size: TBLW, type: WidthType.DXA},
     rows: [new TableRow({tableHeader: true, cantSplit: true, children: head.map((h, i) => cell(h, i, true))}),
            ...rows.map(r => new TableRow({cantSplit: true, children: r.map((v, i) => cell(v, i, false))}))],
@@ -66,6 +69,18 @@ function table(head, rows, widths) {
 }
 
 const FIGDIR = '/home/user/repository/output/figures';
+// 本文の高さ（9.72in）のこの割合を超える図は、頁の頭から置く。
+// 途中から置くと入りきらずに丸ごと次頁へ送られ、前の頁に大きな空白が残る。
+// あらかじめ改頁して1頁の図版として扱えば、空白は意図したものになる。
+const ZENMEN_H_IN = 9.72 * 0.60;
+
+function figTall(f) {
+  const buf = fs.readFileSync(path.join(FIGDIR, f.file));
+  const dim = pngSize(buf);
+  const hIn = 6.3 * dim.h / dim.w;
+  return Math.min(hIn, 8.9) >= ZENMEN_H_IN;
+}
+
 function figure(f) {
   const buf = fs.readFileSync(path.join(FIGDIR, f.file));
   // 本文幅 9360 DXA = 6.5in。300dpiのPNGを幅6.3inに収める
@@ -148,7 +163,10 @@ C.chapters.forEach((ch, ci) => {
       children: [new TextRun({text: `${sec.no}　${sec.title}`, font: FONTG, size: 25,
                               bold: true, color: NAVY})],
     }));
-    (C.figures[ch.no + '|' + sec.no] || []).forEach(f => { figure(f).forEach(x => kids.push(x)); });
+    (C.figures[ch.no + '|' + sec.no] || []).forEach(f => {
+      if (figTall(f)) kids.push(new Paragraph({children: [new PageBreak()]}));
+      figure(f).forEach(x => kids.push(x));
+    });
     sec.blocks.forEach(b => {
       if (b.t === 'p') kids.push(p(b.v));
       else if (b.t === 'h3') kids.push(p(b.v, {size: 22, bold: true, font: FONTG,
@@ -166,6 +184,9 @@ C.chapters.forEach((ch, ci) => {
           children: [new TextRun({text: `⚙ 編集注記：${b.v}`, font: FONTG, size: 17, color: GREY})],
         }));
       } else if (b.t === 'fig') {
+        if (figTall(C.figures_inline[b.v])) {
+          kids.push(new Paragraph({children: [new PageBreak()]}));
+        }
         figure(C.figures_inline[b.v]).forEach(x => kids.push(x));
       } else if (b.t === 'table' || b.t === 'kpi') {
         kids.push(table(b.head, b.rows, b.widths));

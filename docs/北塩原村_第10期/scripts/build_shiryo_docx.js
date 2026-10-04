@@ -3,7 +3,7 @@ const fs = require('fs');
 const d = require('/tmp/node_modules/docx');
 const {Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBreak,
        Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, LevelFormat,
-       TableOfContents, Footer, PageNumber, ImageRun} = d;
+       TableOfContents, Footer, PageNumber, ImageRun, TableLayoutType} = d;
 const path = require('path');
 // 入力のJSONが元データより古いときは止める（古い成果品を作らないため）
 (function () {
@@ -25,6 +25,17 @@ const FIGDIR = '/home/user/repository/output/figures';
 function pngSize(buf) {              // PNG IHDR: 幅=16..19 / 高さ=20..23（ビッグエンディアン）
   return {w: buf.readUInt32BE(16), h: buf.readUInt32BE(20)};
 }
+// 本文の高さ（10.12in）のこの割合を超える図は、頁の頭から置く。
+// build_soan_docx.js の ZENMEN_H_IN と同じ割合を用いる。
+const ZENMEN_H_IN = 10.12 * 0.60;
+
+function figTall(b) {
+  const buf = fs.readFileSync(path.join(FIGDIR, b.file));
+  const dim = pngSize(buf);
+  const hIn = (b.width || 6.3) * dim.h / dim.w;
+  return Math.min(hIn, 9.3) >= ZENMEN_H_IN;
+}
+
 function figure(b) {
   const buf = fs.readFileSync(path.join(FIGDIR, b.file));
   // 本文高さは 14570 twip ＝ 10.12in。表題・出典・前後の空きを除くと図に使えるのは
@@ -81,6 +92,9 @@ function table(head, rows, widths) {
   });
   return new Table({
     columnWidths: cols, width: {size: TBLW, type: WidthType.DXA},
+    // 列幅を宣言どおりに固定する。既定の自動調整だと Word が中身に合わせて
+    // 列幅を変えてしまい、widths で決めた割付も頁数の推定も当てにならなくなる。
+    layout: TableLayoutType.FIXED,
     rows: [new TableRow({tableHeader: true, cantSplit: true, children: head.map((h, i) => cell(h, i, true))}),
            ...rows.map(r => new TableRow({cantSplit: true, children: r.map((v, i) => cell(v, i, false))}))],
   });
@@ -166,7 +180,10 @@ C.chapters.forEach((ch, ci) => {
         children: [new TextRun({text: '※ ' + b.v, font: FONTG, size: 17, color: GREY})],
       }));
       else if (b.t === 'table') { kids.push(table(b.head, b.rows, b.widths)); kids.push(p('', {after: 160})); }
-      else if (b.t === 'fig') { figure(b).forEach(x => kids.push(x)); }
+      else if (b.t === 'fig') {
+        if (figTall(b)) kids.push(new Paragraph({children: [new PageBreak()]}));
+        figure(b).forEach(x => kids.push(x));
+      }
     });
   });
 });

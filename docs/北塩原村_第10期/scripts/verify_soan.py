@@ -1089,17 +1089,32 @@ def main():
         import estimate_pages as EP48
         import re as _re48
         bad48 = []
-        # (a) docx 側の上限と推定側の上限が同じ値であること（定数の二重管理の検出）
+        # (a) docx 側の定数と推定側の定数が同じ値であること（二重管理の検出）
         for js, attr in (("build_soan_docx.js", "MAX_FIG_H"),
                          ("build_shiryo_docx.js", "SH_MAX_FIG_H")):
             with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), js),
                       encoding="utf-8") as f48:
-                m48 = _re48.search(r"MAX_H_IN\s*=\s*([0-9.]+)", f48.read())
+                src48 = f48.read()
+            m48 = _re48.search(r"MAX_H_IN\s*=\s*([0-9.]+)", src48)
             if not m48:
                 bad48.append(f"{js} に図の高さの上限がない")
             elif abs(float(m48.group(1)) - getattr(EP48, attr)) > 1e-9:
                 bad48.append(f"{js} の上限{m48.group(1)}in ≠ "
                              f"estimate_pages.{attr} {getattr(EP48, attr)}in")
+            # 1頁の図版とする割合（素案のみ）
+            if js == "build_soan_docx.js":
+                z48 = _re48.search(r"ZENMEN_H_IN\s*=\s*[0-9.]+\s*\*\s*([0-9.]+)", src48)
+                if not z48:
+                    bad48.append(f"{js} に1頁の図版とする割合がない")
+                elif abs(float(z48.group(1)) - EL.ZENMEN) > 1e-9:
+                    bad48.append(f"{js} の割合{z48.group(1)} ≠ "
+                                 f"estimate_layout.ZENMEN {EL.ZENMEN}")
+        # (d) 表の列幅が固定であること（自動調整だと宣言した割付も推定も崩れる）
+        for js in ("build_soan_docx.js", "build_shiryo_docx.js"):
+            with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), js),
+                      encoding="utf-8") as f48:
+                if "TableLayoutType.FIXED" not in f48.read():
+                    bad48.append(f"{js} の表の列幅が固定になっていない")
         # (b) 1頁に収まらない要素が表だけであること（図は分割できない）
         for items, ph, nm48 in ((EL.soan_items(), EL.BODY_H, "素案"),
                                 (EL.shiryo_items(), EL.SH_H, "委員会資料")):
@@ -1120,6 +1135,35 @@ def main():
     except Exception as e:
         chk(48, '紙面が成り立つこと（推定。目視の代わりにはならない）', False,
             f'照合できない（{e}）')
+
+    # ── 49　2つの頁数の推定が矛盾しないこと ─────────────────────
+    #    estimate_pages.py は要素の高さを足すだけ（送りの空白を見ない下限値）、
+    #    estimate_layout.py は上から積み上げて頁の境目を見る。
+    #    後者は前者を下回り得ない。下回ったらどちらかの積算が壊れている。
+    #    あわせて計画書としての頁数が仕様書の目安から離れすぎていないかを見る。
+    try:
+        import estimate_pages as EP49
+        import estimate_layout as EL49
+        rows49, tot49, _, _ = EP49.run()
+        n_soan = EL49.pages(EL49.soan_items(False), EL49.BODY_H)
+        n_kei = EL49.pages(EL49.soan_items(True), EL49.BODY_H)
+        bad49 = []
+        if n_soan < tot49:
+            bad49.append(f'送りを追った推定{n_soan}頁が積み上げ{tot49:.1f}頁を下回る')
+        if n_kei > n_soan:
+            bad49.append(f'計画書として{n_kei}頁が素案のまま{n_soan}頁を上回る')
+        # 計画書（本文＋前付4頁）が仕様書の目安100頁から±20頁を超えて離れていないか
+        zentai = n_kei + 4
+        if abs(zentai - 100) > 20:
+            bad49.append(f'計画書全体{zentai}頁が仕様書の目安100頁から'
+                         f'{zentai - 100:+d}頁離れている')
+        chk(49, '頁数の2つの推定が矛盾しないこと', not bad49,
+            '・'.join(bad49[:2]) if bad49
+            else f'積み上げ{tot49:.0f}頁 ≦ 送りを追った推定{n_soan}頁、'
+                 f'計画書として{n_kei}頁＋前付4頁＝{zentai}頁（目安100頁に対し'
+                 f'{zentai - 100:+d}頁）')
+    except Exception as e:
+        chk(49, '頁数の2つの推定が矛盾しないこと', False, f'照合できない（{e}）')
 
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)

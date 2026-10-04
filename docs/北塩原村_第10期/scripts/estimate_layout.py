@@ -6,8 +6,10 @@
   できないため、代わりに build_soan_docx.js が指定しているレイアウト値から
   要素を上から積み上げ、頁の境目に何が来るかを突き止める。
 
-  **推定は目視の代わりにはならない。** 字幅は全角1文字＝フォントサイズとみなした
-  概算であり、Word の実際の組版（禁則処理・和欧混植・表の自動列幅）とは食い違う。
+  **推定は目視の代わりにはならない。** 字幅は全角1・半角0.5を目安とした概算であり、
+  Word の実際の組版（禁則処理・プロポーショナルな字送り・行末の追い込み）とは
+  食い違う。なお表の列幅は docx 側で TableLayoutType.FIXED を指定したため、
+  宣言した widths どおりに組まれる。
   この点検が示すのは「ここを見てください」という箇所であり、「問題がない」ことの
   証明ではない。
 
@@ -21,8 +23,14 @@
   4 空白の大きさ      送りによって生じる空白が頁の3割を超える箇所を挙げる。
 
 【使い方】
-  python3 scripts/estimate_layout.py            計画素案
+  python3 scripts/estimate_layout.py            計画素案（素案のまま）
+  python3 scripts/estimate_layout.py --keikaku  計画書として（編集注記と5-12を除く）
   python3 scripts/estimate_layout.py --shiryo   第2回策定委員会資料
+
+【estimate_pages.py との違い】
+  estimate_pages.py は要素の高さを足して本文の高さで割る。送りによる空白を
+  見ないため、**下限値**である。本スクリプトは上から積み上げて頁の境目を見るため、
+  送りの空白を含む。両者の差は送りの空白にあたる（点検49で確かめている）。
 """
 import sys
 sys.dont_write_bytecode = True
@@ -38,13 +46,19 @@ AKI = 0.30                         # 空白が頁のこの割合を超えたら�
 def flow(items, page_h):
     """要素を上から積み上げ、頁の境目で起きることを拾う。
 
-    items は (種別, 名, 高さ, 分割できるか, 次と離さないか) の並び。
-    返すのは (頁数, 気になる箇所の一覧)。
+    items は (種別, 名, 高さ, 分割できるか, 次と離さないか, 最初のひとかたまり)
+    の並び。返すのは (頁数, 気になる箇所の一覧)。
+
+    **keepNext は「次の要素の先頭」としか結びつかない。** Word の keepNext は
+    見出しを次の段落（表なら最初の行）と同じ頁に置くもので、表や段落の全体を
+    引き連れるわけではない。全体の高さで判定すると、長い表の前の見出しが
+    いつまでも次頁へ送られ、ありもしない空白を数えてしまう。
     """
     y, page, out = 0, 1, []
     i = 0
     while i < len(items):
-        kind, name, h, splittable, keep = items[i]
+        kind, name, h, splittable, keep = items[i][:5]
+        first = items[i][5] if len(items[i]) > 5 else h
         if kind == "改頁":
             if y > 0:
                 out.append(("改頁", page, name, page_h - y))
@@ -52,12 +66,15 @@ def flow(items, page_h):
             y = 0
             i += 1
             continue
-        # keepNext の連なりをひとまとめにして高さを見る
+        # keepNext の連なり。最後の要素は「分割できない最初のひとかたまり」で見る
         grp, j = h, i
         while keep and j + 1 < len(items) and items[j + 1][0] != "改頁":
             j += 1
-            grp += items[j][2]
-            if not items[j][4]:
+            nxt = items[j]
+            if nxt[4]:                       # 次も keepNext なら全体を連れていく
+                grp += nxt[2]
+            else:                            # 連なりの終わり。先頭のひとかたまりだけ
+                grp += nxt[5] if len(nxt) > 5 else nxt[2]
                 break
         nokori = page_h - y
         if h > page_h:
@@ -93,7 +110,39 @@ def flow(items, page_h):
     return page, out
 
 
-def soan_items():
+# 本文の高さのこの割合を超える図は、docx 側が頁の頭から置く（改頁を入れる）。
+# build_soan_docx.js の ZENMEN_H_IN と同じ値でなければ推定が実際とずれる。
+ZENMEN = 0.60
+
+
+def fig_tall(h_in, page_h_in=9.72):
+    return h_in >= page_h_in * ZENMEN
+
+
+def first_unit(b, page_h=None):
+    """分割できない最初のひとかたまりの高さ。
+
+    表は「見出し行＋最初の1行」（cantSplit により行の途中では割れず、
+    見出し行は tableHeader により次頁の先頭で繰り返される）。
+    段落・箇条書きは1行。図は分けられないため全体。
+    """
+    t = b.get("t")
+    if t in ("table", "kpi"):
+        return 240 * 2 + 120 * 2 + 160      # 見出し行＋1行＋セル余白＋表の前後
+    if t in ("p", "note", "bullets", "key"):
+        return 300 + 120
+    # 分けられないもの（図など）は全体が最初のひとかたまりになる。
+    # 呼び出し側が高さを渡していないときは、1行ぶんを下限として返す。
+    return 300 + 120
+
+
+def soan_items(keikaku=False):
+    """素案の要素を上から並べる。
+
+    keikaku=True のときは、計画書として納める形にする。
+    編集注記（note）と5-12（現時点で据え置いた項目）は策定の過程を委員と
+    共有するために置いたもので、計画書には載せない（素案5-12の注記による）。
+    """
     import soan_content as S
     from figures_map import FIGS
     figs = {}
@@ -105,18 +154,25 @@ def soan_items():
             it.append(("改頁", f'{ch["no"]} の前', 0, False, False))
         it.append(("章見出し", f'{ch["no"]}　{ch["title"]}', 300 + 30 * 20, False, True))
         for sec in ch["sections"]:
+            if keikaku and sec["no"] == "5-12":
+                continue
             it.append(("節見出し", f'{sec["no"]}　{sec.get("title", "")}',
                        320 + 25 * 20 + 180, False, True))
             for fn in figs.get(f'{ch["no"]}|{sec["no"]}', []):
                 _, h_in = EP.fig_in(os.path.join(EP.FIGDIR, fn))
                 # 画像＋表題＋出典。keepNext により1つのかたまりとして動く
                 h = 160 + h_in * 1440 + 60 + 18 * 20 + 40 + 16 * 20 + 200
-                it.append(("図", f'{sec["no"]}　{fn}', h, False, False))
+                if fig_tall(h_in):
+                    it.append(("改頁", f'{sec["no"]}　{fn} の前（1頁の図版）',
+                               0, False, False, 0))
+                it.append(("図", f'{sec["no"]}　{fn}', h, False, False, h))
             for b in sec["blocks"]:
+                if keikaku and b["t"] == "note":
+                    continue
                 h = EP.block_h(b)
                 if b["t"] in ("table", "kpi"):
                     nm = f'{sec["no"]}　表（{len(b["rows"])}行）{"／".join(map(str, b["head"]))[:34]}'
-                    it.append(("表", nm, h + 160, True, False))
+                    it.append(("表", nm, h + 160, True, False, first_unit(b)))
                 elif b["t"] == "fig":
                     from figures_map import FIGS as _F
                     fn = next((e[1] for e in _F if e[0] == b["v"] or e[1].startswith(b["v"])),
@@ -124,11 +180,15 @@ def soan_items():
                     if fn:
                         _, h_in = EP.fig_in(os.path.join(EP.FIGDIR, fn))
                         h = 160 + h_in * 1440 + 60 + 18 * 20 + 40 + 16 * 20 + 200
-                    it.append(("図", f'{sec["no"]}　{b["v"]}', h, False, False))
+                        if fig_tall(h_in):
+                            it.append(("改頁", f'{sec["no"]}　{b["v"]} の前（1頁の図版）',
+                                       0, False, False, 0))
+                    it.append(("図", f'{sec["no"]}　{b["v"]}', h, False, False, h))
                 elif b["t"] == "h3":
-                    it.append(("小見出し", f'{sec["no"]}　{b["v"][:34]}', h, False, True))
+                    it.append(("小見出し", f'{sec["no"]}　{b["v"][:34]}', h, False, True, h))
                 else:
-                    it.append((b["t"], f'{sec["no"]}　{str(b.get("v"))[:34]}', h, True, False))
+                    it.append((b["t"], f'{sec["no"]}　{str(b.get("v"))[:34]}', h, True,
+                               False, first_unit(b)))
     return it
 
 
@@ -148,13 +208,19 @@ def shiryo_items():
                 if b["t"] == "table":
                     nm = (f'{sec["no"]}　表（{len(b["rows"])}行）'
                           + "／".join(map(str, b["head"]))[:34])
-                    it.append(("表", nm, h + 160, True, False))
+                    it.append(("表", nm, h + 160, True, False, first_unit(b)))
                 elif b["t"] == "fig":
-                    it.append(("図", f'{sec["no"]}　{b["file"]}', h, False, False))
+                    _, hi = EP.fig_in(os.path.join(EP.SH_FIGDIR, b["file"]),
+                                      b.get("width", 6.3), EP.SH_MAX_FIG_H)
+                    if fig_tall(hi, 10.12):
+                        it.append(("改頁", f'{sec["no"]}　{b["file"]} の前（1頁の図版）',
+                                   0, False, False, 0))
+                    it.append(("図", f'{sec["no"]}　{b["file"]}', h, False, False, h))
                 elif b["t"] == "h3":
-                    it.append(("小見出し", f'{sec["no"]}　{b["v"][:34]}', h, False, True))
+                    it.append(("小見出し", f'{sec["no"]}　{b["v"][:34]}', h, False, True, h))
                 else:
-                    it.append((b["t"], f'{sec["no"]}　{str(b.get("v"))[:34]}', h, True, False))
+                    it.append((b["t"], f'{sec["no"]}　{str(b.get("v"))[:34]}', h, True,
+                               False, first_unit(b)))
     return it
 
 
@@ -193,13 +259,25 @@ def report(name, items, page_h):
     return pages, out
 
 
+def pages(items, page_h):
+    """頁数だけを返す（点検から呼ぶ）"""
+    return flow(items, page_h)[0]
+
+
 if __name__ == "__main__":
     if "--shiryo" in sys.argv:
         report("第2回策定委員会資料", shiryo_items(), SH_H)
+    elif "--keikaku" in sys.argv:
+        n1 = report("計画書（編集注記と5-12を除く）", soan_items(True), BODY_H)[0]
+        n0 = pages(soan_items(False), BODY_H)
+        print(f"\n  素案のまま {n0}頁 → 計画書として {n1}頁（差 {n0 - n1}頁）")
+        print(f"  ＋前付（表紙・本書の見方・目次）4頁 ＝ 計画書全体 約{n1 + 4}頁")
+        print(f"  仕様書5①「A4判・両面約100頁」に対し {100 - (n1 + 4):+d}頁")
     else:
         report("計画素案（本文）", soan_items(), BODY_H)
-    print("\n※ この推定は目視確認の代わりにはならない。字幅は全角1文字＝フォントサイズ"
-          "とみなした概算で、Word の禁則処理・和欧混植・表の自動列幅とは食い違う。")
+    print("\n※ この推定は目視確認の代わりにはならない。字幅は全角1・半角0.5を"
+          "目安とした概算で、Word の禁則処理・プロポーショナルな字送り・"
+          "行末の追い込みとは食い違う。")
     print("※ 表の行は cantSplit により行の途中では割れない。見出し行は tableHeader に"
           "より次頁の先頭で繰り返される。")
     print("※ 見出しと図は keepNext により次の要素と同じ頁へ送られる。"
