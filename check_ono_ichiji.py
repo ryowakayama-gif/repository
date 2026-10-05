@@ -23,6 +23,7 @@
   python3 check_ono_ichiji.py
 """
 
+import json
 import pathlib
 import re
 import sys
@@ -68,6 +69,37 @@ EXCEPT_WHY = {
         "0.7＋1.4＋3.4＋3.8＋4.5＋76.2＋10.0＝100.0％で合う。"
         "本文が数字を入れ違えたものとみて76.2を採っている。",
 }
+
+
+VALUES = pathlib.Path(__file__).parent / "output" / "ono_ichiji" / "_values.json"
+
+
+def dump_values():
+    """原本と突き合わせた値を台帳に書き出す。
+
+    計画素案の「関連データ」の表は、この台帳から値を引く。
+    本文に書いた数値を表へ手で写すと、片方を直したときにもう片方が
+    古いまま残る。台帳を間に挟めば、原本と照合済みの値だけが表に載る。
+    """
+    VALUES.parent.mkdir(parents=True, exist_ok=True)
+    out = {}
+    for k, i, u, _p, o in RESULT:
+        if o == "NG":
+            continue            # 食い違っているものは渡さない
+        out[f"{k}|{i}"] = u
+    VALUES.write_text(
+        json.dumps(out, ensure_ascii=False, indent=1, sort_keys=True),
+        encoding="utf-8")
+    print(f"\n台帳: {VALUES}　{len(out)}件")
+
+
+def load_values():
+    """台帳を読む。素案の生成側から呼ぶ。"""
+    if not VALUES.exists():
+        raise SystemExit(
+            f"一次資料の台帳がありません：{VALUES}\n"
+            "先に python3 check_ono_ichiji.py を実行してください。")
+    return json.loads(VALUES.read_text(encoding="utf-8"))
 
 
 def chk(kubun, item, used, primary, tol=0):
@@ -817,6 +849,7 @@ def main():
         print("\n■ 一次資料が手元にないもの（出所を明記して扱う）")
         for k, i, _u, _p, _o in ref:
             print(f"  参考 [{k}] {i}")
+    dump_values()
     return 1 if ng else 0
 
 
