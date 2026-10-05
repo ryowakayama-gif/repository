@@ -21,6 +21,7 @@ from docx.shared import Pt
 
 import build_ono_tanka as T
 import ono_shizentai as SZ
+import ono_style as S
 from build_ono_backtest import (COMBOS, YS as BT_YS, load_kaigodo as BT_KD,
                                 predict as bt_predict, run as backtest)
 from ono_kaigodo import KAIGODO as K_KAIGODO, growth as K_growth
@@ -29,8 +30,8 @@ from build_ono_kaisu import (EIGYO, TEIIN, chiiki_plan, chiiki_ryo, check_base,
                              disp, plan_rows, sogo_jisseki, teiin_plan, _svc_of)
 
 OUT = pathlib.Path(__file__).parent / "小野町_引継ぎ_整理済" / "04_算定・見込量"
-ASOF = "20260925"
-ASOF_JP = "令和8年9月25日"
+ASOF = "20261006"
+ASOF_JP = "令和8年10月6日"
 JP_MIN = "游明朝"
 JP_GO = "游ゴシック"
 
@@ -59,57 +60,68 @@ def hoken(**kw):
 
 
 # ---------------------------------------------------------------- 体裁
+#
+# **成果品②は納品物であるため、他の成果品と同じ体裁にそろえる。**
+# 従前はこのファイルの中で独自に組んでいた（游明朝10.5pt・表紙なし・目次なし）。
+# 仕様書4 成果品② は冊子（簡易製本）3部を求めており、
+# 作業用のメモのままでは納品できない。
+# ono_style に寄せることで、表紙・目次・列幅・出典の扱いが
+# 計画素案・協議会資料と同じになり、体裁点検（check_ono_taisai）の
+# 対象にもできる。
+
+# 表の枝番を数える。同じ見出しの中に表が複数あるときに（2）（3）を付ける。
+_TBL_SEQ = {}
+
 
 def new_doc():
-    doc = Document()
-    st = doc.styles["Normal"]
-    st.font.name = JP_MIN
-    st.font.size = Pt(10.5)
-    st.element.rPr.rFonts.set(qn("w:eastAsia"), JP_MIN)
+    _TBL_SEQ.clear()
+    doc = S.Report("小野町 第10期介護保険事業計画　サービス見込量推計結果報告書")
+    doc.cover(["小野町高齢者保健福祉計画・第10期介護保険事業計画",
+               "サービス見込量推計結果報告書"],
+              ["", "（委託仕様書4(2) サービス見込量の推計及び保険料の算出）",
+               "", ASOF_JP, "受託者"])
+    doc.toc_here()
+    doc.body_here()
     return doc
 
 
 def head(doc, text, level=1):
-    p = doc.add_heading(text, level=level)
-    for r in p.runs:
-        r.font.name = JP_GO
-        r._element.rPr.rFonts.set(qn("w:eastAsia"), JP_GO)
-    return p
+    if level <= 0:
+        return None            # 表題は表紙が持つ
+    return doc.h1(text) if level == 1 else doc.h2(text)
 
 
 def body(doc, *paras):
     for t in paras:
-        doc.add_paragraph(t)
+        doc.p(t)
 
 
 def note(doc, text):
-    p = doc.add_paragraph(text)
-    for r in p.runs:
-        r.font.size = Pt(9)
-    return p
+    return doc.src(text)
 
 
-def table(doc, header, rows, right_from=1):
-    t = doc.add_table(rows=1, cols=len(header))
-    t.style = "Table Grid"
-    for i, v in enumerate(header):
-        c = t.rows[0].cells[i]
-        c.text = str(v)
-        for p in c.paragraphs:
-            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            for r in p.runs:
-                r.font.bold = True
-                r.font.size = Pt(8.5)
-    for row in rows:
-        cells = t.add_row().cells
-        for i, v in enumerate(row):
-            cells[i].text = "" if v is None else str(v)
-            for p in cells[i].paragraphs:
-                if i >= right_from:
-                    p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-                for r in p.runs:
-                    r.font.size = Pt(8.5)
-    return t
+def _caption(doc):
+    """直前の見出しから表題を作る。素案と同じ考え方。
+
+    表題を1つずつ手で書くと、見出しを変えたときに題だけが古いまま残る。
+    """
+    sec = ""
+    for lv, text, _nm in doc.headings:
+        if lv in (1, 2):
+            sec = text
+    key = sec or "―"
+    n = _TBL_SEQ.get(key, 0) + 1
+    _TBL_SEQ[key] = n
+    return key if n == 1 else f"{key}（{n}）"
+
+
+def table(doc, header, rows, right_from=1, caption=None):
+    """表を置く。caption を省くと直前の見出しから作り、通し番号を振る。"""
+    if caption is None:
+        caption = _caption(doc)
+    return doc.tbl([list(header)] + [list(r) for r in rows],
+                   right=tuple(range(right_from, len(header))),
+                   caption=None if caption is False else caption)
 
 
 def f0(v):
@@ -460,7 +472,7 @@ def main():
                          f0(kyu[2]), ""))
         table(doc, ["サービス", "単位", "令和7年度（実績）", "令和9年度",
                     "令和10年度", "令和11年度", "基準期間"], rows, right_from=2)
-        doc.add_paragraph()
+        doc.spacer()
     note(doc,
          "※ 量を載せていないサービスは、月額または日額の包括報酬であり、"
          "見える化ワークシートにも回（日）数の欄がありません。"
@@ -651,7 +663,7 @@ def main():
         ("所得段階別加入割合補正後被保険者数（3年計）",
          f"{f0(BASE['補正後被保険者数'])}人", "10,136人"),
     ], right_from=1)
-    doc.add_paragraph()
+    doc.spacer()
     body(doc, "基金の取扱いと負担割合によるケース別の保険料基準額は次のとおりです。")
     table(doc, ["ケース", "保険料基準額（月額）", "第9期6,600円との差"], [
         ("準備基金を取り崩さない場合", f"{f0(BASE['月額'])}円",
@@ -725,7 +737,7 @@ def main():
          f"**実績の趨勢（年率＋{TANKA_YR * 100:.2f}％）で置くと月額"
          f"{TANKA_GAP:+,.0f}円**", "協議会での判断"),
     ], right_from=9)
-    doc.add_paragraph()
+    doc.spacer()
     head(doc, "（参考）単価を固定していることの意味", 2)
     body(doc,
          "**当方は1件当たりの給付費（単価）を令和7年度で固定しています。**"
@@ -786,12 +798,15 @@ def main():
         "短期入所生活介護が令和8年度に入って増えている理由"
         "（月報で日数が月300日から380日、給付額が月2,673千円から3,456千円）。",
     ], start=1):
-        doc.add_paragraph(f"{i}　{t}")
+        body(doc, f"{i}　{t}")
 
     OUT.mkdir(parents=True, exist_ok=True)
-    path = OUT / f"小野町_第10期_サービス見込量の算定結果_{ASOF}.docx"
+    doc.build_toc()
+    path = OUT / f"小野町_第10期_サービス見込量推計結果報告書_{ASOF}.docx"
     doc.save(path)
     print(f"出力: {path}")
+    print(f"  表 {doc.tblno}点（うち番号を振ったもの {doc.capno}点）"
+          f"／図 {doc.figno}点／見出し {len(doc.headings)}件")
     print(f"  総給付費 3年計 {sum(A['計']):,.0f}千円／標準給付費 {STD3:,.0f}千円")
     print(f"  地域支援事業費 3年計 {CHI3:,.0f}千円")
     print(f"  保険料基準額（月額・取崩なし） {BASE['月額']:,.0f}円")

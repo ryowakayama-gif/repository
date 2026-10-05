@@ -403,12 +403,12 @@ def hoken(kikin=0, **kw):
 HOKEN = hoken()                                 # 標準ケース（取崩なし）
 # 単価を令和7年度で固定せず実績の趨勢で伸ばした場合。
 # 令和9・10・11年度は基準年度（令和7年度）から2・3・4年後にあたる。
-# **伸び率は書かずに算定する。**サービスの構成を令和3年度で固定した
-# 価格指数（ラスパイレス型）の年率で、build_ono_tanka_kando が年報から出す。
+# **伸び率は書かずに算定する。**連鎖ラスパイレス指数（前年の件数構成で固定し
+# 1年ずつつなぐ）の年率で、build_ono_tebiki.tanka_trend() が年報から出す。
 # 数値を手で書くと、年報が1年分増えたときに古いまま残る。
 _SZ = SZ.summary()
 _R8OPT, _R8_R7 = SZ.r8_options()
-_TANKA_R = KANDO.nenritsu(KANDO.series())      # 価格指数の年率
+_TANKA_R = KANDO.nenritsu()                    # 単価の趨勢（年率）
 _TANKA_M = T.premium(
     sum(v * (1 + _TANKA_R) ** n
         for v, n in zip(PLAN["集計"]["標準給付費"], (2, 3, 4))),
