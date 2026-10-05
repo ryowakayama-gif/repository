@@ -71,6 +71,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
+import cohort as CH
 import data_kofukin_item as KI
 import data_member_work as MW
 import data_nenpo_meisai as NM
@@ -168,31 +169,8 @@ chk(2, "美瑛町 令和8年の年齢階級別の和",
 
 
 # ==================================================== コーホート変化率法
-def rates(p0, p1):
-    """変化率。90歳以上は開放区間として扱う。"""
-    r = [0.0] * 21
-    for a in range(1, 18):
-        r[a] = p1[a] / p0[a - 1] if p0[a - 1] else 0.0
-    r[18] = p1[18] / p0[17] if p0[17] else 0.0
-    r[19] = p1[19] / p0[18] if p0[18] else 0.0
-    d = p0[19] + p0[20]
-    r[20] = p1[20] / d if d else 0.0
-    return r
-
-
-def step(pm, pf, rm, rf, cwm, cwf):
-    nm, nf = [0.0] * 21, [0.0] * 21
-    for a in range(1, 18):
-        nm[a] = pm[a - 1] * rm[a]
-        nf[a] = pf[a - 1] * rf[a]
-    nm[18], nf[18] = pm[17] * rm[18], pf[17] * rf[18]
-    nm[19], nf[19] = pm[18] * rm[19], pf[18] * rf[19]
-    nm[20] = (pm[19] + pm[20]) * rm[20]
-    nf[20] = (pf[19] + pf[20]) * rf[20]
-    w = sum(pf[4:8])                       # 20〜39歳女性
-    nm[0], nf[0] = w * cwm, w * cwf
-    return nm, nf
-
+# 変化率・5年進めの計算は cohort.py から引く（同じ計算を2か所に書かない）
+rates, step = CH.rates, CH.step
 
 KUMINAOSHI, CWR = {}, {}
 for t in TOWNS:
@@ -207,7 +185,7 @@ for t in TOWNS:
     res = {2026: (p1m[:], p1f[:])}
     pm, pf = p1m[:], p1f[:]
     for y in (2031, 2036, 2041, 2046):
-        pm, pf = step(pm, pf, rm, rf, cw * 105 / 205, cw * 100 / 205)
+        pm, pf = step(pm, pf, rm, rf, cw * CH.DANJI, cw * CH.JOJI)
         res[y] = (pm[:], pf[:])
     KUMINAOSHI[t] = res
 
