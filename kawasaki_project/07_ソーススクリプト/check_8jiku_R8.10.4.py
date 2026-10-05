@@ -124,12 +124,10 @@ MIJISSHI = [
 ]
 
 
-def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else SOAN
+def sec_text_of(path):
+    """素案を節ごとの文字にばらす（表の中も含む）。"""
     doc = docx.Document(path)
     body = doc.element.body
-
-    # 節ごとに文字を集める（表の中も含む）
     sec_text = {}
     cur = "（冒頭）"
     for el in body.iterchildren():
@@ -143,8 +141,16 @@ def main():
             tb = docx.table.Table(el, doc)
             s = "\n".join(c.text for r in tb.rows for c in r.cells)
             sec_text[cur] = sec_text.get(cur, "") + "\n" + s
-    full = "\n".join(sec_text.values())
+    return sec_text
 
+
+def judge(path):
+    """(軸, 事項, 探す語, 当たった節, 判定, 理由) の並びを返す。
+
+    **本点検と、県への事前協議の対応表は、この1つの関数から作る。**
+    期待する事項の一覧（ITEMS）を2か所に持たないための形である。
+    """
+    sec_text = sec_text_of(path)
     rows = []
     for jiku, name, word, secs in ITEMS:
         hit = [s for s, t in sec_text.items() if word in t]
@@ -159,6 +165,12 @@ def main():
             rows.append((jiku, name, word, "／".join(sorted(hit)[:4]), "要判断",
                          f"あるべき節（{'／'.join(secs)}）の外にある。"
                          "節の割付けをご確認ください"))
+    return rows
+
+
+def main():
+    path = sys.argv[1] if len(sys.argv) > 1 else SOAN
+    rows = judge(path)
 
     import collections
     cnt = collections.Counter(r[4] for r in rows)
