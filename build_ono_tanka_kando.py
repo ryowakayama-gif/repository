@@ -171,7 +171,7 @@ def build_docx(ser, cs, r, nashi):
             + [[nm, rate, f"{s3:,.0f}千円", f"{m:,.0f}円",
                 "―" if abs(m - base) < 0.5 else f"**{m - base:+,.0f}円**"]
                for nm, rate, s3, m, _memo in cs],
-            widths=[5.4, 2.0, 3.4, 3.0, 2.4], right=(1, 2, 3, 4))
+            widths=[5.6, 2.2, 3.4, 3.2, 2.8], right=(1, 2, 3, 4))
     rep.src("資料：介護保険事業状況報告（年報）様式2、及び本業務による算定。"
             "**保険料基準額は100円未満を切り上げる前の値です。**")
 

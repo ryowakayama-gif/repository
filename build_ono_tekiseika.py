@@ -48,8 +48,8 @@ import ono_style as S
 
 ROOT = pathlib.Path(__file__).parent
 OUT = ROOT / "小野町_引継ぎ_整理済" / "21_給付適正化・交付金"
-ASOF = "20261004"
-ASOF_JP = "令和8年10月4日"
+ASOF = "20261005"
+ASOF_JP = "令和8年10月5日"
 
 HEAD = PatternFill("solid", fgColor="1F3864")
 NG = PatternFill("solid", fgColor="FCE4E4")

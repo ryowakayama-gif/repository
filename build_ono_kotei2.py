@@ -33,8 +33,8 @@ from build_ono_gyomu_shinchoku import (ASOF_ISO, WBS_DISABILITY, WBS_ELDERLY,
 
 ROOT = pathlib.Path(__file__).parent
 OUT = ROOT / "小野町_引継ぎ_整理済" / "02_キックオフ・業務計画"
-ASOF = "20261004"
-ASOF_JP = "令和8年10月4日"
+ASOF = "20261005"
+ASOF_JP = "令和8年10月5日"
 ASOF_D = datetime.date.fromisoformat("2026-10-04")
 
 # 動かせない期限。仕様書の定めであり、こちらで動かせるものではない。
