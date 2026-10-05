@@ -96,6 +96,10 @@ BUILDERS = [
         "output/会議資料/04_庁議資料2_関連計画との整合.docx",
         "output/会議資料/05_庁議資料4_庁内各課への依頼事項.docx",
     ], ""),
+    ("build_kitashiobara_mece.py",
+     ["output/北塩原村_見込量算定_MECEチェック.xlsx"],
+     "計画素案と地域生活支援事業の生成器を読んで指摘の対応状況を判定するため、"
+     "素案・目次の後に実行する"),
     ("build_shinchoku_hyo.py", ["output/北塩原村_業務進捗管理表.xlsx"],
      "build_kitashiobara_progress.py のデータを取り込むため、その後に実行する"),
 ]
