@@ -123,27 +123,32 @@ for w in W:
     PROG[w[0]] = (e[1] if e else 0.0, e[0] if e else "未着手", w[3])
 
 SA = [(i, k) for i, k in enumerate(K, 1) if k[5] in ("S", "A")]
-SURVEY = {i for i, k in SA if _ids(k) and all(x.startswith("Ⅰ") for x in _ids(k))}
-PLAN = {i for i, k in SA} - SURVEY
+# IMPACT は確認事項の**見出し**で引く（並びの位置で引くと足し引きでずれる）
+MIDASHI = {i: k[1] for i, k in SA}
+SURVEY = {k[1] for i, k in SA if _ids(k) and all(x.startswith("Ⅰ") for x in _ids(k))}
+PLAN = {k[1] for i, k in SA} - SURVEY
 
 # 9
 miss9 = sorted(PLAN - set(IMPACT))
-chk(9, "未解決の優先度S・Aへの影響度の付与", not miss9,
-    f"影響度なし {['K-%03d' % i for i in miss9]}" if miss9
+amari9 = sorted(set(IMPACT) - PLAN)       # 見出しが変わると残る
+chk(9, "未解決の優先度S・Aへの影響度の付与", not miss9 and not amari9,
+    ((f"影響度なし {[m[:22] for m in miss9[:3]]}" if miss9 else "")
+     + (f"／見出しが合わない {[m[:22] for m in amari9[:3]]}" if amari9 else ""))
+    if (miss9 or amari9)
     else f"計画策定側{len(PLAN)}件に判定／調査工程側{len(SURVEY)}件は機械で影響度5")
 
 # 10
-bad10 = [f"K-{i:03d}" for i, v in IMPACT.items() if v[0] not in LEVEL]
-bad10 += [f"K-{i:03d}（調査工程）" for i in IMPACT if i in SURVEY]
+bad10 = [m[:22] for m, v in IMPACT.items() if v[0] not in LEVEL]
+bad10 += [m[:22] + "（調査工程）" for m in IMPACT if m in SURVEY]
 chk(10, "影響度の値と対象の正しさ", not bad10, "／".join(bad10) if bad10
     else f"影響度0〜4の{len(IMPACT)}件すべてが定義済みの値")
 
 # 11
 bad11 = set()
-for i, v in IMPACT.items():
+for nm11, v in IMPACT.items():
     for m in re.findall(r"[０-９Ⅰ-Ⅴ]+-\d+", v[1]):
         if m not in IDX:
-            bad11.add(f"K-{i:03d}:{m}")
+            bad11.add(f"{nm11[:18]}:{m}")
 chk(11, "「止まる対象」のWBS番号の実在", not bad11,
     f"不明 {sorted(bad11)}" if bad11 else "影響度の判定54件の参照はすべて実在")
 
@@ -164,7 +169,7 @@ chk(12, "照会の束の網羅と非重複", not bw and not dup and not uncovere
 
 # 13
 bad13 = []
-STOP = {x for i, v in IMPACT.items() if v[0] == 1
+STOP = {x for _m, v in IMPACT.items() if v[0] == 1
         for x in re.findall(r"[０-９Ⅰ-Ⅴ]+-\d+", v[1])}
 for no, wid, doing, judge, hrs in READY:
     if wid not in IDX:

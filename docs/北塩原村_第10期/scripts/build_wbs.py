@@ -526,9 +526,13 @@ def _ids(k):
             if x.strip() and x.strip() != "―"]
 
 def _lv(i, k):
-    """影響度。IMPACT にあればその値。関連WBSがすべてⅠ群なら5（調査工程）。"""
-    if i in IMPACT:
-        return IMPACT[i][0]
+    """影響度。IMPACT にあればその値。関連WBSがすべてⅠ群なら5（調査工程）。
+
+    **IMPACT は確認事項の見出しで引く。** 並びの位置で引くと、
+    確認事項を1件足し引きしただけで以降がすべて別の項目にずれる。
+    """
+    if k[1] in IMPACT:
+        return IMPACT[k[1]][0]
     ids = _ids(k)
     if ids and all(x.startswith("Ⅰ") for x in ids):
         return 5
@@ -635,12 +639,12 @@ head_row(wp_, rw, ["影響度", "No.", "優先度", "確認事項", "止まる�
 rw += 1
 det = []
 for i, k in enumerate(K, 1):
-    if i in IMPACT and IMPACT[i][0] in (0, 1, 2):
-        det.append((IMPACT[i][0], i, k))
+    if k[1] in IMPACT and IMPACT[k[1]][0] in (0, 1, 2):
+        det.append((IMPACT[k[1]][0], i, k))
 det.sort(key=lambda x: (x[0] if x[0] else 99, x[1]))
 for lv, i, k in det:
-    row = [lv, f"K-{i:03d}", k[5], k[1], IMPACT[i][1], IMPACT[i][2], IMPACT[i][3],
-           _bundle(k)]
+    row = [lv, f"K-{i:03d}", k[5], k[1], IMPACT[k[1]][1], IMPACT[k[1]][2],
+           IMPACT[k[1]][3], _bundle(k)]
     for j, v in enumerate(row, 1):
         c = wp_.cell(row=rw, column=j, value=v)
         c.font = Font(name=F, size=9)
