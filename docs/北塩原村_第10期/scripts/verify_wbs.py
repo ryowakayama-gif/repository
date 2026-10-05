@@ -267,6 +267,11 @@ try:
     n17 = {}
     for loc, _r, _d, _s in rows17:
         n17[loc] = n17.get(loc, 0) + 1
+    # 媒体の各フォルダに、何のためのものかの説明があること
+    from nohin_data import FOLDER_SETSUMEI as _FS17
+    for loc17 in _BN.FOLDERS:
+        if any(r[0] == loc17 for r in rows17) and loc17 not in _FS17:
+            bad17.append(f"{loc17} に説明がない（村が使い道を判断できない）")
     chk(17, "納品する電子媒体が組み立てられること", not bad17,
         "／".join(bad17[:3]) if bad17
         else "／".join(f"{k} {v}件" for k, v in sorted(n17.items()))
@@ -330,6 +335,42 @@ try:
 except Exception as e:
     chk(18, "成果品を組み直せること（版管理と置き場所）", False, f"照合できない（{e}）")
 
+
+# ── 19　成果品に書き方の記号が残っていないこと ───────────────────
+#    備考や説明の文は手元の記録から持ってくるため、マークダウンの強調（**…**）が
+#    そのまま表に出る。00_媒体の構成.txt で現に起きた。
+#    村が開く成果品（xlsx・txt）を走査して、残っていないことを確かめる。
+try:
+    import glob as _gl19
+    import io as _io19
+    import paths as _P19
+    import openpyxl as _xl19
+    OUT19 = _P19.OUT
+    bad19, n19 = [], 0
+    for f in sorted(_gl19.glob(_os16.path.join(OUT19, "*.xlsx"))):
+        if _os16.path.basename(f).startswith("~$"):
+            continue
+        wb = _xl19.load_workbook(f, read_only=True, data_only=True)
+        for ws in wb.worksheets:
+            for row in ws.iter_rows(values_only=True):
+                for v in row:
+                    if isinstance(v, str):
+                        n19 += 1
+                        if "**" in v:
+                            bad19.append("%s %s：%s"
+                                         % (_os16.path.basename(f), ws.title, v[:30]))
+        wb.close()
+    for f in sorted(_gl19.glob(_os16.path.join(OUT19, "_納品媒体", "**", "*.txt"),
+                               recursive=True)):
+        t = _io19.open(f, encoding="utf-8").read()
+        n19 += 1
+        if "**" in t:
+            bad19.append("%s：強調記号" % _os16.path.basename(f))
+    chk(19, "成果品に書き方の記号が残っていないこと", not bad19,
+        "／".join(sorted(set(bad19))[:3]) if bad19
+        else "xlsx・txt の文字列%d件に マークダウンの強調（**）は残っていない" % n19)
+except Exception as e:
+    chk(19, "成果品に書き方の記号が残っていないこと", False, "照合できない（%s）" % e)
 
 print()
 if NG:

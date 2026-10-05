@@ -21,7 +21,7 @@ import os
 import shutil
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from nohin_data import N, MIKAN, MOUSHIOKURI
+from nohin_data import N, MIKAN, MOUSHIOKURI, FOLDER_SETSUMEI
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.abspath(__file__)))))
@@ -71,6 +71,11 @@ def plan():
     return rows, bad
 
 
+def _oriakeru(t, n):
+    """長い文を n 文字ずつに折る（等幅で読まれることを前提にしている）"""
+    return [t[i:i + n] for i in range(0, len(t), n)] or [""]
+
+
 def kousei_txt(rows):
     """媒体に入れる「00_媒体の構成.txt」の中身"""
     out = ["第10期北塩原村高齢者福祉計画・第10期北塩原村介護保険事業計画",
@@ -80,8 +85,14 @@ def kousei_txt(rows):
         if not sel:
             continue
         out.append(f"■ {loc}")
+        setsu = FOLDER_SETSUMEI.get(loc)
+        if setsu:
+            out.append(f"    {setsu[0]}")
+            for line in _oriakeru(setsu[1], 62):
+                out.append(f"    {line}")
+            out.append("")
         for _l, rel, dst, size in sorted(sel, key=lambda x: x[2]):
-            out.append(f"    {os.path.basename(dst)}（{size // 1024:,} KB）")
+            out.append(f"      {os.path.basename(dst)}（{size // 1024:,} KB）")
         out.append("")
     out += ["", "【この媒体に入れていないもの】", ""]
     for m in MOUSHIOKURI:

@@ -1320,6 +1320,198 @@ def main():
     except Exception as e:
         chk(52, "分量の削減案が成り立つこと", False, f"照合できない（{e}）")
 
+    # ── 53　老人福祉事業の量の確保の方策が実在する施策を指すこと ─────────
+    #    老人福祉法第20条の8第3項第1号は、量の確保のための方策を定めるよう求めている。
+    #    4-6の12事業それぞれに方策を書いたが、指す施策が実在しなければ追えない。
+    try:
+        import re as _re53
+        sisaku = set()
+        for c in SC.CH:
+            if c["no"] != "第4章":
+                continue
+            for sec in c["sections"]:
+                if sec["no"].startswith("施策"):
+                    sisaku.add(sec["no"].replace("施策", ""))
+        bad53, n53 = [], 0
+        for c in SC.CH:
+            for sec in c["sections"]:
+                if sec["no"] != "4-6":
+                    continue
+                for b in sec["blocks"]:
+                    if b["t"] != "table":
+                        continue
+                    col = b["head"][-1]
+                    if "方策" not in col:
+                        bad53.append(f"{b['head'][0]}の表に確保の方策の欄がない")
+                        continue
+                    for r in b["rows"]:
+                        n53 += 1
+                        hosaku = str(r[-1])
+                        if not hosaku.strip() or hosaku.strip() == "―":
+                            bad53.append(f"{r[0]}：確保の方策が空")
+                            continue
+                        # 施策を指しているなら、その施策が実在すること
+                        for m in _re53.findall(r"施策([0-9]+-[0-9]+)", hosaku):
+                            if m not in sisaku:
+                                bad53.append(f"{r[0]}：施策{m}が第4章にない")
+        chk(53, "老人福祉事業の量の確保の方策が実在する施策を指すこと", not bad53,
+            "・".join(bad53[:3]) if bad53
+            else f"{n53}事業すべてに確保の方策があり、指す施策は第4章に実在する")
+    except Exception as e:
+        chk(53, "老人福祉事業の量の確保の方策が実在する施策を指すこと", False,
+            f"照合できない（{e}）")
+
+    # ── 54　正負の記号が成果品の間で揃っていること ────────────────────
+    #    負は▲、正は全角の＋で揃える。半角の＋と半角のハイフンを混ぜると、
+    #    同じ数値が計画書と委員会資料で違う記号で示される。
+    #    負号は先に揃えたが、正号は素案で全角74件・半角31件が混在していた。
+    try:
+        import re as _re54
+        import shiryo_content as _SH54
+        import shiryo3_content as _S354
+
+        def _cells54(mod):
+            o = []
+            for c in mod.CH:
+                for sec in c["sections"]:
+                    for b in sec["blocks"]:
+                        if b["t"] == "table":
+                            for r in b["rows"]:
+                                o += [(sec["no"], str(x)) for x in r]
+                            o += [(sec["no"], str(x)) for x in b["head"]]
+                        elif "v" in b:
+                            o.append((sec["no"], str(b["v"])))
+            return o
+        HANKAKU_P = _re54.compile(r"(?<![A-Za-z0-9])\+[0-9]")
+        HANKAKU_M = _re54.compile(r"(?<![A-Za-z0-9\-])\-[0-9][0-9,\.]*(%|円|人|点|ポイント)")
+        MINUS = _re54.compile(r"[−–—]\s*[0-9]")      # U+2212 ほかのダッシュ
+        bad54 = []
+        for nm54, mod54 in (("素案", SC), ("第2回資料", _SH54), ("第3回骨子", _S354)):
+            for sec_no, t in _cells54(mod54):
+                if HANKAKU_P.search(t):
+                    bad54.append(f"{nm54} {sec_no}：半角の＋（{t[:22]}）")
+                if HANKAKU_M.search(t):
+                    bad54.append(f"{nm54} {sec_no}：半角のハイフンを負号に（{t[:22]}）")
+                if MINUS.search(t):
+                    bad54.append(f"{nm54} {sec_no}：▲以外の負号（{t[:22]}）")
+        chk(54, "正負の記号が成果品の間で揃っていること", not bad54,
+            "・".join(bad54[:3]) if bad54
+            else "素案・第2回資料・第3回骨子のいずれも、正は全角の＋、負は▲で揃っている")
+    except Exception as e:
+        chk(54, "正負の記号が成果品の間で揃っていること", False, f"照合できない（{e}）")
+
+    # ── 55　同じ文を2か所で述べていないこと ──────────────────────
+    #    第2章（現状）と第4章（施策）で同じ事実に触れるのは読み手に必要な繰り返しだが、
+    #    同じ文を丸ごと2度置くと、片方だけを直したときに食い違う。
+    #    数値を伏せて正規化した文が別の節に現れたら、どちらかを参照に替える。
+    try:
+        import re as _re55
+        _NUM55 = _re55.compile(r"[0-9０-９][0-9０-９,，\.．]*")
+        _PUNC55 = _re55.compile(r"[「」（）\(\)、・。％%]")
+
+        def _norm55(t):
+            return _PUNC55.sub("", _NUM55.sub("#", t)).strip()
+
+        bag55 = {}
+        for c in SC.CH:
+            for sec in c["sections"]:
+                for b in sec["blocks"]:
+                    if b["t"] in ("p", "note"):
+                        src = [str(b["v"])]
+                    elif b["t"] == "bullets":
+                        src = [str(x) for x in b["v"]]
+                    else:
+                        continue
+                    for raw in src:
+                        for sn in raw.split("。"):
+                            k = _norm55(sn)
+                            if len(k) >= 30:
+                                bag55.setdefault(k, []).append((sec["no"], b["t"], sn))
+        bad55 = []
+        for k, v in bag55.items():
+            doko = sorted({(a, b) for a, b, _ in v})
+            if len(doko) > 1:
+                bad55.append("%s：%s" % ("／".join("%s(%s)" % d for d in doko), v[0][2][:34]))
+        chk(55, "同じ文を2か所で述べていないこと", not bad55,
+            "・".join(bad55[:3]) if bad55
+            else "本文%d文のうち、数値を伏せて一致する文が別の節に現れるものはない" % len(bag55))
+    except Exception as e:
+        chk(55, "同じ文を2か所で述べていないこと", False, "照合できない（%s）" % e)
+
+    # ── 56　「次のN点」の宣言と実際の数が合うこと ─────────────────
+    #    本文に小見出し・表の行・箇条書きを足し引きすると、前置きの数だけが残る。
+    #    2-11は課題を6本に増やしたあとも「次の5点」のままだった。
+    try:
+        import re as _re56
+        import shiryo_content as _SH56
+        import shiryo3_content as _S356
+        _MARU56 = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳"
+        _KAZU56 = _re56.compile(r"次の([0-9０-９]+)(点|つ|項目)")
+
+        def _zen56(t):
+            return int(t.translate(str.maketrans("０１２３４５６７８９", "0123456789")))
+
+        def _no56(t):
+            """小見出しの通し番号を（接頭の形, 番号）で返す。番号が無ければ None。"""
+            if t and t[0] in _MARU56:
+                return ("maru", _MARU56.index(t[0]) + 1)
+            m = _re56.match(r"^\((\d+)\)", t)
+            if m:
+                return ("kakko", int(m.group(1)))
+            m = _re56.match(r"^(\D{1,4}?)(\d+)", t)
+            return (m.group(1), int(m.group(2))) if m else None
+
+        def _run56(bs, i):
+            """位置 i の直後から、通し番号の続く小見出しがいくつ並ぶか。"""
+            h3 = [b["v"] for b in bs[i + 1:] if b["t"] == "h3"]
+            f = _no56(h3[0]) if h3 else None
+            if not f:
+                return 0
+            n, pre, cur = 1, f[0], f[1]
+            for t in h3[1:]:
+                g = _no56(t)
+                if not g or g[0] != pre or g[1] != cur + 1:
+                    break
+                n, cur = n + 1, g[1]
+            return n
+
+        def _first56(bs, i, kinds):
+            for b in bs[i + 1:i + 4]:
+                if b["t"] in kinds:
+                    return b
+            return None
+
+        bad56, n56 = [], 0
+        for nm56, mod56 in (("素案", SC), ("第2回資料", _SH56), ("第3回骨子", _S356)):
+            for c in mod56.CH:
+                for sec in c["sections"]:
+                    bs = sec["blocks"]
+                    for i, b in enumerate(bs):
+                        if b["t"] not in ("p", "note"):
+                            continue
+                        v = str(b.get("v", ""))
+                        m = _KAZU56.search(v)
+                        if not m:
+                            continue
+                        n56 += 1
+                        d = _zen56(m.group(1))
+                        cand = {sum(1 for ch in v if ch in _MARU56), _run56(bs, i)}
+                        tb = _first56(bs, i, ("table", "kpi"))
+                        if tb:
+                            cand |= {len(tb["rows"]), len(tb["head"]) - 1}
+                        bu = _first56(bs, i, ("bullets",))
+                        if bu:
+                            cand.add(len(bu["v"]))
+                        if d not in cand:
+                            bad56.append("%s %s：次の%d%s に対し %s"
+                                         % (nm56, sec["no"], d, m.group(2),
+                                            sorted(cand - {0}) or "数えられる並びがない"))
+        chk(56, "「次のN点」の宣言と実際の数が合うこと", not bad56,
+            "・".join(bad56[:3]) if bad56
+            else "%d件の宣言は、続く小見出し・表の行・箇条書き・丸数字のいずれかの数と一致する" % n56)
+    except Exception as e:
+        chk(56, "「次のN点」の宣言と実際の数が合うこと", False, "照合できない（%s）" % e)
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
