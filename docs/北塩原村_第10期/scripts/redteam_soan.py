@@ -36,6 +36,29 @@ def shiryo_text(mod):
                     out.append(str(b['v']))
     return '\n'.join(out)
 
+def irai_text():
+    """照会票（束1〜束6）の本文を1本の文字列にする。
+
+       照会票は村に渡す成果品である。中身は確認事項の覚え書きから導いているため、
+       内部の作業物の名が混入しやすい。現に「verify_soan.py 点検46」と
+       「他案件（大雪）」が混入していた。素案と同じ走査をかける。
+    """
+    sys.path.insert(0, os.path.join(BASE, 'scripts'))
+    import irai_bundle as IB
+    out = []
+    for t in IB.GOANNAI:
+        out.append(t)
+    for nm, ti, nerai in IB.bundles():
+        out.append('%s　%s' % (nm, ti))
+        out.append(nerai)
+        for lv, title, lead, rows in IB.items(nm):
+            out.append(title)
+            out.append(lead)
+            for r in rows:
+                out.append('　'.join(str(x) for x in r[:3]))
+    return '\n'.join(out)
+
+
 # (a) 日本語・記号として通す文字。これ以外が出たら混入とみなす
 OK = ('ぁ-んァ-ヴ一-龥々ーヶ〆' 'ａ-ｚＡ-Ｚ０-９' '0-9A-Za-z'
       '、。・（）「」『』【】〔〕［］〈〉《》〜～％% 　\n\t'
@@ -199,6 +222,45 @@ def run():
                 print('      %5d  %s  %s  | %s' % h)
             if hits:
                 ng += len(hits)
+
+    # 照会票。村に渡すものなので素案と同じ走査をかける。
+    # 「照会」「ご回答」は村とのやりとりの語であり、受託者を主語とする語ではない。
+    print('■ 照会票（束1〜束6） scripts/irai_bundle.py')
+    try:
+        lines = irai_text().split('\n')
+    except Exception as e:
+        print('  本文を取り出せない（%s）' % e)
+        ng += 1
+        lines = None
+    if lines is not None:
+        # 「受託者」は照会票に現れて差し支えない。誰が何をするかを尋ねるのが
+        # 照会票であり（「受託者側で入力するか」「受託者に求められる関与の範囲」）、
+        # 計画書本体とは性質が違う。委員会資料と同じ扱いにする。
+        IRAI_OK = ('納品', '受託者')
+        for label, hits in _scan_lines('照会票', lines):
+            if label.startswith('f'):
+                continue
+            if label.startswith('b'):
+                hits = [h for h in hits if h[1] not in IRAI_OK]
+            mark = '適合' if not hits else '要確認 %d件' % len(hits)
+            print('  %-38s %s' % (label, mark))
+            for h in hits[:20]:
+                print('      %5d  %s  %s  | %s' % h)
+            if hits:
+                ng += len(hits)
+
+        # (g) 照会票だけの走査。(b) の語の表に入れられないもの（「点検」は素案
+        #     5-4「見込量の自己点検」に正しく現れる）を、照会票にだけ当てる。
+        #     irai_bundle.NAIBU を使う。落とす側と確かめる側で語の表を分けない。
+        sys.path.insert(0, os.path.join(BASE, 'scripts'))
+        import irai_bundle as _IB
+        gh = [(i, w, '', ln.strip()[:70])
+              for i, ln in enumerate(lines, 1) for w in _IB.NAIBU if w in ln]
+        print('  %-38s %s' % ('g 内部の作業物の名（照会票のみ）',
+                              '適合' if not gh else '要確認 %d件' % len(gh)))
+        for h in gh[:20]:
+            print('      %5d  %s  %s  | %s' % h)
+        ng += len(gh)
 
     hits = scan_builder()
     print('  %-38s %s' % ('e ヘッダー・フッター・ページ番号',

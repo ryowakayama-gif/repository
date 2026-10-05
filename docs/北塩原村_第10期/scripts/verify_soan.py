@@ -1610,12 +1610,36 @@ def main():
                     if int(m.group(1)) != n_shin:
                         bad57.append("%s：新規・新設は%s施策（実際は%d）"
                                      % (sec["no"], m.group(1), n_shin))
+        # 確認事項の本文に書いた頁数も、紙面の推定と合っていること。
+        # 確認事項は照会票として村に渡るため、古い数が残ると村に誤った数を示す。
+        # 現に K-190 が「本文105頁＋前付4頁＝109頁」のまま106頁＋4頁になっていた。
+        import estimate_layout as _EL57
+        import estimate_sakugen as _ES57
+        import wbs_kakunin as _KK57
+        n_kei57 = _EL57.pages(_EL57.soan_items(True), _EL57.BODY_H)
+        n_all57 = _EL57.pages(
+            _ES57.items_without([t for a in _ES57.AN for t in a[2]]), _EL57.BODY_H)
+        MACHI57 = {"本文%d頁＋前付4頁＝%d頁" % (n_kei57, n_kei57 + 4),
+                   "本文%d頁＋前付4頁＝%d頁" % (n_all57, n_all57 + 4)}
+        for k in _KK57.K:
+            t = str(k[2])
+            for m in _re57.finditer(r"本文[0-9]+頁＋前付[0-9]+頁＝[0-9]+頁", t):
+                n57 += 1
+                if m.group() not in MACHI57:
+                    bad57.append("確認事項「%s」：%s（推定は %s）"
+                                 % (str(k[1])[:24], m.group(), "／".join(sorted(MACHI57))))
+            for m in _re57.finditer(r"目安100頁を([0-9]+)頁上回る", t):
+                n57 += 1
+                if int(m.group(1)) != n_kei57 + 4 - 100:
+                    bad57.append("確認事項「%s」：目安100頁を%s頁上回る（推定は%d頁）"
+                                 % (str(k[1])[:24], m.group(1), n_kei57 + 4 - 100))
+
         if not n57:
-            bad57.append("3-4・3-5 に数を述べた箇所が見つからない（走査が効いていない）")
-        chk(57, "自分の構造を数えて述べている箇所が構造と合うこと", not bad57,
+            bad57.append("数を述べた箇所が見つからない（走査が効いていない）")
+        chk(57, "自分の数を述べているところが実際と合うこと", not bad57,
             "・".join(bad57[:3]) if bad57
-            else "基本目標%d・施策%d（うち新規・新設%d）を述べた%d件が構造と一致する"
-                 % (n_moku, n_sis, n_shin, n57))
+            else "基本目標%d・施策%d（うち新規・新設%d）・計画書%d頁を述べた%d件が"
+                 "構造と紙面の推定に一致する" % (n_moku, n_sis, n_shin, n_kei57 + 4, n57))
     except Exception as e:
         chk(57, "自分の構造を数えて述べている箇所が構造と合うこと", False,
             "照合できない（%s）" % e)

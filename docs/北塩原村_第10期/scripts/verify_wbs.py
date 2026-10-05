@@ -392,6 +392,57 @@ try:
 except Exception as e:
     chk(19, "成果品に書き方の記号が残っていないこと", False, "照合できない（%s）" % e)
 
+# ── 20　照会票が組み立てられること ─────────────────────────
+#    村に出す照会票は、確認事項から導いている。導き方に穴があると、
+#    尋ね忘れ（どの票にも出ない）か二度尋ね（2つの票に出る）が起きる。
+#    ・未解決の確認事項は、束1〜6のどれか1つにだけ現れること
+#    ・ただし束7（調査工程・他メンバー担当）と影響度0（社内）は出さない
+#    ・影響度1（停止）の件は第1部に置かれていること
+try:
+    import irai_bundle as _IB20
+    bad20 = []
+    doko = {}
+    for nm, _, _ in _IB20.bundles():
+        for lv, title, _, rows in _IB20.items(nm):
+            for r in rows:
+                doko.setdefault(r[5], []).append((nm, lv))   # 鍵は元の見出し
+            if lv == 1 and not title.startswith("第1部"):
+                bad20.append("%s：影響度1が%sに置かれている" % (nm, title.split("　")[0]))
+    nido = [k for k, v in doko.items() if len(v) > 1]
+    if nido:
+        bad20.append("2つ以上の票に出る %d件（%s）" % (len(nido), nido[0][:24]))
+
+    # 数の突合：未解決 ＝ 票に出る分 ＋ 束7 ＋ 影響度0
+    machi20 = [k for k in K if k[6] in _IB20.MACHI]
+    n_b7 = sum(1 for k in machi20 if _IB20.assign(k) == "束7")
+    n_lv0 = sum(1 for k in machi20
+                if _IB20.assign(k) != "束7"
+                and (IMPACT.get(k[1]) or (None,))[0] == 0)
+    n_hyo = len(doko)
+    if n_hyo + n_b7 + n_lv0 != len(machi20):
+        bad20.append("票%d＋束7の%d＋社内の%d＝%d が未解決の%d件に合わない"
+                     % (n_hyo, n_b7, n_lv0, n_hyo + n_b7 + n_lv0, len(machi20)))
+    nashi = [k[1] for k in machi20
+             if _IB20.assign(k) != "束7"
+             and (IMPACT.get(k[1]) or (None,))[0] != 0
+             and k[1] not in doko]
+    if nashi:
+        bad20.append("どの票にも出ない %d件（%s）" % (len(nashi), nashi[0][:24]))
+
+    kara = [r[5] for nm, _, _ in _IB20.bundles()
+            for lv, _, _, rows in _IB20.items(nm) for r in rows
+            if r[0] == "―" or len(r[0]) < 8]
+    if kara:
+        bad20.append("尋ねたいことが空になる %d件（%s）" % (len(kara), kara[0][:24]))
+
+    chk(20, "照会票が組み立てられること", not bad20,
+        "／".join(bad20[:3]) if bad20
+        else "未解決%d件のうち、票に%d件（束1〜6）・束7が%d件・社内が%d件。"
+             "二度尋ねなし、尋ね忘れなし、影響度1は第1部"
+             % (len(machi20), n_hyo, n_b7, n_lv0))
+except Exception as e:
+    chk(20, "照会票が組み立てられること", False, "照合できない（%s）" % e)
+
 print()
 if NG:
     print(f"不適合 {len(NG)}件")
