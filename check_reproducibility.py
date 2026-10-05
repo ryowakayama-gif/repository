@@ -100,6 +100,10 @@ BUILDERS = [
      ["output/北塩原村_見込量算定_MECEチェック.xlsx"],
      "計画素案と地域生活支援事業の生成器を読んで指摘の対応状況を判定するため、"
      "素案・目次の後に実行する"),
+    ("build_kitashiobara_houkokusho_review.py",
+     ["output/北塩原村_アンケート分析報告書_レビュー.xlsx"],
+     "計画素案と見込量算定MECEチェックの生成器を読んで当方の修正の反映を"
+     "確かめるため、両者の後に実行する"),
     ("build_shinchoku_hyo.py", ["output/北塩原村_業務進捗管理表.xlsx"],
      "build_kitashiobara_progress.py のデータを取り込むため、その後に実行する"),
 ]
