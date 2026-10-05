@@ -510,6 +510,24 @@ def _cut(v, n):
     return v[:n] + "…"
 
 
+def _bunkatsu(v, n=180):
+    """長い文を、句点で区切って読める長さの段落に分ける。
+
+    表の欄に収まらない長さのものを切って「…」で済ませると
+    内容が読めないため、本文の段落として全文を載せる。
+    """
+    out, cur = [], ""
+    for s in [x + "。" for x in str(v).split("。") if x.strip()]:
+        if cur and len(cur) + len(s) > n:
+            out.append(cur)
+            cur = s
+        else:
+            cur += s
+    if cur:
+        out.append(cur)
+    return out
+
+
 def _oki(s):
     """算定の表の文を写すときに、他の資料で意味を持たない語を落とす。
 
@@ -617,20 +635,40 @@ TBL(["段階", "内容", "状況"],
 H2("2　業務内容別の進捗")
 _PR = [x for x in DP.PROGRESS if x[2] is not None]
 ZENTAI = sum(x[2] for x in _PR) / len(_PR)
+P("進捗は、仕様書の作業項目ごとの達成状況から算定しています。"
+  "**完了を1、一部を0.5、未着手を0として、作業項目を等しい重みで平均したもの**です。"
+  "作業項目ごとの判定は業務工程管理表（01 業務内容別の進捗）の"
+  "作業項目の欄に併記しています。")
+
+
+def _koumoku_cell(no):
+    if no not in DP.KOUMOKU:
+        return "―"
+    return "完了%d・一部%d・未着手%d" % DP.koumoku_count(no)
+
+
 CAP("業務内容別の進捗（基準日 %s）" % KIJUNBI)
-TBL(["業務内容", "進捗", "状態", "業務内容", "進捗", "状態"],
+TBL(["業務内容", "進捗", "作業項目の達成状況", "業務内容", "進捗",
+     "作業項目の達成状況"],
     [[DP.PROGRESS[i][0] + " " + DP.PROGRESS[i][1],
       _pct(DP.PROGRESS[i][2]) if DP.PROGRESS[i][2] is not None else "―",
-      DP.PROGRESS[i][3],
+      _koumoku_cell(DP.PROGRESS[i][0]),
       DP.PROGRESS[i + 6][0] + " " + DP.PROGRESS[i + 6][1],
       (_pct(DP.PROGRESS[i + 6][2])
        if DP.PROGRESS[i + 6][2] is not None else "―"),
-      DP.PROGRESS[i + 6][3]] for i in range(6)],
-    [4.6, 1.5, 1.5, 4.6, 1.5, 1.5], center={1, 2, 4, 5},
+      _koumoku_cell(DP.PROGRESS[i + 6][0])] for i in range(6)],
+    [3.8, 1.4, 3.4, 3.8, 1.4, 3.4], center={1, 4},
     first_bold=True)
 NOTE("全体は、進捗を数値で表せる10業務の単純平均で%sです。"
      "（11）成果品の帰属及び（12）その他は数値で表していません。"
-     % _pct(ZENTAI))
+     "令和8年10月4日までは受託者の見積りによる数値をお示ししており、"
+     "全体は79％としていました。"
+     "作業項目の達成状況から算定する形に改めたことにより%sとなっています。"
+     "作業が後戻りしたものではなく、算定の基礎を改めたことによる差です。"
+     "（6）計画書の作成は計画最終案及び概要版原稿が未着手であること、"
+     "（8）各種会議への技術的支援は3町との協議資料及び説明用データが"
+     "作成済みであることが、それぞれ数値に表れています。"
+     % (_pct(ZENTAI), _pct(ZENTAI)))
 
 H2("3　結果報告書を計画のどこに用いるか")
 P("結果報告書そのものに、サービス見込量の算定の各段階で"
@@ -757,10 +795,15 @@ P("点検で見つかった事項%d件のうち、集計の方法を決めない
   "調査の確定値化を止めている唯一の事項です。**"
   % (len(TENKEN_JIKO), len(JUDAI)))
 CAP("重大と判定した事項")
-TBL(["調査", "対象", "決めること", "確認主体", "反映先"],
-    [[x[2], _cut(x[3], 34), _cut(x[5], 54), x[6], x[8] or "―"]
-     for x in JUDAI],
-    [1.8, 3.8, 6.4, 3.2, 2.0], first_bold=False)
+TBL(["No.", "調査", "対象", "確認主体", "反映先"],
+    [[str(x[0]), x[2], x[3], x[6], x[8] or "―"] for x in JUDAI],
+    [1.2, 2.0, 5.4, 4.4, 4.2], center={0}, first_bold=False)
+P("")
+P("決めることは次のとおりです。")
+for _x in JUDAI:
+    P("**No.%s　%s　%s**" % (_x[0], _x[2], _x[3]))
+    for _s in _bunkatsu(_x[5]):
+        P(_s)
 
 H2("4　確認を要しないため反映を完了したもの")
 _CHAKUSHU = [x for x in HANEI_HOSHIN if x[5] == "反映済"]
@@ -1187,22 +1230,12 @@ chk(25, "別管理表の件数を同表から数えていること",
     "A%s件・B%s件" % (BEK_A, BEK_B),
     BEK_A is not None and BEK_A > 0 and BEK_B > 0)
 
-# ------------------------------------------------------------ 点検の結果
-H1("（参考）　本資料の自己点検", brk=True)
-P("本資料の数値と記述が、業務工程管理表・サービス見込量の算定及び"
-  "実施済み調査 結果報告書と合っていることを機械で確かめた結果です。"
-  "1件でも不適合があれば作成を止めます。")
-CAP("自己点検の結果（%d件）" % len(CHECKS))
-TBL(["No.", "確かめたこと", "結果", "判定"],
-    [[str(n), n2, k, j] for n, n2, k, j in CHECKS],
-    [1.2, 7.6, 6.4, 2.0], center={0, 3}, keep=False)
-
 docx_fix.fix(doc)
 doc.save(OUT)
 
 _NG = [c for c in CHECKS if c[3] != "適合"]
 print("出力 %s" % os.path.basename(OUT))
-print("  節8＋参考1／表%d点／自己点検%d件（不適合%d件）"
+print("  節8／表%d点／自己点検%d件（不適合%d件。本文には載せない）"
       % (TBLNO[0], len(CHECKS), len(_NG)))
 print("  確認事項 全%d件・未決%d件／資料提供依頼 未受領%d件"
       % (len(CHECK), len(MIKETSU), len(LACK_MACHI)))
