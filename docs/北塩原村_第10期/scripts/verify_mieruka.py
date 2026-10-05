@@ -122,14 +122,13 @@ COVER = {
     "fig2-7_要支援1": ("済", "図2-6と同じB3-a系列の要支援1（点検25に含む）"),
     "fig2-8_新規認定要支援1": ("済", "B9系列（点検29）"),
     "fig2-9_1人あたり費用額": ("済", "P3系列（点検5）"),
-    "fig2-10_費用額内訳": ("できない",
-        "村の決算による在宅・居住系・施設別の費用額。見える化は利用者割合は持つが"
-        "費用額の3区分を持たない"),
+    "fig2-10_費用額内訳": ("済",
+        "D13系列の給付費から給付率で突合（点検41）。費用額は自己負担を含むため"
+        "給付費と厳密には一致せず、給付率の帯で見ている"),
     "fig2-11_在宅施設別給付月額": ("済", "D6-a・D6-b系列（点検38・39）"),
     "fig2-12_1人あたり定員": ("済", "D29・D30系列（点検30・31）"),
     "fig2-13_地域支援事業費": ("済", "D48-c系列の決算の内訳（点検37）"),
-    "fig2-14_サービス区分別変化": ("できない",
-        "村の給付実績によるサービス区分別の給付月額。見える化に同じ区分の系列がない"),
+    "fig2-14_サービス区分別変化": ("済", "D13系列の27サービスの和（点検40）"),
     "fig2-15_財政指数": ("済", "D48-b・D48-c・D47-a系列の決算（点検34〜36）"),
     "fig2-16_保険料比較": ("済", "P4系列（点検6）"),
     "fig2-17_保険料と必要額": ("済", "P4系列（点検7）"),
@@ -750,7 +749,7 @@ def main():
         for no, nm, bk, ind in ((34, "保険給付費", "D48-b", "合計"),
                                 (35, "地域支援事業費", "D48-c", "合計"),
                                 (36, "保険料収入", "D47-a", "保険料")):
-            cmp_series(no, f"図2-18の{nm}が見える化 {bk} の決算と一致すること",
+            cmp_series(no, f"財政指数の{nm}が見える化 {bk} の決算と一致すること",
                        _pick34(bk, ind, P34), DZ.vals("fig2-15_財政指数", nm),
                        tol=0.51, gp=P34, wp=P34)
 
@@ -775,7 +774,7 @@ def main():
                         "包括的支援事業費", "その他"))
             if gokei[i] is not None and abs(uchi - gokei[i]) > 0.021:
                 bad37.append(f"{p} 内訳の和{uchi:.2f}≠合計{gokei[i]:.2f}")
-        chk(37, "図2-16の地域支援事業費の内訳が見える化 D48-c と一致すること", not bad37,
+        chk(37, "地域支援事業費の内訳が見える化 D48-c と一致すること", not bad37,
             "／".join(bad37[:3]) if bad37
             else f"3系列×{len(P37)}点と、内訳の和が合計に一致")
         # 38・39 在宅／施設・居住系別の1人1月あたり給付月額（D6-a・D6-b）
@@ -796,16 +795,120 @@ def main():
                 if b == bk and kw in i:
                     return [d.get(p) for p in P38]
             return None
-        cmp_series(38, "図2-12の在宅サービスの給付月額が見える化 D6-a と一致すること",
+        cmp_series(38, "在宅サービスの給付月額が見える化 D6-a と一致すること",
                    _p38("D6-a", "在宅サービス"),
                    DZ.vals("fig2-11_在宅施設別給付月額", "在宅サービス"),
                    tol=0.51, gp=P38, wp=P38)
-        cmp_series(39, "図2-12の施設・居住系の給付月額が見える化 D6-b と一致すること",
+        cmp_series(39, "施設・居住系の給付月額が見える化 D6-b と一致すること",
                    _p38("D6-b", "施設および居住系"),
                    DZ.vals("fig2-11_在宅施設別給付月額", "施設・居住系サービス"),
                    tol=0.51, gp=P38, wp=P38)
     except Exception as e:
         chk(34, "村の決算による図が見える化 D47・D48 と一致すること", False,
+            f"照合できない（{e}）")
+
+    # ── 40・41　サービス区分別の図をD13（サービス別の給付月額）から組み直す ──
+    #    D13は27サービスそれぞれの第1号被保険者1人あたり給付月額を持つ。
+    #    図2-14の7区分はその和であり、1円のずれもなく再現できる。
+    #    図2-10（費用額）は**給付費ではなく費用額**であり、自己負担を含むため
+    #    給付費より約1割大きい。厳密には一致しないので、給付率の帯で見る。
+    try:
+        import collections as _c40
+        import re as _re40
+        BAT40 = os.path.join(BASE, "data", "mieruka_batch.csv")
+        D13 = _c40.defaultdict(dict)
+        B1N = {}
+
+        def _nd40(p40):
+            k = _pkey(p40)
+            m = _re40.match(r"^(\d{4})/3$", k)
+            return str(int(m.group(1)) - 1) if m else k
+
+        with open(BAT40, encoding="utf-8") as f:
+            for r in _csv.DictReader(f):
+                if r["region"] != "北塩原村":
+                    continue
+                try:
+                    v40 = float(r["value"])
+                except ValueError:
+                    continue
+                if r["file"].startswith("D13-"):
+                    svc = r["indicator"].replace(
+                        "第１号被保険者１人あたり給付月額（", "").rstrip("）")
+                    D13[svc][_pkey(r["period"])] = v40
+                elif r["file"].startswith("B1_") and r["indicator"] == "第１号被保険者数":
+                    B1N[_nd40(r["period"])] = v40
+
+        HOUMON = ["訪問介護", "訪問入浴介護", "訪問看護", "訪問リハビリテーション",
+                  "居宅療養管理指導", "定期巡回・随時対応型訪問介護看護",
+                  "夜間対応型訪問介護"]
+        TSUSHO = ["通所介護", "通所リハビリテーション", "認知症対応型通所介護",
+                  "地域密着型通所介護"]
+        TANKI = ["短期入所生活介護", "短期入所療養介護"]
+        YOGU = ["福祉用具貸与", "特定福祉用具販売", "住宅改修"]
+        SHIEN40 = ["介護予防支援・居宅介護支援"]
+        KYOJU = ["特定施設入居者生活介護", "認知症対応型共同生活介護",
+                 "地域密着型特定施設入居者生活介護", "小規模多機能型居宅介護",
+                 "看護小規模多機能型居宅介護"]
+        SHISETSU = ["介護老人福祉施設", "介護老人保健施設", "介護療養型医療施設",
+                    "地域密着型介護老人福祉施設入所者生活介護", "介護医療院"]
+        KU40 = [("訪問系", HOUMON), ("通所系", TSUSHO), ("短期入所", TANKI),
+                ("福祉用具・住宅改修", YOGU), ("居宅介護支援", SHIEN40),
+                ("居住系", KYOJU), ("施設系", SHISETSU)]
+
+        def _wa(svcs, k40):
+            return sum(D13[s].get(k40, 0) for s in svcs)
+
+        # 40 図2-14（7区分の給付月額）
+        #    この図は **系列が年度・区分が横軸** である。向きを取り違えると
+        #    系列名で引けずに止まる（実際に一度取り違えた）。
+        bad40 = []
+        n40 = 0
+        KUNAME = {k: v for k, v in KU40}
+        for nendo40 in [x[0] for x in
+                        next(z["series"] for z in DZ.ZU
+                             if z["name"] == "fig2-14_サービス区分別変化")]:
+            k40 = _pkey(nendo40)
+            want40 = dict(zip(DZ.cats("fig2-14_サービス区分別変化"),
+                              DZ.vals("fig2-14_サービス区分別変化", nendo40)))
+            for ku, svcs in KU40:
+                n40 += 1
+                g = _wa(svcs, k40)
+                w = want40.get(ku)
+                if w is None:
+                    bad40.append(f"{nendo40} に区分{ku}がない")
+                elif abs(g - w) > 0.51:
+                    bad40.append(f"{nendo40} {ku} 見える化の和{g:.0f}≠正本{w:.0f}")
+        chk(40, "サービス区分別変化の7区分がD13の27サービスの和と一致すること", not bad40,
+            "／".join(bad40[:3]) if bad40
+            else f"2期×7区分（{n40}点）すべて一致（27サービスを7区分に足し上げ）")
+
+        # 41 図2-10（費用額）は給付費に自己負担を加えたもの。給付率の帯で見る
+        GRP41 = [("在宅サービス", HOUMON + TSUSHO + TANKI + YOGU + SHIEN40),
+                 ("居住系サービス", KYOJU), ("施設サービス", SHISETSU)]
+        LO, HI = 0.86, 0.94          # 給付率の取り得る幅
+        bad41, kyufu = [], []
+        for nm41, svcs in GRP41:
+            want = DZ.vals("fig2-10_費用額内訳", nm41)
+            for c41, w41 in zip(DZ.cats("fig2-10_費用額内訳"), want):
+                k40 = _pkey(c41)
+                n = B1N.get(k40)
+                if n is None:
+                    bad41.append(f"{c41} の第1号被保険者数が見える化にない")
+                    continue
+                g41 = _wa(svcs, k40) * n * 12 / 1e6
+                if not w41:
+                    continue
+                ritsu = g41 / w41          # 給付費 ÷ 費用額 ＝ 給付率
+                kyufu.append(ritsu)
+                if not (LO <= ritsu <= HI):
+                    bad41.append(f"{nm41} {c41} の給付率が{ritsu:.1%}（{LO:.0%}〜{HI:.0%}の外）")
+        chk(41, "費用額内訳がD13の給付費と給付率で整合すること", not bad41,
+            "／".join(bad41[:3]) if bad41
+            else f"{len(kyufu)}点の給付率が{min(kyufu):.1%}〜{max(kyufu):.1%}"
+                 f"（費用額は給付費に自己負担を加えたものであり、厳密には一致しない）")
+    except Exception as e:
+        chk(40, "サービス区分別の図が見える化 D13 と整合すること", False,
             f"照合できない（{e}）")
 
     # ── 32　正本のすべての図について、突合の状態が定められていること ──────

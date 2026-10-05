@@ -1285,6 +1285,41 @@ def main():
     except Exception as e:
         chk(51, "空欄の並ぶ表が5-12に掲げられていること", False, f"照合できない（{e}）")
 
+    # ── 52　分量の削減案が成り立つこと ────────────────────────────
+    #    削減案が指す小見出しが実在しないと、減る頁が黙って0になる。
+    #    実際に「算定の流れ」「(5) 感応度」という実在しない名を書いて
+    #    0頁と出ていた。案が効いていることを機械で確かめる。
+    try:
+        import estimate_sakugen as ES
+        import estimate_layout as EL52
+        bad52 = []
+        base52 = EL52.pages(EL52.soan_items(True), EL52.BODY_H)
+        for no, nm, tg, hotei, _riyu in ES.AN:
+            if not tg:
+                continue
+            # 指す小見出しが実在すること
+            for sec_no, h3 in tg:
+                if ES.h3_range(sec_no, h3) is None:
+                    bad52.append(f"案{no}：{sec_no}に「{h3[:18]}」という小見出しがない")
+            # 減る頁が0でないこと（0なら案として意味をなさない）
+            n = EL52.pages(ES.items_without(tg), EL52.BODY_H)
+            if base52 - n <= 0:
+                bad52.append(f"案{no}：削っても頁が減らない")
+            if hotei:
+                bad52.append(f"案{no}：法定記載事項を削る案になっている")
+        # すべて行えば目安の100頁に収まること（前付4頁を含む）
+        allt = [t for _n, _m, tg, _h, _r in ES.AN for t in tg]
+        n_all = EL52.pages(ES.items_without(allt), EL52.BODY_H) + 4
+        if n_all > 105:
+            bad52.append(f"すべて行っても{n_all}頁で目安100頁に収まらない")
+        chk(52, "分量の削減案が成り立つこと", not bad52,
+            "・".join(bad52[:3]) if bad52
+            else f"{len([a for a in ES.AN if a[2]])}案はいずれも実在する小見出しを指し、"
+                 f"すべて行えば本文{n_all - 4}頁＋前付4頁＝{n_all}頁"
+                 f"（目安100頁に対し{n_all - 100:+d}頁）")
+    except Exception as e:
+        chk(52, "分量の削減案が成り立つこと", False, f"照合できない（{e}）")
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
