@@ -366,9 +366,29 @@ try:
         n19 += 1
         if "**" in t:
             bad19.append("%s：強調記号" % _os16.path.basename(f))
+    # docx も見る。本文モジュールに ** を書けば村の目に触れる。
+    # 連が割れても拾えるよう、段落ごとに w:t をつないでから見る。
+    import re as _re19
+    import zipfile as _zip19
+    for f in sorted(_gl19.glob(_os16.path.join(OUT19, "*.docx"))):
+        if _os16.path.basename(f).startswith("~$"):
+            continue
+        z = _zip19.ZipFile(f)
+        for nm in z.namelist():
+            if not (nm.startswith("word/") and nm.endswith(".xml")):
+                continue
+            x = z.read(nm).decode("utf-8", "replace")
+            for para in _re19.split(r"</w:p>", x):
+                t = "".join(_re19.findall(r"<w:t[^>]*>([^<]*)</w:t>", para))
+                if not t:
+                    continue
+                n19 += 1
+                if "**" in t:
+                    bad19.append("%s：%s" % (_os16.path.basename(f), t[:30]))
+        z.close()
     chk(19, "成果品に書き方の記号が残っていないこと", not bad19,
         "／".join(sorted(set(bad19))[:3]) if bad19
-        else "xlsx・txt の文字列%d件に マークダウンの強調（**）は残っていない" % n19)
+        else "xlsx・txt・docx の文字列%d件に マークダウンの強調（**）は残っていない" % n19)
 except Exception as e:
     chk(19, "成果品に書き方の記号が残っていないこと", False, "照合できない（%s）" % e)
 

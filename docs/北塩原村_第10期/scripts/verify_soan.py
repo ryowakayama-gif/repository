@@ -1332,6 +1332,11 @@ def main():
             for sec in c["sections"]:
                 if sec["no"].startswith("施策"):
                     sisaku.add(sec["no"].replace("施策", ""))
+                elif sec["no"] == "4-5":
+                    # 基本目標5 の4施策は節ではなく 4-5 の表の行として置いている
+                    for b in sec["blocks"]:
+                        if b["t"] == "table":
+                            sisaku |= {str(r[0]).split(" ", 1)[0] for r in b["rows"]}
         bad53, n53 = [], 0
         for c in SC.CH:
             for sec in c["sections"]:
@@ -1404,6 +1409,12 @@ def main():
     #    第2章（現状）と第4章（施策）で同じ事実に触れるのは読み手に必要な繰り返しだが、
     #    同じ文を丸ごと2度置くと、片方だけを直したときに食い違う。
     #    数値を伏せて正規化した文が別の節に現れたら、どちらかを参照に替える。
+    #
+    #    しきい値（YOMI_MIN）は実測で決めた。10月5日の改訂前の本文で測ると、
+    #    30文字では9組のうち5組しか出ず、短い重複（「主任介護支援専門員は令和4年度から
+    #    配置されました」24文字、「第2層協議体の活動を支援します」15文字）を取りこぼした。
+    #    12文字まで下げても出るのは9組のままで、作り物の重複は増えない。
+    #    実在の最短が15文字なので、12文字は余裕をもった値である。
     try:
         import re as _re55
         _NUM55 = _re55.compile(r"[0-9０-９][0-9０-９,，\.．]*")
@@ -1412,29 +1423,36 @@ def main():
         def _norm55(t):
             return _PUNC55.sub("", _NUM55.sub("#", t)).strip()
 
-        bag55 = {}
-        for c in SC.CH:
-            for sec in c["sections"]:
-                for b in sec["blocks"]:
-                    if b["t"] in ("p", "note"):
-                        src = [str(b["v"])]
-                    elif b["t"] == "bullets":
-                        src = [str(x) for x in b["v"]]
-                    else:
-                        continue
-                    for raw in src:
-                        for sn in raw.split("。"):
-                            k = _norm55(sn)
-                            if len(k) >= 30:
-                                bag55.setdefault(k, []).append((sec["no"], b["t"], sn))
-        bad55 = []
-        for k, v in bag55.items():
-            doko = sorted({(a, b) for a, b, _ in v})
-            if len(doko) > 1:
-                bad55.append("%s：%s" % ("／".join("%s(%s)" % d for d in doko), v[0][2][:34]))
+        import shiryo_content as _SH55
+        import shiryo3_content as _S355
+        YOMI_MIN = 12          # 実測で決めたしきい値（上の覚え書きのとおり）
+        bad55, n55 = [], 0
+        for nm55, mod55 in (("素案", SC), ("第2回資料", _SH55), ("第3回骨子", _S355)):
+            bag55 = {}
+            for c in mod55.CH:
+                for sec in c["sections"]:
+                    for b in sec["blocks"]:
+                        if b["t"] in ("p", "note"):
+                            src = [str(b["v"])]
+                        elif b["t"] == "bullets":
+                            src = [str(x) for x in b["v"]]
+                        else:
+                            continue
+                        for raw in src:
+                            for sn in raw.split("。"):
+                                k = _norm55(sn)
+                                if len(k) >= YOMI_MIN:
+                                    bag55.setdefault(k, []).append((sec["no"], b["t"], sn))
+            n55 += len(bag55)
+            for k, v in bag55.items():
+                doko = sorted({(a, b) for a, b, _ in v})
+                if len(doko) > 1:
+                    bad55.append("%s %s：%s" % (nm55, "／".join("%s(%s)" % d for d in doko),
+                                               v[0][2][:30]))
         chk(55, "同じ文を2か所で述べていないこと", not bad55,
             "・".join(bad55[:3]) if bad55
-            else "本文%d文のうち、数値を伏せて一致する文が別の節に現れるものはない" % len(bag55))
+            else "素案・第2回資料・第3回骨子の%d文のうち、数値を伏せて%d文字以上が一致する文が"
+                 "別の節に現れるものはない" % (n55, YOMI_MIN))
     except Exception as e:
         chk(55, "同じ文を2か所で述べていないこと", False, "照合できない（%s）" % e)
 
@@ -1506,11 +1524,101 @@ def main():
                             bad56.append("%s %s：次の%d%s に対し %s"
                                          % (nm56, sec["no"], d, m.group(2),
                                             sorted(cand - {0}) or "数えられる並びがない"))
+        # 確認事項（WBS の xlsx に載る文）も、数を宣言して丸数字で並べているなら数える。
+        # 丸数字のない文は、欠陥を引用している進捗の備考などに当たるため対象外。
+        import wbs_kakunin as _KK56
+
+        def _walk56(o, path=""):
+            if isinstance(o, str):
+                yield path, o
+            elif isinstance(o, dict):
+                for k, v in o.items():
+                    yield from _walk56(v, "%s/%s" % (path, k))
+            elif isinstance(o, (list, tuple)):
+                for i, v in enumerate(o):
+                    yield from _walk56(v, "%s[%d]" % (path, i))
+        for nm56, obj56 in (("確認事項", _KK56.K), ("解決済", _KK56.SOLVED)):
+            for path, t in _walk56(obj56, nm56):
+                m = _KAZU56.search(t)
+                if not m:
+                    continue
+                maru = sum(1 for ch in t if ch in _MARU56)
+                if not maru:
+                    continue
+                n56 += 1
+                if _zen56(m.group(1)) != maru:
+                    bad56.append("%s %s：次の%s%s に対し丸数字%d"
+                                 % (nm56, path, m.group(1), m.group(2), maru))
         chk(56, "「次のN点」の宣言と実際の数が合うこと", not bad56,
             "・".join(bad56[:3]) if bad56
             else "%d件の宣言は、続く小見出し・表の行・箇条書き・丸数字のいずれかの数と一致する" % n56)
     except Exception as e:
         chk(56, "「次のN点」の宣言と実際の数が合うこと", False, "照合できない（%s）" % e)
+
+    # ── 57　自分の構造を数えて述べている箇所が、構造と合うこと ────────
+    #    3-4 は「5つの基本目標」「28の施策」「新規・新設は9施策」と数を述べている。
+    #    施策を足し引きするとこの数だけが残る。現に「10施策」のまま9施策になっていた。
+    #    点検56 は「次のN点」の形しか見ないため、この形を別に数える。
+    try:
+        import re as _re57
+        ch57 = {c["no"]: c for c in SC.CH}
+
+        # 構造から数える（体系図 build_figure_taikei と同じ数え方）
+        mokuhyo57 = []
+        for sec in ch57["第3章"]["sections"]:
+            if sec["no"] == "3-2":
+                for b in sec["blocks"]:
+                    if b["t"] == "table":
+                        mokuhyo57 = [r[0] for r in b["rows"]]
+        kubun57 = []
+        for sec in ch57["第4章"]["sections"]:
+            if sec["no"].startswith("施策"):
+                kubun57.append(sec["title"].split("【")[1].rstrip("】"))
+            elif sec["no"] == "4-5":
+                for b in sec["blocks"]:
+                    if b["t"] == "table":
+                        kubun57 += ["新設"] * len(b["rows"])
+        n_moku = len(mokuhyo57)
+        n_sis = len(kubun57)
+        n_shin = sum(1 for k in kubun57 if k in ("新規", "新設"))
+
+        # 本文が述べている数を拾う（第9期について述べている数は対象外）
+        HOR = {"基本目標": n_moku, "の施策": n_sis}
+        bad57 = []
+        n57 = 0
+        for sec in ch57["第3章"]["sections"]:
+            if sec["no"] not in ("3-4", "3-5"):
+                continue
+            for b in sec["blocks"]:
+                if b["t"] not in ("p", "note"):
+                    continue
+                v = str(b["v"])
+                # 「第9期は4つの基本目標と19の施策でした」は過去の計画の数なので外す
+                v9 = _re57.sub(r"第9期[^。]*。", "", v)
+                for m in _re57.finditer(r"([0-9]+)つの基本目標", v9):
+                    n57 += 1
+                    if int(m.group(1)) != n_moku:
+                        bad57.append("%s：%sつの基本目標（実際は%d）"
+                                     % (sec["no"], m.group(1), n_moku))
+                for m in _re57.finditer(r"([0-9]+)の施策", v9):
+                    n57 += 1
+                    if int(m.group(1)) != n_sis:
+                        bad57.append("%s：%sの施策（実際は%d）"
+                                     % (sec["no"], m.group(1), n_sis))
+                for m in _re57.finditer(r"新規・新設は([0-9]+)施策", v9):
+                    n57 += 1
+                    if int(m.group(1)) != n_shin:
+                        bad57.append("%s：新規・新設は%s施策（実際は%d）"
+                                     % (sec["no"], m.group(1), n_shin))
+        if not n57:
+            bad57.append("3-4・3-5 に数を述べた箇所が見つからない（走査が効いていない）")
+        chk(57, "自分の構造を数えて述べている箇所が構造と合うこと", not bad57,
+            "・".join(bad57[:3]) if bad57
+            else "基本目標%d・施策%d（うち新規・新設%d）を述べた%d件が構造と一致する"
+                 % (n_moku, n_sis, n_shin, n57))
+    except Exception as e:
+        chk(57, "自分の構造を数えて述べている箇所が構造と合うこと", False,
+            "照合できない（%s）" % e)
 
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
