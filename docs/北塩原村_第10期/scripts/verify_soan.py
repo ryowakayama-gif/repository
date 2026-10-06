@@ -1634,12 +1634,52 @@ def main():
                     bad57.append("確認事項「%s」：目安100頁を%s頁上回る（推定は%d頁）"
                                  % (str(k[1])[:24], m.group(1), n_kei57 + 4 - 100))
 
+        # 「村内で提供されているサービスはN種類」が、2-5の事業所数の表と合うこと。
+        # 定員の表（居住系・通所系のみ）に引かれて訪問介護を数え落とし、
+        # 7か所で「2種類」と述べていた。ケアマネジメント（居宅介護支援・
+        # 介護予防支援）は給付のサービスではないため数に入れない。
+        CARE57 = ("居宅介護支援", "介護予防支援")
+        murauchi = set()
+        for c in SC.CH:
+            for sec in c["sections"]:
+                if sec["no"] != "2-5":
+                    continue
+                for b in sec["blocks"]:
+                    if b["t"] == "table" and b["head"][0] == "サービス" and "令和6年度" in b["head"]:
+                        col = b["head"].index("令和6年度")
+                        for r in b["rows"]:
+                            if str(r[0]) in CARE57:
+                                continue
+                            try:
+                                if float(str(r[col])) > 0:
+                                    murauchi.add(str(r[0]))
+                            except ValueError:
+                                pass
+        n_mura = len(murauchi)
+        for c in SC.CH:
+            for sec in c["sections"]:
+                for b in sec["blocks"]:
+                    txt = []
+                    if b["t"] in ("p", "note"):
+                        txt = [str(b["v"])]
+                    elif b["t"] == "bullets":
+                        txt = [str(x) for x in b["v"]]
+                    for t in txt:
+                        for m in _re57.finditer(
+                                r"村内(?:で提供され[^。]{0,8}|に提供事業所が|の事業所は)"
+                                r"[^。]{0,70}?([0-9]+)種類", t):
+                            n57 += 1
+                            if int(m.group(1)) != n_mura:
+                                bad57.append("%s：村内のサービス%s種類（表では%d種類）"
+                                             % (sec["no"], m.group(1), n_mura))
+
         if not n57:
             bad57.append("数を述べた箇所が見つからない（走査が効いていない）")
         chk(57, "自分の数を述べているところが実際と合うこと", not bad57,
             "・".join(bad57[:3]) if bad57
-            else "基本目標%d・施策%d（うち新規・新設%d）・計画書%d頁を述べた%d件が"
-                 "構造と紙面の推定に一致する" % (n_moku, n_sis, n_shin, n_kei57 + 4, n57))
+            else "基本目標%d・施策%d（うち新規・新設%d）・計画書%d頁・村内のサービス%d種類を"
+                 "述べた%d件が構造と推定に一致する"
+                 % (n_moku, n_sis, n_shin, n_kei57 + 4, n_mura, n57))
     except Exception as e:
         chk(57, "自分の構造を数えて述べている箇所が構造と合うこと", False,
             "照合できない（%s）" % e)

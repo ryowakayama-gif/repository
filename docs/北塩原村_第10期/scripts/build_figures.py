@@ -844,6 +844,136 @@ def fig_hokenryo_jorei():
     save(fig, "fig_保険料と条例基準額.png")
 
 
+
+# ── 給付適正化の取組別得点の推移（推進交付金 目標Ⅱ）／5-8 ──
+#    交付金の評価が求める「ケアマネジメントの質の分析」の裏づけ。
+#    数値は受領した交付金の明細（配点・本村・全国平均）から取組ごとに足して出す。
+#    じか書きしない。明細を差し替えれば図も変わる。
+def fig_tekiseika_tokuten():
+    import csv as _csv, io as _io, collections as _c
+    rows = list(_csv.DictReader(_io.open(
+        os.path.join(_P.DATA, "交付金評価指標_3か年.csv"), encoding="utf-8-sig")))
+
+    def _f(v):
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return None
+
+    grp = [("給付費適正化\n方策の策定", "1 / 給付費適正化方策の策定状況"),
+           ("給付費適正化\n事業の取組", "2 / 給付費適正化事業の取組状況"),
+           ("ケアプラン\n点検", "1 / ケアプラン点検の実施状況"),
+           ("医療情報との\n突合", "2 / 医療情報との突合の実施状況")]
+    yrs = ["令和6年度", "令和7年度", "令和8年度"]
+    hon = _c.defaultdict(lambda: _c.defaultdict(float))
+    zen = _c.defaultdict(lambda: _c.defaultdict(float))
+    hai = _c.defaultdict(float)
+    for r in rows:
+        if r["交付金"] != "推進交付金" or r["目標"] != "目標Ⅱ" or "計" in r["指標"]:
+            continue
+        for nm, pre in grp:
+            if not r["指標"].startswith(pre):
+                continue
+            if _f(r["北塩原村"]) is not None:
+                hon[nm][r["年度"]] += _f(r["北塩原村"])
+            if _f(r["全国平均"]) is not None:
+                zen[nm][r["年度"]] += _f(r["全国平均"])
+            if r["年度"] == "令和8年度" and _f(r["配点"]) is not None:
+                hai[nm] += _f(r["配点"])
+
+    lab = [nm for nm, _ in grp]
+    x = list(range(len(lab)))
+    w = 0.21
+    fig, ax = plt.subplots(figsize=(7.4, 3.9))
+    STY = [dict(color=K["xl"], edgecolor=K["m"], linewidth=0.8),
+           dict(color=K["l"], edgecolor=K["m"], linewidth=0.8),
+           dict(color=K["d"], edgecolor="white", linewidth=1.2, hatch="///")]
+    for i, (per, st) in enumerate(zip(yrs, STY)):
+        v = [hon[nm][per] for nm in lab]
+        b = ax.bar([xi + (i - 1.5) * w for xi in x], v, width=w, label=per, **st)
+        if per == "令和8年度":
+            for bb in b:
+                ax.annotate("%d" % bb.get_height(),
+                            (bb.get_x() + bb.get_width() / 2, bb.get_height()),
+                            xytext=(0, 3), textcoords="offset points", ha="center",
+                            fontsize=8.5, fontweight="bold")
+    v8 = [zen[nm]["令和8年度"] for nm in lab]
+    ax.bar([xi + 1.5 * w for xi in x], v8, width=w, label="全国平均（令和8年度）",
+           color="#FFFFFF", edgecolor=K["m"], linewidth=0.9)
+    for xi, nm in zip(x, lab):
+        ax.plot([xi - 2 * w, xi + 2 * w], [hai[nm]] * 2,
+                color=K["m"], lw=0.9, ls=":")
+    ax.annotate("点線は配点（満点）", (-0.42, 37.6), fontsize=8,
+                color=K["m"], ha="left")
+    # 値が0の年度は棒が見えないため、0であることを書き添える
+    for i, per in enumerate(yrs):
+        for xi, nm in zip(x, lab):
+            if hon[nm][per] == 0:
+                ax.annotate("0", (xi + (i - 1.5) * w, 0.3), ha="center",
+                            va="bottom", fontsize=8, color=K["m"])
+    ax.annotate("令和8年度に8点を取得\n（4段階のうち2段階）", (2.05, 19.5), ha="center",
+                fontsize=8.5, color=K["d"], fontweight="bold")
+    ax.annotate("", xy=(2.2, 9.3), xytext=(2.05, 18.0),
+                arrowprops=dict(arrowstyle="->", color=K["d"], lw=1.2,
+                                connectionstyle="arc3,rad=-0.15"))
+    ax.annotate("令和8年度に20点→6点", (1.15, 23.0), ha="center",
+                fontsize=8.5, color=K["d"], fontweight="bold")
+    ax.annotate("", xy=(1.2, 7.2), xytext=(1.15, 21.6),
+                arrowprops=dict(arrowstyle="->", color=K["d"], lw=1.2,
+                                connectionstyle="arc3,rad=0.12"))
+    ax.set_xticks(x); ax.set_xticklabels(lab, fontsize=8.5)
+    ax.set_ylim(0, 44)
+    style_ax(ax, ylab="得点（点）")
+    ax.legend(loc="upper center", fontsize=8, ncol=4, bbox_to_anchor=(0.5, 1.03),
+              frameon=False, columnspacing=1.0, handlelength=1.4)
+    ax.set_title("給付適正化の取組別得点の推移（推進交付金 目標Ⅱ）", loc="left", pad=10)
+    save(fig, "fig_給付適正化の得点.png")
+
+
+# ── 医療と介護の連携に関する加算の算定率と全国の中での位置／2-5 ──
+#    交付金の評価が求める「在宅医療・介護連携の状況」の裏づけ。
+def fig_renkei_kasan():
+    import csv as _csv, io as _io
+    rows = list(_csv.reader(_io.open(
+        os.path.join(_P.DATA, "mieruka_tidy.csv"), encoding="utf-8")))
+    d = {}
+    for r in rows[1:]:
+        if r[2] == "δ1-c" and r[6] == "北塩原村":
+            d[r[4]] = None if r[10] in ("-", "") else float(r[10])
+    KASAN = [("協力医療機関連携加算\n（施設・居住系）",
+              "協力医療機関連携加算算定率（施設・居住系）"),
+             ("入院時情報連携加算・退院退所加算\n（居宅介護支援）",
+              "入院時情報連携加算、退院・退所加算算定率（居宅介護支援）"),
+             ("認知症（専門ケア）加算\n（通所系・多機能系・施設居住系）",
+              "認知症（専門ケア）加算算定率（通所系、多機能系、施設・居住系）"),
+             ("看取り介護加算・ターミナルケア加算\n（施設・居住系）",
+              "看取り介護加算、ターミナルケア加算算定率（施設・居住系）")]
+    lab = [nm for nm, _ in KASAN]
+    hen = [d[k + "（偏差値）"] for _, k in KASAN]
+    ritu = [d[k] for _, k in KASAN]
+    y = list(range(len(lab)))
+    fig, ax = plt.subplots(figsize=(7.4, 3.6))
+    ax.axvline(50, color=K["m"], lw=1.0)
+    cols = [K["d"] if h >= 50 else K["l"] for h in hen]
+    ax.barh(y, hen, height=0.54, color=cols, edgecolor=K["m"], linewidth=0.8)
+    for yi, h, r in zip(y, hen, ritu):
+        ax.annotate("偏差値 %.1f　（算定率 %.2f%%）" % (h, r), (h, yi), xytext=(6, 0),
+                    textcoords="offset points", va="center", fontsize=8.5,
+                    fontweight="bold", color=K["d"])
+    ax.set_yticks(y); ax.set_yticklabels(lab, fontsize=8.5)
+    ax.set_xlim(0, 76); ax.set_ylim(-0.7, len(lab) - 0.3)
+    ax.invert_yaxis()
+    ax.annotate("全国平均（偏差値50）", (50, -0.66), fontsize=8.5, color=K["m"],
+                ha="center", va="bottom")
+    ax.annotate("緊急時訪問看護加算は、村内に訪問看護事業所がないため値がない",
+                (0.8, 3.46), fontsize=8, color=K["m"], ha="left", va="top")
+    style_ax(ax, xlab="全国の市町村の中での偏差値")
+    ax.grid(axis="x", visible=True); ax.grid(axis="y", visible=False)
+    ax.set_title("医療と介護の連携に関する加算の算定率と全国の中での位置（令和7年）",
+                 loc="left", pad=20)
+    save(fig, "fig_連携の加算.png")
+
+
 if __name__ == "__main__":
     fig_2_5(); fig_2_6(); fig_2_7(); fig_2_8(); fig_2_21()
     fig_2_9(); fig_2_10(); fig_2_11(); fig_2_12()
@@ -852,3 +982,5 @@ if __name__ == "__main__":
     # 追加図（doc49 §3-1）
     fig_jukyuritsu_uchiwake(); fig_jigyosho_ichi()
     fig_juyo_kyokyu(); fig_hokenryo_jorei()
+    # 追加図（doc61 §4）交付金の評価が求める分析の空白2件に対応
+    fig_tekiseika_tokuten(); fig_renkei_kasan()
