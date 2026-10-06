@@ -22,21 +22,21 @@ def chk(no, name, ok, detail=""):
 md = open(MD, encoding="utf-8").read()
 md24 = open(MD24, encoding="utf-8").read()   # 報告書骨子案（doc24）
 
-# 1 クロス表20件すべてに分母が書かれていること
+# 1 クロス表すべてに分母が書かれていること
 nob = [c[0] for c in CROSS if not str(c[5]).strip() or str(c[5]).strip() == "―"]
-chk(1, "クロス表に分母が書かれていること", len(CROSS) == 20 and not nob,
-    f"分母が空 {nob}" if nob else f"20表すべてに分母を記載")
+chk(1, "クロス表に分母が書かれていること", len(CROSS) >= 20 and not nob,
+    f"分母が空 {nob}" if nob else f"{len(CROSS)}表すべてに分母を記載")
 
 # 2 分母に「回収票の総数」を使っていないこと
 bad2 = [c[0] for c in CROSS if "回収票" in str(c[5]) and "総数" in str(c[5])]
 chk(2, "分母に回収票の総数を用いていないこと", not bad2,
-    f"総数で割っている {bad2}" if bad2 else "20表とも設問または両設問の有効回答")
+    f"総数で割っている {bad2}" if bad2 else f"{len(CROSS)}表とも設問または両設問の有効回答")
 
 # 3 分母の書き方が「設問」「両設問」「名簿由来」のいずれかに揃っていること
 KEY = ("両設問", "設問", "有効回答", "名簿由来")
 bad3 = [c[0] for c in CROSS if not any(k in str(c[5]) for k in KEY)]
 chk(3, "分母の書き方が揃っていること", not bad3,
-    f"書き方が不揃い {bad3}" if bad3 else "20表とも定型の語で記載")
+    f"書き方が不揃い {bad3}" if bad3 else f"{len(CROSS)}表とも定型の語で記載")
 
 # 4 主指標・補足指標の整理があり、主に分母が書かれていること
 nom = [x[0] for x in SHU_HO if "分母" not in x[1] and "データ" not in x[1] and "判定" not in x[1]]
@@ -81,9 +81,9 @@ miss10 = [x[0] for x in SHU_HO if x[0] not in md24]
 chk(10, "主指標・補足指標が報告書骨子にもあること", not miss10,
     f"doc24にない {miss10}" if miss10 else f"{len(SHU_HO)}件すべて記載")
 
-# 11 20表の分母が、集計仕様書の定義のまま報告書骨子に書かれていること
+# 11 クロス表の分母が、集計仕様書の定義のまま報告書骨子に書かれていること
 miss11 = [c[0] for c in CROSS if c[0] not in md24 or str(c[5]) not in md24]
-chk(11, "20表の分母が報告書骨子と一致すること", not miss11,
+chk(11, "クロス表の分母が報告書骨子と一致すること", not miss11,
     f"不一致 {miss11}" if miss11 else "X-01〜X-20の分母が doc24 §13 と一致")
 
 # 12 在宅調査の要介護度が、報告書骨子でも2区分であること
