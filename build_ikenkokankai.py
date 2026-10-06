@@ -65,6 +65,7 @@ from openpyxl import load_workbook
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import data_kitei as DK                                   # noqa: E402
+import kakunin_score as KS                                # noqa: E402
 import repo_paths as RP                                   # noqa: E402
 
 OUT = RP.ROOT + "/output/第10期計画_3町合同意見交換会資料.docx"
@@ -654,20 +655,9 @@ P("したがって、**発注者及び構成3町から追加の資料のご提�
   "一方で、国の告示によるものは催促のできないものであり、"
   "いずれも保険料を引き上げる向きに働きます（第4節）。", size=10)
 
-def _oki(s):
-    """算定の前提の置き方を本資料の文に直す。
-
-    算定の側の表の中で用いている言い回し（自己点検の番号、シートの番号、
-    「本表」）は本資料では意味を持たないため落とす。
-    確定した日を述べる文も、本文の注で述べるためはじめに置かない。
-    """
-    v = str(s).replace("**", "")
-    if v.startswith("令和8年10月1日") and "。" in v:
-        v = v.split("。", 1)[1]
-    v = re.sub(r"（点検[0-9０-９・点検]*）", "", v)
-    v = re.sub(r"[0-9０-９]+シートに", "サービス見込量の算定に", v)
-    v = v.replace("本表は", "見込量は")
-    return v.strip()
+# 算定の表の言い回しを本資料の文に直す処理は共通のものを引く
+# （**写すときに落とす処理を1か所に置く**。CLAUDE.md §4）。
+_oki = KS.oki
 
 
 CAP("受託者の側で確定した算定の前提")

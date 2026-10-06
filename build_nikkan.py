@@ -42,12 +42,10 @@
 内部保管（発注者への送付は想定しない）。
 """
 
-import ast
 import datetime
 import io
 import os
 import re
-import runpy
 import subprocess
 import sys
 
@@ -60,6 +58,7 @@ import repo_paths as RP
 sys.path.insert(0, RP.ROOT)
 import data_progress as DP                                    # noqa: E402
 import data_kitei as DK                                      # noqa: E402
+import kakunin_score as KS                                   # noqa: E402
 
 if isinstance(sys.stdout, io.TextIOWrapper):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -176,169 +175,24 @@ def note(ws, row, text, span=10, height=None, fill=GRAY):
 
 
 # ============================================================ 台帳を読む
-def _literal(fn, name):
-    """ソースから literal の代入を読む（固定値を書き写さないため）。"""
-    src = io.open(os.path.join(RP.ROOT, fn), encoding="utf-8").read()
-    for node in ast.parse(src).body:
-        if isinstance(node, ast.Assign) and any(
-                getattr(t, "id", None) == name for t in node.targets):
-            return ast.literal_eval(node.value)
-    raise RuntimeError("%s に %s が見つからない" % (fn, name))
+# ============================================================ 台帳と採点
+# 影響度の採点・台帳の読み取りは `kakunin_score.py` から引く。
+# **同じ採点を2か所に書かない**（CLAUDE.md §4）。
+_literal = KS.literal
+_run = KS.run_script
 
+CHECK, LACK, KITEI = KS.CHECK, KS.LACK, KS.KITEI
+KUBUN, HANEI, SUEOKI = KS.KUBUN, KS.HANEI, KS.SUEOKI
+KANRYO, MACHI, LACK_MACHI = KS.KANRYO, KS.MACHI, KS.LACK_MACHI
+_S = KS.SANTEI
 
-def _run(fn):
-    """スクリプトを読み込んで名前空間を得る（標準出力は捨てる）。"""
-    d = open(os.devnull, "w")
-    o, e = sys.stdout, sys.stderr
-    sys.stdout = sys.stderr = d
-    try:
-        return runpy.run_path(os.path.join(RP.ROOT, fn))
-    finally:
-        sys.stdout, sys.stderr = o, e
-        d.close()
+_kigen_m = KS.kigen_m
+_max_yen = KS.max_yen
+GETSU_MAX, GETSUGAKU = KS.GETSU_MAX, KS.GETSUGAKU
+RULE, TOME_MAX, BAND, KUNI_NO = KS.RULE, KS.TOME_MAX, KS.BAND, KS.KUNI_NO
 
-
-# 確認事項（正の台帳）。(0)No (1)業務内容 (2)工程 (3)表題 (4)内容
-#                       (5)止めている成果物 (6)確認先 (7)状態 (8)期限 (9)回答
-CHECK = _literal("build_process_control.py", "CHECK")
-# 資料提供依頼。(0)No (1)領域 (2)資料 (3)内容 (4)確定する主張 (5)入手先
-#               (6)希望時期 (7)優先度 (8)状態 (9)備考
-LACK = _literal("build_process_control.py", "LACK")
-# 決着しない場合の当方の扱い（既定値）。1か所から引く。
-KITEI = DK.all_kitei()
-# 据え置きの出どころ（A＝受託者で確定できる／B＝発注者・3町／C＝国）
-KUBUN = _literal("build_mikomi_juryo_nashi.py", "KUBUN")
-# 既定値のとおり計画素案へ反映し終えた確認事項（ご決定はなお待っているもの）。
-# 反映し終えたものを翌日の作業として繰り返し挙げないために除く。
-HANEI = {x[0] for x in _literal("build_ikenkokankai.py", "SUSUMETA")}
-
-_S = _run("build_mikomiryo_santei.py")
-# 据え置き。(0)区分 (1)項目 (2)理由 (3)当方の扱い (4)関係する確認事項 (5)効き
-SUEOKI = _S["SUEOKI"]
-
-KANRYO = ("完了", "了承済", "了承済（保管せず廃棄）", "代替により解消", "解決")
-MACHI = [x for x in CHECK if x[7] not in KANRYO]
-LACK_MACHI = [x for x in LACK if x[8] not in ("受領済", "完了", "解消")]
-
-
-# ============================================================ 期限を読む
-def _kigen_m(s):
-    """「R8.10」のような期限を令和の通算月にする。読めなければ None。"""
-    m = re.search(r"R(\d+)\s*[.．]\s*(\d+)", str(s or ""))
-    return (int(m.group(1)) * 12 + int(m.group(2))) if m else None
-
-
-# ============================================================ 月額への効き
-# 据え置きの「効き」の欄から、月額を何円動かし得るかを読む。
-# 確認事項No. は据え置きの「関係する確認事項」の欄から拾う。
-_YEN = re.compile(r"([0-9,]+)\s*円")
-_NO = re.compile(r"No\.\s*([0-9]+)")
-# 「月額」に続く範囲だけを月額とみる。
-# 効きの欄には月額でない額も現れる（「差5,854,697円で月額約▲7円」のように、
-# 同じ文に総額と月額が並ぶ）。文中の円を無差別に拾うと総額を月額と読む。
-_TSUKI_WIN = 24          # 「月額」の後ろ何文字までを月額の記載とみるか
-GETSU_MAX = 2000         # 1件の月額の効きとしてあり得る上限（点検に用いる）
-
-
-def _max_yen(text):
-    """「月額」に続いて現れる円のうち最大のものを返す。無ければ None。"""
-    t = text or ""
-    v = []
-    for m in re.finditer("月額", t):
-        seg = t[m.end():m.end() + _TSUKI_WIN]
-        v += [int(x.replace(",", "")) for x in _YEN.findall(seg)]
-    return max(v) if v else None
-
-
-GETSUGAKU = {}          # 確認事項No. -> (円, 据え置きの項目)
-for i, s in enumerate(SUEOKI, start=1):
-    y = _max_yen(s[5])
-    if y is None:
-        continue
-    for no in _NO.findall(s[4]):
-        no = int(no)
-        if y > GETSUGAKU.get(no, (0, ""))[0]:
-            GETSUGAKU[no] = (y, s[1])
-
-
-# ============================================================ 影響度の採点
-# 付け方は03シートに全て書く。ここを変えたら03シートも変わる（同じ表から作る）。
-#
-# 期限は当区域ではほとんどが超過又は当月であり、それだけでは順位が付かない。
-# 順位を分けるのは**放置したときに何が動くか**であるため、
-# 月額への効きと「止めている成果物」を重く、期限を軽くしている。
-RULE = [
-    ("期限", "回答期限が基準日の月より前（超過している）", 2),
-    ("期限", "回答期限が基準日と同じ月", 1),
-    ("期限", "回答期限が翌月", 0),
-    ("止めている成果物", "概算（第1次・第2次）を止めている", 3),
-    ("止めている成果物", "保険料に関わるものを止めている", 2),
-    ("止めている成果物", "計画素案を止めている", 1),
-    ("月額への効き", "据え置きに紐づき月額100円以上を動かし得る", 4),
-    ("月額への効き", "同 50円以上100円未満", 2),
-    ("月額への効き", "同 50円未満（効きの記載がある）", 1),
-    ("法定記載事項", "介護保険法第117条の記載事項に直結する", 2),
-    ("既定値", "決着しない場合の当方の扱いを置けていない", 3),
-    ("当方で動かせるか", "国の告示・公布を待つもの（催促できない）", -2),
-]
-TOME_MAX = 4            # 「止めている成果物」の加点の上限
-BAND = [("至急", 9, 99, "翌日に着手する。相手がある場合は翌日の午前に出す"),
-        ("優先", 6, 8, "今週のうちに着手する"),
-        ("通常", -99, 5, "期限の月に入ってから着手する")]
-
-# 国の告示・公布を待つ据え置き（区分C）に紐づく確認事項No.
-KUNI_NO = set()
-for i, s in enumerate(SUEOKI, start=1):
-    if KUBUN.get(i) == "C":
-        KUNI_NO.update(int(n) for n in _NO.findall(s[4]))
-
-_HOTEI = ("法第117条", "法定記載事項", "第117条")
-
-
-def score(x):
-    """確認事項1件の影響度を採点し、(合計, [内訳]) を返す。"""
-    uchi, pt = [], 0
-    km = _kigen_m(x[8])
-    if km is not None:
-        if km < NOW_M:
-            uchi.append(("期限", "超過（%s）" % x[8], 2))
-        elif km == NOW_M:
-            uchi.append(("期限", "当月（%s）" % x[8], 1))
-    tome, t = 0, str(x[5])
-    if "概算" in t:
-        tome += 3
-        uchi.append(("止めている成果物", "概算", 3))
-    if "保険料" in t:
-        tome += 2
-        uchi.append(("止めている成果物", "保険料", 2))
-    if "計画素案" in t:
-        tome += 1
-        uchi.append(("止めている成果物", "計画素案", 1))
-    if tome > TOME_MAX:          # 上限で頭打ちにする
-        uchi = [u for u in uchi if u[0] != "止めている成果物"]
-        uchi.append(("止めている成果物", "概算・保険料・計画素案（上限）",
-                     TOME_MAX))
-        tome = TOME_MAX
-    g = GETSUGAKU.get(x[0])
-    if g:
-        p = 4 if g[0] >= 100 else (2 if g[0] >= 50 else 1)
-        uchi.append(("月額への効き", "最大%s円（%s）"
-                     % ("{:,}".format(g[0]), g[1]), p))
-    if any(w in str(x[4]) for w in _HOTEI):
-        uchi.append(("法定記載事項", "法第117条に直結", 2))
-    if x[0] not in KITEI and "決着しない場合" not in str(x[9]):
-        uchi.append(("既定値", "置けていない", 3))
-    if x[0] in KUNI_NO:
-        uchi.append(("当方で動かせるか", "国の告示・公布待ち", -2))
-    pt = sum(u[2] for u in uchi)
-    return pt, uchi
-
-
-SCORED = []
-for x in MACHI:
-    pt, uchi = score(x)
-    SCORED.append((pt, uchi, x))
-SCORED.sort(key=lambda s: (-s[0], _kigen_m(s[2][8]) or 9999, s[2][0]))
+score = KS.make_score(NOW_M)
+SCORED = KS.sorted_check(NOW_M)
 
 
 # ============================================================ 当日のコミット
