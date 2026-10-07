@@ -76,6 +76,17 @@ SERVICES = [
 
 # 見える化に受給者数の系列がなく、給付費のみ把握できるサービス
 #  （第1号被保険者1人あたり給付月額 D13系 × 第1号被保険者数 で給付費を推計する）
+# 給付費しか系列がないサービスのうち、受給者1人あたり給付月額（D17系列）が
+# 収録されているものは、受給者数を算出できる。
+#   受給者数 ＝ 第1号被保険者1人あたり給付月額 × 第1号被保険者数 ÷ 受給者1人あたり給付月額
+# 通所介護で検算したところ素案の値（令和5年度37.2・令和6年度42.2・令和7年度38.9人／月）と
+# 一致し、居住系2種の和は見える化の居住系受給者数（D1）と令和5・6年度で完全に一致した
+# （令和7年度は0.3人の差）。D17系列がないサービスは従来どおり按分の参考値とする。
+D17_CODE = {
+    '特定施設入居者生活介護':   'D17-k',
+    '認知症対応型共同生活介護': 'D17-q',
+}
+
 SERVICES_KYUFU_ONLY = [
     ('特定施設入居者生活介護',                     'D13-q', '居住系'),
     ('認知症対応型共同生活介護',                   'D13-w', '居住系'),
@@ -289,25 +300,71 @@ def main():
         for y in YEARS_EST:
             rec[y + '度(給付費・千円/年)'] = int(round((per or 0) * ins[y] * 12 / 1000))
         rows_y.append(rec)
-    # 施設・居住系の種類別人数は見える化に系列がないため、区分別受給者数を
-    # 給付費の構成比で按分した「参考値」を併記する（サービス種類ごとに単価が
-    # 異なるため実態とずれる。確定値は村の介護保険事業状況報告の月報による）。
+    # 施設・居住系の種類別人数。D17系列（受給者1人あたり給付月額）があるものは
+    # 算出し、ないものだけを残差の按分による「参考値」とする。
+    # 按分は給付費の構成比によるため、サービスごとに単価が違うぶん実態とずれる。
+    # 確定値は村の介護保険事業状況報告の月報による（施設サービス3種）。
+    # 実績年度の第1号被保険者数（D13と同じ分母の系列を使う。D2・D3・D4で一致）
+    ins_act = {}
+    for y in YEARS_ACT:
+        v = fval(idx, 'D2', '第1号被保険者数', y)
+        if v:
+            ins_act[y] = v
+
+    tanka17 = {}            # サービス名 → (年 → 受給者1人あたり給付月額)
+    for nm17, c17 in D17_CODE.items():
+        d = {}
+        for y in YEARS_ACT:
+            v = fval(idx, c17, f'受給者1人あたり給付月額（{nm17}）', y)
+            if v:
+                d[y] = v
+        if d:
+            tanka17[nm17] = d
+
+    def _san(name, yen_tuki, y=None):
+        """月あたりの総給付額（円）を受給者1人あたり給付月額で割って人数を出す。"""
+        d = tanka17.get(name)
+        if not d:
+            return None
+        t = d.get(y) if y else (sum(d.values()) / len(d))
+        return round(yen_tuki / t, 1) if t else None
+
     for kubun_lab, kubun_key in [('居住系', '居住系サービス'), ('施設', '施設サービス')]:
         grp = [r for r in rows_y if r['区分'] == kubun_lab]
         for y in YEARS_EST:
-            tot_yen = sum(r[y + '度(給付費・千円/年)'] for r in grp)
             tot_num = [x for x in rows_k
                        if x['区分'] == kubun_key and x['要介護度'] == '計'][0][y + '度']
+            san, nokori = {}, []
             for r in grp:
-                r[y + '度(人/月・参考)'] = (round(tot_num * r[y + '度(給付費・千円/年)'] / tot_yen, 1)
+                # 見込年度の単価は実績3か年の平均で固定する（5-4の前提と揃える）
+                v = _san(r['サービス種類'], r[y + '度(給付費・千円/年)'] * 1000 / 12)
+                if v is None:
+                    nokori.append(r)
+                else:
+                    san[r['サービス種類']] = v
+                    r[y + '度(人/月・参考)'] = v
+            zan = max(tot_num - sum(san.values()), 0.0)
+            tot_yen = sum(r[y + '度(給付費・千円/年)'] for r in nokori)
+            for r in nokori:
+                r[y + '度(人/月・参考)'] = (round(zan * r[y + '度(給付費・千円/年)'] / tot_yen, 1)
                                         if tot_yen else 0.0)
         for y in YEARS_ACT:
-            tot_yen = sum(r[YEAR_LABEL[y] + '実績(円/月)'] for r in grp)
+            lab = YEAR_LABEL[y]
             tot_num = [x for x in rows_k
-                       if x['区分'] == kubun_key and x['要介護度'] == '計'][0][YEAR_LABEL[y] + '実績']
+                       if x['区分'] == kubun_key and x['要介護度'] == '計'][0][lab + '実績']
+            san, nokori = {}, []
             for r in grp:
-                r[YEAR_LABEL[y] + '実績(人/月・参考)'] = (
-                    round(tot_num * r[YEAR_LABEL[y] + '実績(円/月)'] / tot_yen, 1) if tot_yen else 0.0)
+                v = _san(r['サービス種類'], r[lab + '実績(円/月)'] * ins_act.get(y, 0), y)
+                if v is None:
+                    nokori.append(r)
+                else:
+                    san[r['サービス種類']] = v
+                    r[lab + '実績(人/月・参考)'] = v
+            zan = max(tot_num - sum(san.values()), 0.0)
+            tot_yen = sum(r[lab + '実績(円/月)'] for r in nokori)
+            for r in nokori:
+                r[lab + '実績(人/月・参考)'] = (
+                    round(zan * r[lab + '実績(円/月)'] / tot_yen, 1) if tot_yen else 0.0)
 
     cols_y = ['区分', 'サービス種類', '第1号1人あたり給付月額(円・3か年平均)'] \
         + [YEAR_LABEL[y] + '実績(円/月)' for y in YEARS_ACT] \

@@ -31,6 +31,9 @@ RAW = os.path.join(BASE, "data", "mieruka_raw")
 RESULTS = []
 
 
+import os as _os
+
+
 def chk(no, name, ok, detail=""):
     RESULTS.append((no, name, ok, detail))
 
@@ -957,6 +960,94 @@ def main():
          pick(rs4, "必要保険料額（合計）")[8], "円",
          "同上。1か月分のみのため年度の値として扱えない"),
     ]
+
+    # ── 72　居住系の受給者数の算出が、見える化の居住系受給者数と合うこと ────
+    #    サービス種類別の受給者数の系列はないが、
+    #      受給者数 ＝ 第1号被保険者1人あたり給付月額 × 第1号被保険者数
+    #                 ÷ 受給者1人あたり給付月額
+    #    により算出できる。この算出が正しいなら、居住系の各サービスの和は
+    #    見える化の居住系受給者数（D1）と一致するはずである。
+    #    算出をやめて按分に戻すと、ここが合わなくなる。
+    try:
+        import csv as _csv72, io as _io72, re as _re72, collections as _c72, statistics as _st72
+        import paths as _P72
+        gen = list(_csv72.DictReader(_io72.open(
+            _os.path.join(_P72.DATA, "第10期_給付費のみ把握サービス.csv"),
+            encoding="utf-8-sig")))
+        san = {}
+        for lab in ("令和5年度", "令和6年度", "令和7年度"):
+            san[lab] = sum(float(r[lab + "実績(人/月・参考)"]) for r in gen if r["区分"] == "居住系")
+        # 見える化 D1 の居住系受給者数（月次）を年度の平均にする
+        bat = list(_csv72.DictReader(_io72.open(
+            _os.path.join(_P72.DATA, "mieruka_batch.csv"), encoding="utf-8-sig")))
+        tsuki = _c72.defaultdict(list)
+        for r in bat:
+            if r["region"] != "北塩原村" or not r["file"].startswith("D1_"):
+                continue
+            if r["indicator"] != "居住系受給者数":
+                continue
+            m = _re72.match(r"令和([0-9元]+)年([0-9]+)月", r["period"])
+            if not m:
+                continue
+            y = int(m.group(1).replace("元", "1"))
+            mo = int(m.group(2))
+            nd = y if mo >= 4 else y - 1
+            try:
+                tsuki["令和%d年度" % nd].append(float(r["value"]))
+            except (TypeError, ValueError):
+                pass
+        bad72, n72 = [], 0
+        for lab in ("令和5年度", "令和6年度", "令和7年度"):
+            if len(tsuki.get(lab, [])) != 12:
+                bad72.append("%s の月次が12か月そろっていない" % lab)
+                continue
+            mie = _st72.mean(tsuki[lab])
+            n72 += 1
+            # 0.5人までの差を認める（給付費が0のサービスには残差を割り振れない）
+            if abs(san[lab] - mie) > 0.5:
+                bad72.append("%s：算出の和%.1f人 と 見える化%.1f人 の差が%.1f人"
+                             % (lab, san[lab], mie, abs(san[lab] - mie)))
+        # 和だけでは按分との差が小さく出るため、サービス単位でも算出と突き合わせる
+        tidy = list(_csv72.DictReader(_io72.open(
+            _os.path.join(_P72.DATA, "mieruka_tidy.csv"), encoding="utf-8-sig")))
+        ix72 = {}
+        for r in tidy:
+            if r["region"] == "北塩原村":
+                ix72.setdefault((r["code"], r["indicator"], r["year"]), r["value"])
+
+        def _f72(code, ind, y):
+            v = ix72.get((code, ind, y))
+            try:
+                return float(v)
+            except (TypeError, ValueError):
+                return None
+        YR72 = {"2023": "令和5年度", "2024": "令和6年度", "2025": "令和7年度"}
+        SV72 = [("特定施設入居者生活介護", "D13-q", "D17-k"),
+                ("認知症対応型共同生活介護", "D13-w", "D17-q")]
+        n_sv = 0
+        for nm, c13, c17 in SV72:
+            row = [r for r in gen if r["サービス種類"] == nm]
+            if not row:
+                bad72.append("%s が給付費のみ把握サービスの表にない" % nm)
+                continue
+            for y, lab in YR72.items():
+                a13 = _f72(c13, "第１号被保険者１人あたり給付月額（%s）" % nm, y)
+                a17 = _f72(c17, "受給者1人あたり給付月額（%s）" % nm, y)
+                ni = _f72("D2", "第1号被保険者数", y)
+                if not (a13 and a17 and ni):
+                    continue
+                n_sv += 1
+                mach = round(a13 * ni / a17, 1)
+                ari = float(row[0][lab + "実績(人/月・参考)"])
+                if abs(mach - ari) > 0.15:
+                    bad72.append("%s %s：表の%.1f人 と 算出の%.1f人 が違う"
+                                 % (nm, lab, ari, mach))
+        chk(72, "居住系の受給者数の算出が見える化と合うこと", not bad72,
+            "・".join(bad72[:3]) if bad72
+            else "サービス別%d件が算出と一致し、3か年とも和が見える化の居住系受給者数と"
+                 "0.5人以内で一致する" % n_sv)
+    except Exception as e:
+        chk(72, "居住系の受給者数の算出が見える化と合うこと", False, "照合できない（%s）" % e)
 
     # ── 出力 ───────────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)

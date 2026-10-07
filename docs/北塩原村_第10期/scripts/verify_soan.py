@@ -1776,6 +1776,46 @@ def main():
     except Exception as e:
         chk(58, "素案が指す調査票の設問が集計仕様書と合うこと", False, "照合できない（%s）" % e)
 
+    # ── 59　確認事項が指す素案の節・図が実在すること ─────────────
+    #    確認事項は照会票として村に渡る。素案の節を書き替えたり図を足し引きすると、
+    #    確認事項に書いた参照先だけが残る。村に存在しない節を示すことになる。
+    #    「資料3の3-3」のような委員会資料の節番号と、docNN・図NN-M は対象外とする。
+    try:
+        import re as _re59
+        import wbs_kakunin as _KK59
+        import figures_map as _FM59
+        import collections as _c59
+        secs59 = {sec["no"] for c in SC.CH for sec in c["sections"]}
+        cnt59 = _c59.Counter()
+        zu59 = set()
+        for key, fn, *_r in _FM59._FIGS:
+            ch = key.split("|")[0]
+            cnt59[ch] += 1
+            zu59.add("図%s-%d" % (ch.replace("第", "").replace("章", ""), cnt59[ch]))
+        REF59 = _re59.compile(r"(?<![図表0-9c])([1-6]-[0-9]+)(?![0-9])")
+        ZU59 = _re59.compile(r"図([0-9]+-[0-9]+)")
+        bad59, n59 = [], 0
+        for k in _KK59.K:
+            for f in (k[1], k[2]):
+                t = str(f)
+                for m in REF59.finditer(t):
+                    # 「資料N の …」に続く番号は委員会資料の節であり、素案の節ではない
+                    mae = t[max(0, m.start() - 40):m.start()]
+                    if _re59.search(r"資料[0-9０-９]", mae) or _re59.search(r"doc|図|表$", mae[-6:]):
+                        continue
+                    n59 += 1
+                    if m.group(1) not in secs59:
+                        bad59.append("「%s」→ 素案に%sがない" % (str(k[1])[:22], m.group(1)))
+                for m in ZU59.finditer(t):
+                    n59 += 1
+                    if m.group(0) not in zu59:
+                        bad59.append("「%s」→ %sがない" % (str(k[1])[:22], m.group(0)))
+        chk(59, "確認事項が指す素案の節・図が実在すること", not bad59,
+            "・".join(sorted(set(bad59))[:3]) if bad59
+            else "確認事項が指す節・図の%d件はすべて素案に実在する" % n59)
+    except Exception as e:
+        chk(59, "確認事項が指す素案の節・図が実在すること", False, "照合できない（%s）" % e)
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
