@@ -1,0 +1,2372 @@
+{
+ "source": "/home/user/repository/kawasaki_project/04_調査・入力・分析/R8調査データ/川崎町_介護予防日常生活圏域ニーズ調査_集計データ_20260807.xlsx",
+ "records": 576,
+ "attributes": [
+  "NO",
+  "保険者番号",
+  "市町村番号",
+  "被保険者番号",
+  "日常生活圏域ID",
+  "性別",
+  "年齢階級",
+  "要介護状態区分",
+  "調査実施年度",
+  "調査方法",
+  "記入日",
+  "追加１",
+  "追加２",
+  "追加３",
+  "追加４",
+  "追加５",
+  "追加６",
+  "追加７",
+  "追加８",
+  "追加９",
+  "追加１０"
+ ],
+ "questions": [
+  {
+   "group": "記入者",
+   "text": "調査票を記入されたのはどなたですか。○をつけてください。",
+   "n": 545,
+   "total_selections": 545,
+   "multi": false,
+   "options": [
+    {
+     "label": "あて名のご本人が記入",
+     "count": 507,
+     "pct": 93.0
+    },
+    {
+     "label": "ご家族が記入",
+     "count": 38,
+     "pct": 7.0
+    },
+    {
+     "label": "",
+     "count": 0,
+     "pct": 0.0
+    },
+    {
+     "label": "その他",
+     "count": 0,
+     "pct": 0.0
+    },
+    {
+     "label": "",
+     "count": 0,
+     "pct": 0.0
+    }
+   ]
+  },
+  {
+   "group": "問1",
+   "text": "家族構成をお教えください",
+   "n": 564,
+   "total_selections": 564,
+   "multi": false,
+   "options": [
+    {
+     "label": "1人暮らし",
+     "count": 83,
+     "pct": 14.7
+    },
+    {
+     "label": "夫婦2人暮らし(配偶者65歳以上)",
+     "count": 189,
+     "pct": 33.5
+    },
+    {
+     "label": "夫婦2人暮らし(配偶者64歳以下)",
+     "count": 26,
+     "pct": 4.6
+    },
+    {
+     "label": "息子・娘との2世帯",
+     "count": 130,
+     "pct": 23.0
+    },
+    {
+     "label": "その他",
+     "count": 136,
+     "pct": 24.1
+    },
+    {
+     "label": "",
+     "count": 0,
+     "pct": 0.0
+    }
+   ]
+  },
+  {
+   "group": "問1",
+   "text": "あなたは、普段の生活でどなたかの介護・介助が必要ですか",
+   "n": 557,
+   "total_selections": 557,
+   "multi": false,
+   "options": [
+    {
+     "label": "介護・介助は必要ない",
+     "count": 477,
+     "pct": 85.6
+    },
+    {
+     "label": "何らかの介護・介助は必要だが、現在は受けていない",
+     "count": 47,
+     "pct": 8.4
+    },
+    {
+     "label": "現在、何らかの介護を受けている（介護認定を受けずに家族などの介護を受けている場合も含む）",
+     "count": 33,
+     "pct": 5.9
+    }
+   ]
+  },
+  {
+   "group": "問1",
+   "text": "【（2）において「1．介護・介助は必要ない」以外の方のみ】介護・介助が必要になった主な原因はなんですか（いくつでも）",
+   "n": 65,
+   "total_selections": 92,
+   "multi": true,
+   "options": [
+    {
+     "label": "脳卒中（脳出血･脳梗塞等）",
+     "count": 9,
+     "pct": 13.8
+    },
+    {
+     "label": "心臓病",
+     "count": 5,
+     "pct": 7.7
+    },
+    {
+     "label": "がん（悪性新生物）",
+     "count": 6,
+     "pct": 9.2
+    },
+    {
+     "label": "呼吸器の病気（肺気腫・肺炎等）",
+     "count": 4,
+     "pct": 6.2
+    },
+    {
+     "label": "関節の病気（リウマチ等）",
+     "count": 4,
+     "pct": 6.2
+    },
+    {
+     "label": "認知症(アルツハイマー病等)",
+     "count": 4,
+     "pct": 6.2
+    },
+    {
+     "label": "パーキンソン病",
+     "count": 2,
+     "pct": 3.1
+    },
+    {
+     "label": "糖尿病",
+     "count": 5,
+     "pct": 7.7
+    },
+    {
+     "label": "腎疾患（透析）",
+     "count": 1,
+     "pct": 1.5
+    },
+    {
+     "label": "視覚・聴覚障害",
+     "count": 6,
+     "pct": 9.2
+    },
+    {
+     "label": "骨折・転倒",
+     "count": 14,
+     "pct": 21.5
+    },
+    {
+     "label": "脊椎損傷",
+     "count": 5,
+     "pct": 7.7
+    },
+    {
+     "label": "高齢による衰弱",
+     "count": 16,
+     "pct": 24.6
+    },
+    {
+     "label": "その他",
+     "count": 9,
+     "pct": 13.8
+    },
+    {
+     "label": "",
+     "count": 0,
+     "pct": 0.0
+    },
+    {
+     "label": "不明",
+     "count": 2,
+     "pct": 3.1
+    }
+   ]
+  },
+  {
+   "group": "問1",
+   "text": "【（2）において「3．現在、何らかの介護を受けている」の方のみ】主にどなたの介護、介助を受けていますか（いくつでも）",
+   "n": 28,
+   "total_selections": 42,
+   "multi": true,
+   "options": [
+    {
+     "label": "配偶者(夫・妻)",
+     "count": 11,
+     "pct": 39.3
+    },
+    {
+     "label": "息子",
+     "count": 10,
+     "pct": 35.7
+    },
+    {
+     "label": "娘",
+     "count": 7,
+     "pct": 25.0
+    },
+    {
+     "label": "子の配偶者",
+     "count": 2,
+     "pct": 7.1
+    },
+    {
+     "label": "孫",
+     "count": 0,
+     "pct": 0.0
+    },
+    {
+     "label": "兄弟・姉妹",
+     "count": 0,
+     "pct": 0.0
+    },
+    {
+     "label": "介護サービスのヘルパー",
+     "count": 7,
+     "pct": 25.0
+    },
+    {
+     "label": "その他",
+     "count": 5,
+     "pct": 17.9
+    },
+    {
+     "label": "",
+     "count": 0,
+     "pct": 0.0
+    }
+   ]
+  },
+  {
+   "group": "問1",
+   "text": "現在の暮らしの状況を経済的にみてどう感じていますか",
+   "n": 560,
+   "total_selections": 560,
+   "multi": false,
+   "options": [
+    {
+     "label": "大変苦しい",
+     "count": 45,
+     "pct": 8.0
+    },
+    {
+     "label": "やや苦しい",
+     "count": 131,
+     "pct": 23.4
+    },
+    {
+     "label": "ふつう",
+     "count": 359,
+     "pct": 64.1
+    },
+    {
+     "label": "ややゆとりがある",
+     "count": 22,
+     "pct": 3.9
+    },
+    {
+     "label": "大変ゆとりがある",
+     "count": 3,
+     "pct": 0.5
+    }
+   ]
+  },
+  {
+   "group": "問1",
+   "text": "お住まいは一戸建て、または集合住宅のどちらですか",
+   "n": 556,
+   "total_selections": 556,
+   "multi": false,
+   "options": [
+    {
+     "label": "持家（一戸建て）",
+     "count": 530,
+     "pct": 95.3
+    },
+    {
+     "label": "持家（集合住宅）",
+     "count": 4,
+     "pct": 0.7
+    },
+    {
+     "label": "公営賃貸住宅",
+     "count": 10,
+     "pct": 1.8
+    },
+    {
+     "label": "民間賃貸住宅（一戸建て）",
+     "count": 2,
+     "pct": 0.4
+    },
+    {
+     "label": "民間賃貸住宅（集合住宅）",
+     "count": 3,
+     "pct": 0.5
+    },
+    {
+     "label": "借家",
+     "count": 3,
+     "pct": 0.5
+    },
+    {
+     "label": "その他",
+     "count": 4,
+     "pct": 0.7
+    },
+    {
+     "label": "",
+     "count": 0,
+     "pct": 0.0
+    }
+   ]
+  },
+  {
+   "group": "問2",
+   "text": "階段を手すりや壁をつたわらずに昇っていますか",
+   "n": 560,
+   "total_selections": 560,
+   "multi": false,
+   "options": [
+    {
+     "label": "できるし、している",
+     "count": 343,
+     "pct": 61.3
+    },
+    {
+     "label": "できるけどしていない",
+     "count": 121,
+     "pct": 21.6
+    },
+    {
+     "label": "できない",
+     "count": 96,
+     "pct": 17.1
+    }
+   ]
+  },
+  {
+   "group": "問2",
+   "text": "椅子に座った状態から何もつかまらずに立ち上がっていますか",
+   "n": 565,
+   "total_selections": 565,
+   "multi": false,
+   "options": [
+    {
+     "label": "できるし、している",
+     "count": 430,
+     "pct": 76.1
+    },
+    {
+     "label": "できるけどしていない",
+     "count": 65,
+     "pct": 11.5
+    },
+    {
+     "label": "できない",
+     "count": 70,
+     "pct": 12.4
+    }
+   ]
+  },
+  {
+   "group": "問2",
+   "text": "15分位続けて歩いていますか",
+   "n": 570,
+   "total_selections": 570,
+   "multi": false,
+   "options": [
+    {
+     "label": "できるし、している",
+     "count": 402,
+     "pct": 70.5
+    },
+    {
+     "label": "できるけどしていない",
+     "count": 109,
+     "pct": 19.1
+    },
+    {
+     "label": "できない",
+     "count": 59,
+     "pct": 10.4
+    }
+   ]
+  },
+  {
+   "group": "問2",
+   "text": "過去1年間に転んだ経験がありますか",
+   "n": 572,
+   "total_selections": 572,
+   "multi": false,
+   "options": [
+    {
+     "label": "何度もある",
+     "count": 63,
+     "pct": 11.0
+    },
+    {
+     "label": "1度ある",
+     "count": 129,
+     "pct": 22.6
+    },
+    {
+     "label": "ない",
+     "count": 380,
+     "pct": 66.4
+    }
+   ]
+  },
+  {
+   "group": "問2",
+   "text": "転倒に対する不安は大きいですか",
+   "n": 543,
+   "total_selections": 543,
+   "multi": false,
+   "options": [
+    {
+     "label": "とても不安である",
+     "count": 77,
+     "pct": 14.2
+    },
+    {
+     "label": "やや不安である",
+     "count": 205,
+     "pct": 37.8
+    },
+    {
+     "label": "あまり不安でない",
+     "count": 173,
+     "pct": 31.9
+    },
+    {
+     "label": "不安でない",
+     "count": 88,
+     "pct": 16.2
+    }
+   ]
+  },
+  {
+   "group": "問2",
+   "text": "週に1回以上は外出していますか",
+   "n": 554,
+   "total_selections": 554,
+   "multi": false,
+   "options": [
+    {
+     "label": "ほとんど外出しない",
+     "count": 32,
+     "pct": 5.8
+    },
+    {
+     "label": "週1回",
+     "count": 123,
+     "pct": 22.2
+    },
+    {
+     "label": "週2～4回",
+     "count": 251,
+     "pct": 45.3
+    },
+    {
+     "label": "週5回以上",
+     "count": 148,
+     "pct": 26.7
+    }
+   ]
+  },
+  {
+   "group": "問2",
+   "text": "昨年と比べて外出の回数が減っていますか",
+   "n": 550,
+   "total_selections": 550,
+   "multi": false,
+   "options": [
+    {
+     "label": "とても減っている",
+     "count": 16,
+     "pct": 2.9
+    },
+    {
+     "label": "減っている",
+     "count": 135,
+     "pct": 24.5
+    },
+    {
+     "label": "あまり減っていない",
+     "count": 191,
+     "pct": 34.7
+    },
+    {
+     "label": "減っていない",
+     "count": 208,
+     "pct": 37.8
+    }
+   ]
+  },
+  {
+   "group": "問2",
+   "text": "外出を控えていますか",
+   "n": 540,
+   "total_selections": 540,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 103,
+     "pct": 19.1
+    },
+    {
+     "label": "いいえ",
+     "count": 437,
+     "pct": 80.9
+    }
+   ]
+  },
+  {
+   "group": "問2",
+   "text": "【（8）で「1．はい」（外出を控えている）の方のみ】外出を控えている理由は、次のどれですか（いくつでも）",
+   "n": 101,
+   "total_selections": 179,
+   "multi": true,
+   "options": [
+    {
+     "label": "病気",
+     "count": 12,
+     "pct": 11.9
+    },
+    {
+     "label": "障害（脳卒中の後遺症など）",
+     "count": 2,
+     "pct": 2.0
+    },
+    {
+     "label": "足腰などの痛み",
+     "count": 56,
+     "pct": 55.4
+    },
+    {
+     "label": "トイレの心配(失禁など)",
+     "count": 22,
+     "pct": 21.8
+    },
+    {
+     "label": "耳の障害（聞こえの問題など）",
+     "count": 11,
+     "pct": 10.9
+    },
+    {
+     "label": "目の障害",
+     "count": 8,
+     "pct": 7.9
+    },
+    {
+     "label": "外での楽しみがない",
+     "count": 23,
+     "pct": 22.8
+    },
+    {
+     "label": "経済的に出られない",
+     "count": 11,
+     "pct": 10.9
+    },
+    {
+     "label": "交通手段がない",
+     "count": 20,
+     "pct": 19.8
+    },
+    {
+     "label": "その他",
+     "count": 14,
+     "pct": 13.9
+    },
+    {
+     "label": "",
+     "count": 0,
+     "pct": 0.0
+    }
+   ]
+  },
+  {
+   "group": "問2",
+   "text": "外出する際の移動手段は何ですか（いくつでも）",
+   "n": 536,
+   "total_selections": 810,
+   "multi": true,
+   "options": [
+    {
+     "label": "徒歩",
+     "count": 147,
+     "pct": 27.4
+    },
+    {
+     "label": "自転車",
+     "count": 33,
+     "pct": 6.2
+    },
+    {
+     "label": "バイク",
+     "count": 10,
+     "pct": 1.9
+    },
+    {
+     "label": "自動車（自分で運転）",
+     "count": 397,
+     "pct": 74.1
+    },
+    {
+     "label": "自動車（人に乗せてもらう）",
+     "count": 156,
+     "pct": 29.1
+    },
+    {
+     "label": "電車",
+     "count": 10,
+     "pct": 1.9
+    },
+    {
+     "label": "路線バス",
+     "count": 29,
+     "pct": 5.4
+    },
+    {
+     "label": "病院や施設のバス",
+     "count": 5,
+     "pct": 0.9
+    },
+    {
+     "label": "車いす",
+     "count": 0,
+     "pct": 0.0
+    },
+    {
+     "label": "電動車いす（カート）",
+     "count": 1,
+     "pct": 0.2
+    },
+    {
+     "label": "歩行器・シルバーカー",
+     "count": 3,
+     "pct": 0.6
+    },
+    {
+     "label": "タクシー",
+     "count": 17,
+     "pct": 3.2
+    },
+    {
+     "label": "その他",
+     "count": 2,
+     "pct": 0.4
+    },
+    {
+     "label": "",
+     "count": 0,
+     "pct": 0.0
+    }
+   ]
+  },
+  {
+   "group": "問3",
+   "text": "半年前に比べて固いものが食べにくくなりましたか",
+   "n": 554,
+   "total_selections": 554,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 182,
+     "pct": 32.9
+    },
+    {
+     "label": "いいえ",
+     "count": 372,
+     "pct": 67.1
+    }
+   ]
+  },
+  {
+   "group": "問3",
+   "text": "お茶や汁物等でむせることがありますか",
+   "n": 545,
+   "total_selections": 545,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 154,
+     "pct": 28.3
+    },
+    {
+     "label": "いいえ",
+     "count": 391,
+     "pct": 71.7
+    }
+   ]
+  },
+  {
+   "group": "問3",
+   "text": "口の渇きが気になりますか",
+   "n": 545,
+   "total_selections": 545,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 142,
+     "pct": 26.1
+    },
+    {
+     "label": "いいえ",
+     "count": 403,
+     "pct": 73.9
+    }
+   ]
+  },
+  {
+   "group": "問3",
+   "text": "歯磨き（人にやってもらう場合も含む）を毎日していますか",
+   "n": 546,
+   "total_selections": 546,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 505,
+     "pct": 92.5
+    },
+    {
+     "label": "いいえ",
+     "count": 41,
+     "pct": 7.5
+    }
+   ]
+  },
+  {
+   "group": "問3",
+   "text": "歯の数と入れ歯の利用状況をお教えください（成人の歯の総本数は、親知らずを含めて32本です）",
+   "n": 550,
+   "total_selections": 550,
+   "multi": false,
+   "options": [
+    {
+     "label": "自分の歯は20本以上、かつ入れ歯を利用",
+     "count": 77,
+     "pct": 14.0
+    },
+    {
+     "label": "自分の歯は20本以上、入れ歯の利用なし",
+     "count": 159,
+     "pct": 28.9
+    },
+    {
+     "label": "自分の歯は19本以下、かつ入れ歯を利用",
+     "count": 244,
+     "pct": 44.4
+    },
+    {
+     "label": "自分の歯は19本以下、入れ歯の利用なし",
+     "count": 70,
+     "pct": 12.7
+    }
+   ]
+  },
+  {
+   "group": "問3",
+   "text": "噛み合わせは良いですか",
+   "n": 544,
+   "total_selections": 544,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 431,
+     "pct": 79.2
+    },
+    {
+     "label": "いいえ",
+     "count": 113,
+     "pct": 20.8
+    }
+   ]
+  },
+  {
+   "group": "問3",
+   "text": "【（6）で「1．自分の歯は20本以上、かつ入れ歯を利用」「3．自分の歯は19本以下、かつ入れ歯を利用」の方のみ】毎日入れ歯の手入れをしていますか",
+   "n": 287,
+   "total_selections": 287,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 270,
+     "pct": 94.1
+    },
+    {
+     "label": "いいえ",
+     "count": 17,
+     "pct": 5.9
+    }
+   ]
+  },
+  {
+   "group": "問3",
+   "text": "6か月間で2～3kg以上の体重減少がありましたか",
+   "n": 523,
+   "total_selections": 523,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 78,
+     "pct": 14.9
+    },
+    {
+     "label": "いいえ",
+     "count": 445,
+     "pct": 85.1
+    }
+   ]
+  },
+  {
+   "group": "問3",
+   "text": "どなたかと食事をともにする機会はありますか",
+   "n": 565,
+   "total_selections": 565,
+   "multi": false,
+   "options": [
+    {
+     "label": "毎日ある",
+     "count": 329,
+     "pct": 58.2
+    },
+    {
+     "label": "週に何度かある",
+     "count": 54,
+     "pct": 9.6
+    },
+    {
+     "label": "月に何度かある",
+     "count": 108,
+     "pct": 19.1
+    },
+    {
+     "label": "年に何度かある",
+     "count": 50,
+     "pct": 8.8
+    },
+    {
+     "label": "ほとんどない",
+     "count": 24,
+     "pct": 4.2
+    }
+   ]
+  },
+  {
+   "group": "問4",
+   "text": "物忘れが多いと感じますか",
+   "n": 570,
+   "total_selections": 570,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 238,
+     "pct": 41.8
+    },
+    {
+     "label": "いいえ",
+     "count": 332,
+     "pct": 58.2
+    }
+   ]
+  },
+  {
+   "group": "問4",
+   "text": "自分で電話番号を調べて、電話をかけることをしていますか",
+   "n": 558,
+   "total_selections": 558,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 503,
+     "pct": 90.1
+    },
+    {
+     "label": "いいえ",
+     "count": 55,
+     "pct": 9.9
+    }
+   ]
+  },
+  {
+   "group": "問4",
+   "text": "今日が何月何日かわからない時がありますか",
+   "n": 558,
+   "total_selections": 558,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 169,
+     "pct": 30.3
+    },
+    {
+     "label": "いいえ",
+     "count": 389,
+     "pct": 69.7
+    }
+   ]
+  },
+  {
+   "group": "問4",
+   "text": "バスや電車を使って1人で外出していますか（自家用車でも可）",
+   "n": 568,
+   "total_selections": 568,
+   "multi": false,
+   "options": [
+    {
+     "label": "できるし、している",
+     "count": 453,
+     "pct": 79.8
+    },
+    {
+     "label": "できるけどしていない",
+     "count": 69,
+     "pct": 12.1
+    },
+    {
+     "label": "できない",
+     "count": 46,
+     "pct": 8.1
+    }
+   ]
+  },
+  {
+   "group": "問4",
+   "text": "自分で食品・日用品の買物をしていますか",
+   "n": 570,
+   "total_selections": 570,
+   "multi": false,
+   "options": [
+    {
+     "label": "できるし、している",
+     "count": 488,
+     "pct": 85.6
+    },
+    {
+     "label": "できるけどしていない",
+     "count": 66,
+     "pct": 11.6
+    },
+    {
+     "label": "できない",
+     "count": 16,
+     "pct": 2.8
+    }
+   ]
+  },
+  {
+   "group": "問4",
+   "text": "自分で食事の用意をしていますか",
+   "n": 569,
+   "total_selections": 569,
+   "multi": false,
+   "options": [
+    {
+     "label": "できるし、している",
+     "count": 424,
+     "pct": 74.5
+    },
+    {
+     "label": "できるけどしていない",
+     "count": 110,
+     "pct": 19.3
+    },
+    {
+     "label": "できない",
+     "count": 35,
+     "pct": 6.2
+    }
+   ]
+  },
+  {
+   "group": "問4",
+   "text": "自分で請求書の支払いをしていますか",
+   "n": 572,
+   "total_selections": 572,
+   "multi": false,
+   "options": [
+    {
+     "label": "できるし、している",
+     "count": 495,
+     "pct": 86.5
+    },
+    {
+     "label": "できるけどしていない",
+     "count": 58,
+     "pct": 10.1
+    },
+    {
+     "label": "できない",
+     "count": 19,
+     "pct": 3.3
+    }
+   ]
+  },
+  {
+   "group": "問4",
+   "text": "自分で預貯金の出し入れをしていますか",
+   "n": 569,
+   "total_selections": 569,
+   "multi": false,
+   "options": [
+    {
+     "label": "できるし、している",
+     "count": 489,
+     "pct": 85.9
+    },
+    {
+     "label": "できるけどしていない",
+     "count": 57,
+     "pct": 10.0
+    },
+    {
+     "label": "できない",
+     "count": 23,
+     "pct": 4.0
+    }
+   ]
+  },
+  {
+   "group": "問4",
+   "text": "年金などの書類（役所や病院などに出す書類）が書けますか",
+   "n": 560,
+   "total_selections": 560,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 501,
+     "pct": 89.5
+    },
+    {
+     "label": "いいえ",
+     "count": 59,
+     "pct": 10.5
+    }
+   ]
+  },
+  {
+   "group": "問4",
+   "text": "新聞を読んでいますか",
+   "n": 557,
+   "total_selections": 557,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 369,
+     "pct": 66.2
+    },
+    {
+     "label": "いいえ",
+     "count": 188,
+     "pct": 33.8
+    }
+   ]
+  },
+  {
+   "group": "問4",
+   "text": "本や雑誌を読んでいますか",
+   "n": 560,
+   "total_selections": 560,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 397,
+     "pct": 70.9
+    },
+    {
+     "label": "いいえ",
+     "count": 163,
+     "pct": 29.1
+    }
+   ]
+  },
+  {
+   "group": "問4",
+   "text": "健康についての記事や番組に関心がありますか",
+   "n": 556,
+   "total_selections": 556,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 506,
+     "pct": 91.0
+    },
+    {
+     "label": "いいえ",
+     "count": 50,
+     "pct": 9.0
+    }
+   ]
+  },
+  {
+   "group": "問4",
+   "text": "友人の家を訪ねていますか",
+   "n": 557,
+   "total_selections": 557,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 334,
+     "pct": 60.0
+    },
+    {
+     "label": "いいえ",
+     "count": 223,
+     "pct": 40.0
+    }
+   ]
+  },
+  {
+   "group": "問4",
+   "text": "家族や友人の相談にのっていますか",
+   "n": 556,
+   "total_selections": 556,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 438,
+     "pct": 78.8
+    },
+    {
+     "label": "いいえ",
+     "count": 118,
+     "pct": 21.2
+    }
+   ]
+  },
+  {
+   "group": "問4",
+   "text": "病人を見舞うことができますか",
+   "n": 556,
+   "total_selections": 556,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 499,
+     "pct": 89.7
+    },
+    {
+     "label": "いいえ",
+     "count": 57,
+     "pct": 10.3
+    }
+   ]
+  },
+  {
+   "group": "問4",
+   "text": "若い人に自分から話しかけることがありますか",
+   "n": 551,
+   "total_selections": 551,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 433,
+     "pct": 78.6
+    },
+    {
+     "label": "いいえ",
+     "count": 118,
+     "pct": 21.4
+    }
+   ]
+  },
+  {
+   "group": "問4",
+   "text": "趣味はありますか（「1.趣味あり」の方は（　）内に趣味を記入ください）",
+   "n": 529,
+   "total_selections": 529,
+   "multi": false,
+   "options": [
+    {
+     "label": "趣味あり",
+     "count": 360,
+     "pct": 68.1
+    },
+    {
+     "label": "",
+     "count": 0,
+     "pct": 0.0
+    },
+    {
+     "label": "思いつかない",
+     "count": 169,
+     "pct": 31.9
+    }
+   ]
+  },
+  {
+   "group": "問4",
+   "text": "生きがいはありますか（「1.生きがいあり」の方は（　）内に生きがいを記入ください）",
+   "n": 519,
+   "total_selections": 519,
+   "multi": false,
+   "options": [
+    {
+     "label": "生きがいあり",
+     "count": 287,
+     "pct": 55.3
+    },
+    {
+     "label": "",
+     "count": 0,
+     "pct": 0.0
+    },
+    {
+     "label": "思いつかない",
+     "count": 232,
+     "pct": 44.7
+    }
+   ]
+  },
+  {
+   "group": "問5",
+   "text": "ボランティア",
+   "n": 437,
+   "total_selections": 437,
+   "multi": false,
+   "options": [
+    {
+     "label": "週4回以上",
+     "count": 5,
+     "pct": 1.1
+    },
+    {
+     "label": "週2～3回",
+     "count": 11,
+     "pct": 2.5
+    },
+    {
+     "label": "週1回",
+     "count": 2,
+     "pct": 0.5
+    },
+    {
+     "label": "月1～3回",
+     "count": 28,
+     "pct": 6.4
+    },
+    {
+     "label": "年に数回",
+     "count": 52,
+     "pct": 11.9
+    },
+    {
+     "label": "参加していない",
+     "count": 339,
+     "pct": 77.6
+    }
+   ]
+  },
+  {
+   "group": "問5",
+   "text": "スポーツ",
+   "n": 443,
+   "total_selections": 443,
+   "multi": false,
+   "options": [
+    {
+     "label": "週4回以上",
+     "count": 8,
+     "pct": 1.8
+    },
+    {
+     "label": "週2～3回",
+     "count": 23,
+     "pct": 5.2
+    },
+    {
+     "label": "週1回",
+     "count": 22,
+     "pct": 5.0
+    },
+    {
+     "label": "月1～3回",
+     "count": 26,
+     "pct": 5.9
+    },
+    {
+     "label": "年に数回",
+     "count": 27,
+     "pct": 6.1
+    },
+    {
+     "label": "参加していない",
+     "count": 337,
+     "pct": 76.1
+    }
+   ]
+  },
+  {
+   "group": "問5",
+   "text": "趣味G",
+   "n": 443,
+   "total_selections": 443,
+   "multi": false,
+   "options": [
+    {
+     "label": "週4回以上",
+     "count": 10,
+     "pct": 2.3
+    },
+    {
+     "label": "週2～3回",
+     "count": 17,
+     "pct": 3.8
+    },
+    {
+     "label": "週1回",
+     "count": 11,
+     "pct": 2.5
+    },
+    {
+     "label": "月1～3回",
+     "count": 44,
+     "pct": 9.9
+    },
+    {
+     "label": "年に数回",
+     "count": 40,
+     "pct": 9.0
+    },
+    {
+     "label": "参加していない",
+     "count": 321,
+     "pct": 72.5
+    }
+   ]
+  },
+  {
+   "group": "問5",
+   "text": "学習",
+   "n": 420,
+   "total_selections": 420,
+   "multi": false,
+   "options": [
+    {
+     "label": "週4回以上",
+     "count": 2,
+     "pct": 0.5
+    },
+    {
+     "label": "週2～3回",
+     "count": 1,
+     "pct": 0.2
+    },
+    {
+     "label": "週1回",
+     "count": 4,
+     "pct": 1.0
+    },
+    {
+     "label": "月1～3回",
+     "count": 11,
+     "pct": 2.6
+    },
+    {
+     "label": "年に数回",
+     "count": 28,
+     "pct": 6.7
+    },
+    {
+     "label": "参加していない",
+     "count": 374,
+     "pct": 89.0
+    }
+   ]
+  },
+  {
+   "group": "問5",
+   "text": "通いの場",
+   "n": 439,
+   "total_selections": 439,
+   "multi": false,
+   "options": [
+    {
+     "label": "週4回以上",
+     "count": 7,
+     "pct": 1.6
+    },
+    {
+     "label": "週2～3回",
+     "count": 6,
+     "pct": 1.4
+    },
+    {
+     "label": "週1回",
+     "count": 10,
+     "pct": 2.3
+    },
+    {
+     "label": "月1～3回",
+     "count": 36,
+     "pct": 8.2
+    },
+    {
+     "label": "年に数回",
+     "count": 11,
+     "pct": 2.5
+    },
+    {
+     "label": "参加していない",
+     "count": 369,
+     "pct": 84.1
+    }
+   ]
+  },
+  {
+   "group": "問5",
+   "text": "老人クラブ",
+   "n": 453,
+   "total_selections": 453,
+   "multi": false,
+   "options": [
+    {
+     "label": "週4回以上",
+     "count": 9,
+     "pct": 2.0
+    },
+    {
+     "label": "週2～3回",
+     "count": 1,
+     "pct": 0.2
+    },
+    {
+     "label": "週1回",
+     "count": 4,
+     "pct": 0.9
+    },
+    {
+     "label": "月1～3回",
+     "count": 22,
+     "pct": 4.9
+    },
+    {
+     "label": "年に数回",
+     "count": 36,
+     "pct": 7.9
+    },
+    {
+     "label": "参加していない",
+     "count": 381,
+     "pct": 84.1
+    }
+   ]
+  },
+  {
+   "group": "問5",
+   "text": "町内会",
+   "n": 456,
+   "total_selections": 456,
+   "multi": false,
+   "options": [
+    {
+     "label": "週4回以上",
+     "count": 1,
+     "pct": 0.2
+    },
+    {
+     "label": "週2～3回",
+     "count": 7,
+     "pct": 1.5
+    },
+    {
+     "label": "週1回",
+     "count": 4,
+     "pct": 0.9
+    },
+    {
+     "label": "月1～3回",
+     "count": 34,
+     "pct": 7.5
+    },
+    {
+     "label": "年に数回",
+     "count": 139,
+     "pct": 30.5
+    },
+    {
+     "label": "参加していない",
+     "count": 271,
+     "pct": 59.4
+    }
+   ]
+  },
+  {
+   "group": "問5",
+   "text": "収入仕事",
+   "n": 458,
+   "total_selections": 458,
+   "multi": false,
+   "options": [
+    {
+     "label": "週4回以上",
+     "count": 81,
+     "pct": 17.7
+    },
+    {
+     "label": "週2～3回",
+     "count": 47,
+     "pct": 10.3
+    },
+    {
+     "label": "週1回",
+     "count": 14,
+     "pct": 3.1
+    },
+    {
+     "label": "月1～3回",
+     "count": 17,
+     "pct": 3.7
+    },
+    {
+     "label": "年に数回",
+     "count": 26,
+     "pct": 5.7
+    },
+    {
+     "label": "参加していない",
+     "count": 273,
+     "pct": 59.6
+    }
+   ]
+  },
+  {
+   "group": "問5",
+   "text": "地域住民の有志によって、健康づくり活動や趣味等のグループ活動を行って、いきいきした地域づくりを進めるとしたら、あなたはその活動に参加者として参加してみたいと思いますか",
+   "n": 543,
+   "total_selections": 543,
+   "multi": false,
+   "options": [
+    {
+     "label": "是非参加したい",
+     "count": 50,
+     "pct": 9.2
+    },
+    {
+     "label": "参加してもよい",
+     "count": 250,
+     "pct": 46.0
+    },
+    {
+     "label": "参加したくない",
+     "count": 196,
+     "pct": 36.1
+    },
+    {
+     "label": "既に参加している",
+     "count": 47,
+     "pct": 8.7
+    }
+   ]
+  },
+  {
+   "group": "問5",
+   "text": "地域住民の有志によって、健康づくり活動や趣味等のグループ活動を行って、いきいきした地域づくりを進めるとしたら、あなたはその活動に企画・運営（お世話役）として参加してみたいと思いますか",
+   "n": 539,
+   "total_selections": 539,
+   "multi": false,
+   "options": [
+    {
+     "label": "是非参加したい",
+     "count": 27,
+     "pct": 5.0
+    },
+    {
+     "label": "参加してもよい",
+     "count": 196,
+     "pct": 36.4
+    },
+    {
+     "label": "参加したくない",
+     "count": 278,
+     "pct": 51.6
+    },
+    {
+     "label": "既に参加している",
+     "count": 38,
+     "pct": 7.1
+    }
+   ]
+  },
+  {
+   "group": "問6",
+   "text": "現在のあなたの就労状態はどれですか（いくつでも）",
+   "n": 514,
+   "total_selections": 529,
+   "multi": true,
+   "options": [
+    {
+     "label": "職に就いたことがない",
+     "count": 16,
+     "pct": 3.1
+    },
+    {
+     "label": "引退した",
+     "count": 251,
+     "pct": 48.8
+    },
+    {
+     "label": "常勤（フルタイム）",
+     "count": 48,
+     "pct": 9.3
+    },
+    {
+     "label": "非常勤（パート・アルバイト等）",
+     "count": 88,
+     "pct": 17.1
+    },
+    {
+     "label": "自営業",
+     "count": 90,
+     "pct": 17.5
+    },
+    {
+     "label": "求職中",
+     "count": 5,
+     "pct": 1.0
+    },
+    {
+     "label": "その他",
+     "count": 31,
+     "pct": 6.0
+    },
+    {
+     "label": "",
+     "count": 0,
+     "pct": 0.0
+    }
+   ]
+  },
+  {
+   "group": "問6",
+   "text": "【（1）において「2．引退した」の方のみ】あなたはいつ引退しましたか",
+   "n": 217,
+   "total_selections": 217,
+   "multi": false,
+   "options": [
+    {
+     "label": "昭和",
+     "count": 7,
+     "pct": 3.2
+    },
+    {
+     "label": "平成",
+     "count": 109,
+     "pct": 50.2
+    },
+    {
+     "label": "令和",
+     "count": 101,
+     "pct": 46.5
+    }
+   ]
+  },
+  {
+   "group": "問7",
+   "text": "あなたの心配事や愚痴（ぐち）を聞いてくれる人（いくつでも）",
+   "n": 559,
+   "total_selections": 1217,
+   "multi": true,
+   "options": [
+    {
+     "label": "配偶者",
+     "count": 297,
+     "pct": 53.1
+    },
+    {
+     "label": "同居の子ども",
+     "count": 138,
+     "pct": 24.7
+    },
+    {
+     "label": "別居の子ども",
+     "count": 220,
+     "pct": 39.4
+    },
+    {
+     "label": "兄弟姉妹・親戚・親・孫",
+     "count": 216,
+     "pct": 38.6
+    },
+    {
+     "label": "近隣",
+     "count": 69,
+     "pct": 12.3
+    },
+    {
+     "label": "友人",
+     "count": 243,
+     "pct": 43.5
+    },
+    {
+     "label": "その他",
+     "count": 13,
+     "pct": 2.3
+    },
+    {
+     "label": "",
+     "count": 0,
+     "pct": 0.0
+    },
+    {
+     "label": "そのような人はいない",
+     "count": 21,
+     "pct": 3.8
+    }
+   ]
+  },
+  {
+   "group": "問7",
+   "text": "反対に、あなたが心配事や愚痴（ぐち）を聞いてあげる人（いくつでも）",
+   "n": 548,
+   "total_selections": 1187,
+   "multi": true,
+   "options": [
+    {
+     "label": "配偶者",
+     "count": 279,
+     "pct": 50.9
+    },
+    {
+     "label": "同居の子ども",
+     "count": 127,
+     "pct": 23.2
+    },
+    {
+     "label": "別居の子ども",
+     "count": 186,
+     "pct": 33.9
+    },
+    {
+     "label": "兄弟姉妹・親戚・親・孫",
+     "count": 205,
+     "pct": 37.4
+    },
+    {
+     "label": "近隣",
+     "count": 89,
+     "pct": 16.2
+    },
+    {
+     "label": "友人",
+     "count": 256,
+     "pct": 46.7
+    },
+    {
+     "label": "その他",
+     "count": 17,
+     "pct": 3.1
+    },
+    {
+     "label": "",
+     "count": 0,
+     "pct": 0.0
+    },
+    {
+     "label": "そのような人はいない",
+     "count": 28,
+     "pct": 5.1
+    }
+   ]
+  },
+  {
+   "group": "問7",
+   "text": "あなたが病気で数日間寝込んだときに、看病や世話をしてくれる人（いくつでも）",
+   "n": 554,
+   "total_selections": 910,
+   "multi": true,
+   "options": [
+    {
+     "label": "配偶者",
+     "count": 328,
+     "pct": 59.2
+    },
+    {
+     "label": "同居の子ども",
+     "count": 206,
+     "pct": 37.2
+    },
+    {
+     "label": "別居の子ども",
+     "count": 201,
+     "pct": 36.3
+    },
+    {
+     "label": "兄弟姉妹・親戚・親・孫",
+     "count": 109,
+     "pct": 19.7
+    },
+    {
+     "label": "近隣",
+     "count": 12,
+     "pct": 2.2
+    },
+    {
+     "label": "友人",
+     "count": 30,
+     "pct": 5.4
+    },
+    {
+     "label": "その他",
+     "count": 4,
+     "pct": 0.7
+    },
+    {
+     "label": "",
+     "count": 0,
+     "pct": 0.0
+    },
+    {
+     "label": "そのような人はいない",
+     "count": 20,
+     "pct": 3.6
+    }
+   ]
+  },
+  {
+   "group": "問7",
+   "text": "反対に、看病や世話をしてあげる人（いくつでも）",
+   "n": 534,
+   "total_selections": 883,
+   "multi": true,
+   "options": [
+    {
+     "label": "配偶者",
+     "count": 330,
+     "pct": 61.8
+    },
+    {
+     "label": "同居の子ども",
+     "count": 141,
+     "pct": 26.4
+    },
+    {
+     "label": "別居の子ども",
+     "count": 137,
+     "pct": 25.7
+    },
+    {
+     "label": "兄弟姉妹・親戚・親・孫",
+     "count": 148,
+     "pct": 27.7
+    },
+    {
+     "label": "近隣",
+     "count": 11,
+     "pct": 2.1
+    },
+    {
+     "label": "友人",
+     "count": 31,
+     "pct": 5.8
+    },
+    {
+     "label": "その他",
+     "count": 5,
+     "pct": 0.9
+    },
+    {
+     "label": "",
+     "count": 0,
+     "pct": 0.0
+    },
+    {
+     "label": "そのような人はいない",
+     "count": 80,
+     "pct": 15.0
+    }
+   ]
+  },
+  {
+   "group": "問7",
+   "text": "家族や友人･知人以外で、何かあったときに相談する相手を教えてください（いくつでも）",
+   "n": 484,
+   "total_selections": 627,
+   "multi": true,
+   "options": [
+    {
+     "label": "自治会・町内会・老人クラブ",
+     "count": 52,
+     "pct": 10.7
+    },
+    {
+     "label": "社会福祉協議会・民生委員",
+     "count": 85,
+     "pct": 17.6
+    },
+    {
+     "label": "ケアマネジャー",
+     "count": 31,
+     "pct": 6.4
+    },
+    {
+     "label": "医師・歯科医師・看護師",
+     "count": 131,
+     "pct": 27.1
+    },
+    {
+     "label": "地域包括支援センター・役所・役場",
+     "count": 94,
+     "pct": 19.4
+    },
+    {
+     "label": "その他",
+     "count": 46,
+     "pct": 9.5
+    },
+    {
+     "label": "",
+     "count": 0,
+     "pct": 0.0
+    },
+    {
+     "label": "そのような人はいない",
+     "count": 188,
+     "pct": 38.8
+    }
+   ]
+  },
+  {
+   "group": "問7",
+   "text": "友人・知人と会う頻度はどれくらいですか",
+   "n": 544,
+   "total_selections": 544,
+   "multi": false,
+   "options": [
+    {
+     "label": "毎日ある",
+     "count": 56,
+     "pct": 10.3
+    },
+    {
+     "label": "週に何度かある",
+     "count": 205,
+     "pct": 37.7
+    },
+    {
+     "label": "月に何度かある",
+     "count": 158,
+     "pct": 29.0
+    },
+    {
+     "label": "年に何度かある",
+     "count": 78,
+     "pct": 14.3
+    },
+    {
+     "label": "ほとんどない",
+     "count": 47,
+     "pct": 8.6
+    }
+   ]
+  },
+  {
+   "group": "問7",
+   "text": "この1か月間、何人の友人・知人と会いましたか（同じ人には何度会っても1人と数えることとします）",
+   "n": 540,
+   "total_selections": 540,
+   "multi": false,
+   "options": [
+    {
+     "label": "0人（いない）",
+     "count": 48,
+     "pct": 8.9
+    },
+    {
+     "label": "1～2人",
+     "count": 112,
+     "pct": 20.7
+    },
+    {
+     "label": "3～5人",
+     "count": 171,
+     "pct": 31.7
+    },
+    {
+     "label": "6～9人",
+     "count": 70,
+     "pct": 13.0
+    },
+    {
+     "label": "10人以上",
+     "count": 139,
+     "pct": 25.7
+    }
+   ]
+  },
+  {
+   "group": "問7",
+   "text": "よく会う友人・知人はどんな関係の人ですか（いくつでも）",
+   "n": 538,
+   "total_selections": 957,
+   "multi": true,
+   "options": [
+    {
+     "label": "近所・同じ地域の人",
+     "count": 315,
+     "pct": 58.6
+    },
+    {
+     "label": "幼なじみ",
+     "count": 66,
+     "pct": 12.3
+    },
+    {
+     "label": "学生時代の友人",
+     "count": 100,
+     "pct": 18.6
+    },
+    {
+     "label": "仕事での同僚・元同僚",
+     "count": 184,
+     "pct": 34.2
+    },
+    {
+     "label": "趣味や関心が同じ友人",
+     "count": 159,
+     "pct": 29.6
+    },
+    {
+     "label": "ボランティア等の活動での友人",
+     "count": 47,
+     "pct": 8.7
+    },
+    {
+     "label": "その他",
+     "count": 54,
+     "pct": 10.0
+    },
+    {
+     "label": "",
+     "count": 0,
+     "pct": 0.0
+    },
+    {
+     "label": "いない",
+     "count": 32,
+     "pct": 5.9
+    }
+   ]
+  },
+  {
+   "group": "問8",
+   "text": "現在のあなたの健康状態はいかがですか",
+   "n": 551,
+   "total_selections": 551,
+   "multi": false,
+   "options": [
+    {
+     "label": "とてもよい",
+     "count": 48,
+     "pct": 8.7
+    },
+    {
+     "label": "まあよい",
+     "count": 373,
+     "pct": 67.7
+    },
+    {
+     "label": "あまりよくない",
+     "count": 117,
+     "pct": 21.2
+    },
+    {
+     "label": "よくない",
+     "count": 13,
+     "pct": 2.4
+    }
+   ]
+  },
+  {
+   "group": "問8",
+   "text": "この1か月間、気分が沈んだり、ゆううつな気持ちになったりすることがありましたか",
+   "n": 545,
+   "total_selections": 545,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 189,
+     "pct": 34.7
+    },
+    {
+     "label": "いいえ",
+     "count": 356,
+     "pct": 65.3
+    }
+   ]
+  },
+  {
+   "group": "問8",
+   "text": "この1か月間、どうしても物事に対して興味がわかない、あるいは心から楽しめない感じがよくありましたか",
+   "n": 541,
+   "total_selections": 541,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 135,
+     "pct": 25.0
+    },
+    {
+     "label": "いいえ",
+     "count": 406,
+     "pct": 75.0
+    }
+   ]
+  },
+  {
+   "group": "問8",
+   "text": "お酒は飲みますか",
+   "n": 543,
+   "total_selections": 543,
+   "multi": false,
+   "options": [
+    {
+     "label": "ほぼ毎日飲む",
+     "count": 102,
+     "pct": 18.8
+    },
+    {
+     "label": "時々飲む",
+     "count": 90,
+     "pct": 16.6
+    },
+    {
+     "label": "ほとんど飲まない",
+     "count": 192,
+     "pct": 35.4
+    },
+    {
+     "label": "もともと飲まない",
+     "count": 159,
+     "pct": 29.3
+    }
+   ]
+  },
+  {
+   "group": "問8",
+   "text": "タバコは吸っていますか",
+   "n": 554,
+   "total_selections": 554,
+   "multi": false,
+   "options": [
+    {
+     "label": "ほぼ毎日吸っている",
+     "count": 31,
+     "pct": 5.6
+    },
+    {
+     "label": "時々吸っている",
+     "count": 9,
+     "pct": 1.6
+    },
+    {
+     "label": "吸っていたがやめた",
+     "count": 162,
+     "pct": 29.2
+    },
+    {
+     "label": "もともと吸っていない",
+     "count": 352,
+     "pct": 63.5
+    }
+   ]
+  },
+  {
+   "group": "問8",
+   "text": "現在治療中、または後遺症のある病気はありますか（いくつでも）",
+   "n": 528,
+   "total_selections": 1082,
+   "multi": true,
+   "options": [
+    {
+     "label": "ない",
+     "count": 61,
+     "pct": 11.6
+    },
+    {
+     "label": "高血圧",
+     "count": 286,
+     "pct": 54.2
+    },
+    {
+     "label": "脳卒中（脳出血･脳梗塞等）",
+     "count": 13,
+     "pct": 2.5
+    },
+    {
+     "label": "心臓病",
+     "count": 52,
+     "pct": 9.8
+    },
+    {
+     "label": "糖尿病",
+     "count": 93,
+     "pct": 17.6
+    },
+    {
+     "label": "高脂血症（脂質異常）",
+     "count": 95,
+     "pct": 18.0
+    },
+    {
+     "label": "呼吸器の病気（肺炎や気管支炎等）",
+     "count": 26,
+     "pct": 4.9
+    },
+    {
+     "label": "胃腸・肝臓・胆のうの病気",
+     "count": 42,
+     "pct": 8.0
+    },
+    {
+     "label": "腎臓・前立腺の病気",
+     "count": 38,
+     "pct": 7.2
+    },
+    {
+     "label": "筋骨格の病気（骨粗しょう症、関節症等）",
+     "count": 95,
+     "pct": 18.0
+    },
+    {
+     "label": "外傷（転倒・骨折等）",
+     "count": 15,
+     "pct": 2.8
+    },
+    {
+     "label": "がん（悪性新生物）",
+     "count": 29,
+     "pct": 5.5
+    },
+    {
+     "label": "血液・免疫の病気",
+     "count": 12,
+     "pct": 2.3
+    },
+    {
+     "label": "うつ病",
+     "count": 6,
+     "pct": 1.1
+    },
+    {
+     "label": "認知症(アルツハイマー病等)",
+     "count": 4,
+     "pct": 0.8
+    },
+    {
+     "label": "パーキンソン病",
+     "count": 3,
+     "pct": 0.6
+    },
+    {
+     "label": "目の病気",
+     "count": 117,
+     "pct": 22.2
+    },
+    {
+     "label": "耳の病気",
+     "count": 54,
+     "pct": 10.2
+    },
+    {
+     "label": "その他",
+     "count": 41,
+     "pct": 7.8
+    },
+    {
+     "label": "",
+     "count": 0,
+     "pct": 0.0
+    }
+   ]
+  },
+  {
+   "group": "問9",
+   "text": "認知症の症状がある又は家族に認知症の症状がある人がいますか",
+   "n": 541,
+   "total_selections": 541,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 60,
+     "pct": 11.1
+    },
+    {
+     "label": "いいえ",
+     "count": 481,
+     "pct": 88.9
+    }
+   ]
+  },
+  {
+   "group": "問9",
+   "text": "認知症に関する相談窓口を知っていますか",
+   "n": 547,
+   "total_selections": 547,
+   "multi": false,
+   "options": [
+    {
+     "label": "はい",
+     "count": 261,
+     "pct": 47.7
+    },
+    {
+     "label": "いいえ",
+     "count": 286,
+     "pct": 52.3
+    }
+   ]
+  }
+ ]
+}
