@@ -1329,14 +1329,21 @@ def main():
                 bad52.append(f"案{no}：削っても頁が減らない")
             if hotei:
                 bad52.append(f"案{no}：法定記載事項を削る案になっている")
-        # すべて行えば目安の100頁に収まること（前付4頁を含む）
+        # 小見出しを指さない案（G 用語の絞り込み・H 図を資料編へ）も、
+        # 効果が何頁かを測っておく。0頁の案は「頁のためには行う意味がない」と
+        # 示せていればよいので、減らないことを不適合にはしない。
+        n_g = EL52.pages(ES.items_without([], yougo=ES.YOUGO_NAI), EL52.BODY_H)
+        n_h = EL52.pages(ES.items_without([], figs=ES.FIG_UTSUSU), EL52.BODY_H)
+        # すべて行えば目安の約100頁に収まること（前付4頁を含む）
         allt = [t for _n, _m, tg, _h, _r in ES.AN for t in tg]
-        n_all = EL52.pages(ES.items_without(allt), EL52.BODY_H) + 4
+        n_all = EL52.pages(ES.items_without(allt, yougo=ES.YOUGO_NAI,
+                                            figs=ES.FIG_UTSUSU), EL52.BODY_H) + 4
         if n_all > 105:
             bad52.append(f"すべて行っても{n_all}頁で目安100頁に収まらない")
         chk(52, "分量の削減案が成り立つこと", not bad52,
             "・".join(bad52[:3]) if bad52
-            else f"{len([a for a in ES.AN if a[2]])}案はいずれも実在する小見出しを指し、"
+            else f"{len(ES.AN)}案（うち小見出しを指すもの{len([a for a in ES.AN if a[2]])}案）。"
+                 f"G 用語の絞り込みは{base52 - n_g}頁、H 図2点を資料編へは{base52 - n_h}頁。"
                  f"すべて行えば本文{n_all - 4}頁＋前付4頁＝{n_all}頁"
                  f"（目安100頁に対し{n_all - 100:+d}頁）")
     except Exception as e:
@@ -1815,6 +1822,56 @@ def main():
             else "確認事項が指す節・図の%d件はすべて素案に実在する" % n59)
     except Exception as e:
         chk(59, "確認事項が指す素案の節・図が実在すること", False, "照合できない（%s）" % e)
+
+    # ── 60　資5の用語と本文の言い方が合っていること ──────────────
+    #    用語集の見出し語が本文の言い方と違うと、読み手が引けない。
+    #    現に「総合相談支援業務」で載せていたが、本文は「総合相談支援」だった。
+    #    本文に現れない語は、削減案Gが落とす候補として挙げているものと一致すること。
+    #    用語を足したのに本文で使っていない、あるいは本文の言い方を変えたときに気づく。
+    try:
+        import re as _re60
+        import estimate_sakugen as _ES60
+        yougo60 = []
+        for c in SC.CH:
+            for sec in c["sections"]:
+                if sec["no"] != "資5":
+                    continue
+                for b in sec["blocks"]:
+                    if b["t"] == "table":
+                        yougo60 += [str(r[0]) for r in b["rows"]]
+        hon60 = []
+        for c in SC.CH:
+            for sec in c["sections"]:
+                if sec["no"] == "資5":
+                    continue
+                hon60.append(str(sec.get("title", "")))
+                for b in sec["blocks"]:
+                    if b["t"] in ("p", "note", "h3"):
+                        hon60.append(str(b["v"]))
+                    elif b["t"] == "bullets":
+                        hon60 += [str(x) for x in b["v"]]
+                    elif b["t"] in ("table", "kpi"):
+                        hon60 += [str(x) for r in b["rows"] for x in r]
+                        hon60 += [str(x) for x in b["head"]]
+        T60 = "\n".join(hon60)
+        nai60 = []
+        for y in yougo60:
+            key = _re60.sub(r"[（(].*?[）)]", "", y).strip()
+            if key and key not in T60:
+                nai60.append(y)
+        bad60 = []
+        sa = sorted(set(nai60) - set(_ES60.YOUGO_NAI))
+        no = sorted(set(_ES60.YOUGO_NAI) - set(nai60))
+        if sa:
+            bad60.append("本文に現れないが削減案Gに挙げていない：%s" % "・".join(sa[:3]))
+        if no:
+            bad60.append("削減案Gに挙げているが本文に現れる：%s" % "・".join(no[:3]))
+        chk(60, "資5の用語と本文の言い方が合っていること", not bad60,
+            "／".join(bad60) if bad60
+            else "用語%d語のうち本文に現れないのは%d語で、削減案Gの候補と一致する"
+                 % (len(yougo60), len(nai60)))
+    except Exception as e:
+        chk(60, "資5の用語と本文の言い方が合っていること", False, "照合できない（%s）" % e)
 
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
