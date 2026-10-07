@@ -1873,6 +1873,123 @@ def main():
     except Exception as e:
         chk(60, "資5の用語と本文の言い方が合っていること", False, "照合できない（%s）" % e)
 
+
+    # ── 61　指している小見出し（5-4(8) のような枝番）が実在すること ─────────
+    #    点検59は節（5-4）までしか見ていない。節の中の枝番を取り違えると、
+    #    読み手は別の話をしている小見出しに飛ばされる。現に、必要利用定員総数は
+    #    5-4(8) であるのに確認事項と進捗が 5-4(5)（供給の制約）・5-4(6) を指していた。
+    #    小見出しは節の中の h3 の並びの位置で数える。番号の付け方は「(1)」と
+    #    「1　」（全角の数字と空き）の2とおりがある。
+    #    枝番を振っていない節（5-6・5-7・2-8 など、小見出しに名だけを置く節）は、
+    #    位置を指す内部の言い方として用いてよいが、村に渡る欄では使わない。
+    #    【この点検では見つけられないこと】実在する枝番のうち別の小見出しを指して
+    #    しまった場合（5-4(8) と書くべきところを 5-4(5) と書いた場合）は、
+    #    数の上では正しいため通る。1件の文に複数の小見出しの話が出ることは普通であり、
+    #    近くの語から指し先を当てる試みは誤って鳴るほうが多かったため入れていない。
+    #    節の中の小見出しを入れ替えたときは、指し先を目で確かめる必要がある。
+    try:
+        import re as _re61
+        import wbs_kakunin as _KK61
+        import wbs_pending as _PD61
+        EDA61 = _re61.compile(r"^(?:[（(](\d+)[）)]|([0-9０-９]+)[　 ])")
+        kazu61 = {}
+        for c in SC.CH:
+            for sec in c["sections"]:
+                n = 0
+                for b in sec["blocks"]:
+                    if b["t"] == "h3" and EDA61.match(str(b["v"])):
+                        n += 1
+                kazu61[sec["no"]] = n
+        REF61 = _re61.compile(r"(?<![図表0-9c])([1-6]-[0-9]+)[（(](\d+)[）)]")
+        bad61, n61 = [], [0]
+
+        def mite61(t, doko, mura, mado=None):   # mado は使わない（下の断り）
+            for m in REF61.finditer(str(t)):
+                mae = str(t)[max(0, m.start() - 40):m.start()]
+                if _re61.search(r"資料[0-9０-９]", mae):
+                    continue
+                n61[0] += 1
+                sno, k = m.group(1), int(m.group(2))
+                n = kazu61.get(sno)
+                if n is None:
+                    bad61.append("%s → 素案に%sがない" % (doko, sno))
+                elif n == 0:
+                    if mura:
+                        bad61.append("%s → %sに枝番がない（村に渡る欄）" % (doko, sno))
+                elif k > n:
+                    bad61.append("%s → %s(%d) がない（%sの枝番は%d件）"
+                                 % (doko, sno, k, sno, n))
+        # 素案の本文（村に渡る）
+        for c in SC.CH:
+            for sec in c["sections"]:
+                d = "素案%s" % sec["no"]
+                for b in sec["blocks"]:
+                    if b["t"] in ("p", "note", "h3"):
+                        mite61(b["v"], d, True)
+                    elif b["t"] == "bullets":
+                        for x in b["v"]:
+                            mite61(x, d, True)
+                    elif b["t"] in ("table", "kpi"):
+                        for r in b["rows"]:
+                            for x in r:
+                                mite61(x, d, True)
+        # 確認事項（照会票として村に渡る）。見出しと本体で1件なので全文を窓にする
+        for k in _KK61.K:
+            d = "確認事項「%s」" % str(k[1])[:18]
+            zen = "%s\n%s" % (k[1], k[2])
+            mite61(k[1], d, True, zen)
+            mite61(k[2], d, True, zen)
+        # 影響度の判定：当方の手当は照会票に出る。止まる対象は内部にとどまる
+        for key, v in _PD61.IMPACT.items():
+            d = "影響度「%s」" % str(key)[:18]
+            zen = "%s\n%s\n%s" % (key, v[1], v[2])
+            mite61(v[2], d, True, zen)
+            mite61(v[1], d, False, zen)
+        chk(61, "指している小見出し（枝番）が実在すること", not bad61,
+            "・".join(sorted(set(bad61))[:3]) if bad61
+            else "枝番で指している%d件はすべて実在する（枝番を振っている節%d件）"
+                 % (n61[0], sum(1 for v in kazu61.values() if v)))
+    except Exception as e:
+        chk(61, "指している小見出し（枝番）が実在すること", False, "照合できない（%s）" % e)
+
+    # ── 62　「最も高い／低いのは〜」と述べた値が、同じ節の表にあること ────────
+    #    本文で最大値・最小値を言い切ると、表を直したときに本文だけが残る。
+    #    現に5-4(5)は「最も高いのは令和11年度で90.7%」と述べていたが、
+    #    表の値は改訂で変わっており90.7%はどこにもなかった。
+    try:
+        import re as _re62
+        SAI62 = _re62.compile(r"最も(?:高|低|大き|小さ|多|少な)[いく][^。]*?"
+                              r"([0-9]+(?:\.[0-9]+)?)\s*(%|％|人|円|千円|ポイント)")
+        bad62, n62 = [], 0
+        for c in SC.CH:
+            for sec in c["sections"]:
+                # その節の表・指標に出てくる数の集まり
+                atai = set()
+                for b in sec["blocks"]:
+                    if b["t"] in ("table", "kpi"):
+                        for r in b["rows"]:
+                            for x in r:
+                                for mm in _re62.finditer(r"[0-9]+(?:\.[0-9]+)?", str(x)):
+                                    atai.add(mm.group(0))
+                        for x in b["head"]:
+                            for mm in _re62.finditer(r"[0-9]+(?:\.[0-9]+)?", str(x)):
+                                atai.add(mm.group(0))
+                if not atai:
+                    continue
+                for b in sec["blocks"]:
+                    if b["t"] not in ("p", "note"):
+                        continue
+                    for m in SAI62.finditer(str(b["v"])):
+                        n62 += 1
+                        if m.group(1) not in atai:
+                            bad62.append("%s「最も…%s%s」が表にない"
+                                         % (sec["no"], m.group(1), m.group(2)))
+        chk(62, "最も高い・低いと述べた値が同じ節の表にあること", not bad62,
+            "・".join(sorted(set(bad62))[:3]) if bad62
+            else "最大・最小を言い切っている%d件はいずれも同じ節の表にある" % n62)
+    except Exception as e:
+        chk(62, "最も高い・低いと述べた値が同じ節の表にあること", False, "照合できない（%s）" % e)
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')

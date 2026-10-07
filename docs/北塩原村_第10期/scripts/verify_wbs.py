@@ -26,7 +26,7 @@
    点検18 成果品を組み直すのに要るものがすべて版管理にあり、置き場所をじか書き
           していないこと（作業環境が作り直されても組み直せること）
 """
-import os, re, sys
+import io, os, re, sys
 sys.dont_write_bytecode = True   # 古いバイトコードで誤った結果が出ることを防ぐ
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from spec_data import S, SHIEN, GAIBU
@@ -442,6 +442,36 @@ try:
              % (len(machi20), n_hyo, n_b7, n_lv0))
 except Exception as e:
     chk(20, "照会票が組み立てられること", False, "照合できない（%s）" % e)
+
+# ── 21 影響度の見出しに書いた件数が実際と合うこと ─────────────
+#    見出しの「（15件）」は手で書いていたため、項目を足し引きしても直し忘れる。
+#    実測して照合する。
+try:
+    import re as _re21
+    src21 = io.open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                 "wbs_pending.py"), encoding="utf-8").read()
+    jitsu21 = {}
+    for v in IMPACT.values():
+        jitsu21[v[0]] = jitsu21.get(v[0], 0) + 1
+    bad21 = []
+    midashi21 = 0
+    for m in _re21.finditer(r"影響度(\d)　(\S+?)（(\d+)件）", src21):
+        lv, nm, n = int(m.group(1)), m.group(2), int(m.group(3))
+        midashi21 += 1
+        if n != jitsu21.get(lv, 0):
+            bad21.append("影響度%d %s 見出し%d件・実際%d件" % (lv, nm, n, jitsu21.get(lv, 0)))
+    # LEVEL に定義のある影響度のうち、IMPACT に項目があるものは見出しが必要
+    nashi21 = [lv for lv in sorted(jitsu21)
+               if not _re21.search(r"影響度%d　\S+?（\d+件）" % lv, src21)]
+    if nashi21:
+        bad21.append("見出しがない影響度 %s" % nashi21)
+    chk(21, "影響度の見出しに書いた件数が実際と合うこと", not bad21,
+        "／".join(bad21[:3]) if bad21
+        else "見出し%d件すべてが実際の件数と一致（%s）"
+             % (midashi21, "・".join("影響度%d=%d件" % (k, v) for k, v in sorted(jitsu21.items()))))
+except Exception as e:
+    chk(21, "影響度の見出しに書いた件数が実際と合うこと", False, "照合できない（%s）" % e)
+
 
 print()
 if NG:
