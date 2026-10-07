@@ -184,6 +184,60 @@ def dankai(y, kosei=None):
 DANKAI = {y: dankai(y) for y in YALL}
 DANKAI_R7J = {y: dankai(y, "令和7年度") for y in YALL}
 
+# ---------------------------------------------- 国の標準の所得段階（13段階）
+# 国の標準は13段階である。当連合は第9期の条例で第13段階を多段階化して
+# 16段階としているため、標準に合わせる場合は第14段階から第16段階を
+# 第13段階へ束ねる。割合は見える化システムの
+# 「①標準段階区分・割合」の画面が標準として表示している値（公費軽減前）。
+HYOJUN_JOR = [0.4550, 0.6850, 0.6900, 0.9000, 1.0000, 1.2000, 1.3000,
+              1.5000, 1.7000, 1.9000, 2.1000, 2.3000, 2.4000]
+HYOJUN_SHOTOKU = [None] * 6 + [1200000, 2100000, 3200000, 4200000,
+                               5200000, 6200000, 7200000]
+NDAN13 = len(HYOJUN_JOR)
+# 標準の段階は標準の割合によりつつ、多段階化した3段階は条例の割合を維持する案。
+KONGO_JOR = HYOJUN_JOR + list(JORITSU[NDAN13:])
+# 13段階の構成比（第14〜16段階を第13段階へ束ねたもの）。
+KOSEI13 = {k: list(v[:NDAN13 - 1]) + [sum(v[NDAN13 - 1:])]
+           for k, v in KOSEI.items()}
+
+
+def dankai13(y, kosei=None):
+    """所得段階別の第1号被保険者数（整数・標準13段階）。"""
+    k = KOSEI13[kosei or SAIYO]
+    n = hiho_int(y)
+    return to_int([n * x for x in k], n)
+
+
+DANKAI13 = {y: dankai13(y) for y in YALL}
+
+
+def hosei(ns, jor):
+    """補正後被保険者数（段階別人数に割合を乗じた和）。"""
+    return sum(a * b for a, b in zip(ns, jor))
+
+
+# 所得段階の置き方の3案。いずれも公費による軽減前の割合による。
+#   ①現行維持　　第9期の条例による16段階・現行の割合
+#   ②国の標準　　13段階・国の標準の割合（第14〜16段階を第13段階へ束ねる）
+#   ③標準＋多段階　標準の段階は標準の割合、多段階化した3段階は条例の割合
+CASES = ["現行維持", "国の標準", "標準＋多段階"]
+
+
+def hosei_case(y, case):
+    """その年度の補正後被保険者数（案別）。"""
+    if case == "国の標準":
+        return hosei(DANKAI13[y], HYOJUN_JOR)
+    return hosei(DANKAI[y], KONGO_JOR if case == "標準＋多段階" else JORITSU)
+
+
+def kawaru_nin(y, case):
+    """割合が現行と異なる段階に属する第1号被保険者数（案別）。"""
+    if case == "現行維持":
+        return 0
+    jor = HYOJUN_JOR + [HYOJUN_JOR[-1]] * (NDAN - NDAN13) \
+        if case == "国の標準" else KONGO_JOR
+    return sum(n for n, a, b in zip(DANKAI[y], JORITSU, jor) if a != b)
+
 
 def yen(v):
     return "{:,}".format(int(round(v)))

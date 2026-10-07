@@ -1032,31 +1032,21 @@ r = note(ws, r,
 # ---- 「①標準段階区分・割合」の画面にそのまま入れる場合の値
 # 画面の標準は13段階であり、当連合の第13段階の多段階化（第14〜16段階）を
 # 第13段階へ束ねる。割合は画面に表示されている国の標準の値。
-GAMEN13_JOR = [0.4550, 0.6850, 0.6900, 0.9000, 1.0000, 1.2000, 1.3000,
-               1.5000, 1.7000, 1.9000, 2.1000, 2.3000, 2.4000]
-GAMEN13_SHOTOKU = [None] * 6 + [1200000, 2100000, 3200000, 4200000,
-                                5200000, 6200000, 7200000]
+GAMEN13_JOR = _D["HYOJUN_JOR"]
+GAMEN13_SHOTOKU = _D["HYOJUN_SHOTOKU"]
 # 画面が表示している第1号被保険者数（人口の設定が社人研のままのときの値）。
 # 「第10期」の画面（R9からR11）と「令和12年度以降」の画面（R12からR32）の写しによる。
 GAMEN13_HIHO = {"令和9年度": 9116, "令和10年度": 9110, "令和11年度": 9107,
                 "令和12年度": 9106, "令和17年度": 9166, "令和22年度": 9375,
                 "令和27年度": 9270, "令和32年度": 8993}
-_S6 = sum(_D["N_R6"])
-_KOSEI16 = [x / _S6 for x in _D["N_R6"]]
-_KOSEI13 = _KOSEI16[:12] + [sum(_KOSEI16[12:])]
+DAN13 = _D["DANKAI13"]          # 13段階へ束ねた人数（同じ配分を2か所に書かない）
+_KOSEI13 = _D["KOSEI13"][_D["SAIYO"]]
+_to_int = _D["to_int"]
 
 
 def _saidai_joyo(total, kosei):
-    """最大剰余法で合計を保って整数に配分する。"""
-    raw = [total * k for k in kosei]
-    base = [int(x) for x in raw]
-    order = sorted(range(len(raw)), key=lambda i: -(raw[i] - base[i]))
-    for j in range(total - sum(base)):
-        base[order[j % len(order)]] += 1
-    return base
-
-
-DAN13 = {y: _saidai_joyo(sum(DANKAI[y]), _KOSEI13) for y in YALL}
+    """最大剰余法で合計を保って整数に配分する（配分は算定の側から引く）。"""
+    return _to_int([total * k for k in kosei], total)
 
 r += 1
 r = lead(ws, r, "2　「①標準段階区分・割合」の画面に入れる場合（13段階へ束ねる）",
