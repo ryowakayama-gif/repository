@@ -452,6 +452,13 @@ for pt, uchi, x in SCORED:
 r = lead(ws, r, "1　当方の作業だけで進められるもの　%d件" % len(TSUZUKI),
          span=5)
 r = header(ws, r, ["", "区分", "作業", "内容", "出どころ"])
+if not TSUZUKI:
+    r = note(ws, r,
+             "ありません。据え置きのうち当方の側で確定できるもの（区分A）は"
+             "残っておらず、既定値を置けている未決の確認事項は"
+             "すべて仮置きのとおり処理しています（注4）。"
+             "ご決定をお待ちしている間に当方の側で進められる作業は"
+             "ここにはありません。", span=5, height=32)
 for i, (k, a, b, src) in enumerate(TSUZUKI, start=1):
     r = body(ws, r, [i, k, a, b, src],
              fills={2: (OK_G if k.startswith("据え置き") else MID_B)},
@@ -601,12 +608,19 @@ chk(10, "翌日の作業順位が1件以上あること",
     % (len(JUNI), sum(1 for j in JUNI if j[0] == "進める"),
        sum(1 for j in JUNI if j[0] == "催促・照会")), len(JUNI) >= 1)
 
+#   0件になるのは、据え置きの区分Aが残っておらず、かつ既定値のある未決の
+#   全件を仮置きのとおり処理し終えた場合である。その場合は適合とする
+#   （「作業がない」ことと「数えられていない」ことを区別する。
+#    令和8年10月7日に実際に0件になった）。
+_TZ_A = sum(1 for i in range(1, len(SUEOKI) + 1) if KUBUN.get(i) == "A")
+_TZ_K = sum(1 for _p, _u, x in SCORED if KITEI.get(x[0]) and x[0] not in HANEI)
 chk(11, "作業継続可能なものを数えられていること",
     "区分A＋既定値のあるもの",
-    "%d件（区分A %d・既定値 %d）"
+    "%d件（区分A %d・既定値 %d）／据え置きの区分A %d件・"
+    "既定値があり未処理 %d件"
     % (len(TSUZUKI), sum(1 for t in TSUZUKI if t[0].startswith("据え置き")),
-       sum(1 for t in TSUZUKI if t[0] == "既定値で進める")),
-    len(TSUZUKI) > 0)
+       sum(1 for t in TSUZUKI if t[0] == "既定値で進める"), _TZ_A, _TZ_K),
+    len(TSUZUKI) == _TZ_A + _TZ_K)
 
 NG_WORDS = ["に由来する", "と整合する", "1件も", "有意差がないため関係がない",
             "全国トップ級"]
