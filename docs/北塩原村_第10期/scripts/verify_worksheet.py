@@ -9,6 +9,8 @@
    表の3つの値のうち2つが入れ替わっている誤り（＋2.2／2.1／2.3pt と書いたが
    正しくは ＋2.1／2.1／2.2pt）を通してしまった。行ごと組み立てて突き合わせる。
 
+   doc67（素案第5章の組み替え）に引いた数も同じ考えで照合する。
+
    python3 scripts/verify_worksheet.py
 """
 import io, os, sys
@@ -17,6 +19,7 @@ B = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(B, 'scripts'))
 import parse_worksheet as W
 import soan_content as SC
+import shihyo_dict as SD
 
 print('■ 国の推計ワークシート・県シートと doc66 の照合')
 
@@ -119,10 +122,81 @@ c('見込交付割合 5.36／5.03／4.67%',
   [round(x*100, 2) for x in k['調整交付金見込交付割合']] == [5.36, 5.03, 4.67])
 c('収納率 99.50%', abs(k['予定保険料収納率'][0] - 0.995) < 1e-9)
 print()
+print('■ doc67（素案第5章の組み替え）の照合')
+doc = io.open(os.path.join(B, '67_素案第5章の組み替え_被保険者数と認定者数.md'),
+              encoding='utf-8').read()
+YM = ('令和9年度','令和10年度','令和11年度')
+KH, KZ, KO = W.ws('第1号被保険者数'), W.ws('前期(65～74歳)'), W.ws('後期(75歳～)')
+K84, K85, KN = W.ws('後期(75歳～84歳)'), W.ws('後期(85歳～)'), W.ws('第1号_計')
+
+# §4-1 の表が行ごと合うこと
+for y in YM + ('令和12年度',):
+    want = '| %s | %d | %d | %d | %d | %s | %.1f%% |' % (
+        y, KZ[y], KO[y], K84[y], K85[y], '{:,}'.format(int(KH[y])), KO[y]/KH[y]*100)
+    c('§4-1 %s の行' % y, want in doc, want if want not in doc else '')
+
+# §4-2 の表が行ごと合うこと
+LV = ('要支援1','要支援2','要介護1','要介護2','要介護3','要介護4','要介護5')
+for y, lab in (('令和8年度','令和8年度（実績）'),) + tuple((y, y) for y in YM):
+    want = '| %s | %s | %d | %.1f%% |' % (
+        lab, ' | '.join('%d' % W.ws('第1号_'+lv)[y] for lv in LV), KN[y], KN[y]/KH[y]*100)
+    c('§4-2 %s の行' % y, want in doc, want if want not in doc else '')
+
+# §4-3 の幅
+tot = int(sum(KN[y] for y in YM))
+c('§4-3 3か年計 629', '| 629 |' in doc and tot == 629, str(tot))
+c('§4-3 差 ＋6／＋6／＋10／＋22',
+  '| ②と①の差 | ＋6 | ＋6 | ＋10 | ＋22 | ― |' in doc
+  and [214-KN[YM[0]], 217-KN[YM[1]], 220-KN[YM[2]]] == [6,6,10] and 651-tot == 22)
+c('§4-3 ＋3.5%', '＋3.5%' in doc and abs((651-tot)/tot*100 - 3.5) < 0.05,
+  '%.2f' % ((651-tot)/tot*100))
+c('§4-3 約200円', '＋約200円' in doc and 190 <= (651-tot)/tot*100*59 <= 215,
+  '%.0f円' % ((651-tot)/tot*100*59))
+
+# §3-1 の取り違え
+c('§3-1 総数635', '635人' in doc and int(sum(W.ws('総数_計')[y] for y in YM)) == 635)
+c('§3-1 第1号629・▲3.4%', '**629人**' in doc and '**▲3.4%**' in doc
+  and abs((tot-651)/651*100 + 3.4) < 0.05, '%.2f' % ((tot-651)/651*100))
+
+# §3-2 当方の認定率を国の内訳に当てた値
+for y, v in zip(YM, (220, 224, 228)):
+    calc = KZ[y]*0.0586 + KO[y]*0.3470
+    c('§3-2 %s %d人' % (y, v), ('**%d**' % v) in doc and round(calc) == v, '%.1f' % calc)
+# 認定率
+for y, v in zip(YM, (20.7, 21.1, 21.1)):
+    c('§3-2 国の認定率 %s %.1f%%' % (y, v), abs(KN[y]/KH[y]*100 - v) < 0.05)
+c('§3-2 当方21.3／21.7／22.1%',
+  all(abs(v/KH[y]*100 - w) < 0.05 for y, v, w in
+      zip(YM, (214,217,220), (21.3,21.7,22.1))))
+
+# §4-1 の1人あたり給付費（参考シート）
+import openpyxl
+wb = openpyxl.load_workbook(W.WS, data_only=True)
+sk = wb['(参考)保険料の推計に要する係数']
+g = {}
+for r in sk.iter_rows():
+    v = [x.value for x in r]
+    for x in v[:4]:
+        if x and '1人あたり給付費' in str(x):
+            g[str(x).strip()] = v[3]
+c('§4-1 85歳以上 月80,362円', '80,362円' in doc
+  and g.get('85歳以上後期高齢者の1人あたり給付費') == 80362)
+c('§4-1 75〜84歳 17,647円', '17,647円' in doc
+  and g.get('85歳未満後期高齢者の1人あたり給付費') == 17647)
+c('§4-1 前期 4,296円', '4,296円' in doc
+  and g.get('前期高齢者の1人あたり給付費') == 4296)
+c('§4-1 令和17年度の85歳以上228人', '令和17年度（228人）' in doc and K85['令和17年度'] == 228)
+
+# 指標辞書が受領ファイルから引けていること
+c('指標辞書 令和9年度1,004人', SD.S['第1号被保険者数_令和9年度'][0] == int(KH['令和9年度']))
+c('指標辞書 認定者数 令和9年度208人', SD.S['認定者数_令和9年度'][0] == int(KN['令和9年度']))
+
+
+print()
 if ng:
     print('不適合 %d件' % len(ng))
     for x in ng:
         print('  -', x)
     sys.exit(1)
-print('適合：doc66 に引いた %d件のすべてが受領データ・素案と一致する' % N[0])
+print('適合：doc66・doc67 に引いた %d件のすべてが受領データ・素案・辞書と一致する' % N[0])
 sys.exit(0)

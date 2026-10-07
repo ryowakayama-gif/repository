@@ -589,15 +589,43 @@ def main():
             bad22.append(f"3月末の認定者数{v3:.0f}人が本文にない")
         if f"{p3}%" not in txt:
             bad22.append(f"3月末の認定率{p3}%が本文にない")
-        # 5月末の値は、時点を断った注記の中にだけあってよい
-        notes = "\n".join(str(b2.get("v", "")) for ch in SC.CH
-                           for sec in ch["sections"] for b2 in sec["blocks"]
-                           if b2["t"] == "note")
+        # 5月末の値は、時点を断った注記の中にだけあってよい。
+        # ただし同じ数字が別の指標の値として出ることがある（令和9年度の認定率20.7%）。
+        # 文または表のます目の単位で見て、第10期の年度を名指ししているものは別の指標
+        # として扱う。値だけを数えると、関わりのない一致で鳴ってしまう。
+        import re as _re22
+        MIKOMI22 = ("令和9年度", "令和10年度", "令和11年度", "令和12年度",
+                    "令和17年度", "令和22年度")
+
+        def _tani22():
+            """素案を、文と表のます目に分けて（その単位が注記かどうかと一緒に）返す"""
+            for ch in SC.CH:
+                for sec in ch["sections"]:
+                    for b2 in sec["blocks"]:
+                        if b2["t"] in ("p", "note", "h3"):
+                            for bun in _re22.split(r"(?<=。)", str(b2.get("v", ""))):
+                                yield bun, b2["t"] == "note", None
+                        elif b2["t"] == "bullets":
+                            for x in b2.get("v", []):
+                                yield str(x), False, None
+                        elif b2["t"] in ("table", "kpi"):
+                            for r in b2.get("rows", []):
+                                for x in r:
+                                    # ます目は行の見出しと一緒に見る（年度は行の見出しにある）
+                                    yield str(x), False, str(r[0])
         for val, lab in ((f"{v5:.0f}人", "認定者数"), (f"{p5}%", "認定率")):
-            n_all = txt.count(val)
-            n_note = notes.count(val)
-            if n_all > n_note:
-                bad22.append(f"5月末の{lab}{val}が注記の外にある（本文{n_all}件・注記{n_note}件）")
+            soto = 0
+            for bun, is_note, gyomi in _tani22():
+                if val not in bun:
+                    continue
+                if is_note:
+                    continue
+                mawari = bun + (gyomi or "")
+                if any(y in mawari for y in MIKOMI22):
+                    continue        # 第10期以降の見込みの値。5月末の実績ではない
+                soto += 1
+            if soto:
+                bad22.append(f"5月末の{lab}{val}が注記の外にある（{soto}件）")
     chk(22, "認定の状況が令和8年3月末で揃っていること", not bad22,
         "／".join(bad22[:2]) if bad22
         else f"3月末（{v3:.0f}人・{p3}%）を本文に用い、5月末（{v5:.0f}人・{p5}%）は注記のみ")

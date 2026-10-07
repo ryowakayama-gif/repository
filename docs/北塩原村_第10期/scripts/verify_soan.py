@@ -380,9 +380,64 @@ def main():
     chk(25, '2-3 の認定者数が見える化 B3-a と一致すること', not bad25,
         '・'.join(bad25[:3]) if bad25 else f'{len(t23["rows"]) if t23 else 0}時点すべて一致')
 
-    # ── 26　5-3 の要介護度別認定者数が再計算と一致し、計が四捨五入前の和であること ──
+    # ── 26　5-2・5-3 の値が国の推計ワークシートと一致し、検算が再計算と合うこと ──
+    #    令和8年10月7日より、5-2・5-3は国の推計ワークシート（将来推計総括表）の値を
+    #    正とする。素案は受領ファイルから引いているため、じか書きの食い違いは起きないが、
+    #    引く先を取り違える（総数と第1号を混同する等）ことは起こる。現に突合で
+    #    「うち第1号被保険者数」629人と「総数」635人を取り違えていた。
+    #    あわせて、検算として残した当方の算定（認定率×人口）が再計算と合うことを見る。
+    import parse_worksheet as _PW26
+    S52 = {sec['no']: sec for sec in SC.CH[4]['sections']}['5-2']
     S53 = {sec['no']: sec for sec in SC.CH[4]['sections']}['5-3']
-    tr = [b for b in S53['blocks'] if b['t'] == 'table' and b['head'][0] == '']
+    LV = ['要支援1', '要支援2', '要介護1', '要介護2', '要介護3', '要介護4', '要介護5']
+    YM = ('令和9年度', '令和10年度', '令和11年度', '令和12年度',
+          '令和17年度', '令和22年度')
+    bad26, n26 = [], 0
+
+    # (a) 5-2 の見込みの表＝国の年齢区分別
+    t52 = [b for b in S52['blocks'] if b['t'] == 'table'
+           and b['head'][:3] == ['', '前期高齢者', '後期高齢者']]
+    if not t52:
+        bad26.append('5-2の見込みの表がない')
+    else:
+        KZ, KO = _PW26.ws('前期(65～74歳)'), _PW26.ws('後期(75歳～)')
+        K84, K85 = _PW26.ws('後期(75歳～84歳)'), _PW26.ws('後期(85歳～)')
+        KH = _PW26.ws('第1号被保険者数')
+        for r in t52[0]['rows']:
+            y = str(r[0])
+            if y not in YM:
+                bad26.append('5-2に見込みでない年度 %s' % y)
+                continue
+            for col, src, nm in ((1, KZ, '前期'), (2, KO, '後期'),
+                                 (3, K84, '75〜84歳'), (4, K85, '85歳以上'),
+                                 (5, KH, '計')):
+                n26 += 1
+                if num(r[col]) != round(src[y]):
+                    bad26.append('5-2 %s %s 素案%s≠国%d'
+                                 % (y, nm, r[col], round(src[y])))
+
+    # (b) 5-3 の主の表＝国の第1号被保険者の要介護度別
+    t53 = [b for b in S53['blocks'] if b['t'] == 'table' and b['head'][:2] == ['', '要支援1']]
+    if not t53:
+        bad26.append('5-3の表がない')
+    else:
+        KN = _PW26.ws('第1号_計')
+        for r in t53[0]['rows']:
+            y = str(r[0])
+            if y not in _PW26.NENDO:
+                bad26.append('5-3に総括表にない年度 %s' % y)
+                continue
+            for k, lv in enumerate(LV, start=1):
+                n26 += 1
+                v = _PW26.ws('第1号_' + lv)[y]
+                if num(r[k]) != round(v):
+                    bad26.append('5-3 %s %s 素案%s≠国%d' % (y, lv, r[k], round(v)))
+            n26 += 1
+            if num(r[8]) != round(KN[y]):
+                bad26.append('5-3 %s 計 素案%s≠国%d（総数と第1号の取り違えに注意）'
+                             % (y, r[8], round(KN[y])))
+
+    # (c) 検算（当方の算定）が認定率×人口と合うこと
     trate = None
     for sec in SC.CH[4]['sections']:
         for b in sec['blocks']:
@@ -391,30 +446,26 @@ def main():
                 trate = b
     import shihyo_dict as SD2
     BAN = SD2.HIHOKENSHA_BAN
-    LV = ['要支援1', '要支援2', '要介護1', '要介護2', '要介護3', '要介護4', '要介護5']
-    bad26 = []
-    if not tr or trate is None:
-        bad26.append('5-3の表または認定率の表がない')
+    tken = [b for b in S53['blocks'] if b['t'] == 'table'
+            and b['head'][0] == '認定者数の置き方']
+    if trate is None or not tken:
+        bad26.append('認定率の表または検算の表がない')
     else:
-        rate = {r[0]: (num(r[1]) / 100, num(r[2]) / 100) for r in trate['rows'] if r[0] in LV}
-        tb = tr[0]
-        for yi, y in enumerate(tb['head'][1:], start=1):
-            if y not in BAN:
-                continue
+        rate = {r[0]: (num(r[1]) / 100, num(r[2]) / 100)
+                for r in trate['rows'] if r[0] in LV}
+        gyo = [r for r in tken[0]['rows'] if '検算' in str(r[0])]
+        if not gyo:
+            bad26.append('検算の行がない')
+        for k, y in enumerate(('令和9年', '令和10年', '令和11年'), start=1):
             zen, kou, _tot = BAN[y]
-            raw = {lv: zen * rate[lv][0] + kou * rate[lv][1] for lv in LV}
-            row = [r for r in tb['rows'] if r[0] == y]
-            if not row:
-                continue
-            got = row[0]
-            for i, lv in enumerate(LV, start=1):
-                if int(got[i]) != round(raw[lv]):
-                    bad26.append(f'{y} {lv} 素案{got[i]}≠再計算{round(raw[lv])}')
-            if int(got[8]) != round(sum(raw.values())):
-                bad26.append(f'{y} 計 素案{got[8]}≠四捨五入前の和{round(sum(raw.values()))}')
-    ok26 = not bad26 and in_md(t, '四捨五入する前に合計')
-    chk(26, '5-3 の認定者数が認定率×人口の再計算と一致すること', ok26,
-        '・'.join(bad26[:3]) if bad26 else '令和9〜22年の要介護度別と計が再計算と一致（端数の断りあり）')
+            raw = sum(zen * rate[lv][0] + kou * rate[lv][1] for lv in LV)
+            n26 += 1
+            if num(gyo[0][k]) != round(raw):
+                bad26.append('検算 %s 素案%s≠認定率×人口%d' % (y, gyo[0][k], round(raw)))
+
+    chk(26, '5-2・5-3 が国の推計ワークシートと一致し検算が再計算と合うこと', not bad26,
+        '・'.join(bad26[:3]) if bad26
+        else '国の値%d件が一致し、検算3か年が認定率×人口と一致' % n26)
 
     # ── 27　5-4 の（参考）認定者数が各年度末の値で、年率が再計算と一致すること ──
     t27 = None

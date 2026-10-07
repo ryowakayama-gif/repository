@@ -135,6 +135,108 @@ def seibi():
     return out, teiin
 
 
+# ══════════════════════════════════════════════════════════════
+# 素案から引くための窓口
+# ══════════════════════════════════════════════════════════════
+#   素案の表に国の値をじか書きすると、第2回推計で差し替わったときに
+#   書き写しの手数と取り違えが生じる。受領ファイルから引く形にして、
+#   ファイルを差し替えれば素案も変わるようにする。
+
+# 総括表の年度の並び（1_推計値サマリ と 5_保険料推計 で共通）
+NENDO = ("令和6年度", "令和7年度", "令和8年度", "令和9年度", "令和10年度",
+         "令和11年度", "令和12年度", "令和17年度", "令和22年度")
+# D〜I列が令和6〜11年度、K列が令和12年度、M列が令和17年度、O列が令和22年度
+_COL = (3, 4, 5, 6, 7, 8, 10, 12, 14)
+
+_CACHE = {}
+
+
+def nintei():
+    """要支援・要介護認定者数。(区分 → 年度ごとの値)。総数と第1号の2系列"""
+    wb = _ws()
+    s1 = wb["1_推計値サマリ"]
+    rows = [[c.value for c in r] for r in s1.iter_rows()]
+    out = {}
+    # 「２．要介護（支援）認定者数」より後。総数の節と、うち第1号の節が続く
+    st = 0
+    for i, r in enumerate(rows):
+        if r and r[0] and str(r[0]).startswith("２．要介護（支援）認定者数"):
+            st = i
+            break
+    ima = None
+    for r in rows[st:st + 22]:
+        lab = next((str(x).strip() for x in r[:3] if x is not None), "")
+        if lab == "総数":
+            ima = "総数"
+            out["総数_計"] = [r[c] for c in _COL]
+            continue
+        if lab == "うち第1号被保険者数":
+            ima = "第1号"
+            out["第1号_計"] = [r[c] for c in _COL]
+            continue
+        if ima and lab in ("要支援1", "要支援2", "要介護1", "要介護2",
+                           "要介護3", "要介護4", "要介護5"):
+            out["%s_%s" % (ima, lab)] = [r[c] for c in _COL]
+    return out
+
+
+def hihokensha():
+    """被保険者数。(区分 → 年度ごとの値)"""
+    wb = _ws()
+    s1 = wb["1_推計値サマリ"]
+    rows = [[c.value for c in r] for r in s1.iter_rows()]
+    out = {}
+    for r in rows[:16]:
+        lab = next((str(x).strip() for x in r[:3] if x is not None), "")
+        if lab in ("総数", "第1号被保険者数", "第2号被保険者数"):
+            out.setdefault(lab, [r[c] for c in _COL])
+    # 年齢区分別は 5_保険料推計 の「６．第１号被保険者数関係」。令和9年度から
+    j = jinko_zen()
+    out.update(j)
+    return out
+
+
+def jinko_zen():
+    """第1号被保険者数の年齢区分別。令和9年度以降（国の様式が持つ範囲）"""
+    wb = _ws()
+    s5 = wb["5_保険料推計"]
+    rows = [[c.value for c in r] for r in s5.iter_rows()]
+    st = 0
+    for i, r in enumerate(rows):
+        if r and r[0] and str(r[0]).startswith("６．第１号被保険者数関係"):
+            st = i
+            break
+    # G〜N列が令和9・10・11・12・17・22・27・32年度
+    out = {}
+    for lab in ("前期(65～74歳)", "後期(75歳～)",
+                "後期(75歳～84歳)", "後期(85歳～)"):
+        for r in rows[st:st + 12]:
+            if any(x is not None and str(x).strip() == lab for x in r[:3]):
+                out[lab] = [r[c] for c in (6, 7, 8, 9, 10, 11)]
+                break
+    return out
+
+
+def ws(nm):
+    """国の推計ワークシートの1系列を、年度の名で引ける形にして返す。
+
+       nm は次のいずれか。
+         被保険者：総数／第1号被保険者数／第2号被保険者数
+                   前期(65～74歳)／後期(75歳～)／後期(75歳～84歳)／後期(85歳～)
+         認定者　：総数_計／総数_要支援1 … ／第1号_計／第1号_要支援1 …
+
+       年齢区分別は国の様式が令和9年度以降しか持たないため、
+       令和6〜8年度の鍵は作らない（引くと KeyError になる）。
+    """
+    if not _CACHE:
+        _CACHE.update(hihokensha())
+        _CACHE.update(nintei())
+    v = _CACHE[nm]
+    if len(v) == 6:        # 年齢区分別。令和9年度から
+        return dict(zip(NENDO[3:], v))
+    return dict(zip(NENDO, v))
+
+
 def zero_koumoku():
     """ゼロで入っている項目を数え上げる（村の申し送りによる暫定の箇所）"""
     wb = _ws()
@@ -359,7 +461,11 @@ def kuni_nenji():
         "第1号被保険者数": pick("第1号被保険者数"),
     }
     n = nenji()
-    out["認定者数"] = n["認定者_総数"]
+    # 当方の算定（素案5-3）は第1号被保険者の分である。
+    # サマリの「総数」は第2号被保険者を含むため、突合には「うち第1号被保険者数」を使う。
+    # 総数と比べると差が ▲2.5% に見えるが、正しくは ▲3.4% である。
+    out["認定者数"] = [nintei()["第1号_計"][i] for i in (3, 4, 5)]
+    out["認定者数（総数）"] = n["認定者_総数"]
     out["サービス諸費"] = n["給付_総給付費"]
     return out
 

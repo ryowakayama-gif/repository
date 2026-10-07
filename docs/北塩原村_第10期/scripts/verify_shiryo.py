@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import shiryo_content as SH
 import soan_content as SO
 import shukei_data as SK
-from shihyo_dict import S as SHIHYO
+from shihyo_dict import S as SHIHYO, HIHOKENSHA_KUNI as SHIHYO_KUNI
 
 MD26 = os.path.join(_P.BASE, "26_第2回策定委員会_資料構成.md")
 MD24 = os.path.join(_P.BASE, "24_アンケート調査報告書_骨子案.md")
@@ -236,29 +236,53 @@ chk(13, "総数で割らない宣言と例外の明示", ok13,
     "宣言または例外の注記がない" if not ok13 else "約束ごと1と唯一の例外（回答方法）を明記")
 
 # 14 第1号被保険者数が指標辞書と一致し、資料5-2の2つの表で同じ値であること
+#    令和8年10月7日より、正本は国の推計ワークシートである。辞書は受領ファイルから
+#    引いているため、資料の値が辞書と合えば受領ファイルと合う。
 SEC52 = [sc for sc in {c["no"]: c for c in SH.CH}["資料5"]["sections"] if sc["no"] == "5-2"][0]
-t_an = [b for b in SEC52["blocks"] if b["t"] == "table" and b["head"][0] == "案"]
+# 方法の対比の表（国の値・配布データ・当方の検算）と、年度別の推計の表
+t_hoho = [b for b in SEC52["blocks"] if b["t"] == "table" and b["head"][0] == "方法"
+          and "令和9年度" in b["head"]]
 t_su = [b for b in SEC52["blocks"] if b["t"] == "table"
-        and b["rows"] and b["rows"][0][0] == "第1号被保険者数"]
-want = {y: f"{SHIHYO['第1号被保険者数_' + y][0]:,}人" for y in ("令和9年", "令和10年", "令和11年")}
+        and b["rows"] and b["rows"][-1][0] == "第1号被保険者計"]
+YD = ("令和9年度", "令和10年度", "令和11年度")
+want = {y: f"{SHIHYO['第1号被保険者数_' + y][0]:,}" for y in YD}
 bad14 = []
-if not t_an or not t_su:
+if not t_hoho or not t_su:
     bad14.append("資料5-2の表が見つからない")
 else:
-    ban = [r for r in t_an[0]["rows"] if r[0] == "B案"][0]
-    for i, y in enumerate(("令和9年", "令和10年", "令和11年")):
-        if ban[2 + i] != want[y]:
-            bad14.append(f"B案 {y} 資料{ban[2+i]}≠辞書{want[y]}")
-    head, row = t_su[0]["head"], t_su[0]["rows"][0]
-    for y in ("令和9年", "令和10年", "令和11年"):
-        if y in head and row[head.index(y)] != want[y]:
+    kuni = [r for r in t_hoho[0]["rows"] if "国の推計ワークシート" in r[0]]
+    if not kuni:
+        bad14.append("方法の対比に国の推計ワークシートの行がない")
+    else:
+        for i14, y in enumerate(YD):
+            got = str(kuni[0][1 + i14]).replace("人", "")
+            if got != want[y]:
+                bad14.append(f"国の値 {y} 資料{got}≠辞書{want[y]}")
+    head, row = t_su[0]["head"], t_su[0]["rows"][-1]
+    for y in YD:
+        if y in head and str(row[head.index(y)]) != want[y]:
             bad14.append(f"推計表 {y} 資料{row[head.index(y)]}≠辞書{want[y]}")
+    # 年齢区分別の内訳も辞書（受領ファイル）と合うこと
+    for nm, k in (("前期高齢者（65〜74歳）", 0), ("後期高齢者（75歳以上）", 1)):
+        gyo = [r for r in t_su[0]["rows"] if r[0] == nm]
+        if not gyo:
+            bad14.append(f"推計表に{nm}の行がない")
+            continue
+        for y in YD:
+            if y not in head:
+                continue
+            got = str(gyo[0][head.index(y)]).replace(",", "")
+            maku = SHIHYO_KUNI[y][k]
+            if got != str(maku):
+                bad14.append(f"{nm} {y} 資料{got}≠受領ファイル{maku}")
     if f"{SHIHYO['通いの場_分母'][0]:,}" not in "".join(
             str(b.get("v", "")) for sc in {c["no"]: c for c in SH.CH}["資料7"]["sections"]
             for b in sc["blocks"]):
         bad14.append("資料7に通いの場の分母1,009人の記載がない")
 chk(14, "第1号被保険者数が指標辞書と一致", not bad14,
-    "・".join(bad14[:3]) if bad14 else "令和9〜11年がB案・推計表・辞書で一致（1,004／995／987人）")
+    "・".join(bad14[:3]) if bad14
+    else "令和9〜11年度が国の値・推計表・辞書で一致（%s／%s／%s人）と内訳も一致"
+         % tuple(want[y] for y in YD))
 
 # 15 認定状況の4区分が資料3・doc24・集計仕様書で一致すること
 KUBUN = ["認定なし", "事業対象者", "要支援1・2", "要介護1以上"]
@@ -301,39 +325,49 @@ chk(16, "doc26 §18-5 の節数・表数が資料と一致", not bad16 and not m
 
 # 17 資料5-2 の認定者数の系列が計画素案 5-3 と一致すること
 #    他案件（金ケ崎町）で「同じ指標の推計が資料ごとに別系列だった」ことに倣う。
+#    令和8年10月7日より、どちらも国の推計ワークシートから引いているため、
+#    引く先の取り違え（総数と第1号の混同、年度のずれ）を見ることになる。
 S52 = [sc for sc in {c["no"]: c for c in SH.CH}["資料5"]["sections"] if sc["no"] == "5-2"][0]
 t_sh = [b for b in S52["blocks"] if b["t"] == "table"
-        and b["rows"] and b["rows"][0][0] == "第1号被保険者数"]
+        and b["rows"] and b["rows"][-1][0] == "認定率" and "要支援1" in [r[0] for r in b["rows"]]]
 S53 = [sc for sc in {c["no"]: c for c in SO.CH}["第5章"]["sections"] if sc["no"] == "5-3"][0]
-t_so = [b for b in S53["blocks"] if b["t"] == "table" and b["head"][0] == ""
-        and any(r[0].startswith("令和9") for r in b["rows"])]
+t_so = [b for b in S53["blocks"] if b["t"] == "table" and b["head"][:2] == ["", "要支援1"]]
 LV = ["要支援1", "要支援2", "要介護1", "要介護2", "要介護3", "要介護4", "要介護5"]
 bad17 = []
 if not t_sh or not t_so:
     bad17.append("資料5-2または素案5-3の表がない")
 else:
     sh, so = t_sh[0], t_so[0]
-    soan = {r[0].replace("（実績）", ""): r for r in so["rows"]}
-    for j, y in enumerate(sh["head"][1:], start=1):
-        key = y.replace("（実績）", "")
+    soan = {str(r[0]): r for r in so["rows"]}
+    n17 = 0
+    for j17, y in enumerate(sh["head"][1:], start=1):
+        key = str(y)
         if key not in soan:
+            bad17.append(f"資料の年度 {key} が素案5-3にない")
             continue
         for lv in LV:
             row = [r for r in sh["rows"] if r[0] == lv]
             if not row:
-                bad17.append(f"資料に{lv}の行がない"); continue
-            a = str(row[0][j])
+                bad17.append(f"資料に{lv}の行がない")
+                continue
+            n17 += 1
+            a = str(row[0][j17]).replace("人", "")
             b = str(soan[key][LV.index(lv) + 1])
             if a != b:
                 bad17.append(f"{key} {lv} 資料{a}≠素案{b}")
         kei = [r for r in sh["rows"] if r[0] == "認定者計"]
-        if kei and str(kei[0][j]).replace("人", "") != str(soan[key][8]):
-            bad17.append(f'{key} 計 資料{kei[0][j]}≠素案{soan[key][8]}')
+        if kei:
+            n17 += 1
+            if str(kei[0][j17]).replace("人", "") != str(soan[key][8]):
+                bad17.append(f'{key} 計 資料{kei[0][j17]}≠素案{soan[key][8]}'
+                             "（総数と第1号の取り違えに注意）")
         nri = [r for r in sh["rows"] if r[0] == "認定率"]
-        if nri and str(nri[0][j]) != str(soan[key][9]):
-            bad17.append(f"{key} 認定率 資料{nri[0][j]}≠素案{soan[key][9]}")
+        if nri:
+            n17 += 1
+            if str(nri[0][j17]) != str(soan[key][9]):
+                bad17.append(f"{key} 認定率 資料{nri[0][j17]}≠素案{soan[key][9]}")
 chk(17, "資料5-2 の認定者数が計画素案 5-3 と一致", not bad17,
-    "・".join(bad17[:3]) if bad17 else "令和8〜11年の要介護度別・計・認定率が一致")
+    "・".join(bad17[:3]) if bad17 else "令和6〜11年度の要介護度別・計・認定率が一致")
 
 # 18 委員会資料の本文に受託者の内部の仕組みの語がないこと
 NAIGO = ["scripts/", ".py", "verify_", ".csv", "doc2", "doc4", "doc1", "Python"]
@@ -416,7 +450,7 @@ def _vals(row):
 
 PR = {
  '認定率（前期・後期）': lambda b: b['head'] == ['区分', '前期高齢者', '後期高齢者'],
- '認定率の置き方':      lambda b: b['head'][0] == '認定率の置き方',
+ '認定者数の置き方':     lambda b: b['head'][0] == '認定者数の置き方',
  '推計のバックテスト':   lambda b: b['head'] == ['起点', '予測年', '予測', '実績', '誤差'],
  '伸びの偏りの補正候補': lambda b: '変化の実数' in b['head'] and '変化率' in b['head'],
  '保険料パターン':      lambda b: b['head'][0] == '第1号負担割合',
@@ -424,12 +458,14 @@ PR = {
  '感応度':            lambda b: '月額への効き' in b['head'],
  '中長期の見通し':      lambda b: b['head'][:2] == ['区分', '令和11年度'] and '令和11年度比' in b['head'],
  '保険料の推移':        lambda b: b['rows'][0][0] in ('北塩原村',) or str(b['rows'][0][0]).startswith('第7期'),
- '認定者数の推計':      lambda b: '要支援1' in b['head'] or (b['rows'] and str(b['rows'][0][0]) == '第1号被保険者数' and '令和8年（実績）' in b['head']),
+ '認定者数の推計':      lambda b: ('要支援1' in b['head']
+                             or (b['rows'] and str(b['rows'][-1][0]) == '認定率'
+                                 and '要支援1' in [str(r[0]) for r in b['rows']])),
  '中長期の保険料のケース': lambda b: b['head'][0] == 'ケース',
 }
 JOB = [
  ('認定率（前期・後期）',  '5-3',  '5-2',  'pos'),
- ('認定率の置き方',       '5-3',  '5-2',  'pos'),
+ ('認定者数の置き方',      '5-3',  '5-2',  'pos'),
  ('推計のバックテスト',    '5-4',  '5-4',  'pos'),
  ('伸びの偏りの補正候補',  '5-4',  '5-4',  'pos'),
  ('保険料パターン',       '5-7',  '6-3b', 'pos'),
