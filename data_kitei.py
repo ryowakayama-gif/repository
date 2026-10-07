@@ -240,13 +240,22 @@ def _from_ledger():
     回答欄に「決着しない場合は…」と書いてあるものは、それが既定値である。
     読む側がそれぞれ回答欄を切り出していると、同じ切り出しが幾つもできる。
     本モジュールで1度だけ切り出す。
+
+    台帳の書き方は2通りある。「決着しない場合は…」と
+    「決着しない場合の当方の扱い＝…」であり、後者の接続の語を
+    落とさないと「の当方の扱い＝」が既定値の先頭に残る。
     """
     out = {}
     for c in _literal("build_process_control.py", "CHECK"):
         kotae = str(c[9])
         if "決着しない場合" not in kotae:
             continue
-        v = kotae.split("決着しない場合", 1)[-1].lstrip("はは、 　").strip()
+        v = kotae.split("決着しない場合", 1)[-1]
+        for tsunagi in ("の当方の扱い＝", "の当方の扱い=", "の扱い＝", "の扱い="):
+            if v.startswith(tsunagi):
+                v = v[len(tsunagi):]
+                break
+        v = v.lstrip("は、 　").strip()
         if v:
             out[c[0]] = v.rstrip("。")
     return out
