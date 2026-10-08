@@ -567,7 +567,7 @@ def main():
         if (miss31 or bad31) else '800点は評価指標による満点。成果指向型配分枠は別枠と明記')
 
     # ── 32　給付適正化の主要3事業の名称が節をまたいで一致すること ─────────
-    SAN = ['要介護認定の適正化', 'ケアプラン等の点検', '縦覧点検・医療情報との突合']
+    SAN = ['要介護認定の適正化', 'ケアプラン等の点検', '医療情報との突合・縦覧点検']
     where32 = {}
     for c in SC.CH:
         for sec in c['sections']:
@@ -1925,7 +1925,7 @@ def main():
         chk(60, "資5の用語と本文の言い方が合っていること", False, "照合できない（%s）" % e)
 
 
-    # ── 61　指している小見出し（5-4(8) のような枝番）が実在すること ─────────
+    # ── 61　指している小見出し（5-4(8) の枝番・6-4⑦ の丸数字）が実在すること ──
     #    点検59は節（5-4）までしか見ていない。節の中の枝番を取り違えると、
     #    読み手は別の話をしている小見出しに飛ばされる。現に、必要利用定員総数は
     #    5-4(8) であるのに確認事項と進捗が 5-4(5)（供給の制約）・5-4(6) を指していた。
@@ -1951,16 +1951,73 @@ def main():
                     if b["t"] == "h3" and EDA61.match(str(b["v"])):
                         n += 1
                 kazu61[sec["no"]] = n
-        REF61 = _re61.compile(r"(?<![図表0-9c])([1-6]-[0-9]+)[（(](\d+)[）)]")
+        # 節の中の丸数字（6-4⑦ のような指し方）の在庫も持つ。
+        # 枝番ではないため REF61 では拾えず、6-4 の検証項目を1つ増やしたときに
+        # 施策3-5・5-12 から「6-4⑦」と指しても誰も確かめられなかった（令和8年10月8日）。
+        #    在庫に数えるのは、丸数字が「見出しとして立っている」ところだけである。
+        #    節のどこかに文字として現れることを条件にすると、⑦の行を落としても
+        #    「⑦は〜に備えるためのものです」という本文が残るため通ってしまう
+        #    （自己試験で確かめた）。
+        MARU61 = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮"
+        maru61 = {}
+        for c in SC.CH:
+            for sec in c["sections"]:
+                have = set()
+                for b in sec["blocks"]:
+                    if b["t"] in ("table", "kpi"):
+                        for r in b["rows"]:
+                            z = str(r[0]).strip()
+                            if z[:1] in MARU61:
+                                have.add(z[:1])
+                    elif b["t"] == "bullets":
+                        for x in b["v"]:
+                            if str(x).strip()[:1] in MARU61:
+                                have.add(str(x).strip()[:1])
+                    elif b["t"] == "h3":
+                        z = str(b["v"]).strip()
+                        if z[:1] in MARU61:
+                            have.add(z[:1])
+                maru61[sec["no"]] = have
+        # 枝番の書き方は2つある。「5-4(8)」と「1-8の3」である。
+        # 後者を見ていなかったため、1-8の項を1つ増やしたときに
+        # 指し先8か所が1つずれたまま残った（令和8年10月8日）。
+        # 「1-8の3」の後ろに漢字・カタカナが続くときは、枝番ではなく数量である
+        # （「5-7の12パターン」「4-3の4場面」「2-1の1セル」「2-1の15歳未満」）。
+        # 枝番の後ろに続くのは、ひらがなの助詞か句読点か文の終わりである。
+        REF61 = _re61.compile(
+            r"(?<![図表0-9c])([1-6]-[0-9]+)"
+            r"(?:[（(](\d+)[）)]|の([0-9０-９]+)(?![\u4e00-\u9fff\u30a0-\u30ff0-9０-９]))")
+        # 「6-4⑦」「5-8(1)②」のように節（と枝番）の後ろに丸数字を続ける指し方
+        MREF61 = _re61.compile(
+            r"(?<![図表0-9c])([1-6]-[0-9]+)(?:[（(]\d+[）)])?([%s])" % MARU61)
         bad61, n61 = [], [0]
 
+        def maru_mite61(t, doko):
+            """「6-4⑦」の丸数字が、その節に現にあること"""
+            for m in MREF61.finditer(str(t)):
+                mae = str(t)[max(0, m.start() - 40):m.start()]
+                if _re61.search(r"資料[0-9０-９]", mae):
+                    continue
+                n61[0] += 1
+                sno, mk = m.group(1), m.group(2)
+                have = maru61.get(sno)
+                if have is None:
+                    bad61.append("%s → 素案に%sがない" % (doko, sno))
+                elif mk not in have:
+                    bad61.append("%s → %s%s がない（%sにあるのは%s）"
+                                 % (doko, sno, mk, sno,
+                                    "".join(sorted(have, key=MARU61.index)) or "なし"))
+
         def mite61(t, doko, mura, mado=None):   # mado は使わない（下の断り）
+            maru_mite61(t, doko)
             for m in REF61.finditer(str(t)):
                 mae = str(t)[max(0, m.start() - 40):m.start()]
                 if _re61.search(r"資料[0-9０-９]", mae):
                     continue
                 n61[0] += 1
-                sno, k = m.group(1), int(m.group(2))
+                _z = m.group(2) or m.group(3)
+                sno, k = m.group(1), int(str(_z).translate(
+                    str.maketrans("０１２３４５６７８９", "0123456789")))
                 n = kazu61.get(sno)
                 if n is None:
                     bad61.append("%s → 素案に%sがない" % (doko, sno))
@@ -1970,6 +2027,17 @@ def main():
                 elif k > n:
                     bad61.append("%s → %s(%d) がない（%sの枝番は%d件）"
                                  % (doko, sno, k, sno, n))
+        # 「本節N」は、その節の中の枝番を指す
+        def honsetsu61(sec_no, t, doko):
+            for m in _re61.finditer(r"本節([0-9０-９]+)", str(t)):
+                n61[0] += 1
+                k = int(m.group(1).translate(
+                    str.maketrans("０１２３４５６７８９", "0123456789")))
+                have = kazu61.get(sec_no, 0)
+                if have and k > have:
+                    bad61.append("%s → 本節%d がない（%sの枝番は%d件）"
+                                 % (doko, k, sec_no, have))
+
         # 素案の本文（村に渡る）
         for c in SC.CH:
             for sec in c["sections"]:
@@ -1977,13 +2045,16 @@ def main():
                 for b in sec["blocks"]:
                     if b["t"] in ("p", "note", "h3"):
                         mite61(b["v"], d, True)
+                        honsetsu61(sec["no"], b["v"], d)
                     elif b["t"] == "bullets":
                         for x in b["v"]:
                             mite61(x, d, True)
+                            honsetsu61(sec["no"], x, d)
                     elif b["t"] in ("table", "kpi"):
                         for r in b["rows"]:
                             for x in r:
                                 mite61(x, d, True)
+                                honsetsu61(sec["no"], x, d)
         # 確認事項（照会票として村に渡る）。見出しと本体で1件なので全文を窓にする
         for k in _KK61.K:
             d = "確認事項「%s」" % str(k[1])[:18]
@@ -1996,12 +2067,13 @@ def main():
             zen = "%s\n%s\n%s" % (key, v[1], v[2])
             mite61(v[2], d, True, zen)
             mite61(v[1], d, False, zen)
-        chk(61, "指している小見出し（枝番）が実在すること", not bad61,
+        chk(61, "指している小見出し（枝番・丸数字）が実在すること", not bad61,
             "・".join(sorted(set(bad61))[:3]) if bad61
-            else "枝番で指している%d件はすべて実在する（枝番を振っている節%d件）"
+            else "枝番・丸数字で指している%d件はすべて実在する"
+                 "（枝番を振っている節%d件）"
                  % (n61[0], sum(1 for v in kazu61.values() if v)))
     except Exception as e:
-        chk(61, "指している小見出し（枝番）が実在すること", False, "照合できない（%s）" % e)
+        chk(61, "指している小見出し（枝番・丸数字）が実在すること", False, "照合できない（%s）" % e)
 
     # ── 62　「最も高い／低いのは〜」と述べた値が、同じ節の表にあること ────────
     #    本文で最大値・最小値を言い切ると、表を直したときに本文だけが残る。

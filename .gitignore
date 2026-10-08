@@ -6,3 +6,8 @@ output/_納品媒体/
 
 # 組立ての途中のファイル（build_*.py が作る中間JSON）
 output/_build/
+
+# 外部ライブラリ（npm install --prefix docs/北塩原村_第10期 で入れ直す。
+# docx の版は package.json で固定している）
+docs/北塩原村_第10期/node_modules/
+docs/北塩原村_第10期/package-lock.json
