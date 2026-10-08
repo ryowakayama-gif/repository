@@ -107,6 +107,9 @@ BUILDERS = [
     ("build_kitashiobara_houkokusho_kousei.py",
      ["output/北塩原村_アンケート報告書_構成案.xlsx"],
      "計画素案を読んで人材確保の記述の有無を確かめるため、素案の後に実行する"),
+    ("build_kitashiobara_kenkeikaku.py",
+     ["output/北塩原村_福島県計画との整合.xlsx"],
+     "計画素案を読んで県計画の確認結果の反映を確かめるため、素案の後に実行する"),
     ("build_shinchoku_hyo.py", ["output/北塩原村_業務進捗管理表.xlsx"],
      "build_kitashiobara_progress.py のデータを取り込むため、その後に実行する"),
 ]
