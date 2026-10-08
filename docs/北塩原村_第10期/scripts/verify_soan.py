@@ -2041,6 +2041,81 @@ def main():
     except Exception as e:
         chk(62, "最も高い・低いと述べた値が同じ節の表にあること", False, "照合できない（%s）" % e)
 
+    # ── 63　制度の該当・施行を、確定していないのに断定していないこと ───────
+    #    他案件（大雪）の点検から採った型である。
+    #    特定地域の指定基準は部会に素案として示された段階であり、
+    #    指定は村の意向を踏まえて都道府県が定める。
+    #    それを「該当します」「該当すると判断できます」と書いていた（令和8年10月8日に是正）。
+    #    施行の時期も同じで、「結論を得る」段階のものを「施行される」と書かない。
+    try:
+        import re as _re63
+        DANTEI63 = (
+            (r"(中山間・人口減少地域|特定地域)[^。]{0,40}(に該当します|該当すると判断|"
+             r"直接該当|該当することは確実)",
+             "特定地域の該当を断定している"),
+            (r"(第10期[^。]{0,10}計画期間中|第10期中)に施行(され|する)",
+             "施行が決まっていないのに施行されると書いている"),
+            (r"指定(を受けられることは|は確実)", "指定を断定している"),
+        )
+        bad63, n63 = [], 0
+        for c in SC.CH:
+            for sec in c["sections"]:
+                for b in sec["blocks"]:
+                    if b["t"] in ("p", "note", "h3"):
+                        tt = [str(b["v"])]
+                    elif b["t"] == "bullets":
+                        tt = [str(x) for x in b["v"]]
+                    elif b["t"] in ("table", "kpi"):
+                        tt = [str(x) for r in b["rows"] for x in r]
+                    else:
+                        continue
+                    for x in tt:
+                        n63 += 1
+                        for pat, nm in DANTEI63:
+                            if _re63.search(pat, x):
+                                bad63.append("%s：%s（%s）" % (sec["no"], nm, x[:34]))
+        chk(63, "制度の該当・施行を確定していないのに断定していないこと", not bad63,
+            "・".join(sorted(set(bad63))[:3]) if bad63
+            else "%d件の文・ます目に、確定していない制度の断定はない" % n63)
+    except Exception as e:
+        chk(63, "制度の該当・施行を確定していないのに断定していないこと", False,
+            "照合できない（%s）" % e)
+
+    # ── 64　「実績がない」と述べるときに、どの年度の実績かを書いていること ─────
+    #    他案件（大雪）の点検から採った型である。
+    #    廃止された区分には廃止の年度の実績が残ることがあり、
+    #    年度を書かないと読み手はどの時点の話か分からない。
+    try:
+        import re as _re64
+        NAI64 = _re64.compile(r"実績(が|は)?(あり|)ませ|実績なし|実績がない|実績の計上がな")
+        # 「令和5〜7年度」のように幅で書くこともある
+        NEN64 = _re64.compile(r"(令和|平成)[0-9０-９]+(?:[〜～\-][0-9０-９]+)?年")
+        bad64, n64 = [], 0
+        for c in SC.CH:
+            for sec in c["sections"]:
+                for b in sec["blocks"]:
+                    if b["t"] in ("p", "note", "h3"):
+                        tt = [str(b["v"])]
+                    elif b["t"] == "bullets":
+                        tt = [str(x) for x in b["v"]]
+                    elif b["t"] in ("table", "kpi"):
+                        # ます目は行の見出しと一緒に見る（年度が別のます目にあることがある）
+                        tt = [" ".join(str(x) for x in r) for r in b["rows"]]
+                    else:
+                        continue
+                    for x in tt:
+                        if not NAI64.search(x):
+                            continue
+                        n64 += 1
+                        if not NEN64.search(x):
+                            bad64.append("%s：%s" % (sec["no"], x[:40]))
+        chk(64, "「実績がない」にどの年度の実績かを書いていること", not bad64,
+            "・".join(sorted(set(bad64))[:3]) if bad64
+            else "「実績がない」と述べている%d件すべてに年度の断りがある" % n64)
+    except Exception as e:
+        chk(64, "「実績がない」にどの年度の実績かを書いていること", False,
+            "照合できない（%s）" % e)
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
