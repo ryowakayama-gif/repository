@@ -249,13 +249,25 @@ def note(doc, text):
 # 現物の読み出し
 # ============================================================
 def doc_profile(path):
-    """見出し・段落数・表数・SHA-256を返す。"""
+    """見出し・段落数・表数・バイトのSHA-256・内容の署名を返す。
+
+    docx は ZIP であるため、同じ内容でも作り直すとバイト列が変わる。
+    作り直すたびに値が動く欄を本書に載せると、本書自身が再現しなくなる。
+    そのため計画素案には内容の署名（段落数・表数・本文テキストの
+    SHA-256 先頭12桁。check_reproducibility.py と同じ作り方）を用い、
+    バイトのSHA-256は作り直さない元ファイルにだけ用いる。
+    """
     with open(path, "rb") as fh:
         digest = hashlib.sha256(fh.read()).hexdigest()
     d = docx.Document(path)
     heads = [(p.style.name, p.text.strip()) for p in d.paragraphs
              if p.style.name.startswith("Heading") and p.text.strip()]
-    return {"sha256": digest, "heads": heads,
+    texts = [p.text for p in d.paragraphs]
+    for t in d.tables:
+        for row in t.rows:
+            texts += [c.text for c in row.cells]
+    sig = hashlib.sha256("\n".join(texts).encode("utf-8")).hexdigest()[:12]
+    return {"sha256": digest, "sig": sig, "heads": heads,
             "paras": len(d.paragraphs), "tables": len(d.tables)}
 
 
@@ -400,16 +412,16 @@ def main():
          "本書は、その原本と現在の計画素案を機械で突き合わせた差分と、"
          "生成器に記録された修正履歴をまとめたものです。")
     table(doc, [
-        ["区分", "ファイル", "段落", "表", "見出し", "SHA-256（先頭16桁）"],
+        ["区分", "ファイル", "段落", "表", "見出し", "照合値"],
         ["元ファイル",
          "source/北塩原村_骨子案_原本_20260731.docx\n"
          "（他メンバー作成。当方は書き換えていない）",
          str(a["paras"]), str(a["tables"]), str(len(a["heads"])),
-         a["sha256"][:16]],
+         f"SHA-256\n{a['sha256'][:16]}"],
         ["計画素案", "output/北塩原村_計画素案.docx",
          str(b["paras"]), str(b["tables"]), str(len(b["heads"])),
-         b["sha256"][:16]],
-    ], [1500, 4600, 900, 700, 900, 2200])
+         f"内容の署名\n{b['sig']}"],
+    ], [1500, 4400, 900, 700, 900, 2400])
 
     h3(doc, "マーカーの意味")
     para(doc, "ご指示に従い、次の分類にマーカーを付けています。", indent=False)
