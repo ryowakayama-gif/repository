@@ -299,7 +299,7 @@ SHISAKU = [
     ["①　啓発・広報",
      "合理的配慮の提供義務化の周知、意思疎通支援従事者の養成・派遣体制の整備、"
      "障がい者等に対する虐待の防止",
-     "差別や偏見を感じている人の割合\n25.3％→15％"],
+     "差別や偏見を感じている人の割合\n25.3％→15％【要確認】"],
     ["②　保健・医療",
      "精神障害にも対応した地域包括ケアシステムの構築、医療的ケア児等への支援、"
      "高次脳機能障害のある方への支援",
@@ -307,7 +307,7 @@ SHISAKU = [
     ["③　福祉",
      "地域生活支援拠点等の年１回以上の検証、強度行動障害を有する方の支援ニーズの把握、"
      "のぞまないセルフプランの解消、人口減少地域におけるサービスの維持・確保",
-     "福祉サービスに満足している人の割合\n52％→60％"],
+     "福祉サービスに満足している人の割合\n52％→60％【要確認】"],
     ["④　教育・育成",
      "児童発達支援センターの４つの中核機能の確保、インクルージョン推進のための"
      "協議の場の設置、こども家庭センターとの連携",
@@ -318,11 +318,11 @@ SHISAKU = [
     ["⑥　生活環境",
      "災害時における障害福祉サービス提供の確保、個別避難計画の作成促進、"
      "冬季・積雪時の避難支援体制の整備",
-     "公共施設トイレの設置率\n56.8％→100％\n個別避難計画\n１件→10件"],
+     "公共施設トイレの設置率\n56.8％→100％\n個別避難計画\n１件→10件【要確認】"],
     ["⑦　スポーツ・文化",
      "スポーツ・健康増進活動による社会参加等の促進、"
      "地域共生社会の実現に向けた取組の一層の推進",
-     "外出の目的が趣味・スポーツ等である人の割合\n28.1％→40％"],
+     "外出の目的が趣味・スポーツ等である人の割合\n28.1％→40％【要確認】"],
 ]
 
 SEIKA = [
@@ -333,7 +333,9 @@ SEIKA = [
      "可能性を自立支援協議会で検討します）"],
     ["（２）精神障害にも対応した\n　　　地域包括ケアシステムの構築",
      "精神病床に１年以上入院している方　５人\n（第７期計画時点）",
-     "退院者数　１人\n心のサポーター養成講座の実施【新規】\nＫ６等によるこころの状態を把握する機会の提供【新規】"],
+     "退院者数　１人\n心のサポーター養成講座の実施【新規】\n"
+     "Ｋ６等によるこころの状態を把握する機会の提供【新規】\n"
+     "長期入院患者の地域生活への移行に伴う基盤整備量【県の算定値待ち】"],
     ["（３）福祉施設から\n　　　一般就労への移行等",
      "一般就労移行者数・就労定着支援利用者数\n（令和６年度実績を確認中）",
      "一般就労移行者数　１人\n就労定着支援事業利用者数　１人\n就労選択支援利用者数　年１〜２人【新規】"],
@@ -347,8 +349,11 @@ SEIKA = [
      "強度行動障害のある方　０人（令和４年度末）",
      "拠点の運用状況の検証　年１回以上\n強度行動障害を有する方の支援ニーズを圏域で把握【新規】"],
     ["（６）相談支援体制の\n　　　充実・強化等",
-     "基幹相談支援センター　未設置\n協議会専門部会　０か所\nセルフプラン率　０％",
-     "基幹相談支援センター　１か所（４町村広域）\n協議会専門部会　２か所\nのぞまないセルフプラン　０件【新規】"],
+     "基幹相談支援センター　未設置\n（県の第７期計画は県全体59市町村・"
+     "会津圏域13市町村での設置を目標とするが、圏域の設置は２か所）\n"
+     "協議会専門部会　０か所\nセルフプラン率　０％",
+     "基幹相談支援センター　１か所（４町村広域）\n協議会専門部会　２か所\n"
+     "のぞまないセルフプラン　０件【新規】"],
     ["（７）障がい福祉人材の確保・定着\n　　　及び生産性向上【新規】",
      "県が実施する研修への村職員の参加　１人\n（令和４年度）",
      "県研修への参加　２人以上\n県のワンストップ窓口等の支援策を村内事業所へ周知"],
@@ -376,27 +381,94 @@ SCHEDULE = [
     ["令和９年３月", "計画の確定・公表（予定）"],
 ]
 
-# 見込量の基準値は kitashiobara_common.py の個別積上げ用マスタから取る
+# 概要版に載せるサービス。計画期間に値が動くもの（生活介護・就労継続支援Ｂ型・
+# 共同生活援助・児童発達支援・放課後等デイサービス）と、新規に立つもの
+# （就労選択支援・短期入所・保育所等訪問支援）を落とさない。
+# 名称は第1次概算（計画素案の見込量表）のものに合わせる。
 MIKOMI_PICK = [
-    "居宅介護", "生活介護", "自立訓練（生活訓練）", "就労移行支援",
-    "就労継続支援A型", "就労継続支援B型", "就労定着支援", "共同生活援助",
-    "施設入所支援", "計画相談支援",
-    "児童発達支援", "放課後等デイサービス", "障がい児相談支援",
+    "居宅介護", "生活介護", "自立訓練（生活訓練）", "就労選択支援",
+    "就労移行支援", "就労継続支援Ａ型", "就労継続支援Ｂ型", "就労定着支援",
+    "短期入所（福祉型）", "共同生活援助", "施設入所支援", "計画相談支援",
+    "児童発達支援", "放課後等デイサービス", "保育所等訪問支援",
+    "障がい児相談支援",
 ]
+
+# kitashiobara_common.py の前計画マスタは就労継続支援を半角のA・Bで持つ。
+# 第1次概算は全角のＡ・Ｂで持つため、前計画の値を引くときだけ読み替える。
+ZEN_ALIAS = {"就労継続支援Ａ型": "就労継続支援A型",
+             "就労継続支援Ｂ型": "就労継続支援B型"}
+
+
+def load_mikomi():
+    """計画素案と同じ算定結果（第1次概算）を読む。
+
+    build_kitashiobara_mikomiryo.py の build_rows を呼ぶ。計画素案
+    （build_kitashiobara_kosshi_rev.py の load_mikomiryo）と同じ入口であり、
+    素案と概要版で値が二重管理にならない。
+    """
+    import os
+    import runpy
+    from kitashiobara_common import JIDO_KYUFU, KAIGO_KYUFU
+    mod = runpy.run_path(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                     "build_kitashiobara_mikomiryo.py"))
+    rows = mod["build_rows"](mod["ADULT_PLAN"], KAIGO_KYUFU)
+    rows += mod["build_rows"](mod["CHILD_PLAN"], JIDO_KYUFU)
+    return {r["name"]: r for r in rows}
+
+
+def load_kyufu():
+    """給付費の見込み（3か年計と各年度）を見込量算定ブックから読む。
+
+    概要版に数字を書き写さず、算定の正本から読む。素案 第5章12 の財源構成と
+    同じ 06_給付費の見込み シートを入口にしている。
+    """
+    import os
+    from openpyxl import load_workbook
+    path = f"{OUT_DIR}/北塩原村_サービス見込量算定.xlsx"
+    if not os.path.exists(path):
+        raise SystemExit(
+            f"見込量算定ブックが見つかりません: {path}\n"
+            "build_kitashiobara_service_estimate.py を先に実行してください。")
+    wb = load_workbook(path, data_only=True)
+    ws = wb["06_給付費の見込み"]
+    for row in ws.iter_rows(values_only=True):
+        if row and str(row[0]).strip() == "合計":
+            per, total = int(row[1]), int(row[4])
+            return per, total
+    raise LookupError("06_給付費の見込み シートに合計の行がありません")
+
+
+def _oku_man(yen):
+    """円を「1億7,286万円」の形にする（万円未満は四捨五入）。"""
+    man = round(yen / 10000)
+    oku, man = divmod(man, 10000)
+    if oku:
+        return f"{oku}億{man:,}万円"
+    return f"{man:,}万円"
 
 
 def mikomi_rows():
-    """主なサービスの基準値（令和8年度）を2列組の表にする。"""
-    base = {name: users for name, _u, _q, users, *_rest in SERVICES_ADULT}
-    base.update({name: users for name, _u, _q, users, *_rest in SERVICES_CHILD})
-    missing = [n for n in MIKOMI_PICK if n not in base]
+    """主なサービスの前計画（令和8年度）と見込み（令和11年度）を2列組にする。"""
+    zen = {name: users for name, _u, _q, users, *_rest in SERVICES_ADULT}
+    zen.update({name: users for name, _u, _q, users, *_rest in SERVICES_CHILD})
+    mikomi = load_mikomi()
+    missing = [n for n in MIKOMI_PICK if n not in mikomi]
     if missing:
-        raise LookupError(f"見込量マスタに無いサービスです: {missing}")
+        raise LookupError(f"第1次概算に無いサービスです: {missing}")
 
-    pairs = [(n, f"{base[n]}人／月") for n in MIKOMI_PICK]
+    pairs = []
+    for n in MIKOMI_PICK:
+        now = zen.get(ZEN_ALIAS.get(n, n))
+        if now is None:
+            raise LookupError(f"前計画マスタに無いサービスです: {n}")
+        to = mikomi[n]["users"]
+        moto = "―" if now == 0 else f"{now}人"
+        pairs.append((n, f"{moto}→{to}人"))
     half = (len(pairs) + 1) // 2
     left, right = pairs[:half], pairs[half:]
-    rows = [["サービス", "利用者数", "サービス", "利用者数"]]
+    rows = [["サービス", "令和８年度→令和11年度", "サービス",
+             "令和８年度→令和11年度"]]
     for i in range(half):
         a = left[i]
         b = right[i] if i < len(right) else ("", "")
@@ -537,9 +609,14 @@ def page3(doc):
          "基本理念及び基本目標のもとに、第４次北塩原村障がい者計画が定める７つの基本施策を"
          "継承します。第８期計画で新たに加わる視点は、次のとおり各施策に接続します。")
     table(doc, SHISAKU, [1500, 5706, 3000], size=8)
-    note(doc, "【要更新】目標値は第４次北塩原村障がい者計画が令和11年度を目標年度として定めた"
-              "ものです。このうちアンケートで測る指標は、本計画の策定に係るアンケート調査の"
-              "集計結果により現状値を更新します。")
+    note(doc, "【要確認】目標値は第４次北塩原村障がい者計画が令和11年度を目標年度として"
+              "定めたものです。本計画の策定に係るアンケート調査の結果と突き合わせたところ、"
+              "【要確認】を付した４指標は扱いを決める必要があります。"
+              "①差別や偏見は前回が３択・今回が頻度の設問で比較できません。"
+              "③満足している人の割合は前回がサービス利用者のみ（n＝25）で、"
+              "今回の有効回答38件を分母とする値（34.2％）とは母集団が異なります。"
+              "⑦外出の目的は本調査に設問がなく測定できません。"
+              "⑥個別避難計画は現状値１件に対し令和８年８月の村の確認が０件で食い違います。")
 
     band(doc, "９", "令和11年度に向けた成果目標")
     para(doc,
@@ -556,24 +633,28 @@ def page4(doc):
               "目標値は北塩原村障がい者自立支援協議会での審議を経て確定します。")
 
     band(doc, "10", "障がい福祉サービス等の見込量")
+    kyufu_per, kyufu_total = load_kyufu()
     bullets(doc, [
-        "本村は利用者数が少なく、１人の増減が見込量を大きく動かすため、サービスごとに"
-        "「継続・流入・流出」を１人単位で積み上げる方法により見込量を算定します。"
-        "国が示す推計方法（過去の変化率の平均、人口当たりの利用率）は、検証に用います。",
-        "本村は全域が過疎地域であるため、国の基本指針が定める地域差の是正に関する"
-        "算定方法（別表第五）の適用対象外です。",
-        "介護保険に相当するサービスがない共同生活援助等は、65歳到達後も引き続き"
-        "障がい福祉サービスを利用できます。年齢到達を理由に一律に打ち切ることはしません。",
+        "給付実績が完結した直近の年度である令和７年度を基準年度とし、その水準の維持を"
+        "基本に、成果目標のあるサービスは目標に合わせて補正しました。"
+        "国が示す推計方法（変化率の平均、人口当たり利用率）は検証に用います。"
+        "１人単位の積上げは村の個別データ受領後の第２次算定で行います。",
+        "本村は全域が過疎地域であるため、地域差の是正に関する算定方法"
+        "（基本指針 別表第五）の適用対象外です。",
+        "国の基本指針が「設定するものとする」とした要件により、生活介護・"
+        "就労継続支援Ｂ型・施設入所支援は継続入所者を除き、障がい児通所支援は"
+        "保育所等における障がい児の受入れ体制を踏まえて設定します。",
+        "介護保険に相当するサービスがない共同生活援助等は、65歳到達後も利用できます。",
+        f"第８期の３か年の給付費は約{_oku_man(kyufu_total)}"
+        f"（各年度約{_oku_man(kyufu_per)}）の見込みです。",
     ], size=8.5)
-    para(doc,
-         "・令和７年度（給付実績が完結した直近の年度）を基準年度として第1次概算を行いました。"
-         "第８期の３か年の給付費は約1億7,286万円（各年度約5,762万円）と見込んでいます。",
-         size=8.5, indent=9)
-    para(doc, "＜主なサービスの利用者数（令和８年度・基準値）＞", size=8.5, bold=True)
+    para(doc, "＜主なサービスの利用者数（令和８年度の前計画→令和11年度の見込み）＞",
+         size=8.5, bold=True)
     table(doc, mikomi_rows(), [3053, 2050, 3053, 2050], size=8,
           aligns=[None, "center", None, "center"])
-    note(doc, "【要更新】基準値は現行計画（第７期）の令和８年度見込量です。"
-              "令和７年度の給付実績を村と精査のうえ、令和９〜11年度の見込量を確定します。")
+    note(doc, "【第1次概算】令和９〜11年度の値は令和７年度の給付実績に基づく概算です。"
+              "村の個別データを受領したうえで第２次算定を行い確定します。"
+              "「―」は現行計画に計上がないサービスです。")
 
     band(doc, "11", "計画の推進体制")
     para(doc,
@@ -637,10 +718,98 @@ def main():
     pages = estimate_lines(doc)
     print(f"作成: {OUT_FILE}")
     print(f"  ページ数: {len(pages)}")
+    over = []
     for i, lines in enumerate(pages, 1):
         mark = "" if lines <= LINES_PER_PAGE else "　← 収まりません"
+        if mark:
+            over.append(i)
         print(f"  p.{i}  推定 {lines:.0f} 行 / 目安 {LINES_PER_PAGE} 行{mark}")
+    return over
+
+
+def suan_text():
+    """計画素案の全文（本文と表）を返す。概要版の数値の照合に用いる。"""
+    path = f"{OUT_DIR}/北塩原村_計画素案.docx"
+    if not os.path.exists(path):
+        raise SystemExit(
+            f"計画素案が見つかりません: {path}\n"
+            "build_kitashiobara_kosshi_rev.py を先に実行してください。")
+    d = docx.Document(path)
+    out = [p.text for p in d.paragraphs]
+    for t in d.tables:
+        for row in t.rows:
+            out += [c.text for c in row.cells]
+    return "\n".join(out)
+
+
+def verify(over):
+    """概要版の数値が計画素案と合っていることを確かめる。
+
+    概要版は素案の要約であり、数値が食い違うと村の内部で判断が割れる。
+    見込量は素案と同じ入口（build_kitashiobara_mikomiryo.py）から読んでいるが、
+    成果目標とKPIは概要版が独自に持つため、ここで素案の現物と突き合わせる。
+    """
+    ng = [f"p.{i} が1ページに収まりません" for i in over]
+    suan = suan_text()
+    mikomi = load_mikomi()
+
+    # 1 見込量の令和11年度の値が素案の表に現れていること
+    #   素案は「7人分」「12人分」のように書くため、その形で照合する。
+    for n in MIKOMI_PICK:
+        users = mikomi[n]["users"]
+        need = "0" if users == 0 else f"{users}人分"
+        if need not in suan:
+            ng.append(f"素案に{n}の見込量（{need}）が見つからない")
+
+    # 2 概要版の成果目標の数値が素案に現れていること
+    for need in ("【県の算定値待ち】", "のぞまないセルフプラン", "１か所",
+                 "医療的ケア児等コーディネーター"):
+        if need not in suan:
+            ng.append(f"素案に成果目標の記載（{need}）が見つからない")
+
+    # 3 KPIの現状値・目標値が素案 第3章5の表と一致すること
+    for genjo, mokuhyo in (("25.3％", "15％"), ("51.3％", "60％"),
+                           ("52％", "60％"), ("56.8％", "100％"),
+                           ("28.1％", "40％")):
+        for v in (genjo, mokuhyo):
+            if v not in suan:
+                ng.append(f"素案にKPIの値（{v}）が見つからない")
+
+    # 4 【要確認】を付した指標が、素案で比較不可・要確認とされていること
+    for need in ("比較不可", "条件付き可", "測定不能", "要確認。令和８年８月の村の確認では０件"):
+        if need not in suan:
+            ng.append(f"素案にKPIの判定（{need}）が見つからない。"
+                      "概要版の【要確認】を見直してください")
+
+    # 5 給付費の見込みが算定の正本と一致すること
+    #   素案 第5章12 は令和7年度の実績を載せるため、照合先は算定ブックにする。
+    per, total = load_kyufu()
+    if total != per * 3:
+        ng.append(f"給付費の3か年計が各年度の3倍でない: {total}／{per}")
+    gaiyou = docx.Document(OUT_FILE)
+    body = "\n".join([p.text for p in gaiyou.paragraphs]
+                     + [c.text for t in gaiyou.tables for r in t.rows
+                        for c in r.cells])
+    for need in (_oku_man(total), _oku_man(per)):
+        if need not in body:
+            ng.append(f"概要版に給付費の見込み（{need}）が見つからない")
+
+    # 6 廃止区分が概要版の見込量に入っていないこと
+    if "医療型児童発達支援" in MIKOMI_PICK:
+        ng.append("概要版の見込量に廃止区分が入っている")
+
+    if ng:
+        print("自己点検 不合格:")
+        for x in ng:
+            print("  -", x)
+        return False
+    print(f"自己点検: 合格　見込量{len(MIKOMI_PICK)}件・成果目標4点・KPI10点を"
+          f"素案の現物と照合／給付費{_oku_man(total)}を算定ブックと照合／"
+          f"4ページに収まる")
+    return True
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    if not verify(main()):
+        sys.exit(1)
