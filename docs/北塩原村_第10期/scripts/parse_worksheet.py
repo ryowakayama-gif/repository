@@ -342,6 +342,50 @@ def ws(nm):
     return dict(zip(NENDO, v))
 
 
+# 県シートの年度の並び
+SEIBI_NENDO = ("令和6年度", "令和7年度", "令和8年度", "令和9年度", "令和10年度", "令和11年度")
+# 素案で使う名 → 県シートの鍵
+SEIBI_MEI = {
+    "介護老人福祉施設": "特別養護老人ホーム",
+    "介護老人保健施設": "介護老人保健施設",
+    "介護医療院": "介護医療院",
+    "認知症対応型共同生活介護": "認知症対応型共同生活介護／認知症高齢者 グループホーム",
+    "特定施設入居者生活介護": "特定施設入居者生活介護（介護専用型）／有料老人ホーム （特定施設）",
+    "地域密着型介護老人福祉施設入所者生活介護":
+        "地域密着型介護老人福祉施設入所者生活介護／２９人以下の 特別養護老人ホーム",
+    "地域密着型特定施設入居者生活介護":
+        "地域密着型特定施設入居者生活介護／２９人以下の介護専用型の有料老人ﾎｰﾑ等（特定施設）",
+}
+_SCACHE = {}
+
+
+def seibi_riyou(mei):
+    """県の整備量見込みシートの利用者数を「年度の名 → 人数」で返す。
+
+       記入要領は「令和6〜8年度は、月平均の実績人数（四捨五入）」としている。
+       施設の入居者数ではなく、本村の被保険者の月平均受給者数である。
+       住所地特例の方を含む。
+    """
+    if not _SCACHE:
+        riyou, _teiin = seibi()
+        _SCACHE.update(riyou)
+    key = SEIBI_MEI.get(mei, mei)
+    if key not in _SCACHE:
+        raise KeyError("県シートに %s（鍵 %s）がない。鍵は %s"
+                       % (mei, key, sorted(_SCACHE)[:3]))
+    return dict(zip(SEIBI_NENDO, [int(round(x)) for x in _SCACHE[key]]))
+
+
+def seibi_teiin(mei):
+    """県シートの定員（非転換分）。R8末の実績見込とR9〜R11"""
+    _riyou, teiin = seibi()
+    key = {"認知症対応型共同生活介護": "認知症高齢者 グループホーム"}.get(mei, mei)
+    for k, v in teiin.items():
+        if " ".join(k.split()) == key:
+            return {x: int(round(y)) for x, y in v.items()}
+    raise KeyError("県シートの定員に %s（鍵 %s）がない" % (mei, key))
+
+
 def zero_koumoku():
     """ゼロで入っている項目を数え上げる（村の申し送りによる暫定の箇所）"""
     wb = _ws()

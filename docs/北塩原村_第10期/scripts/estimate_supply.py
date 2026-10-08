@@ -15,15 +15,31 @@
   したがって「村内定員に対する到達率」は供給の上限ではなく、
   村内で受け止められている割合を示す指標として読む。
 """
-import csv, os
+import csv, os, sys
 
+sys.dont_write_bytecode = True
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(BASE, 'data')
 
 # 村内の定員（平成30年度以降変わらず。素案2-5）
+# 認知症対応型共同生活介護の定員は、県の整備量見込みシート（令和8年10月6日提出）により
+# 令和8年度末から令和11年度までいずれも27人（整備数0）であることが確かめられている。
 TEIIN = {'認知症対応型共同生活介護': 27, '通所介護': 50}
 YEARS = ['令和9年度', '令和10年度', '令和11年度', '令和12年度', '令和17年度', '令和22年度']
-ACT = ['令和5年度', '令和6年度', '令和7年度']
+ACT = ['令和6年度', '令和7年度', '令和8年度']
+
+# 県シートを正本とするサービス。
+#   当方は見える化から受給者数を算出していたが、村が県に提出した値がある以上そちらを正とする。
+#   県シートの記入要領は「令和6〜8年度は、月平均の実績人数（四捨五入）」としており、
+#   当方の算出（令和6年度21.0人・令和7年度23.8人）は県の21人・24人と一致した。
+KEN = ('認知症対応型共同生活介護',)
+
+
+def _ken(name):
+    import parse_worksheet as W
+    v = W.seibi_riyou(name)
+    return [float(v[y]) for y in ACT] + [float(v[y]) for y in YEARS[:3]]
 
 
 def fn(v):
@@ -62,11 +78,14 @@ def main():
         if not r:
             p(f'  {name}：見込量の行が見つかりません')
             continue
-        vals = []
-        for y in ACT:
-            vals.append(fn(r.get(y + '実績(人/月)')))
-        for y in YEARS[:3]:
-            vals.append(fn(r.get(y + '(人/月)')))
+        if name in KEN:
+            vals = _ken(name)
+        else:
+            vals = []
+            for y in ACT:
+                vals.append(fn(r.get(y + '実績(人/月)')))
+            for y in YEARS[:3]:
+                vals.append(fn(r.get(y + '(人/月)')))
         p(f"  {name:<26}{cap:>5}人" + ''.join(
             f'{v/cap*100:>10.1f}%' if v is not None else f"{'―':>11}" for v in vals))
         tbl.append((name, cap, vals))
@@ -78,8 +97,10 @@ def main():
         if not act or not est:
             continue
         p(f'  ・{name}（定員{cap}人）')
-        p(f'　　令和7年度 {act[-1]:.1f}人／月＝到達率{act[-1]/cap*100:.1f}％'
-          f'　→　令和11年度 {est[-1]:.1f}人／月＝到達率{est[-1]/cap*100:.1f}％')
+        # 年度の名をじか書きすると ACT を替えたときに食い違う。並びから引く
+        akr = [y for y, v in zip(ACT, vals[:3]) if v is not None][-1]
+        p(f'　　{akr} {act[-1]:.1f}人／月＝到達率{act[-1]/cap*100:.1f}％'
+          f'　→　{YEARS[2]} {est[-1]:.1f}人／月＝到達率{est[-1]/cap*100:.1f}％')
         if max(est) > cap:
             p(f'　　計画期間に定員を超過します（最大{max(est):.1f}人／月）。')
         else:
