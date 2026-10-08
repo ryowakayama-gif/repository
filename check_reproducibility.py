@@ -120,6 +120,10 @@ BUILDERS = [
     ("build_kitashiobara_review_taiou.py",
      ["output/北塩原村_レビュー対応と素案修正方針.xlsx"],
      "村資料の実績と第1次概算を突き合わせるため、見込量算定の後に実行する"),
+    ("build_kitashiobara_member_soan_check.py",
+     ["output/北塩原村_他メンバー素案_網羅性点検.xlsx"],
+     "他メンバーの素案と告示本文・村資料を読んで網羅性を見るため、"
+     "当方の整理が揃った後に実行する"),
     ("build_shinchoku_hyo.py", ["output/北塩原村_業務進捗管理表.xlsx"],
      "build_kitashiobara_progress.py のデータを取り込むため、その後に実行する"),
 ]
