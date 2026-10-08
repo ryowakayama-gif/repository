@@ -66,6 +66,111 @@ def hokenryo():
     return out
 
 
+# 保険料の期の並び（5_保険料推計 の「２．保険料基準額の指標」以降で共通）
+KI = ("第10期", "第11期", "第12期", "第14期", "第16期", "第17期")
+_KI_COL = (5, 6, 7, 8, 9, 10)      # F〜K列
+
+
+def hokenryo_ki():
+    """期ごとの保険料基準額（月額）と取崩の影響。(項目 → 期ごとの値)"""
+    wb = _ws()
+    s5 = wb["5_保険料推計"]
+    rows = [[c.value for c in r] for r in s5.iter_rows()]
+    st = 0
+    for i, r in enumerate(rows):
+        if r and r[0] and str(r[0]).startswith("２．保険料基準額の指標"):
+            st = i
+            break
+    out = {}
+    for lab in ("保険料基準額（月額）", "準備基金取崩額の影響額",
+                "準備基金の残高（前年度末の見込額）", "準備基金取崩額",
+                "準備基金取崩割合"):
+        for r in rows[st:st + 16]:
+            if any(x is not None and str(x).strip() == lab for x in r[:3]):
+                out[lab] = dict(zip(KI, [r[c] for c in _KI_COL]))
+                break
+    return out
+
+
+# 期と年度の対応（国の様式。第11期以降は各期の初年度で代表させている）
+KI_NENDO = {"第10期": "令和9〜11年度", "第11期": "令和12年度", "第12期": "令和17年度",
+            "第14期": "令和22年度", "第16期": "令和27年度", "第17期": "令和32年度"}
+
+
+def keisu_nendo():
+    """保険料に効く係数の、年度ごとの並び。(項目 → 年度 → 値)
+
+       調整交付金の見込交付割合と2つの補正係数は年度ごとに入っている。
+       列は G〜N＝令和9・10・11・12・17・22・27・32年度。
+    """
+    wb = _ws()
+    s5 = wb["5_保険料推計"]
+    rows = [[c.value for c in r] for r in s5.iter_rows()]
+    st = 0
+    for i, r in enumerate(rows):
+        if r and r[0] and str(r[0]).startswith("５．保険料収納必要額関係"):
+            st = i
+            break
+    Y = ("令和9年度", "令和10年度", "令和11年度", "令和12年度",
+         "令和17年度", "令和22年度", "令和27年度", "令和32年度")
+    out = {}
+    for lab in ("調整交付金見込交付割合", "後期高齢者加入割合補正係数",
+                "所得段階別加入割合補正係数"):
+        for r in rows[st:]:
+            if any(x is not None and str(x).strip() == lab for x in r[:6]):
+                out[lab] = dict(zip(Y, r[6:14]))
+                break
+    return out
+
+
+def kyufu_ki():
+    """保険料基準額（月額）の内訳の、期ごとの並び。(項目 → 期 → 月額)"""
+    wb = _ws()
+    s5 = wb["5_保険料推計"]
+    rows = [[c.value for c in r] for r in s5.iter_rows()]
+    st = 0
+    for i, r in enumerate(rows):
+        if r and r[0] and "介護保険料基準額" in str(r[0]):
+            st = i
+            break
+    out = {}
+    for r in rows[st:st + 14]:
+        lab = next((str(x).strip() for x in r[:3] if x is not None), "")
+        if lab.startswith("（弾力化"):
+            break
+        if lab and isinstance(r[5], (int, float)):
+            out.setdefault(lab, dict(zip(KI, [r[c] for c in _KI_COL])))
+    return out
+
+
+def hokenryo_meisai():
+    """保険料基準額（月額）の内訳。(項目 → (第10期の月額, 構成比))
+
+       「４　介護保険料基準額（月額）の内訳」より。
+       弾力化した場合の節は値が「－」であるため、先に現れる節だけを拾う。
+    """
+    wb = _ws()
+    s5 = wb["5_保険料推計"]
+    rows = [[c.value for c in r] for r in s5.iter_rows()]
+    st = 0
+    for i, r in enumerate(rows):
+        if r and r[0] and str(r[0]).startswith("４"):
+            if "介護保険料基準額" in str(r[0]):
+                st = i
+                break
+    out = {}
+    for r in rows[st:st + 14]:
+        lab = next((str(x).strip() for x in r[:3] if x is not None), "")
+        if not lab or lab.startswith("（弾力化"):
+            if lab.startswith("（弾力化"):
+                break
+            continue
+        v, kousei = r[5], r[11]
+        if isinstance(v, (int, float)):
+            out.setdefault(lab, (v, kousei if isinstance(kousei, (int, float)) else None))
+    return out
+
+
 def nenji():
     """年度別の被保険者数・認定者数・給付費（第10期の3か年）"""
     wb = _ws()
