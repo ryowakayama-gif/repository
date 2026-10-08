@@ -11,3 +11,8 @@
 openpyxl>=3.1.5
 python-docx>=1.2.0
 Pillow>=12.3.0
+pypdf>=6.19.0
+# pdfplumber は村資料・県計画のPDFの表を罫線から読むために使う。
+# pypdf のテキスト抽出では行と列が崩れ、数値を取り違える。
+pdfplumber>=0.11.10
+

@@ -117,6 +117,9 @@ BUILDERS = [
      ["output/北塩原村_障がい計画と介護保険事業計画の整合.xlsx"],
      "計画素案と介護保険事業計画の素案を読んで切り分けを見るため、"
      "素案の後に実行する"),
+    ("build_kitashiobara_review_taiou.py",
+     ["output/北塩原村_レビュー対応と素案修正方針.xlsx"],
+     "村資料の実績と第1次概算を突き合わせるため、見込量算定の後に実行する"),
     ("build_shinchoku_hyo.py", ["output/北塩原村_業務進捗管理表.xlsx"],
      "build_kitashiobara_progress.py のデータを取り込むため、その後に実行する"),
 ]
@@ -142,6 +145,8 @@ REQUIRED_LIBS = [
     ("openpyxl", "openpyxl"),
     ("docx", "python-docx"),
     ("PIL", "Pillow"),
+    ("pypdf", "pypdf"),
+    ("pdfplumber", "pdfplumber"),
 ]
 REQUIREMENTS = "requirements.txt"
 
