@@ -33,6 +33,7 @@
 import importlib.util
 import os
 import sys
+from collections import Counter
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
@@ -41,7 +42,7 @@ REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT_FILE = f"{REPO_ROOT}/output/北塩原村_業務進捗管理表.xlsx"
 
 TITLE = "北塩原村　第8期障がい福祉計画・第4期障がい児福祉計画　業務進捗管理表"
-KIJUNBI = "基準日：令和8年9月16日"
+KIJUNBI = "基準日：令和8年10月9日"
 
 # --- 小野町様式の書式定数 ---------------------------------------------------
 HEAD_FILL = "1F3864"
@@ -54,9 +55,134 @@ STATE_FILL = {
 }
 STATES = list(STATE_FILL)
 
+
+# ---------------------------------------------------------------------------
+# 村資料（依頼の詳細）・リスクの取り込み
+#   件数は PROG.VILLAGE_DOCS だけを出所とし、本文に書き写さない。
+#   以前は「29件中21件」と書き写していたため、資料を追加しても直らなかった。
+# ---------------------------------------------------------------------------
+def _load_progress():
+    """北塩原村の進捗管理データを取り込む（資料受領・リスクの二重管理を避ける）。"""
+    spec = importlib.util.spec_from_file_location(
+        "kitashiobara_progress", f"{REPO_ROOT}/build_kitashiobara_progress.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["kitashiobara_progress"] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+PROG = _load_progress()
+
+# 村資料の受領状態 → 小野町様式の語彙
+DOC_STATE = {"受領済": "完了", "一部受領": "進行中", "県照会中": "データ待ち", "未受領": "未着手"}
+# リスクの状態 → 小野町様式の語彙
+RISK_STATE = {"対応中": "進行中", "未着手": "未着手", "判断待ち": "要対応", "完了": "完了"}
+
+DOC_N = len(PROG.VILLAGE_DOCS)
+DOC_CNT = Counter(d[4] for d in PROG.VILLAGE_DOCS)
+DOC_UCHIWAKE = (f"受領済{DOC_CNT['受領済']}件・一部受領{DOC_CNT['一部受領']}件・"
+                f"県照会中{DOC_CNT['県照会中']}件・未受領{DOC_CNT['未受領']}件")
+DOC_SUMMARY = f"{DOC_N}件のうち{DOC_UCHIWAKE}"
+DOC_SHORT = f"村資料{DOC_CNT['未受領']}件が未受領（依頼{DOC_N}件中）"
+# 提供元が村でないもの（既定は北塩原村）
+DOC_SOURCE = {
+    "福島県の長期入院患者に係る基盤整備量（利用者数）": "福島県",
+    "実態調査及びPDCAサイクルに関するマニュアル（令和8年8月）": "国（県経由）",
+}
+
+# ---------------------------------------------------------------------------
+# 村資料（依頼の詳細）と WBS の対応
+#   「どの依頼が止まると、どの作業が止まるか」を1か所で持ち、
+#   05_村資料・依頼の詳細 の「関係WBS」列と 01_WBS の「必要な村資料」列の
+#   両方をここから作る（二重管理を避ける）。
+#   キーは PROG.VILLAGE_DOCS の資料名と完全一致させる（verify で照合）。
+# ---------------------------------------------------------------------------
+# 資料名 → （確定に必要なWBS, 精度を上げるWBS）
+#   「確定に必要」＝その資料が届かないとその作業を終われないもの。
+#   「精度を上げる」＝公表データ等で作業自体は済んでおり、資料で具体性が増すもの。
+#   この区別をしないと、公表データで終えた作業（3-4 圏域のサービス資源の把握、
+#   8-3 確保のための方策の記載など）が未受領資料に引きずられて永久に未完になる。
+DOC_WBS = {
+    "計画値の基礎とする系列（M-19）": (("5-10", "7-2", "7-3", "7-7", "8-7"), ()),
+    "移行管理台帳（M-18）": (("5-10", "7-2", "7-3", "8-10"), ()),
+    "施設入所支援4人の支給決定の内容（M-13）": (("7-9",), ("7-5",)),
+    "介護保険の第2号被保険者との重なり（M-14）": (("7-9",), ("2-4",)),
+    "相談支援の体制（M-20）": (("7-2",), ("8-3",)),
+    "卒業予定者の一覧（M-21）": (("7-2", "7-3"), ()),
+    "自立支援協議会の資料13点（令和8年5月25日）": (("5-10", "6-1", "6-2", "6-3"), ()),
+    "本村の過疎区分（全部過疎／一部過疎／みなし過疎）": (("7-1", "7-5"), ()),
+    "村内3事業所の詳細": (("7-2",), ("3-4", "8-3")),
+    "圏域事業所の制度活用状況": (("7-2",), ("3-4", "8-3")),
+    "令和7年度末時点の1年以上長期入院者の実数": (("7-5",), ("3-5",)),
+    "福島県の長期入院患者に係る基盤整備量（利用者数）": (("7-5",), ("1-8",)),
+    "令和6年度の一般就労移行実績・就労定着支援利用実績": (("6-2", "7-5"), ()),
+    "第7期計画の令和8年度目標の達成見込み": (("6-2", "7-5"), ()),
+    "年齢別・サービス別の匿名利用者一覧": (("3-6", "7-2", "7-3"), ()),
+    "サービス別の支給決定者数（実人数）": (("7-2", "7-3"), ()),
+    "年齢階級別の手帳所持者数・人口": (("3-6",), ("3-1", "3-2")),
+    "令和6・7年度実績、令和8年度見込": (("6-2", "7-2", "7-7"), ("6-1",)),
+    "発送対象者数（重複除外後）": (("4-1",), ("4-6",)),
+    "宛名ラベルシール": (("4-1",), ("4-6",)),
+    "特別支援学校・特別支援学級の在籍者": (("7-3",), ("3-6",)),
+    "令和9〜11年度の65歳到達者": (("7-2", "7-9"), ()),
+    "前回調査の調査結果報告書": (("5-2", "5-5"), ()),
+    "小規模公表基準": (("5-2",), ("5-6",)),
+    "障がい福祉関係の歳入歳出決算": (("7-7",), ()),
+    "令和6・7年度の障害児給付費の変動理由": (("7-3",), ("6-1",)),
+    "現行計画本編（第4次障がい者計画・第7期・第3期）": (("1-2", "8-6"), ()),
+    "圏域事業所の受入可能性": (("7-2", "7-3"), ("3-4", "8-3")),
+    "医療的ケア児者・地域生活支援拠点・個別避難計画の実態": (("7-5", "8-1"), ()),
+    "障害支援区分別人数の基準日とサービス利用状況": (("3-3", "7-1"), ()),
+    "セルフプラン率・基幹相談支援センター・就労選択支援事業所の状況": (("6-2", "7-6"), ()),
+    "障がい児の入所・申請の状況": (("6-2", "7-3"), ()),
+    "実態調査及びPDCAサイクルに関するマニュアル（令和8年8月）": (("2-5", "7-1"), ()),
+    "要介護認定の有無・要介護度（匿名利用者一覧への列追加）": (("7-9",), ("5-2",)),
+    "PDCAの評価体制・スケジュール・公表方法": (("8-2",), ("2-5",)),
+    "アンケート調査票への村の修正指示": (("4-2", "4-7"), ()),
+    "第5次総合振興計画たたき台、健康21現行計画、高齢者福祉・介護保険事業計画":
+        (("2-4",), ("8-1",)),
+    "40歳以上65歳未満の特定疾病該当者": (("7-9",), ("7-2",)),
+    "自立支援協議会の委員名簿": (("10-1",), ("9-1",)),
+}
+
+# 受領していない＝作業を止めている状態（一部受領は「届いている分で進める」）
+DOC_BLOCKING = ("未受領", "県照会中")
+
+# 優先度の並び（05_村資料・依頼の詳細 の着手順）
+DOC_PRI_ORDER = {"最優先": 0, "高": 1, "中": 2, "―": 3}
+
+
+def wbs_needs():
+    """WBS番号 → （確定に必要な村資料, 精度を上げる村資料）。優先度順に並べる。"""
+    rank = {d[1]: (DOC_PRI_ORDER.get(d[0], 9), i)
+            for i, d in enumerate(PROG.VILLAGE_DOCS)}
+    need = {}
+    for name, (hissu, seido) in DOC_WBS.items():
+        for k, nos in ((0, hissu), (1, seido)):
+            for no in nos:
+                need.setdefault(no, ([], []))[k].append(name)
+    for pair in need.values():
+        for lst in pair:
+            lst.sort(key=lambda n: rank[n])
+    return need
+
+
+def join_wbs(hissu, seido):
+    """「確定に必要／精度」の表記を1つのセルにまとめる。"""
+    left = "・".join(hissu) if hissu else "―"
+    return f"{left}（精度：{'・'.join(seido)}）" if seido else left
+
+
+def doc_state(name):
+    """村資料の受領状態。"""
+    for d in PROG.VILLAGE_DOCS:
+        if d[1] == name:
+            return d[4]
+    raise KeyError(name)
+
 # 段階（工程順）
 PHASES = [
-    ("P1 準備・現状把握", "2026-06", "2026-09", "村資料の受領（依頼29件・受領4件）"),
+    ("P1 準備・現状把握", "2026-06", "2026-09", f"村資料の受領（依頼{DOC_N}件・{DOC_UCHIWAKE}）"),
     ("P2 基礎調査", "2026-07", "2026-09",
      "―（基本指針は令和8年3月31日告示、実態調査PDCAマニュアルは同年8月改定。いずれも確認済み）"),
     ("P3 統計分析", "2026-07", "2026-10", "年齢階級別の手帳所持者数・人口（未受領）"),
@@ -98,12 +224,15 @@ WBS = [
     ("P1 準備・現状把握", "1-4", "村への資料依頼の一本化",
      "各推計ブックに分散していた村確認事項を横断で一本化し、優先度・希望期限を付す",
      "―", "受託者", "2026-08", "2026-08", "完了", 100, 2,
-     "業務進捗管理 04_村資料受領状況（29件）。最優先6件・高10件", "―"),
+     f"05_村資料・依頼の詳細（{DOC_N}件）に一本化し、WBS番号と結び付けた。"
+     f"最優先{sum(1 for d in PROG.VILLAGE_DOCS if d[0] == '最優先')}件・"
+     f"高{sum(1 for d in PROG.VILLAGE_DOCS if d[0] == '高')}件", "―"),
     ("P1 準備・現状把握", "1-5", "村資料の受領",
-     "依頼29件の受領。実績データ・匿名利用者一覧・年齢階級別人口ほか",
+     f"依頼{DOC_N}件の受領。実績データ・匿名利用者一覧・年齢階級別人口ほか",
      "―", "北塩原村", "2026-08", "2026-10", "データ待ち", 25, 5,
-     "受領済4件・一部受領3件・県照会中1件・未受領21件。"
-     "令和8年8月の調査票朱書きで実データ9件が判明",
+     f"{DOC_UCHIWAKE}。"
+     "令和8年8月の調査票朱書きで実データ9件が判明。"
+     "令和8年10月に外部レビューを踏まえて6件を追加（M-19・M-18・M-13・M-14・M-20・M-21）",
      "村の回答。P3・P6・P7のほぼ全てがこれに依存する"),
 
     # ---------------- P2 基礎調査 ----------------
@@ -840,24 +969,6 @@ CHANGES = [
 ]
 
 
-def _load_progress():
-    """北塩原村の進捗管理データを取り込む（資料受領・リスクの二重管理を避ける）。"""
-    spec = importlib.util.spec_from_file_location(
-        "kitashiobara_progress", f"{REPO_ROOT}/build_kitashiobara_progress.py")
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules["kitashiobara_progress"] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
-
-PROG = _load_progress()
-
-# 村資料の受領状態 → 小野町様式の語彙
-DOC_STATE = {"受領済": "完了", "一部受領": "進行中", "県照会中": "データ待ち", "未受領": "未着手"}
-# リスクの状態 → 小野町様式の語彙
-RISK_STATE = {"対応中": "進行中", "未着手": "未着手", "判断待ち": "要対応", "完了": "完了"}
-
-
 # ============================================================
 # 書式ヘルパー（小野町様式に合わせる）
 # ============================================================
@@ -891,21 +1002,54 @@ def paint_state(ws, row, col):
         c.fill = PatternFill("solid", fgColor=fill)
 
 
+def merge_note(ws, row, text, ncols=4, col_from=1, bold=False):
+    """複数列を結合して長い注記を1行に収める。
+
+    結合したセルは Excel が行の高さを自動調整しない。列幅の合計から
+    1行あたりの文字数を求め、行の高さを明示する（これを省くと
+    結合しただけで1行目しか見えなくなる）。
+    """
+    if ncols > 1:
+        ws.merge_cells(start_row=row, start_column=col_from,
+                       end_row=row, end_column=col_from + ncols - 1)
+    c = ws.cell(row=row, column=col_from, value=text)
+    c.alignment = Alignment(wrap_text=True, vertical="top")
+    if bold:
+        c.font = Font(bold=True)
+    width = 0.0
+    for i in range(col_from, col_from + ncols):
+        dim = ws.column_dimensions[chr(64 + i) if i <= 26 else "A"]
+        width += dim.width or 8.43
+    # 全角1文字が約2単位。少し余裕を見て1行あたりの文字数を控えめに見積もる
+    per_line = max(10, int(width / 2.2))
+    lines = max(1, -(-len(text) // per_line))
+    ws.row_dimensions[row].height = 14.5 * lines + 3
+    return c
+
+
 # ============================================================
 # シート
 # ============================================================
 def sheet_wbs(wb):
     ws = wb.create_sheet("01_WBS")
     head(ws, ["段階", "No", "作業", "内容", "仕様書根拠", "担当", "予定開始", "予定完了",
-              "状態", "進捗率", "重み", "実績・根拠", "前提条件・ブロッカー"],
-         [18, 7, 30, 42, 20, 12, 11, 11, 11, 8, 6, 52, 46],
-         freeze="C2", autofilter=f"A1:M{len(WBS) + 1}")
+              "状態", "進捗率", "重み", "実績・根拠", "前提条件・ブロッカー",
+              "必要な村資料（確定に必要／精度を上げる）"],
+         [18, 7, 30, 42, 20, 12, 11, 11, 11, 8, 6, 52, 46, 50],
+         freeze="C2", autofilter=f"A1:N{len(WBS) + 1}")
     order = {p[0]: i for i, p in enumerate(PHASES)}
     rows = sorted(WBS, key=lambda x: (order[x[0]], x[1]))
+    needs = wbs_needs()
     r = 2
     for rec in rows:
-        r = put(ws, r, list(rec), wrap_cols=(1, 3, 4, 5, 12, 13))
+        hissu, seido = needs.get(rec[1], ([], []))
+        r = put(ws, r, list(rec) + [join_wbs(hissu, seido) if (hissu or seido)
+                                    else "―"],
+                wrap_cols=(1, 3, 4, 5, 12, 13, 14))
         paint_state(ws, r - 1, 9)
+        # 確定に必要な資料が届いていない作業は「必要な村資料」を赤字にする
+        if any(doc_state(n) in DOC_BLOCKING for n in hissu):
+            ws.cell(row=r - 1, column=14).font = Font(size=10, color="C00000")
     return ws, len(rows)
 
 
@@ -947,49 +1091,97 @@ def sheet_phase_summary(wb, nrow):
     for c in range(1, 12):
         ws.cell(row=total, column=c).font = Font(bold=True)
     r = total + 2
-    ws.cell(row=r, column=1,
-            value="※ 加重進捗率＝Σ（進捗率×重み）÷Σ重み。重みは工数の目安（1〜5）。")
-    ws.cell(row=r + 1, column=1,
-            value="※ 01_WBS の「状態」「進捗率」を書き換えると、本表とダッシュボードが再計算されます。")
+    merge_note(ws, r, "※ 加重進捗率＝Σ（進捗率×重み）÷Σ重み。重みは工数の目安（1〜5）。",
+               ncols=11)
+    merge_note(ws, r + 1,
+               "※ 01_WBS の「状態」「進捗率」を書き換えると、本表とダッシュボードが"
+               "再計算されます。", ncols=11)
     return total
 
 
 def sheet_dashboard(wb, total_row):
     ws = wb.create_sheet("00_ダッシュボード")
-    for col, w in zip("ABCD", [16, 46, 30, 52]):
+    for col, w in zip("ABCD", [26, 40, 30, 52]):
         ws.column_dimensions[col].width = w
     ws["A1"] = TITLE
     ws["A1"].font = Font(size=14, bold=True)
     ws["A2"] = KIJUNBI
 
-    ws["A4"] = "全体進捗"
-    ws["B4"] = f"='02_段階サマリ'!H{total_row}"
-    ws["B4"].number_format = "0%"
-    ws["D4"] = "作業数"
-    ws["E4"] = f"='02_段階サマリ'!B{total_row}"
-    ws["G4"] = "完了"
-    ws["H4"] = f"='02_段階サマリ'!C{total_row}"
-    for coord in ("A4", "D4", "G4"):
-        ws[coord].font = Font(bold=True)
+    def band(row, labels):
+        for col, v in enumerate(labels, 1):
+            c = ws.cell(row=row, column=col, value=v)
+            c.font = Font(size=9, bold=True, color="FFFFFF")
+            c.fill = PatternFill("solid", fgColor=HEAD_FILL)
+            c.alignment = Alignment(wrap_text=True, horizontal="center",
+                                    vertical="center")
 
-    ws["A6"] = "段階"
-    ws["B6"] = "作業数"
-    ws["C6"] = "加重進捗率"
-    ws["D6"] = "律速要因"
-    for coord in ("A6", "B6", "C6", "D6"):
-        ws[coord].font = Font(size=9, bold=True, color="FFFFFF")
-        ws[coord].fill = PatternFill("solid", fgColor=HEAD_FILL)
-        ws[coord].alignment = Alignment(wrap_text=True, horizontal="center")
+    # --- 目次（どのシートに何があるか） --------------------------------
+    r = 4
+    ws.cell(row=r, column=1, value="■ 目次（シートの構成）").font = Font(bold=True)
+    r += 1
+    band(r, ["シート", "内容", "件数", "このシートで分かること"])
+    r += 1
+    for name, naiyo, ken, dekiru in [
+        ("00_ダッシュボード", "全体進捗・現況・警戒事項・直近のマイルストーン",
+         "―", "いま何が止まっていて、次に何が来るか"),
+        ("01_WBS", "作業の一覧（段階・状態・進捗率・重み・必要な村資料）",
+         f"{len(WBS)}件", "作業ごとの状態と、その作業が待っている村資料"),
+        ("02_段階サマリ", "P1〜P10の段階別集計（01_WBS から数式で再計算）",
+         f"{len(PHASES)}段階", "どの段階が遅れているか、段階ごとの律速要因"),
+        ("03_成果品管理", "仕様書5の成果品①〜③と参考成果物の版・状態",
+         f"{len(DELIVERABLES)}件", "納品物それぞれの到達点と、確定に必要なもの"),
+        ("04_工程表", "月別の予定（仕様書の工程案と実際の見込み）",
+         f"{len(SCHEDULE)}件", "いつ何をするか、工程案とのずれ"),
+        ("05_村資料・依頼の詳細",
+         "村への依頼の全文（優先度・依頼の詳細・反映先・関係WBS・状態）",
+         f"{DOC_N}件", "何を誰にいつまでに依頼し、届かないとどの作業が止まるか"),
+        ("06_会議体・意見聴取", "協議会・庁議・パブリックコメントの予定と資料の状態",
+         f"{len(MEETINGS)}件", "意見聴取の場ごとに、資料が間に合うか"),
+        ("07_課題・リスク", "課題とリスク（区分・影響度・対応・状態）",
+         f"{len(PROG.RISKS)}件", "放置すると工程や品質に出る問題と、その手当て"),
+        ("08_変更管理・打合せ記録", "仕様書と実際の運用の差（変更管理）",
+         f"{len(CHANGES)}件", "書面で詰め直す必要がある条項"),
+        ("09_翌日の着手順", f"{NEXTDAY_DATE}の着手順と、その順番にした理由",
+         f"{len(NEXTDAY)}件", "朝いちばんに何から手を付けるか"),
+    ]:
+        ws.cell(row=r, column=1, value=name).alignment = \
+            Alignment(wrap_text=True, vertical="top")
+        ws.cell(row=r, column=2, value=naiyo).alignment = \
+            Alignment(wrap_text=True, vertical="top")
+        ws.cell(row=r, column=3, value=ken).alignment = \
+            Alignment(horizontal="center", vertical="top")
+        ws.cell(row=r, column=4, value=dekiru).alignment = \
+            Alignment(wrap_text=True, vertical="top")
+        r += 1
+
+    # --- 全体進捗 ------------------------------------------------------
+    r += 1
+    ws.cell(row=r, column=1, value="■ 全体進捗").font = Font(bold=True)
+    r += 1
+    ws.cell(row=r, column=1, value="全体進捗").font = Font(bold=True)
+    ws.cell(row=r, column=2,
+            value=f"='02_段階サマリ'!H{total_row}").number_format = "0%"
+    ws.cell(row=r, column=3, value="作業数").font = Font(bold=True)
+    ws.cell(row=r, column=4, value=f"='02_段階サマリ'!B{total_row}")
+    r += 1
+    ws.cell(row=r, column=1, value="完了").font = Font(bold=True)
+    ws.cell(row=r, column=2, value=f"='02_段階サマリ'!C{total_row}")
+    ws.cell(row=r, column=3, value="データ待ち").font = Font(bold=True)
+    ws.cell(row=r, column=4, value=f"='02_段階サマリ'!F{total_row}")
+    r += 2
+
+    band(r, ["段階", "作業数", "加重進捗率", "律速要因"])
+    r += 1
     for i in range(len(PHASES)):
-        r = 7 + i
         src = 2 + i
         ws.cell(row=r, column=1, value=f"='02_段階サマリ'!A{src}")
         ws.cell(row=r, column=2, value=f"='02_段階サマリ'!B{src}")
         ws.cell(row=r, column=3, value=f"='02_段階サマリ'!H{src}").number_format = "0%"
         ws.cell(row=r, column=4, value=f"='02_段階サマリ'!K{src}").alignment = \
             Alignment(wrap_text=True, vertical="top")
+        r += 1
 
-    r = 7 + len(PHASES) + 1
+    r += 1
     ws.cell(row=r, column=1, value="■ 現況").font = Font(bold=True)
     r += 1
     for line in [
@@ -998,9 +1190,16 @@ def sheet_dashboard(wb, total_row):
         "別表第五の算定方法は適用対象外と判定して、個別積上げ方式を原則どおり採用できることを確定させた。",
         "推計ブックは将来推計・サービス見込量・地域生活支援事業・活動指標・財源構成の5冊が"
         "算式まで実装済みで、実績データが入れば給付費と財源構成まで通る状態にしてある。"
-        "計画書は骨子案修正版として全8章・97表・369段落まで到達した。",
-        "一方、村からの実績データは29件中21件が未受領で、"
-        "現行計画の評価・見込量・成果目標のいずれも確定できない。",
+        "計画書は計画素案として全8章に到達し、目次とページ番号を付与した"
+        "（到達点は 03_成果品管理）。",
+        f"一方、村からの資料は{DOC_SUMMARY}で、"
+        "現行計画の評価・見込量・成果目標のいずれも確定できない。"
+        "どの依頼がどの作業を止めているかは 05_村資料・依頼の詳細 の「関係WBS」列"
+        "（及び 01_WBS の「必要な村資料」列）で追える。",
+        "令和8年10月の外部レビューを受けて、見込量の推計を4層"
+        "（支給決定と実利用の分離・移行者・本人の必要量・確保可能量）に組み替え、"
+        "介護保険事業計画との切り分けを支給決定の内容で整理した。"
+        "いずれも村の個票（M-19・M-18）がないと数値まで到達しない。",
         "最大の律速はアンケートの発送である。工程案の令和8年8月上旬発送に対し、"
         "印刷仕様・宛名ラベル・対象者数の3点がいずれも未了で、既に期限を超過している。"
         "回収に約1か月を要するため、遅延はそのまま集計・報告書・計画書の工程を圧迫する。",
@@ -1019,8 +1218,9 @@ def sheet_dashboard(wb, total_row):
         "クロス集計25件と行政データとの突合6件を設計し、うち3件は代替の目処が立った。"
         "残る1件（外出の目的）は第4次障がい者計画の指標に関わるため村との再協議を要する。",
     ]:
-        c = ws.cell(row=r, column=1, value=line)
-        c.alignment = Alignment(wrap_text=True, vertical="top")
+        # 長文はA〜D列を結合して1行に収める（結合すると行の高さは自動調整
+        # されないため、merge_note が列幅から高さを決める）
+        merge_note(ws, r, line, ncols=4)
         r += 1
 
     r += 1
@@ -1036,10 +1236,11 @@ def sheet_dashboard(wb, total_row):
          "回収期間または集計期間が圧縮され、報告書・計画書の工程に波及する",
          "印刷仕様を確定し、宛名ラベルの提供日を村と合意する。"
          "遅延が確定した場合は回収期間を維持して集計以降を短縮する"),
-        ("村の実績データが29件中21件未受領",
+        (DOC_SHORT,
          "現行計画の評価、成果目標の現状値、見込量、給付費のいずれも確定できない",
-         "最優先6件について9月末までの回答を求める。"
-         "とくに年齢別・サービス別の匿名利用者一覧が個別積上げの前提となる"),
+         "計画値の基礎とする系列（M-19）を単独で先に照会する。"
+         "1件の回答で 7-2・7-3・7-7・8-7・5-10 の5作業が動く。"
+         "次に移行管理台帳（M-18）で第2次算定の個別積上げに入る"),
         ("第4次障がい者計画の1指標が測定できない",
          "「外出目的が趣味・スポーツ・グループ活動である人の割合（28.1％→40％）」。"
          "確定版に外出の目的を問う設問がなく、最も近い問42は意向のため前回値と接続できない",
@@ -1081,7 +1282,11 @@ def sheet_dashboard(wb, total_row):
          "調査票への設問追加の可否", "要対応",
          "村の回答。既に期限を超過している"),
         ("令和8年8〜9月", "アンケートの発送・回収", "要対応", "上記3点の確定"),
-        ("令和8年9月", "村実績データの受領（最優先6件）", "データ待ち", "村の回答"),
+        ("令和8年10月",
+         "村資料の受領（最優先"
+         f"{sum(1 for d in PROG.VILLAGE_DOCS if d[0] == '最優先' and d[4] in DOC_BLOCKING)}"
+         "件。M-19 計画値の系列 → M-18 移行管理台帳 の順に）",
+         "データ待ち", "村の回答"),
         ("令和8年10月", "集計 → 現行計画の評価の確定", "未着手", "アンケートの回収"),
         ("令和8年11月", "見込量・成果目標・給付費の確定", "未着手",
          "実績データの受領。算式は実装済み"),
@@ -1107,8 +1312,9 @@ def sheet_deliverables(wb):
     for rec in DELIVERABLES:
         r = put(ws, r, list(rec), wrap_cols=(2, 3, 7, 8))
         paint_state(ws, r - 1, 5)
-    ws.cell(row=r + 1, column=1,
-            value="※ 進捗率は目安。納品仕様（部数・製本）を満たして初めて完了となる。")
+    merge_note(ws, r + 1,
+               "※ 進捗率は目安。納品仕様（部数・製本）を満たして初めて完了となる。",
+               ncols=8)
     return ws
 
 
@@ -1123,18 +1329,56 @@ def sheet_schedule(wb):
 
 
 def sheet_docs(wb):
-    ws = wb.create_sheet("05_資料・データ受領")
-    head(ws, ["No", "資料・データ", "提供元", "状態", "受領日", "使途・備考"],
-         [10, 36, 12, 11, 12, 60])
+    """05_村資料・依頼の詳細。
+
+    北塩原村_業務進捗管理.xlsx 04_村資料受領状況 の全列（優先度・資料・内容・
+    反映先・状態・希望期限・受領日）をそのまま取り込み、WBS との対応を
+    「関係WBS」列として足したもの。依頼の詳細を見るために2冊を行き来しなくて済む。
+    """
+    ws = wb.create_sheet("05_村資料・依頼の詳細")
+    head(ws, ["優先度", "資料・データ（依頼番号）", "依頼の詳細", "反映先（成果物）",
+              "関係WBS（確定に必要／精度を上げる）", "提供元", "状態", "希望期限",
+              "受領日", "WBS状態"],
+         [8, 34, 70, 32, 22, 13, 11, 12, 12, 11],
+         autofilter=f"A1:J{DOC_N + 1}")
     r = 2
     for pri, name, cont, dest, st, due in PROG.VILLAGE_DOCS:
-        r = put(ws, r, [pri, name, "北塩原村", DOC_STATE.get(st, st), None,
-                        f"{cont}／反映先：{dest}／希望期限：{due}"],
-                wrap_cols=(2, 6))
-        paint_state(ws, r - 1, 4)
-    ws.cell(row=r + 1, column=1,
-            value="※ No 列は優先度。依頼の詳細は 北塩原村_業務進捗管理.xlsx 04_村資料受領状況 を参照。")
-    return ws, r - 2
+        hissu, seido = DOC_WBS[name]
+        r = put(ws, r, [pri, name, cont, dest, join_wbs(hissu, seido),
+                        DOC_SOURCE.get(name, "北塩原村"), st, due, None,
+                        DOC_STATE.get(st, st)],
+                wrap_cols=(2, 3, 4, 5))
+        c = ws.cell(row=r - 1, column=1)
+        if pri == "最優先":
+            c.fill = PatternFill("solid", fgColor="C00000")
+            c.font = Font(size=10, bold=True, color="FFFFFF")
+        elif pri == "高":
+            c.fill = PatternFill("solid", fgColor="ED7D31")
+            c.font = Font(size=10, bold=True, color="FFFFFF")
+        paint_state(ws, r - 1, 10)
+        # 受領していないものは状態を薄赤で塗る（01_WBS の語彙とは別に原語を残す）
+        if st != "受領済":
+            ws.cell(row=r - 1, column=7).fill = \
+                PatternFill("solid", fgColor="FCE4E4")
+    r += 1
+    for line in [
+        "※ 本シートは 北塩原村_業務進捗管理.xlsx 04_村資料受領状況 と同じデータから"
+        "作成しており、「関係WBS」列を足して 01_WBS と結び付けたものです。"
+        "依頼の詳細を見るために2冊を行き来する必要はありません。",
+        "※ 「関係WBS」は、その資料が届かないと確定できない作業の番号です。"
+        "括弧内（精度：…）は、公表データ等で作業自体は済んでおり、資料が届くと"
+        "具体性が増すものです。01_WBS の「必要な村資料」列が同じ対応の逆引きで、"
+        "確定に必要な資料が届いていない作業は赤字にしています。",
+        "※ 「状態」は村資料の原語（未受領・一部受領・県照会中・受領済）、"
+        "「WBS状態」は 01_WBS と同じ語彙（未着手・進行中・データ待ち・完了）です。"
+        "受領したら「状態」を受領済に、「受領日」に日付を入れてください。",
+        f"※ 現況：{DOC_SUMMARY}。"
+        "見込量の基礎となる系列（M-19）は1件の回答で "
+        "7-2・7-3・7-7・8-7・5-10 の5作業が動くため、単独で先に照会します。",
+    ]:
+        merge_note(ws, r, line, ncols=10)
+        r += 1
+    return ws, DOC_N
 
 
 def sheet_meetings(wb):
@@ -1173,15 +1417,16 @@ def sheet_nextday(wb):
         fill = "C00000" if rec[0] <= 2 else ("ED7D31" if rec[0] <= 4 else "808080")
         c.fill = PatternFill("solid", fgColor=fill)
         c.font = Font(size=10, bold=True, color="FFFFFF")
-    ws.cell(row=r + 1, column=1,
-            value=f"※ {NEXTDAY_DATE}の着手順。"
-                  "律速は村のデータの受領であるため、"
-                  "①相手の時間がかかるもの（1〜4。村・県・介護保険側へ投げる）、"
-                  "②手元で完結するもの（5〜7。回答待ちの間にできる）、"
-                  "③回答が届いてからのもの（8・9）の順に組んでいる。"
-                  "1は見込量の基礎が1点の確認で決まるため単独で先に出す。"
-                  "10・11は相手の予定に依存するため今週中に投げる。"
-                  "12は素案を直すたびに回す点検であり、作業の順番には入らない。")
+    merge_note(
+        ws, r + 1, ncols=8,
+        text=f"※ {NEXTDAY_DATE}の着手順。"
+             "律速は村のデータの受領であるため、"
+             "①相手の時間がかかるもの（1〜4。村・県・介護保険側へ投げる）、"
+             "②手元で完結するもの（5〜7。回答待ちの間にできる）、"
+             "③回答が届いてからのもの（8・9）の順に組んでいる。"
+             "1は見込量の基礎が1点の確認で決まるため単独で先に出す。"
+             "10・11は相手の予定に依存するため今週中に投げる。"
+             "12は素案を直すたびに回す点検であり、作業の順番には入らない。")
     return ws
 
 
@@ -1193,9 +1438,9 @@ def sheet_changes(wb):
     for rec in CHANGES:
         r = put(ws, r, list(rec), wrap_cols=(3, 4, 6))
         paint_state(ws, r - 1, 5)
-    ws.cell(row=r + 1, column=1,
-            value="※ 仕様書6(3)により北塩原村委託契約約款に準拠する。"
-                  "仕様書と異なる運用は書面で記録を残す。")
+    merge_note(ws, r + 1,
+               "※ 仕様書6(3)により北塩原村委託契約約款に準拠する。"
+               "仕様書と異なる運用は書面で記録を残す。", ncols=6)
     return ws
 
 
@@ -1223,6 +1468,52 @@ def verify():
             assert rec[9] == 0, f"未着手なのに進捗率が0でない: {rec[1]}"
     # 成果品は仕様書5の3点
     assert len([d for d in DELIVERABLES if d[0] in "①②③"]) == 3, "成果品が3点でない"
+
+    # --- 村資料（依頼の詳細）と WBS の対応 ---------------------------------
+    doc_names = [d[1] for d in PROG.VILLAGE_DOCS]
+    assert len(doc_names) == len(set(doc_names)), "村資料の名称が重複している"
+    missing = [n for n in doc_names if n not in DOC_WBS]
+    assert not missing, (
+        "DOC_WBS に対応がない村資料があります。"
+        "資料を追加したら関係するWBS番号も入れてください: " + "／".join(missing))
+    extra = [n for n in DOC_WBS if n not in doc_names]
+    assert not extra, (
+        "DOC_WBS に、もう無い村資料が残っています: " + "／".join(extra))
+    wbs_ids = {r[1] for r in WBS}
+    for name, pair in DOC_WBS.items():
+        assert len(pair) == 2, f"DOC_WBS は（確定に必要, 精度）の2組: {name}"
+        hissu, seido = pair
+        assert hissu or seido, f"関係WBSが空: {name}"
+        nos = list(hissu) + list(seido)
+        assert len(nos) == len(set(nos)), f"関係WBSが重複: {name}"
+        for no in nos:
+            assert no in wbs_ids, f"存在しないWBS番号 {no}（{name}）"
+    pris = {d[0] for d in PROG.VILLAGE_DOCS}
+    unknown = pris - set(DOC_PRI_ORDER)
+    assert not unknown, f"DOC_PRI_ORDER にない優先度: {unknown}"
+    for st in {d[4] for d in PROG.VILLAGE_DOCS}:
+        assert st in DOC_STATE, f"DOC_STATE にない村資料の状態: {st}"
+    # 優先度が最優先・高の未受領資料は、止めている作業が1件以上あるはず。
+    # なければ優先度か対応のどちらかが誤っている。
+    for pri, name, _c, _d, st, _due in PROG.VILLAGE_DOCS:
+        if pri in ("最優先", "高") and st in DOC_BLOCKING:
+            assert DOC_WBS[name][0], (
+                f"優先度{pri}で未受領なのに、確定に必要な作業がありません: {name}。"
+                "優先度を下げるか、DOC_WBS に止まる作業を入れてください")
+
+    # 確定に必要な資料が1件も届いていない作業は、完了であってはならない。
+    # （公表データで終えた作業は「精度を上げる」側に置く）
+    needs = wbs_needs()
+    byid = {r[1]: r for r in WBS}
+    for no, (hissu, _seido) in needs.items():
+        if not hissu or byid[no][8] != "完了":
+            continue
+        if all(doc_state(n) in DOC_BLOCKING for n in hissu):
+            raise AssertionError(
+                f"WBS {no}「{byid[no][2]}」は完了だが、確定に必要な村資料が"
+                "1件も届いていません。状態を見直すか、その資料を"
+                "DOC_WBS の「精度を上げる」側へ移してください: "
+                + "／".join(hissu))
 
 
 def main():
@@ -1253,6 +1544,12 @@ def main():
     print("  状態: " + "／".join(f"{k}{cnt.get(k, 0)}" for k in STATES))
     print(f"  成果品{len(DELIVERABLES)}／資料{ndocs}／会議体{len(MEETINGS)}／"
           f"課題{nrisks}／変更管理{len(CHANGES)}")
+    needs = wbs_needs()
+    tomatte = [no for no, (hissu, _s) in needs.items()
+               if any(doc_state(n) in DOC_BLOCKING for n in hissu)]
+    print(f"  村資料とWBSの対応: {len(needs)}作業に紐付け／"
+          f"資料が届かず確定できない作業 {len(tomatte)}件")
+    print(f"  村資料: {DOC_SUMMARY}")
 
 
 if __name__ == "__main__":
