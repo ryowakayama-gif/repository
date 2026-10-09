@@ -1697,22 +1697,61 @@ def main():
         import estimate_sakugen as _ES57
         import wbs_kakunin as _KK57
         n_kei57 = _EL57.pages(_EL57.soan_items(True), _EL57.BODY_H)
+        # 削減案をすべて行った場合の頁数は、点検52と同じ算定で出す。
+        # 小見出しを指す案だけを渡していたため、用語の絞り込み（案G）と
+        # 図を資料編へ移す案（案H）が抜け、estimate_sakugen の出す到達点と
+        # 3頁食い違っていた（令和8年10月9日）。
         n_all57 = _EL57.pages(
-            _ES57.items_without([t for a in _ES57.AN for t in a[2]]), _EL57.BODY_H)
+            _ES57.items_without([t for a in _ES57.AN for t in a[2]],
+                                yougo=_ES57.YOUGO_NAI, figs=_ES57.FIG_UTSUSU),
+            _EL57.BODY_H)
         MACHI57 = {"本文%d頁＋前付4頁＝%d頁" % (n_kei57, n_kei57 + 4),
                    "本文%d頁＋前付4頁＝%d頁" % (n_all57, n_all57 + 4)}
-        for k in _KK57.K:
-            t = str(k[2])
+        # 見る先は確認事項だけでなく、WBSの「着手しない理由」と「翌営業日の作業」も
+        # 含める。理由の欄は WBS 進捗管理表として村に渡るのに、確認事項と違って
+        # 誰も数を確かめていなかった。現に Ⅱ-113 の理由が「到達できる最小が102頁」
+        # のまま106頁になり、Ⅴ-100 が「142件」のまま145件、Ⅱ-115 が「71件」のまま
+        # 72件になっていた（令和8年10月9日）。
+        import wbs_pending as _PD57
+        import irai_bundle as _IB57
+        n_irai57 = sum(_IB57.count(nm) for nm, _ti, _ne in _IB57.bundles())
+        MITO57 = ([("確認事項「%s」" % str(k[1])[:24], str(k[2])) for k in _KK57.K]
+                  + [("WBS %s の着手しない理由" % w, str(t))
+                     for w, t in _PD57.HOLD_REASON.items()]
+                  + [("翌営業日の作業 順位%d（%s）" % (r[0], r[1]),
+                      str(r[2]) + str(r[3])) for r in _PD57.READY])
+        for doko, t in MITO57:
             for m in _re57.finditer(r"本文[0-9]+頁＋前付[0-9]+頁＝[0-9]+頁", t):
                 n57 += 1
                 if m.group() not in MACHI57:
-                    bad57.append("確認事項「%s」：%s（推定は %s）"
-                                 % (str(k[1])[:24], m.group(), "／".join(sorted(MACHI57))))
+                    bad57.append("%s：%s（推定は %s）"
+                                 % (doko, m.group(), "／".join(sorted(MACHI57))))
             for m in _re57.finditer(r"目安100頁を([0-9]+)頁上回る", t):
                 n57 += 1
                 if int(m.group(1)) != n_kei57 + 4 - 100:
-                    bad57.append("確認事項「%s」：目安100頁を%s頁上回る（推定は%d頁）"
-                                 % (str(k[1])[:24], m.group(1), n_kei57 + 4 - 100))
+                    bad57.append("%s：目安100頁を%s頁上回る（推定は%d頁）"
+                                 % (doko, m.group(1), n_kei57 + 4 - 100))
+            # 「目安100頁に対し+N頁」は、今の分量を言うときと
+            # 削減案をすべて行った到達点を言うときの両方に使う言い方であるため、
+            # どちらかに合っていればよいとする。
+            for m in _re57.finditer(r"目安100頁に対し\+([0-9]+)頁", t):
+                n57 += 1
+                if int(m.group(1)) not in (n_kei57 + 4 - 100, n_all57 + 4 - 100):
+                    bad57.append("%s：目安100頁に対し+%s頁"
+                                 "（今の分量は+%d頁・削減案をすべて行うと+%d頁）"
+                                 % (doko, m.group(1), n_kei57 + 4 - 100,
+                                    n_all57 + 4 - 100))
+            for m in _re57.finditer(r"到達できる最小は([0-9]+)頁", t):
+                n57 += 1
+                if int(m.group(1)) != n_all57 + 4:
+                    bad57.append("%s：到達できる最小は%s頁（試算は%d頁）"
+                                 % (doko, m.group(1), n_all57 + 4))
+            # 照会票に載せた件数（束1〜6の合計）
+            for m in _re57.finditer(r"束1〜6の6通に組んだ（([0-9]+)件）", t):
+                n57 += 1
+                if int(m.group(1)) != n_irai57:
+                    bad57.append("%s：照会票%s件（実際は%d件）"
+                                 % (doko, m.group(1), n_irai57))
 
         # 「村内で提供されているサービスはN種類」が、2-5の事業所数の表と合うこと。
         # 定員の表（居住系・通所系のみ）に引かれて訪問介護を数え落とし、
