@@ -130,6 +130,9 @@ BUILDERS = [
     ("build_kitashiobara_uchiawase.py",
      ["output/北塩原村_打合せ記録_20261009.xlsx"],
      "加筆版と当方の網羅性点検の差分を取るため、網羅性点検の後に実行する"),
+    ("build_kitashiobara_ronten.py",
+     ["output/北塩原村_論点整理_20261009.xlsx"],
+     "論点メモ・当方の素案・正本の3つを突き合わせるため、素案の後に実行する"),
     ("build_kitashiobara_ishoku_okurijo.py",
      ["output/北塩原村_申し送り_他メンバー版への移植_20261009.docx"],
      "挿入位置の引用が他メンバー版に実在することを照合するため、"
