@@ -370,20 +370,30 @@ chk(17, "資料5-2 の認定者数が計画素案 5-3 と一致", not bad17,
     "・".join(bad17[:3]) if bad17 else "令和6〜11年度の要介護度別・計・認定率が一致")
 
 # 18 委員会資料の本文に受託者の内部の仕組みの語がないこと
-NAIGO = ["scripts/", ".py", "verify_", ".csv", "doc2", "doc4", "doc1", "Python"]
+#    第2回・第3回の両方を見る。もとは第2回だけを見ており、語の一覧も
+#    「doc1・doc2・doc4」と番号を並べていたため doc66 のような番号は
+#    すり抜けた（令和8年10月13日。現に第3回の出どころの欄に残っていた）。
+#    文書番号は doc のあとに数字が続く形すべてを拾う。
+NAIGO = ["scripts/", ".py", "verify_", ".csv", "Python"]
+NAIGO_RE = re.compile(r"doc\s?\d+")
+import shiryo3_content as SH3   # 第3回の骨子（点検21〜23でも使う）
 hit18 = []
-for c in SH.CH:
-    for sc in c["sections"]:
-        for b in sc["blocks"]:
-            for v in ([str(b.get("v", ""))]
-                      + [str(x) for r in b.get("rows", []) for x in r]
-                      + [str(x) for x in b.get("head", [])]
-                      + [str(b.get("caption", "")), str(b.get("source", ""))]):
-                for g in NAIGO:
-                    if g in v:
-                        hit18.append(f'{c["no"]}{sc["no"]}:{g}')
+for _kai, _M in (("第2回", SH), ("第3回", SH3)):
+    for c in _M.CH:
+        for sc in c["sections"]:
+            for b in sc["blocks"]:
+                for v in ([str(b.get("v", ""))]
+                          + [str(x) for r in b.get("rows", []) for x in r]
+                          + [str(x) for x in b.get("head", [])]
+                          + [str(b.get("caption", "")), str(b.get("source", ""))]):
+                    for g in NAIGO:
+                        if g in v:
+                            hit18.append(f'{_kai}{c["no"]}{sc["no"]}:{g}')
+                    for g in NAIGO_RE.findall(v):
+                        hit18.append(f'{_kai}{c["no"]}{sc["no"]}:{g}')
 chk(18, "委員会資料の本文に内部の仕組みの語がないこと", not hit18,
-    "・".join(sorted(set(hit18))[:4]) if hit18 else f"{len(NAIGO)}語のいずれも本文にない")
+    "・".join(sorted(set(hit18))[:4]) if hit18
+    else f"第2回・第3回の本文に{len(NAIGO)}語と文書番号（doc＋数字）はない")
 
 # 19 交付金の表が、計画素案と委員会資料（資料2・資料7）で一致すること
 #    同じ数字を2つの成果品に書き写しているため、片方を直したときの取り残しを検出する。
@@ -572,6 +582,119 @@ try:
              f"外の決まりごと{n_soto}件）がすべて追える")
 except Exception as e:
     chk(21, "第3回資料の骨子の【要確定】が確認事項に追えること", False,
+        f"照合できない（{e}）")
+
+# ── 22　第3回資料の「確定した事項」が素案と食い違わないこと ─────────
+#    骨子で【要確定】としていた事項が確定したときは、確定した値を資料に書く。
+#    その値は素案にも入っているため、片方だけを直すと食い違う。
+try:
+    so22 = open(os.path.join(_P.BASE, "18_計画素案.md"), encoding="utf-8").read()
+    so22n = so22.replace(",", "").replace("，", "")   # 表記のゆれを吸収する
+    n22, bad22 = 0, []
+    for c in SH3.CH:
+        for sc in c["sections"]:
+            for b in sc["blocks"]:
+                if b.get("t") != "table" or b.get("head") != SH3.KT_HEAD:
+                    continue
+                for r in b["rows"]:
+                    for v in r:
+                        for tok in re.findall(r"[0-9][0-9,\.]*", str(v)):
+                            t = tok.rstrip(".").replace(",", "")
+                            if len(t.replace(".", "")) < 3:
+                                continue            # 1〜2桁は偶然当たるため見ない
+                            n22 += 1
+                            if t not in so22n:
+                                bad22.append(f'{c["no"]}{sc["no"]}:{tok}')
+    chk(22, "第3回資料の「確定した事項」の値が素案にあること", not bad22,
+        "素案にない " + "・".join(sorted(set(bad22))[:4]) if bad22
+        else f"確定した事項の表に現れる3桁以上の数値{n22}件すべてが素案にある")
+except Exception as e:
+    chk(22, "第3回資料の「確定した事項」の値が素案にあること", False,
+        f"照合できない（{e}）")
+
+# ── 23　第3回資料の基金の3案が算定と一致すること ─────────────────
+#    資料の表は算定（estimate_kikin）から組んでいる。手で書き換えられたときに
+#    気づくための点検である。
+try:
+    import estimate_kikin as _EK23
+    kan23 = _EK23.run()[0]
+    hyo23 = None
+    for c in SH3.CH:
+        for sc in c["sections"]:
+            for b in sc["blocks"]:
+                if b.get("t") == "table" and b.get("head", [None])[0] == "案":
+                    hyo23 = b
+    bad23 = []
+    if hyo23 is None:
+        bad23.append("3案の表が資料にない")
+    else:
+        if len(hyo23["rows"]) != len(kan23):
+            bad23.append(f'行が{len(hyo23["rows"])}件（算定は{len(kan23)}件）')
+        for r, a in zip(hyo23["rows"], kan23):
+            for j, (na, machi) in enumerate(
+                    ((("案"), a["案"]),
+                     (("取崩額"), f'{a["取崩額"]:,}円'),
+                     (("算定上の月額"), f'{a["第10期"]:,.2f}円'),
+                     (("条例上の基準額"), f'{a["第10期条例"]:,}円'),
+                     (("第9期差"), ("+" if a["第9期差"] > 0 else "")
+                      + f'{a["第9期差"]:,}円'),
+                     (("期末の残高"), f'{int(round(a["残高"])):,}円'),
+                     (("第11期（条例）"), f'{a["第11期条例"]:,}円'))):
+                mi = r[j] if j == 0 else r[j + 1]
+                if str(mi) != machi:
+                    bad23.append(f'{a["案"]} {na} {mi}≠{machi}')
+    chk(23, "第3回資料の基金の3案が算定と一致すること", not bad23,
+        "・".join(bad23[:3]) if bad23
+        else f"{len(kan23)}案の取崩額・月額・条例・第9期差・残高・第11期が算定と一致")
+except Exception as e:
+    chk(23, "第3回資料の基金の3案が算定と一致すること", False,
+        f"照合できない（{e}）")
+
+# ── 24　資料2-2 の「確定した事項」の一覧が各資料と合っていること ────────
+#    一覧を手で二重に書くと、資料を直したときに2-2が取り残される。
+try:
+    machi24 = SH3._kakutei_rows()
+    ima24 = None
+    for c in SH3.CH:
+        for sc in c["sections"]:
+            if sc["no"] != "2-2":
+                continue
+            for b in sc["blocks"]:
+                if b.get("t") == "table" and b.get("head", [None])[0] == "#":
+                    ima24 = b["rows"]
+    bad24 = []
+    if ima24 is None:
+        bad24.append("資料2-2 に一覧の表がない")
+    elif ima24 != machi24:
+        bad24.append(f"一覧{len(ima24) if ima24 else 0}件と"
+                     f"各資料の確定した事項{len(machi24)}件が合わない")
+    # 本文の件数も合っていること
+    bun24 = ""
+    for c in SH3.CH:
+        for sc in c["sections"]:
+            if sc["no"] == "2-2":
+                for b in sc["blocks"]:
+                    if b.get("t") == "p" and "骨子を作った時点" in str(b.get("v", "")):
+                        bun24 = str(b["v"])
+    # 骨子を作った時点の件数は、その日の記録（doc57）で裏づける。
+    #    資料の側の定数だけを見ると、定数を書き換えれば通ってしまう。
+    d57 = open(os.path.join(_P.BASE, "57_作業順位にもとづく継続作業_2.md"),
+               encoding="utf-8").read()
+    if f"【要確定】の枠{SH3.KOSHI_YOKAKUTEI}件" not in d57:
+        bad24.append(f"骨子の件数{SH3.KOSHI_YOKAKUTEI}件が"
+                     "作成時の記録（doc57）と合わない")
+    n_waku24 = len(SH3.TRACE)
+    for hitsu in (f"{SH3.KOSHI_YOKAKUTEI}件でした",
+                  f"次の{len(machi24)}件が確定",
+                  f"枠は{n_waku24}件になりました"):
+        if hitsu not in bun24:
+            bad24.append(f"本文に「{hitsu}」がない")
+    chk(24, "資料2-2 の確定した事項の一覧が各資料と合うこと", not bad24,
+        "・".join(bad24[:2]) if bad24
+        else f"一覧{len(machi24)}件が各資料と一致し、本文の件数"
+             f"（{SH3.KOSHI_YOKAKUTEI}→{n_waku24}件）も合っている")
+except Exception as e:
+    chk(24, "資料2-2 の確定した事項の一覧が各資料と合うこと", False,
         f"照合できない（{e}）")
 
 w = max(len(n) for _, n, _, _ in R)
