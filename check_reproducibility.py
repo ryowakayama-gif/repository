@@ -145,7 +145,8 @@ BUILDERS = [
       "output/図表/05_関係機関との連携.png",
       "output/図表/06_地域生活支援拠点の5機能.png",
       "output/図表/07_緊急時の4場面.png",
-      "output/図表/08_65歳到達時の判定の流れ.png"],
+      "output/図表/08_65歳到達時の判定の流れ.png",
+      "output/図表/09_ライフコースと制度の移行.png"],
      "申し送りの表と正本の表から数値を読んで図を描くため、"
      "申し送りの後・正本の前に実行する"),
     ("build_kitashiobara_honpon.py",
@@ -164,6 +165,10 @@ BUILDERS = [
     ("build_kitashiobara_hp_3bunya.py",
      ["output/北塩原村_村HP3分野の棚卸し.xlsx"],
      "高齢者・児童・社会福祉の施策が正本に入ったかを現物で照合するため、"
+     "移植後の正本を作った後に実行する"),
+    ("build_kitashiobara_mece_houshu.py",
+     ["output/北塩原村_MECE_利用の流れと報酬改定.xlsx"],
+     "直した表現が入れ替わったか、足した記述が入ったかを現物で照合するため、"
      "移植後の正本を作った後に実行する"),
     ("build_kitashiobara_zuhyo_bangou.py",
      ["output/北塩原村_図表番号一覧.xlsx"],

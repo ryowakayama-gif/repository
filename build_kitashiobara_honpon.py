@@ -55,6 +55,7 @@ from build_kitashiobara_juten12 import JUTEN_EDITS  # noqa: E402
 from build_kitashiobara_hp_shisaku import HP_EDITS  # noqa: E402
 from build_kitashiobara_hp_3bunya import HP3_EDITS  # noqa: E402
 from build_kitashiobara_redteam_kyukyu import RT_EDITS  # noqa: E402
+from build_kitashiobara_mece_houshu import ME_EDITS, KAKIKAE  # noqa: E402
 from build_kitashiobara_graph import GRAPHS, OUT_DIR as ZU_DIR  # noqa: E402
 from build_kitashiobara_zuhyo_bangou import ZU, HYO  # noqa: E402
 
@@ -823,6 +824,27 @@ def apply_zuhyo_mokuji(doc):
     changes.append(f"図表目次：図{len(ZU)}点・表{len(HYO)}点を目次の後に掲載")
 
 
+def apply_kakikae(doc):
+    """他メンバー版の本文を書き換える（事実として誤っているものに限る）。
+
+    挿入ではなく置換であるため、直す前の文が本文にちょうど1つある
+    ことを確かめてから書き換える。書式は先頭のランのものを残す。
+    """
+    for rec in KAKIKAE:
+        atari = [p for p in doc.paragraphs
+                 if _norm(rec["mae"]) in _norm(p.text)]
+        if len(atari) != 1:
+            raise LookupError(f"書き換え先が一意でない（{len(atari)}件）: "
+                              f"{rec['no']}")
+        para = atari[0]
+        if _norm(para.text) != _norm(rec["mae"]):
+            raise LookupError(f"書き換え先の段落に余分な字がある: {rec['no']}")
+        for r in para.runs[1:]:
+            r.text = ""
+        para.runs[0].text = rec["ato"]
+        changes.append(f"書き換え{rec['no']}：{rec['saki']}")
+
+
 def apply_mura(doc):
     """村資料点検の修正案のうち、最優先の追記5件を入れる。"""
     for rec in MURA_EDITS:
@@ -972,7 +994,7 @@ def verify(doc, src_dims):
 
     # ②c 再レビューからの追記が入っていること
     for rec in (list(JUTEN_EDITS) + list(HP_EDITS) + list(HP3_EDITS)
-                + list(RT_EDITS)):
+                + list(RT_EDITS) + list(ME_EDITS)):
         for blk in rec["nakami"]:
             if blk[0] in ("h2", "h3", "p", "note"):
                 if _norm(blk[1]) not in out:
@@ -1066,7 +1088,7 @@ def verify(doc, src_dims):
             if midashi.startswith("（"):
                 want_sub.append(midashi)
     for rec in (list(JUTEN_EDITS) + list(HP_EDITS) + list(HP3_EDITS)
-                + list(RT_EDITS)):
+                + list(RT_EDITS) + list(ME_EDITS)):
         for blk in rec["nakami"]:
             if blk[0] in ("h2", "h3") and blk[1].startswith("（"):
                 want_sub.append(blk[1])
@@ -1119,7 +1141,8 @@ def verify(doc, src_dims):
           f"村資料{len(MURA_EDITS)}件・"
           f"重点施策{len(JUTEN_EDITS)}件・"
           f"村HP{len(HP_EDITS)}件・村HP3分野{len(HP3_EDITS)}件・"
-          f"RedTeam{len(RT_EDITS)}件・図{len(GRAPHS)}点が実在／"
+          f"RedTeam{len(RT_EDITS)}件・MECE{len(ME_EDITS)}件・"
+          f"書き換え{len(KAKIKAE)}件・図{len(GRAPHS)}点が実在／"
           f"正本の記述{len(keep)}点が残存／見込量表{n_mikomi}表／"
           "表記の作法4点すべて合")
 
@@ -1138,6 +1161,8 @@ def main():
     apply_juten(doc, HP_EDITS, label="村HP")
     apply_juten(doc, HP3_EDITS, label="村HP3分野")
     apply_juten(doc, RT_EDITS, label="RedTeam")
+    apply_juten(doc, ME_EDITS, label="MECE")
+    apply_kakikae(doc)
     apply_graphs(doc)
     apply_bangou(doc)
     apply_zuhyo_mokuji(doc)

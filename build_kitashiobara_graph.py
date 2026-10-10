@@ -368,13 +368,21 @@ class Sheet:
         yoyuu = max(1, int(self.pt_w(w) / fs) - n)
         out = []
         for para in str(text).split("\n"):
+            # 半角の英数字が続くところは割らない。「（11）」が
+            # 「（1」と「1）」に割れると数が読めなくなる。
+            toks = re.findall(r"[0-9A-Za-z.,%]+|.", para)
             line = ""
-            for ch in para:
-                nobetu = ch in "、。）」％" and len(line) < n + yoyuu
-                if len(line) >= n and not nobetu:
+            for tk in toks:
+                nobetu = tk in "、。）」％ー" and len(line) < n + yoyuu
+                if line and len(line) + len(tk) > n and not nobetu:
+                    # 開き括弧を行末に残さない（次の行へ送る）
+                    okuri = ""
+                    while line and line[-1] in "（「【":
+                        okuri = line[-1] + okuri
+                        line = line[:-1]
                     out.append(line)
-                    line = ""
-                line += ch
+                    line = okuri
+                line += tk
             out.append(line)
         return "\n".join(out)
 
@@ -777,6 +785,125 @@ def _flow65(h_cm):
     return sh
 
 
+def _life(h_cm):
+    """ライフコースと制度の移行。
+
+    18歳到達（第5章5（1））と65歳到達（同（2））が別々の項に分かれて
+    いるため、児童期から高齢期までを一続きで示す図がない。
+    色は制度の別を表す。緑＝障がい福祉、橙＝ほかの制度。
+    """
+    sh = Sheet(h_cm)
+    midashi = "児童期・成人期・高齢期を一続きでみる"
+    sh.text(0.5, 0.985, midashi, fs=10.0, ha="center", va="top")
+    top = 0.985 - sh.h_of(midashi, 0.96, 10.0, pad_lines=0.55)
+
+    # --- 上段 ほかの制度（こども施策・高齢者施策） -----------------
+    w, aida = 0.300, 0.021
+    hoka = [
+        ("こども施策",
+         "保育所・幼稚園・学校\n子育て短期支援事業\n一時預かり・児童クラブ\n"
+         "こども誰でも通園制度\n（第５章２（５））"),
+        ("―", ""),
+        ("介護保険・高齢者福祉",
+         "介護保険の給付\n老人クラブ・シルバー人材センター\n介護予防教室\n"
+         "村単独の在宅福祉事業\n（第５章５（２））"),
+    ]
+    inner = w - 2 * PAD
+    hs = [sh.h_of(h, inner, 9.4, pad_lines=0.55)
+          + sh.h_of(b2, inner, 8.0, pad_lines=0.7)
+          for h, b2 in hoka if b2]
+    hm = max(hs)
+    for i, (head, body) in enumerate(hoka):
+        if not body:
+            continue
+        x = 0.015 + i * (w + aida)
+        sh.box(x, top - hm, w, hm, fc=USUIRO["橙"], ec=COLORS["橙"])
+        sh.text(x + w / 2, top - 0.010, head, fs=9.4, w=inner, ha="center")
+        sh.text(x + PAD,
+                top - sh.h_of(head, inner, 9.4, pad_lines=0.55),
+                body, fs=8.0, w=inner)
+    ue_shita = top - hm
+
+    # --- 中段 障がい福祉 -------------------------------------------
+    #     上段との間に節目のラベルを入れるため、ここだけ広く空ける
+    fushime = 0.070
+    naka_top = ue_shita - fushime
+    shogai = [
+        ("児童期（０歳〜18歳）",
+         "児童発達支援\n放課後等デイサービス\n保育所等訪問支援\n"
+         "障がい児相談支援\n（第５章１（５））"),
+        ("成人期（18歳〜65歳）",
+         "訪問系・日中活動系\n居住系・相談支援\n地域生活支援事業\n"
+         "（第５章１・３）"),
+        ("高齢期（65歳〜）",
+         "介護保険に相当しないもの\n（共同生活援助・就労系・\n"
+         "同行援護・行動援護等）は続ける\n（第５章５（２））"),
+    ]
+    hs = [sh.h_of(h, inner, 9.4, pad_lines=0.55)
+          + sh.h_of(b2, inner, 8.0, pad_lines=0.7) for h, b2 in shogai]
+    hm2 = max(hs)
+    for i, (head, body) in enumerate(shogai):
+        x = 0.015 + i * (w + aida)
+        sh.box(x, naka_top - hm2, w, hm2, fc=USUIRO["緑"], ec=COLORS["緑"])
+        sh.text(x + w / 2, naka_top - 0.010, head, fs=9.4, w=inner,
+                ha="center")
+        sh.text(x + PAD,
+                naka_top - sh.h_of(head, inner, 9.4, pad_lines=0.55),
+                body, fs=8.0, w=inner)
+        if i:
+            sh.arrow(x - aida - 0.001, naka_top - hm2 / 2,
+                     x, naka_top - hm2 / 2)
+    naka_shita = naka_top - hm2
+
+    # --- 制度が変わる2つの節目 ---------------------------------------
+    for i, (t, sub) in enumerate((
+            ("18歳到達", "障がい児相談支援→計画相談支援。"
+                        "介護給付は障害支援区分の認定。"
+                        "特別児童扶養手当→障害基礎年金（第５章５（１））"),
+            ("65歳到達", "一律に移さず、４段の判定で決める"
+                        "（第５章５（２）・図５-４）"))):
+        # 縦線を引くと、上段のこども施策・介護保険の箱に矢印が刺さり、
+        # そこへ移るように読めてしまう。段の間に見出しを置くだけにする。
+        x = 0.015 + (i + 1) * (w + aida) - aida / 2
+        sh.text(x, (ue_shita + naka_top) / 2, t, fs=9.4, ha="center",
+                va="center", color=COLORS["橙"])
+    y, h = sh.panel(0.015, 0, 0.955,
+                    "18歳到達　障がい児相談支援は計画相談支援に、"
+                    "特別児童扶養手当は障害基礎年金に切り替わる。"
+                    "介護給付を使う場合は障害支援区分の認定が新たに要る"
+                    "（第５章５（１））\n"
+                    "65歳到達　一律に介護保険へ移さない。"
+                    "本人の意向、認定の有無、相当するサービスの有無、"
+                    "必要な量を確保できるかの４段で判定する"
+                    "（第５章５（２）・図５-４）",
+                    fs=8.4, head="制度が変わる二つの節目", head_fs=9.4,
+                    ec=COLORS["橙"], top=naka_shita - 0.030)
+
+    # --- 下段 どの時期も続くもの -------------------------------------
+    sh.panel(0.015, 0, 0.955,
+             "相談　村保健福祉課と相談支援専門員（第５章２（２）・６）\n"
+             "権利擁護　成年後見制度、わたしの思いノート（第６章）\n"
+             "緊急時・災害時　緊急時の受入れ、個別避難計画、"
+             "事業所の業務継続計画（第４章２（５）・第５章２（11））\n"
+             "冬季の地域生活　除雪、通院・通所の確保（第５章２（14））",
+             fs=8.4, head="どの時期も続くもの", head_fs=9.4,
+             fc=HAI, top=y - 0.026)
+
+    sh.notes([
+        "※ 橙はほかの制度（こども施策・介護保険・高齢者福祉）、"
+        "緑は障がい福祉サービス等です。",
+        "※ 一般の子育て施策と障がい福祉は入れ替わるものではなく、"
+        "併せて使うものです。保育所等での受入れが進むことが、"
+        "直ちに障がい児通所支援の減少を意味するものではありません"
+        "（第５章２（５））。",
+    ])
+    return sh
+
+
+def fig_life():
+    return fit(_life, 18.0).save("09_ライフコースと制度の移行")
+
+
 def fig_flow65():
     return fit(_flow65, 13.2).save("08_65歳到達時の判定の流れ")
 
@@ -821,6 +948,11 @@ GRAPHS = [
          src="資料：北塩原村（第５章２（11）により作成）",
          ichi="本村では、本人の身に何か起きたときの備えが"
               "場面ごとに分かれています。"),
+    dict(no="Z-9", file="09_ライフコースと制度の移行.png", kata="表の後",
+         title="ライフコースと制度の移行",
+         src="資料：北塩原村（第５章５及び第７章により作成）",
+         ichi="障がい福祉サービスは、一定の年齢に達することにより、"
+              "対象となる制度が変わります。"),
     dict(no="Z-8", file="08_65歳到達時の判定の流れ.png", kata="表の後",
          title="65歳到達時の判定の流れ",
          src="資料：障害者総合支援法第７条及び本計画により作成",
@@ -942,7 +1074,7 @@ def main():
     p3, xs, ys = fig_koureika()
     made = [p1, p2, p3,
             fig_taikei(), fig_renkei(), fig_kyoten(), fig_bamen(),
-            fig_flow65()]
+            fig_flow65(), fig_life()]
     verify(made)
     print(f"作成: {OUT_DIR}")
     print(f"  フォント: {name}")
