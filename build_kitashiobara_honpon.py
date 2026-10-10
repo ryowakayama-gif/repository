@@ -58,6 +58,7 @@ from build_kitashiobara_redteam_kyukyu import RT_EDITS  # noqa: E402
 from build_kitashiobara_mece_houshu import ME_EDITS, KAKIKAE  # noqa: E402
 from build_kitashiobara_mikomi_redteam import SA_EDITS  # noqa: E402
 from build_kitashiobara_anke_mikomi import AN_EDITS  # noqa: E402
+from build_kitashiobara_kaigo_seigo import KG_EDITS  # noqa: E402
 from build_kitashiobara_graph import GRAPHS, OUT_DIR as ZU_DIR  # noqa: E402
 from build_kitashiobara_zuhyo_bangou import ZU, HYO  # noqa: E402
 
@@ -997,7 +998,7 @@ def verify(doc, src_dims):
     # ②c 再レビューからの追記が入っていること
     for rec in (list(JUTEN_EDITS) + list(HP_EDITS) + list(HP3_EDITS)
                 + list(RT_EDITS) + list(ME_EDITS) + list(SA_EDITS)
-                + list(AN_EDITS)):
+                + list(AN_EDITS) + list(KG_EDITS)):
         for blk in rec["nakami"]:
             if blk[0] in ("h2", "h3", "p", "note"):
                 if _norm(blk[1]) not in out:
@@ -1092,7 +1093,7 @@ def verify(doc, src_dims):
                 want_sub.append(midashi)
     for rec in (list(JUTEN_EDITS) + list(HP_EDITS) + list(HP3_EDITS)
                 + list(RT_EDITS) + list(ME_EDITS) + list(SA_EDITS)
-                + list(AN_EDITS)):
+                + list(AN_EDITS) + list(KG_EDITS)):
         for blk in rec["nakami"]:
             if blk[0] in ("h2", "h3") and blk[1].startswith("（"):
                 want_sub.append(blk[1])
@@ -1147,6 +1148,7 @@ def verify(doc, src_dims):
           f"村HP{len(HP_EDITS)}件・村HP3分野{len(HP3_EDITS)}件・"
           f"RedTeam{len(RT_EDITS)}件・MECE{len(ME_EDITS)}件・"
           f"見込量{len(SA_EDITS)}件・アンケート{len(AN_EDITS)}件・"
+          f"介護整合{len(KG_EDITS)}件・"
           f"書き換え{len(KAKIKAE)}件・図{len(GRAPHS)}点が実在／"
           f"正本の記述{len(keep)}点が残存／見込量表{n_mikomi}表／"
           "表記の作法4点すべて合")
@@ -1169,6 +1171,7 @@ def main():
     apply_juten(doc, ME_EDITS, label="MECE")
     apply_juten(doc, SA_EDITS, label="見込量")
     apply_juten(doc, AN_EDITS, label="アンケート")
+    apply_juten(doc, KG_EDITS, label="介護整合")
     apply_kakikae(doc)
     apply_graphs(doc)
     apply_bangou(doc)

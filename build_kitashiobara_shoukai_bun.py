@@ -5,13 +5,13 @@
 出力: output/北塩原村_村への照会_5通.docx
 
 何のために作るものか
-  令和8年10月10日までの各点検・レビューで立てた村への照会は55件に
+  令和8年10月10日までの各点検・レビューで立てた村への照会は58件に
   なったが、村に出す文書そのものは1通も作っていなかった。
   照会を出さない限り、見込量も成果目標も委員会資料も確定しない。
   令和8年10月15日（木）の打合せで手渡せる形にする。
 
 便の分け方（令和8年11月の委員会から逆算する）
-  55件を1通にすると回答が遅れる。
+  58件を1通にすると回答が遅れる。
   回答がいつ要るかで5通に分ける。
     第1便 委員会（令和8年11月）に出す資料に直に要るもの
     第2便 見込量の確定に要るもの（第2次算定の入力）
@@ -50,6 +50,7 @@ from build_kitashiobara_zenkai_hyouka import SHOUKAI as S_ZEN  # noqa: E402
 from build_kitashiobara_zuhyo import KAKUNIN as K_ZUHYO  # noqa: E402
 from build_kitashiobara_zuhyo_bangou import KAKUNIN as K_BAN  # noqa: E402
 from build_kitashiobara_anke_mikomi import KAKUNIN as K_ANKE  # noqa: E402
+from build_kitashiobara_kaigo_seigo import SHOUKAI as S_KG  # noqa: E402
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT_FILE = f"{REPO_ROOT}/output/北塩原村_村への照会_5通.docx"
@@ -74,7 +75,7 @@ def atsumeru():
         for r in recs:
             out[_zen(r[0])] = dict(no=_zen(r[0]), atesaki="村", kenmei=r[1],
                                    naiyo=r[2], tsukaimichi=r[3], kigen=r[4])
-    for recs in (S_HP3, S_RT, S_ME, S_SA, S_ZEN,
+    for recs in (S_HP3, S_RT, S_ME, S_SA, S_ZEN, S_KG,
                  K_ZUHYO, K_BAN, K_ANKE):
         for r in recs:
             out[_zen(r[0])] = dict(no=_zen(r[0]), atesaki=r[1], kenmei=r[2],
@@ -112,7 +113,7 @@ BIN = [
              "制度を知らずに申し出ていない場合と、"
              "本当に必要がない場合とを分けられていません。",
         nos=["Ｍ-87", "Ｍ-88", "Ｍ-89", "Ｍ-90", "Ｍ-91",
-             "Ｍ-92", "Ｍ-93", "Ｍ-94"],
+             "Ｍ-92", "Ｍ-93", "Ｍ-94", "Ｍ-97"],
     ),
     dict(
         no=3,
@@ -196,7 +197,7 @@ def verify(zenbu):
         if no in ireta:
             ng.append(f"村以外あてを村の照会文に入れている: {no}")
 
-    # ④ 番号に抜けがないこと（Ｍ-40からＭ-96まで）
+    # ④ 番号に抜けがないこと（Ｍ-40からＭ-97まで）
     ban = sorted(int(k.split("-")[1]) for k in mura)
     nuke = [n for n in range(ban[0], ban[-1] + 1) if n not in ban]
     if nuke:
