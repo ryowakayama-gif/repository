@@ -2377,6 +2377,55 @@ def main():
     except Exception as e:
         chk(66, "表の列幅の合計が100%であること", False, "照合できない（%s）" % e)
 
+    # ── 67　概要版の骨子が素案から引けること ─────────────────────
+    #    概要版は計画書とは別の成果品であるため、別々に書くと数も言い方も食い違う。
+    #    骨子の要素はすべて素案の節または図を出どころに持ち、
+    #    その節・図が実在することを確かめる。あわせてA3両面に収まる見込みを見る。
+    try:
+        import re as _re67
+        import gaiyou_data as GD
+        import estimate_gaiyou as EG
+        import estimate_pages as EP67
+        import figures_map as FM67
+        # 素案に実在する節番号と図番号
+        setsu67 = {sec["no"] for c in SC.CH for sec in c["sections"]}
+        zu67 = {m.group(1) for e in FM67.FIGS
+                for m in [_re67.match(r"(図[0-9-]+)", e[2])] if m}
+        bad67 = []
+        for y in GD.YOSO:
+            men, no, kubun, midashi, moto, kazu, fn, _bikou = y
+            for mt in [x.strip() for x in str(moto).split(",")]:
+                if mt in ("―", ""):
+                    continue
+                if mt.startswith("図"):
+                    if mt not in zu67:
+                        bad67.append("%s%d の出どころ %s が素案にない" % (men, no, mt))
+                elif mt not in setsu67:
+                    bad67.append("%s%d の出どころ %s が素案にない" % (men, no, mt))
+            # 図はファイルが実在すること
+            if kubun == "図":
+                if not fn or not os.path.exists(os.path.join(EP67.FIGDIR, fn)):
+                    bad67.append("%s%d の図 %s がない" % (men, no, fn))
+            # 図以外は字数を持つこと（0字の要素は骨子として意味がない）
+            elif kazu <= 0:
+                bad67.append("%s%d に字数がない" % (men, no))
+        # A3両面に収まる見込みが立つこと
+        for men, _nz, tsukaeru, tsumi, aki, _gyo in EG.run():
+            if tsumi + aki > tsukaeru:
+                bad67.append("%s が %.0fmm2 あふれる" % (men, tsumi + aki - tsukaeru))
+        # 決まっていないものが挙がっていること（骨子は未決を隠さない）
+        if len(GD.MIKETTEI) < 4:
+            bad67.append("決まっていないものが%d件しか挙がっていない" % len(GD.MIKETTEI))
+        chk(67, "概要版の骨子が素案から引けること", not bad67,
+            "・".join(bad67[:3]) if bad67
+            else "要素%d件の出どころはすべて素案に実在し、A3両面に収まる見込み"
+                 "（表面%.0f%%・裏面%.0f%%）。決まっていないもの%d件を明示"
+                 % (len(GD.YOSO),
+                    *[100.0 * (t + a) / u for _m, _n, u, t, a, _g in EG.run()],
+                    len(GD.MIKETTEI)))
+    except Exception as e:
+        chk(67, "概要版の骨子が素案から引けること", False, "照合できない（%s）" % e)
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
