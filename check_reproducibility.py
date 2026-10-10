@@ -140,6 +140,10 @@ BUILDERS = [
     ("build_kitashiobara_honpon.py",
      ["output/北塩原村_計画素案_正本_移植後.docx"],
      "申し送りの生成器から文章を読み込んで正本に入れるため、申し送りの後に実行する"),
+    ("build_kitashiobara_murashiryo.py",
+     ["output/北塩原村_村資料点検_20261010.xlsx"],
+     "村資料にあって正本にない事実を正本の現物で照合するため、"
+     "移植後の正本を作った後に実行する"),
     ("build_shinchoku_hyo.py", ["output/北塩原村_業務進捗管理表.xlsx"],
      "build_kitashiobara_progress.py のデータを取り込むため、その後に実行する"),
 ]
