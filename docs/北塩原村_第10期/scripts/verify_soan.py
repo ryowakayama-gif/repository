@@ -2335,6 +2335,44 @@ def main():
         chk(65, "第11期の分母の組み方が第10期で復元できること", False,
             "照合できない（%s）" % e)
 
+    # ── 66　表の列幅の合計が100%であること ────────────────────────
+    #    組立ては widths をテーブル幅の百分率として割り付ける
+    #    （build_soan_docx.js の cols = TBLW * w / 100）。
+    #    合計が100を下回ると表が紙幅より狭くなり、長い文の列が折り返して
+    #    行が高くなる。上回ると本文の領域からはみ出す。
+    #    紙面の目視確認ができない環境では、この食い違いは機械でしか見つからない。
+    #    現に4-6(2)は確保の方策の列が12%しかなく、17行の表が3頁に膨らんでいた。
+    try:
+        import soan_content as _SC66
+        import shiryo_content as _SH66
+        import shiryo3_content as _S366
+        bad66, n66 = [], 0
+        for nm66, mod66 in (("素案", _SC66), ("第2回", _SH66), ("第3回", _S366)):
+            for c66 in mod66.CH:
+                for sec66 in c66.get("sections", []):
+                    for b66 in sec66.get("blocks", []):
+                        if b66.get("t") not in ("table", "kpi"):
+                            continue
+                        w66 = b66.get("widths")
+                        if not w66:
+                            continue
+                        n66 += 1
+                        if sum(w66) != 100:
+                            bad66.append("%s %s 表（%s）合計%d%%"
+                                         % (nm66, sec66.get("no"),
+                                            str(b66.get("head", [""])[0])[:10],
+                                            sum(w66)))
+                        # 列数と見出しの数が合っていること
+                        if b66.get("head") and len(w66) != len(b66["head"]):
+                            bad66.append("%s %s 表 列幅%d件・見出し%d件"
+                                         % (nm66, sec66.get("no"),
+                                            len(w66), len(b66["head"])))
+        chk(66, "表の列幅の合計が100%であること", not bad66,
+            "・".join(bad66[:3]) + ("ほか%d件" % (len(bad66) - 3) if len(bad66) > 3 else "")
+            if bad66 else "素案・委員会資料の%d表すべてが合計100%%で、列数と見出しの数も合う" % n66)
+    except Exception as e:
+        chk(66, "表の列幅の合計が100%であること", False, "照合できない（%s）" % e)
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
