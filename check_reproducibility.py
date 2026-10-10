@@ -137,6 +137,9 @@ BUILDERS = [
      ["output/北塩原村_申し送り_他メンバー版への移植_20261009.docx"],
      "挿入位置の引用が他メンバー版に実在することを照合するため、"
      "他メンバー版の格納後に実行する"),
+    ("build_kitashiobara_honpon.py",
+     ["output/北塩原村_計画素案_正本_移植後.docx"],
+     "申し送りの生成器から文章を読み込んで正本に入れるため、申し送りの後に実行する"),
     ("build_shinchoku_hyo.py", ["output/北塩原村_業務進捗管理表.xlsx"],
      "build_kitashiobara_progress.py のデータを取り込むため、その後に実行する"),
 ]

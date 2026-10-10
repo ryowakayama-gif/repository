@@ -1,0 +1,634 @@
+# -*- coding: utf-8 -*-
+"""
+北塩原村　正本（他メンバー版）への移植
+
+出力: output/北塩原村_計画素案_正本_移植後.docx
+
+経緯
+  令和8年10月9日に、他メンバー版の計画素案を正本として進めることが
+  決まった。申し送り（北塩原村_申し送り_他メンバー版への移植_20261009.docx）に
+  まとめた移植16件と、論点メモからの修正のうちデータ待ちでないものを、
+  正本に実際に入れたものが本書の出力である。
+
+作り
+  ・入れる文章は申し送りの生成器（build_kitashiobara_ishoku_okurijo.py）から
+    読み込む。申し送りと出力が食い違わないようにするため、文章はそちらを
+    唯一の出所とする。
+  ・挿入位置は申し送りが示した「直前の段落の末尾」を正本の現物から探す。
+    見つからなければ止める。
+  ・書式は正本に揃える（本文幅9,412dxa、データ表の罫線4F8A6E・
+    表頭2D7A57・1列目EAF4EE、注記は罫線3D86C6・地色EEF5FB）。
+    申し送りの列幅は本文幅15,200を前提にしているため、9,412へ按分する。
+  ・正本の既存の記述は消さない。すべて追加である。
+
+入れていないもの
+  村・県・他メンバーの回答を待つ論点（人口推計の元データ、手帳所持者数の
+  実数、グループホームの設置、排泄管理支援用具の増減、成年後見の類型別、
+  社会福祉法改正への対応、防災の取組の状況ほか）は入れていない。
+  一覧は出力の末尾ではなく、北塩原村_論点整理_20261009.xlsx による。
+"""
+
+import os
+import re
+import sys
+
+import docx
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.shared import Pt, RGBColor
+from docx.table import Table
+from docx.text.paragraph import Paragraph
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from build_kitashiobara_ishoku_okurijo import ISHOKU  # noqa: E402
+
+REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+SRC = (f"{REPO_ROOT}/source/他メンバー素案_20261008/"
+       "北塩原村_第8期障がい福祉計画_第4期障がい児福祉計画_素案_他メンバー版.docx")
+OUT_FILE = f"{REPO_ROOT}/output/北塩原村_計画素案_正本_移植後.docx"
+
+# 正本の書式
+BODY_W = 9412          # 本文幅（dxa）
+SRC_W = 15200          # 申し送りの列幅が前提にしている幅
+BORDER = "4F8A6E"      # データ表の罫線
+HEAD_FILL = "2D7A57"   # データ表の表頭
+COL1_FILL = "EAF4EE"   # データ表の1列目
+NOTE_BORDER = "3D86C6"
+NOTE_FILL = "EEF5FB"
+INDENT = Pt(11)        # 本文の字下げ（正本と同じ）
+
+changes = []
+
+
+# ===========================================================================
+# 書式ヘルパー（正本に揃える）
+# ===========================================================================
+def _el(tag, **attrs):
+    e = OxmlElement(tag if ":" in tag else f"w:{tag}")
+    for k, v in attrs.items():
+        e.set(qn(f"w:{k}"), str(v))
+    return e
+
+
+def _borders(color):
+    b = _el("tblBorders")
+    for side in ("top", "left", "bottom", "right", "insideH", "insideV"):
+        b.append(_el(side, val="single", sz="8", space="0", color=color))
+    return b
+
+
+def _shade(cell, fill):
+    cell._tc.get_or_add_tcPr().append(
+        _el("shd", val="clear", color="auto", fill=fill))
+
+
+def _detach(doc, element):
+    """doc.add_* で作った要素を本文末から外し、挿入に使えるようにする。"""
+    doc.element.body.remove(element)
+    return element
+
+
+def make_para(doc, text, bold=False, indent=True, color=None, size=None):
+    p = doc.add_paragraph()
+    r = p.add_run(text)
+    r.font.bold = bold
+    if size:
+        r.font.size = Pt(size)
+    if color:
+        r.font.color.rgb = RGBColor.from_string(color)
+    if indent:
+        p.paragraph_format.first_line_indent = INDENT
+    return _detach(doc, p._p)
+
+
+def make_sub(doc, text):
+    """小見出し。正本の組み方に合わせてスタイルを選ぶ。
+
+      「３　…」のような節の見出し  → Heading 2（目次に出る）
+      「（７）…」のような項の見出し → 小見出し スタイル
+      「≪…≫」                    → Normal の太字
+    """
+    t = text.strip()
+    if re.match(r"^[０-９0-9]+[　 ]", t):
+        p = doc.add_paragraph(style="Heading 2")
+        p.add_run(t)
+        return _detach(doc, p._p)
+    if t.startswith("（"):
+        p = doc.add_paragraph(style="小見出し")
+        p.add_run(t)
+        return _detach(doc, p._p)
+    return make_para(doc, t, bold=True, indent=False)
+
+
+def make_table(doc, rows, widths):
+    ncol = len(rows[0])
+    w = [max(600, round(x * BODY_W / SRC_W)) for x in widths]
+    w[-1] += BODY_W - sum(w)          # 合計を本文幅に合わせる
+    t = doc.add_table(rows=len(rows), cols=ncol)
+    tblpr = t._tbl.tblPr
+    for old in tblpr.findall(qn("w:tblBorders")):
+        tblpr.remove(old)
+    tblpr.append(_borders(BORDER))
+    for old in tblpr.findall(qn("w:tblW")):
+        tblpr.remove(old)
+    tblpr.append(_el("tblW", w=BODY_W, type="dxa"))
+    for ri, row in enumerate(rows):
+        for ci, val in enumerate(row):
+            cell = t.cell(ri, ci)
+            tcpr = cell._tc.get_or_add_tcPr()
+            for old in tcpr.findall(qn("w:tcW")):
+                tcpr.remove(old)
+            tcpr.append(_el("tcW", w=w[ci], type="dxa"))
+            para = cell.paragraphs[0]
+            para.paragraph_format.space_after = Pt(0)
+            run = para.add_run(str(val))
+            run.font.size = Pt(9.5)
+            if ri == 0:
+                run.font.bold = True
+                run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+                para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                _shade(cell, HEAD_FILL)
+            else:
+                if ci == 0:
+                    _shade(cell, COL1_FILL)
+                elif ncol >= 4:
+                    para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    return _detach(doc, t._tbl)
+
+
+def make_note(doc, text):
+    t = doc.add_table(rows=1, cols=1)
+    tblpr = t._tbl.tblPr
+    for old in tblpr.findall(qn("w:tblBorders")):
+        tblpr.remove(old)
+    tblpr.append(_borders(NOTE_BORDER))
+    for old in tblpr.findall(qn("w:tblW")):
+        tblpr.remove(old)
+    tblpr.append(_el("tblW", w=BODY_W, type="dxa"))
+    cell = t.cell(0, 0)
+    tcpr = cell._tc.get_or_add_tcPr()
+    tcpr.append(_el("tcW", w=BODY_W, type="dxa"))
+    _shade(cell, NOTE_FILL)
+    para = cell.paragraphs[0]
+    para.paragraph_format.space_after = Pt(0)
+    run = para.add_run(text)
+    run.font.size = Pt(10)
+    return _detach(doc, t._tbl)
+
+
+def make_empty(doc):
+    p = doc.add_paragraph()
+    p.paragraph_format.space_after = Pt(0)
+    return _detach(doc, p._p)
+
+
+# ===========================================================================
+# 位置の特定
+# ===========================================================================
+def _norm(s):
+    return re.sub(r"[\s　]+", "", s)
+
+
+def find_para(doc, text):
+    """本文の段落のうち、文字列が一致するものを1つだけ見つける。"""
+    key = _norm(text)
+    hits = [p for p in doc.paragraphs if _norm(p.text) == key]
+    if not hits:
+        hits = [p for p in doc.paragraphs if key and key in _norm(p.text)]
+    if len(hits) != 1:
+        raise LookupError(f"挿入位置が一意に決まりません（{len(hits)}件）: "
+                          f"{text[:44]}")
+    return hits[0]._p
+
+
+def insert_after(anchor, elements):
+    cur = anchor
+    for e in elements:
+        cur.addnext(e)
+        cur = e
+    return cur
+
+
+def find_note_cell(doc, prefix):
+    """1x1の注記ボックスのうち、本文が prefix で始まるものを返す。"""
+    key = _norm(prefix)
+    hits = []
+    for t in doc.tables:
+        if len(t.rows) == 1 and len(t.columns) == 1:
+            if _norm(t.cell(0, 0).text).startswith(key):
+                hits.append(t.cell(0, 0))
+    if len(hits) != 1:
+        raise LookupError(f"注記ボックスが一意に決まりません（{len(hits)}件）: "
+                          f"{prefix[:30]}")
+    return hits[0]
+
+
+# ===========================================================================
+# 移植の割り当て
+#   既定は ISHOKU の ichi を挿入位置とし、ブロックをその直後に入れる。
+#   位置が前の移植と同じものは、前の移植の後ろに続けて入れる。
+# ===========================================================================
+# 位置が特殊なもの
+ANCHOR_OVERRIDE = {
+    # 移植7は移植6の続き、移植8の後半も同じ場所に続ける
+    "７": ("CHAIN", "６"),
+    # 移植8は2か所に分かれる。前半は第4章2（7）、後半は第5章2の続き
+    "８": ("SPLIT", None),
+    # 移植13は≪国の基本指針≫欄への追記を含む
+    "13": ("KOKUJI", None),
+}
+
+# 移植8の前半の挿入位置（第4章2（7）の【目標設定の考え方】の末尾）
+ANCHOR_8A = ("村単独での人材確保策には限りがあることから、"
+             "福島県が設置するワンストップ窓口や各種研修を積極的に活用し、"
+             "村職員及び村内関係者の受講を促進します。")
+
+# 移植6・7・8後半が続く位置（第5章2（6）の末尾）
+ANCHOR_5_2 = ("福島県が実施する研修や人材確保・生産性向上に関する支援策を活用し、"
+              "サービス提供に携わる人材の確保・定着とサービスの質の向上を図ります。"
+              "また、障害者虐待の防止や、災害時におけるサービス提供の継続についても、"
+              "事業所や関係機関と連携して取り組みます。")
+
+
+# ===========================================================================
+# 論点メモからの修正（データ待ちでないもの）
+#   番号, 挿入位置, 入れるもの
+# ===========================================================================
+MEMO_EDITS = [
+    ("R-12", "第４章２（３）　優先調達の進め方",
+     "なお、国等による障害者就労施設等からの物品等の調達の推進等に関する"
+     "法律（障害者優先調達推進法）第９条により、本村は毎年度、"
+     "障害者就労施設等からの物品等の調達の方針を作成し、公表します。"
+     "あわせて、当該年度の調達の実績も公表し、"
+     "第３章の目標値（障がい者就労施設等からの物品調達件数 ３件）の"
+     "達成状況を確認します。",
+     "CHAIN13"),
+    ("R-15", "第４章２（６）　相談の窓口の二層の役割分担",
+     "本村の相談の窓口は二層で考えます。"
+     "一層目は、どなたでも気軽に相談できる窓口であり、"
+     "村保健福祉課及び相談支援事業所（地域生活支援センターいなわしろ）が"
+     "これに当たります。"
+     "二層目は、専門的な助言や困難な事例への対応を担う窓口であり、"
+     "会津北部４町村で広域設置を目指す基幹相談支援センターがこれに当たります。"
+     "一層目で受けた相談のうち、権利擁護、虐待、"
+     "複数の制度にまたがる調整を要するものを二層目につなぐ流れを整えます。",
+     "本村では現在、該当する事例はありませんが、今後も相談支援事業所との"
+     "連携により相談支援専門員を確保し、令和11年度末まで０件を維持します。"),
+    ("R-19", "第４章２（４）　インクルーシブ教育との接続",
+     "これらの取組みは、障がいのある子どもとない子どもが"
+     "可能な限り共に学ぶインクルーシブ教育の考え方と同じ方向にあります。"
+     "インクルージョン推進のための協議の場では、"
+     "保育所・幼稚園・学校における受入れの状況と必要な配慮を共有し、"
+     "第３章の基本施策④教育・育成と一体で進めます。",
+     "CHAIN4"),
+    ("R-20", "第７章１　母子保健との連携の具体化",
+     "また、健康21プランの乳児家庭全戸訪問事業（こんにちは赤ちゃん事業）や"
+     "乳幼児健康診査は、障がいの早期発見と早期療育につながる入口です。"
+     "国民健康保険のデータヘルス計画による生活習慣病の重症化予防とあわせて、"
+     "保健部門と障がい福祉部門が情報を共有して取り組みます。",
+     "健康21プランの母子保健事業（妊婦全戸訪問、産後ケア事業等）と、"
+     "本計画の医療的ケア児支援体制の整備を、保健師を通じて連携して進めます。"),
+    ("R-21", "第５章３　障害者週間に合わせた啓発",
+     "理解促進研修・啓発事業は、これまで実績がありません。"
+     "実施の方法としては、毎年12月３日から９日までの障害者週間"
+     "（障害者基本法第９条）に合わせて、"
+     "村の施設における展示、広報誌の特集、"
+     "福祉ボランティアの活動の紹介を行うことを想定しています。",
+     "理解促進研修・啓発事業については、第４次北塩原村障がい者計画の"
+     "目標である「差別や偏見を感じている障がいがある人の割合」の減少に向け、"
+     "各年度１件の実施を見込みます。"),
+]
+
+# 用語解説に加える語（R-7）
+YOUGO_ADD = [
+    ("療育手帳", "知的障がいのある方に交付される手帳。"
+     "身体障害者手帳（身体障害者福祉法第15条）や"
+     "精神障害者保健福祉手帳（精神保健福祉法第45条）と異なり、"
+     "法律上の根拠はなく、国の通知に基づく制度として"
+     "都道府県・指定都市が交付する。"
+     "福島県は重度をＡ判定、中度・軽度をＢ判定としている。"),
+    ("難病等", "治療方法が確立していない疾病その他の特殊の疾病であって"
+     "政令で定めるもの。障害者総合支援法第４条第１項により、"
+     "手帳を所持していなくても障がい福祉サービスの対象となる。"
+     "対象疾病は令和７年４月から376疾病。"),
+    ("基盤整備量", "精神病床に１年以上入院している方が地域生活へ移行した"
+     "場合に、地域で受け止めるために必要となる障がい福祉サービス等の量。"
+     "国の基本指針 別表第二 三㈠⑤により、"
+     "市町村障害福祉計画で定めなければならない事項とされている。"),
+]
+
+
+# ===========================================================================
+# 移植の実行
+# ===========================================================================
+def build_blocks(doc, rec, skip_first_h3=False, h3_override=None):
+    """ISHOKU の nakami を正本の書式の要素に組み立てる。"""
+    out = []
+    for i, blk in enumerate(rec["nakami"]):
+        kind = blk[0]
+        if kind == "h3":
+            text = blk[1]
+            if h3_override is not None:
+                text = h3_override
+            out.append(make_sub(doc, text))
+        elif kind == "p":
+            out.append(make_para(doc, blk[1]))
+        elif kind == "tbl":
+            out.append(make_table(doc, blk[1], blk[2]))
+        elif kind == "note":
+            out.append(make_note(doc, blk[1]))
+    out.append(make_empty(doc))
+    return out
+
+
+def apply_ishoku(doc):
+    byno = {r["no"]: r for r in ISHOKU}
+    tail = {}      # 挿入位置ごとの「最後に入れた要素」
+
+    def put(anchor_key, anchor_text, elements):
+        if anchor_key in tail:
+            cur = tail[anchor_key]
+        else:
+            cur = find_para(doc, anchor_text)
+        tail[anchor_key] = insert_after(cur, elements)
+
+    for no in ("１", "２", "３", "４", "５", "６", "７", "８", "９",
+               "10", "11", "12", "13", "14", "15", "16"):
+        rec = byno[no]
+        mode = ANCHOR_OVERRIDE.get(no, (None, None))[0]
+
+        if no == "７":
+            put("5-2", ANCHOR_5_2, build_blocks(doc, rec))
+        elif no == "８":
+            # 前半（意思決定支援）は第4章2（7）、後半（経営基盤）は第5章2の続き
+            a = rec["nakami"]
+            front = [b for b in a[1:3]]            # p, note
+            back = a[4:]                           # p, tbl, note
+            el = []
+            for b in front:
+                el.append(make_para(doc, b[1]) if b[0] == "p"
+                          else make_note(doc, b[1]))
+            el.append(make_empty(doc))
+            put("4-2-7", ANCHOR_8A, el)
+            # 見出しは ISHOKU の指示書きを外して作る（書き写さない）
+            h = a[3][1].split("】", 1)[1]
+            el2 = [make_sub(doc, h)]
+            for b in back:
+                if b[0] == "p":
+                    el2.append(make_para(doc, b[1]))
+                elif b[0] == "tbl":
+                    el2.append(make_table(doc, b[1], b[2]))
+                elif b[0] == "note":
+                    el2.append(make_note(doc, b[1]))
+            el2.append(make_empty(doc))
+            put("5-2", ANCHOR_5_2, el2)
+        elif no == "13":
+            # ①≪国の基本指針≫欄への追記 ②本文・表・注記
+            cell = find_note_cell(doc, "≪国の基本指針≫\n① 一般就労への移行者数")
+            add = rec["nakami"][0][1].split("】", 1)[1]
+            p = cell.add_paragraph()
+            r = p.add_run(add)
+            r.font.size = Pt(10)
+            el = []
+            for b in rec["nakami"][1:]:
+                if b[0] == "p":
+                    el.append(make_para(doc, b[1].split("】", 1)[1]
+                                        if b[1].startswith("【") else b[1]))
+                elif b[0] == "tbl":
+                    el.append(make_table(doc, b[1], b[2]))
+                elif b[0] == "note":
+                    el.append(make_note(doc, b[1]))
+            el.append(make_empty(doc))
+            put("4-2-3", rec["ichi"], el)
+        elif no == "６":
+            put("5-2", ANCHOR_5_2, build_blocks(doc, rec))
+        elif no == "３":
+            put("4-2-3", rec["ichi"], build_blocks(doc, rec))
+        else:
+            put(f"a{no}", rec["ichi"], build_blocks(doc, rec))
+        changes.append(f"移植{no}：{rec['saki']}")
+    return tail
+
+
+def apply_memo(doc, tail):
+    """論点メモからの修正のうち、データ待ちでないものを入れる。"""
+    for no, midashi, honbun, anchor in MEMO_EDITS:
+        el = [make_para(doc, honbun), make_empty(doc)]
+        if anchor == "CHAIN13":
+            insert_after(tail["4-2-3"], el)
+            tail["4-2-3"] = el[-1]
+        elif anchor == "CHAIN4":
+            insert_after(tail["a４"], el)
+            tail["a４"] = el[-1]
+        else:
+            insert_after(find_para(doc, anchor), el)
+        changes.append(f"論点{no}：{midashi}")
+
+    # 用語解説に3語を加える（R-7ほか）
+    yougo = None
+    for t in doc.tables:
+        if len(t.columns) == 2 and t.rows[0].cells[0].text.strip() == "用語":
+            yougo = t
+            break
+    if yougo is None:
+        raise LookupError("用語解説の表が見つかりません")
+    for word, desc in YOUGO_ADD:
+        row = yougo.add_row()
+        for ci, val in enumerate((word, desc)):
+            cell = row.cells[ci]
+            para = cell.paragraphs[0]
+            para.paragraph_format.space_after = Pt(0)
+            run = para.add_run(val)
+            run.font.size = Pt(9.5)
+            if ci == 0:
+                _shade(cell, COL1_FILL)
+    changes.append(f"第８章５：用語解説に{len(YOUGO_ADD)}語を追加"
+                   "（療育手帳・難病等・基盤整備量）")
+    return yougo
+
+
+# ===========================================================================
+# 自己点検
+# ===========================================================================
+def verify(doc, src_dims):
+    ng = []
+    parts = []
+    for ch in doc.element.body.iterchildren():
+        tag = ch.tag.split("}")[-1]
+        if tag == "p":
+            parts.append(Paragraph(ch, doc).text)
+        elif tag == "tbl":
+            for row in Table(ch, doc).rows:
+                seen = set()
+                for c in row.cells:
+                    if id(c._tc) in seen:
+                        continue
+                    seen.add(id(c._tc))
+                    parts.append(c.text)
+    out = _norm("\n".join(parts))
+
+    # ① 申し送りの文章がすべて入っていること
+    miss = 0
+    for rec in ISHOKU:
+        for blk in rec["nakami"]:
+            if blk[0] in ("h3", "p", "note"):
+                t = blk[1]
+                # 「【第４章２（７）の…に入れる】」のような指示書きだけの
+                # 見出しは出力に入れないため、照合の対象から外す
+                if blk[0] == "h3" and t.startswith("【第") and \
+                        t.endswith("に入れる】"):
+                    continue
+                if t.startswith("【") and "】" in t:
+                    t = t.split("】", 1)[1]
+                if _norm(t) not in out:
+                    miss += 1
+                    if miss <= 6:
+                        ng.append(f"移植{rec['no']}の文章が出力にない: {t[:38]}")
+            elif blk[0] == "tbl":
+                for row in blk[1]:
+                    for v in row:
+                        if v and _norm(str(v)) not in out:
+                            miss += 1
+                            if miss <= 6:
+                                ng.append(
+                                    f"移植{rec['no']}の表のセルが出力にない: {v[:28]}")
+    if miss > 6:
+        ng.append(f"…ほか{miss - 6}件")
+
+    # ①b 移植8後半の見出し（指示書きを外したもの）が入っていること
+    h8 = [b[1] for b in next(r for r in ISHOKU if r["no"] == "８")["nakami"]
+          if b[0] == "h3"]
+    for h in h8:
+        if "】" in h and not h.endswith("に入れる】"):
+            if _norm(h.split("】", 1)[1]) not in out:
+                ng.append(f"移植8の見出しが出力にない: {h[:40]}")
+
+    # ② 論点メモからの修正が入っていること
+    for no, _m, honbun, _a in MEMO_EDITS:
+        if _norm(honbun) not in out:
+            ng.append(f"論点{no}の文章が出力にない")
+    for word, desc in YOUGO_ADD:
+        if _norm(desc) not in out:
+            ng.append(f"用語解説に入っていない: {word}")
+
+    # ③ 正本の既存の記述が消えていないこと
+    keep = [
+        "障がいのあるなしに関わらず、お互いの人格や個性を尊重し",
+        "令和８年４月１日現在2,316人",
+        "身体障害者手帳が127人",
+        "有効回答率", "22.1", "23.0",
+        "会津北部地域生活支援拠点",
+        "のぞまないセルフプラン",
+        "居宅介護", "生活介護", "就労継続支援Ｂ型", "共同生活援助",
+        "施設入所支援", "計画相談支援", "放課後等",
+        "成年後見制度の利用促進",
+        "北塩原村第五次総合振興計画",
+        "北塩原村障がい者自立支援協議会委員名簿",
+    ]
+    for w in keep:
+        if _norm(w) not in out:
+            ng.append(f"正本の記述が消えている: {w}")
+
+    # ④ 見込量表が残っていること（8列の実績・見込量の表）
+    n_mikomi = 0
+    for t in doc.tables:
+        hdr = [c.text.strip() for c in t.rows[0].cells]
+        if hdr[:2] == ["サービス種別", "単位"] and len(t.rows) > 2:
+            n_mikomi += 1
+    if n_mikomi < 10:
+        ng.append(f"見込量表が{n_mikomi}表しかない（正本は10表）")
+
+    # ⑤ 表記の作法（正本に揃える）
+    added = []
+    for rec in ISHOKU:
+        for blk in rec["nakami"]:
+            if blk[0] in ("h3", "p", "note"):
+                added.append(blk[1])
+            elif blk[0] == "tbl":
+                added += [str(v) for row in blk[1] for v in row]
+    for _n, _m, honbun, _a in MEMO_EDITS:
+        added.append(honbun)
+    added += [d for _w, d in YOUGO_ADD]
+    joined = "\n".join(added)
+    if "〜" in joined:
+        ng.append("波ダッシュ（〜）が混じっている")
+    if "か所" in joined or "ヶ所" in joined:
+        ng.append("「カ所」に揃っていない")
+    if re.search(r"令和[0-9]年", joined):
+        ng.append("令和の1桁が半角になっている")
+    if "%" in joined:
+        ng.append("半角の％が混じっている")
+
+    # ⑤b 加えた見出しが正本と同じスタイルで組まれていること
+    want_h2 = ["３　北塩原村高齢者福祉計画・介護保険事業計画との連携",
+               "４　制度の見直しへの対応"]
+    # 見出しは ISHOKU から機械で拾う（書き写すと取り違える）
+    want_sub = []
+    for rec in ISHOKU:
+        for blk in rec["nakami"]:
+            if blk[0] != "h3":
+                continue
+            t = blk[1]
+            if t.startswith("【") and t.endswith("に入れる】"):
+                continue
+            if "】" in t:
+                t = t.split("】", 1)[1]
+            if t.startswith("（"):
+                want_sub.append(t)
+    styles = {p.text.strip(): p.style.name for p in doc.paragraphs
+              if p.text.strip()}
+    for t in want_h2:
+        if styles.get(t) != "Heading 2":
+            ng.append(f"節の見出しが Heading 2 でない: {t}（{styles.get(t)}）")
+    for t in want_sub:
+        if styles.get(t) != "小見出し":
+            ng.append(f"項の見出しが 小見出し でない: {t}（{styles.get(t)}）")
+
+    # ⑥ 増えた量が妥当であること（既存を消していない）
+    sp, st = src_dims
+    if len(doc.paragraphs) <= sp:
+        ng.append(f"段落が増えていない（{sp}→{len(doc.paragraphs)}）")
+    if len(doc.tables) <= st:
+        ng.append(f"表が増えていない（{st}→{len(doc.tables)}）")
+
+    # ⑦ 他団体の名を出さない
+    for bad in ("小野町", "金ヶ崎", "阿蘇", "札幌"):
+        if bad in "\n".join(parts):
+            ng.append(f"他団体名が含まれている: {bad}")
+
+    if ng:
+        print("自己点検 不合格:")
+        for e in ng:
+            print("   -", e)
+        raise SystemExit(1)
+    print(f"  自己点検: 移植{len(ISHOKU)}件の文章と表が出力に実在／"
+          f"論点{len(MEMO_EDITS)}件・用語{len(YOUGO_ADD)}語が実在／"
+          f"正本の記述{len(keep)}点が残存／見込量表{n_mikomi}表／"
+          "表記の作法4点すべて合")
+
+
+def main():
+    if not os.path.exists(SRC):
+        raise SystemExit(f"正本が見つかりません: {SRC}")
+    os.makedirs(f"{REPO_ROOT}/output", exist_ok=True)
+    doc = docx.Document(SRC)
+    src_dims = (len(doc.paragraphs), len(doc.tables))
+
+    tail = apply_ishoku(doc)
+    apply_memo(doc, tail)
+    verify(doc, src_dims)
+    doc.save(OUT_FILE)
+
+    print(f"作成: {OUT_FILE}")
+    print(f"  正本: 段落{src_dims[0]}・表{src_dims[1]}")
+    print(f"  移植後: 段落{len(doc.paragraphs)}・表{len(doc.tables)}"
+          f"（＋{len(doc.paragraphs) - src_dims[0]}段落・"
+          f"＋{len(doc.tables) - src_dims[1]}表）")
+    print("  入れたもの:")
+    for c in changes:
+        print(f"    - {c}")
+
+
+if __name__ == "__main__":
+    main()
