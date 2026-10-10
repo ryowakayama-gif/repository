@@ -5,15 +5,24 @@
 出力: output/図表/*.png
 
 なぜ作るか
-  成果品①は「A4判・両面 約60頁・モノクロ・コピー・くるみ製本」である
-  （仕様書5）。正本に入っている図19点のうち15点は、色で系列を分けており、
-  グレーにすると濃さが同じになって見分けられない
-  （緑 RGB(46,158,107) と 青 RGB(61,134,198) はいずれもグレー値119）。
-  当方が作る図は、はじめからモノクロで判別できる作りにする。
+  正本（他メンバー版）には図が19点あるが、給付費・サービス別の構成・
+  高齢化率には図がない。数値の推移と構成は図の方が早く読める。
+
+色について（令和8年10月10日の指示）
+  図は他メンバー版に合わせてカラーで作る。
+  印刷の扱い（仕様書5はモノクロ・コピー・くるみ製本）は確認事項として
+  村・他メンバーに残す（Ｍ-69・Ｓ-20）。
+  ただしカラーのままでも、同じ図の中の系列はグレー値で25以上離す。
+  計画書はコピーして配られることがあり、
+  他メンバー版の図では緑 RGB(46,158,107) と 青 RGB(61,134,198) が
+  いずれもグレー値119で、白黒コピーすると見分けられなくなっている。
+  同じことが起きないようにするための歯止めである。
 
 作りの決め
-  ・系列はグレーの濃淡で分け、濃さの差を256階調で25以上空ける。
-    それでも足りない場合（系列が接する積み上げ）は45度・135度の網かけを足す。
+  ・色は他メンバー版と同じ3色（緑・橙・青）から使う。
+  ・同じ図の中で系列が2つ以上あるときは、グレー値が25以上離れる組を選ぶ
+    （緑と青は同じ濃さなので一緒に使わない。緑と橙なら52離れる）。
+  ・系列が接する積み上げでは、色に加えて45度・135度の網かけを足す。
   ・枠線は下と左だけ。横の目盛線は細い実線（破線にしない）。
   ・棒は間隔を空けて細く。棒どうしが接する積み上げは白の細い境で分ける。
   ・値のラベルは全部には付けない。表が隣にある図は最初と最後の年度だけ。
@@ -53,7 +62,11 @@ HONPON = f"{REPO_ROOT}/output/北塩原村_計画素案_正本_移植後.docx"
 # モノクロの作り
 # ---------------------------------------------------------------------------
 GRAY_MIN = 25          # 256階調で、これ以上の差があれば見分けられるとみなす
-GRAYS = [0.22, 0.58, 0.84]     # 濃い→薄い（系列1〜3）
+# 他メンバー版が使っている3色。括弧内はグレー値
+#   緑 119 ／ 橙 171 ／ 青 119
+#   緑と青は同じ濃さになるため、同じ図の中で並べて使わない
+COLORS = {"緑": "#2E9E6B", "橙": "#F0A030", "青": "#3D86C6"}
+SERIES = ["緑", "橙"]          # 2系列までの既定（グレー値の差52）
 HATCH = ["", "///", "xxx"]     # 接する面には網かけも足す
 INK = "#1A1A1A"                # 文字
 GRID = "#C8C8C8"               # 目盛線
@@ -76,8 +89,15 @@ def setup_font():
     return name
 
 
-def gray255(v):
-    return round(v * 255)
+def hex2rgb(h):
+    h = h.lstrip("#")
+    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def gray255(h):
+    """色（#RRGGBB）をグレーにしたときの明るさ（0が黒・255が白）。"""
+    r, g, b = hex2rgb(h)
+    return round(0.299 * r + 0.587 * g + 0.114 * b)
 
 
 def comma(ax, axis="y"):
@@ -193,7 +213,8 @@ def fig_kyufu():
             (axes[1], jido, "障害児給付費",
              (jido.index(max(jido)), len(jido) - 1))):
         x = range(len(labels))
-        ax.bar(x, vals, width=0.5, color=str(GRAYS[0]), edgecolor="none")
+        ax.bar(x, vals, width=0.5, color=COLORS[SERIES[0]],
+               edgecolor="none")
         style_axes(ax, "（千円）" if ax is axes[0] else None)
         comma(ax)
         ax.set_xticks(list(x))
@@ -227,7 +248,7 @@ def fig_service():
         figsize=(BODY_W_CM * 0.86 / 2.54, 8.4 / 2.54))
     y = range(len(order))
     ax.barh(y, [vals[i] for i in order], height=0.56,
-            color=str(GRAYS[0]), edgecolor="none")
+            color=COLORS[SERIES[0]], edgecolor="none")
     ax.set_yticks(list(y))
     ax.set_yticklabels([names[i] for i in order], fontsize=10)
     style_axes(ax)
@@ -253,8 +274,8 @@ def fig_koureika():
     ys = [d[1] for d in data]
     fig, ax = plt.subplots(
         figsize=(BODY_W_CM * 0.9 / 2.54, 6.6 / 2.54))
-    ax.plot(range(len(xs)), ys, color=str(GRAYS[0]), linewidth=2,
-            marker="o", markersize=5, markerfacecolor=str(GRAYS[0]),
+    ax.plot(range(len(xs)), ys, color=COLORS[SERIES[0]], linewidth=2,
+            marker="o", markersize=5, markerfacecolor=COLORS[SERIES[0]],
             markeredgecolor="white", markeredgewidth=1.5)
     style_axes(ax, "（％）")
     ax.set_xticks(range(len(xs)))
@@ -304,14 +325,30 @@ def verify(made):
     import collections
     ng = []
 
-    # ① 使った濃さが、互いに25以上離れていること
-    g = [gray255(v) for v in GRAYS]
+    # ① 同じ図で並べて使う色が、グレーにしても25以上離れていること
+    #    （白黒コピーされても系列を見分けられるようにするため）
+    g = [gray255(COLORS[k]) for k in SERIES]
     for i in range(len(g)):
         for j in range(i + 1, len(g)):
             if abs(g[i] - g[j]) < GRAY_MIN:
-                ng.append(f"系列の濃さが近すぎる: {g[i]} と {g[j]}")
+                ng.append(f"並べて使う色の濃さが近すぎる: "
+                          f"{SERIES[i]}{g[i]} と {SERIES[j]}{g[j]}")
+    #    緑と青を同じ図で使っていないこと（グレー値が同じ）
+    if abs(gray255(COLORS["緑"]) - gray255(COLORS["青"])) >= GRAY_MIN:
+        ng.append("緑と青のグレー値が離れている（前提が変わっている）")
+    if "緑" in SERIES and "青" in SERIES:
+        ng.append("緑と青を同じ図で並べて使っている（白黒で潰れる）")
 
-    # ② 作った図が白黒だけでできていること（色が混じっていない）
+    # ② 図に使われている色が、決めた3色の色合いに収まっていること
+    #    （縁のぼかしは白と混ざって薄くなるだけで、色合いは変わらない。
+    #     濃さではなく色合い（色相）で見る）
+    import colorsys
+
+    def hue(rgb):
+        r, g2, b = (v / 255 for v in rgb)
+        return colorsys.rgb_to_hsv(r, g2, b)[0] * 360
+
+    hues = [hue(hex2rgb(v)) for v in COLORS.values()]
     for path in made:
         im = Image.open(path).convert("RGB")
         small = im.resize((min(im.width, 300), min(im.height, 300)))
@@ -319,9 +356,13 @@ def verify(made):
             px = list(small.get_flattened_data())
         except AttributeError:
             px = list(small.getdata())
-        for rgb in collections.Counter(px):
-            if max(rgb) - min(rgb) > 12:        # 色みがある
-                ng.append(f"色が混じっている: {os.path.basename(path)} {rgb}")
+        for rgb, n in collections.Counter(px).most_common(40):
+            if n < 150 or max(rgb) - min(rgb) <= 14:
+                continue      # 白地・黒文字・グレーの目盛線は見ない
+            h = hue(rgb)
+            if not any(min(abs(h - q), 360 - abs(h - q)) <= 12 for q in hues):
+                ng.append(f"決めた色以外が使われている: "
+                          f"{os.path.basename(path)} {rgb}（色相{h:.0f}度）")
                 break
 
     # ③ 図の大きさが本文の幅に収まること
@@ -357,9 +398,10 @@ def verify(made):
         for e in ng:
             print("   -", e)
         raise SystemExit(1)
-    print(f"  自己点検: 濃さ{g}（差が{GRAY_MIN}以上）／"
-          f"作った図{len(made)}点が白黒のみ／本文幅{BODY_W_CM}cmに収まる／"
-          "原典の行数と一致")
+    print(f"  自己点検: 並べて使う色 {SERIES}＝グレー値{g}"
+          f"（差が{GRAY_MIN}以上）／"
+          f"作った図{len(made)}点が決めた3色の範囲／"
+          f"本文幅{BODY_W_CM}cmに収まる／高齢化率の年が昇順／原典の行数と一致")
 
 
 def main():
