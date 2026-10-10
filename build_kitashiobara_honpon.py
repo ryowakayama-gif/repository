@@ -53,6 +53,7 @@ from build_kitashiobara_ishoku_okurijo import ISHOKU  # noqa: E402
 from build_kitashiobara_murashiryo import MURA_EDITS  # noqa: E402
 from build_kitashiobara_juten12 import JUTEN_EDITS  # noqa: E402
 from build_kitashiobara_hp_shisaku import HP_EDITS  # noqa: E402
+from build_kitashiobara_hp_3bunya import HP3_EDITS  # noqa: E402
 from build_kitashiobara_graph import GRAPHS, OUT_DIR as ZU_DIR  # noqa: E402
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -555,7 +556,7 @@ def apply_juten(doc, records=None, label="重点施策"):
     for rec in (JUTEN_EDITS if records is None else records):
         el = []
         for blk in rec["nakami"]:
-            if blk[0] == "h3":
+            if blk[0] in ("h2", "h3"):
                 el.append(make_sub(doc, blk[1]))
             elif blk[0] == "p":
                 el.append(make_para(doc, blk[1]))
@@ -570,8 +571,11 @@ def apply_juten(doc, records=None, label="重点施策"):
             anchor = find_note_tbl(doc, rec["ichi"])
         elif rec["kata"] == "表の後":
             anchor = next_tbl(find_para(doc, rec["ichi"]))
-        else:
+        elif rec["kata"] == "本文":
             anchor = find_para(doc, rec["ichi"])
+        else:
+            raise LookupError(f"挿入位置の型が未定義: {rec['no']} "
+                              f"{rec['kata']}")
         insert_after(anchor, el)
         changes.append(f"{label}{rec['no']}：{rec['saki']}")
 
@@ -775,9 +779,9 @@ def verify(doc, src_dims):
                     ng.append(f"村資料{rec['no']}の表のセルが出力にない: {v[:28]}")
 
     # ②c 再レビューからの追記が入っていること
-    for rec in list(JUTEN_EDITS) + list(HP_EDITS):
+    for rec in list(JUTEN_EDITS) + list(HP_EDITS) + list(HP3_EDITS):
         for blk in rec["nakami"]:
-            if blk[0] in ("h3", "p", "note"):
+            if blk[0] in ("h2", "h3", "p", "note"):
                 if _norm(blk[1]) not in out:
                     ng.append(f"重点施策{rec['no']}の文章が出力にない: "
                               f"{blk[1][:38]}")
@@ -868,10 +872,13 @@ def verify(doc, src_dims):
         for midashi, _honbun in rec.get("ko", []):
             if midashi.startswith("（"):
                 want_sub.append(midashi)
-    for rec in list(JUTEN_EDITS) + list(HP_EDITS):
+    for rec in list(JUTEN_EDITS) + list(HP_EDITS) + list(HP3_EDITS):
         for blk in rec["nakami"]:
-            if blk[0] == "h3" and blk[1].startswith("（"):
+            if blk[0] in ("h2", "h3") and blk[1].startswith("（"):
                 want_sub.append(blk[1])
+            elif blk[0] in ("h2", "h3") and re.match(
+                    r"^[０-９0-9]+[　 ]", blk[1]):
+                want_h2.append(blk[1])
     styles = {p.text.strip(): p.style.name for p in doc.paragraphs
               if p.text.strip()}
     for t in want_h2:
@@ -917,7 +924,8 @@ def verify(doc, src_dims):
           f"論点{len(MEMO_EDITS)}件・用語{len(YOUGO_ADD)}語・"
           f"村資料{len(MURA_EDITS)}件・"
           f"重点施策{len(JUTEN_EDITS)}件・"
-          f"村HP{len(HP_EDITS)}件・図{len(GRAPHS)}点が実在／"
+          f"村HP{len(HP_EDITS)}件・村HP3分野{len(HP3_EDITS)}件・"
+          f"図{len(GRAPHS)}点が実在／"
           f"正本の記述{len(keep)}点が残存／見込量表{n_mikomi}表／"
           "表記の作法4点すべて合")
 
@@ -934,6 +942,7 @@ def main():
     apply_mura(doc)
     apply_juten(doc)
     apply_juten(doc, HP_EDITS, label="村HP")
+    apply_juten(doc, HP3_EDITS, label="村HP3分野")
     apply_graphs(doc)
     verify(doc, src_dims)
     doc.save(OUT_FILE)
