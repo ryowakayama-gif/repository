@@ -61,6 +61,9 @@ from build_kitashiobara_anke_mikomi import AN_EDITS  # noqa: E402
 from build_kitashiobara_kaigo_seigo import (  # noqa: E402
     KG_EDITS, KG_KAKIKAE,
 )
+from build_kitashiobara_kouiki_redteam import (  # noqa: E402
+    KO_EDITS, KO_KAKIKAE,
+)
 from build_kitashiobara_graph import GRAPHS, OUT_DIR as ZU_DIR  # noqa: E402
 from build_kitashiobara_zuhyo_bangou import ZU, HYO  # noqa: E402
 
@@ -835,7 +838,7 @@ def apply_kakikae(doc):
     挿入ではなく置換であるため、直す前の文が本文にちょうど1つある
     ことを確かめてから書き換える。書式は先頭のランのものを残す。
     """
-    for rec in list(KAKIKAE) + list(KG_KAKIKAE):
+    for rec in list(KAKIKAE) + list(KG_KAKIKAE) + list(KO_KAKIKAE):
         atari = [p for p in doc.paragraphs
                  if _norm(rec["mae"]) in _norm(p.text)]
         if len(atari) != 1:
@@ -1000,7 +1003,8 @@ def verify(doc, src_dims):
     # ②c 再レビューからの追記が入っていること
     for rec in (list(JUTEN_EDITS) + list(HP_EDITS) + list(HP3_EDITS)
                 + list(RT_EDITS) + list(ME_EDITS) + list(SA_EDITS)
-                + list(AN_EDITS) + list(KG_EDITS)):
+                + list(AN_EDITS) + list(KG_EDITS)
+                + list(KO_EDITS)):
         for blk in rec["nakami"]:
             if blk[0] in ("h2", "h3", "p", "note"):
                 if _norm(blk[1]) not in out:
@@ -1095,7 +1099,8 @@ def verify(doc, src_dims):
                 want_sub.append(midashi)
     for rec in (list(JUTEN_EDITS) + list(HP_EDITS) + list(HP3_EDITS)
                 + list(RT_EDITS) + list(ME_EDITS) + list(SA_EDITS)
-                + list(AN_EDITS) + list(KG_EDITS)):
+                + list(AN_EDITS) + list(KG_EDITS)
+                + list(KO_EDITS)):
         for blk in rec["nakami"]:
             if blk[0] in ("h2", "h3") and blk[1].startswith("（"):
                 want_sub.append(blk[1])
@@ -1151,7 +1156,8 @@ def verify(doc, src_dims):
           f"RedTeam{len(RT_EDITS)}件・MECE{len(ME_EDITS)}件・"
           f"見込量{len(SA_EDITS)}件・アンケート{len(AN_EDITS)}件・"
           f"介護整合{len(KG_EDITS)}件・"
-          f"書き換え{len(KAKIKAE) + len(KG_KAKIKAE)}件・"
+          f"広域{len(KO_EDITS)}件・"
+          f"書き換え{len(KAKIKAE) + len(KG_KAKIKAE) + len(KO_KAKIKAE)}件・"
           f"図{len(GRAPHS)}点が実在／"
           f"正本の記述{len(keep)}点が残存／見込量表{n_mikomi}表／"
           "表記の作法4点すべて合")
@@ -1175,6 +1181,7 @@ def main():
     apply_juten(doc, SA_EDITS, label="見込量")
     apply_juten(doc, AN_EDITS, label="アンケート")
     apply_juten(doc, KG_EDITS, label="介護整合")
+    apply_juten(doc, KO_EDITS, label="広域")
     apply_kakikae(doc)
     apply_graphs(doc)
     apply_bangou(doc)

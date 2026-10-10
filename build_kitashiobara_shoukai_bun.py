@@ -1,26 +1,27 @@
 # -*- coding: utf-8 -*-
 """
-北塩原村　村への照会文（5通）
+北塩原村　村への照会文（6通）
 
-出力: output/北塩原村_村への照会_5通.docx
+出力: output/北塩原村_村への照会_6通.docx
 
 何のために作るものか
-  令和8年10月10日までの各点検・レビューで立てた村への照会は58件に
+  令和8年10月10日までの各点検・レビューで立てた村への照会は62件に
   なったが、村に出す文書そのものは1通も作っていなかった。
   照会を出さない限り、見込量も成果目標も委員会資料も確定しない。
   令和8年10月15日（木）の打合せで手渡せる形にする。
 
 便の分け方（令和8年11月の委員会から逆算する）
-  58件を1通にすると回答が遅れる。
-  回答がいつ要るかで5通に分ける。
+  62件を1通にすると回答が遅れる。
+  回答がいつ要るかで6通に分ける。
     第1便 委員会（令和8年11月）に出す資料に直に要るもの
     第2便 見込量の確定に要るもの（第2次算定の入力）
     第3便 高齢者施策との接続（対象となるかどうか）
     第4便 児童福祉との接続
     第5便 既存施策の実績（計画の確定には間に合わなくてよい）
+    第6便 会津北部4町村及び県との広域整合
 
   Ｍ-40（工程の確認）は文書にせず電話で確かめる。
-  工程が分からないと、この5通の期限そのものが決められないため。
+  工程が分からないと、この6通の期限そのものが決められないため。
 
 単一出所
   照会の中身は各点検・レビューの生成器に置いてある。
@@ -51,9 +52,10 @@ from build_kitashiobara_zuhyo import KAKUNIN as K_ZUHYO  # noqa: E402
 from build_kitashiobara_zuhyo_bangou import KAKUNIN as K_BAN  # noqa: E402
 from build_kitashiobara_anke_mikomi import KAKUNIN as K_ANKE  # noqa: E402
 from build_kitashiobara_kaigo_seigo import SHOUKAI as S_KG  # noqa: E402
+from build_kitashiobara_kouiki_redteam import SHOUKAI as S_KO  # noqa: E402
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
-OUT_FILE = f"{REPO_ROOT}/output/北塩原村_村への照会_5通.docx"
+OUT_FILE = f"{REPO_ROOT}/output/北塩原村_村への照会_6通.docx"
 
 UCHIAWASE = "令和８年10月15日（木）"
 IINKAI = "令和８年11月"
@@ -75,7 +77,7 @@ def atsumeru():
         for r in recs:
             out[_zen(r[0])] = dict(no=_zen(r[0]), atesaki="村", kenmei=r[1],
                                    naiyo=r[2], tsukaimichi=r[3], kigen=r[4])
-    for recs in (S_HP3, S_RT, S_ME, S_SA, S_ZEN, S_KG,
+    for recs in (S_HP3, S_RT, S_ME, S_SA, S_ZEN, S_KG, S_KO,
                  K_ZUHYO, K_BAN, K_ANKE):
         for r in recs:
             out[_zen(r[0])] = dict(no=_zen(r[0]), atesaki=r[1], kenmei=r[2],
@@ -157,6 +159,31 @@ BIN = [
              "Ｍ-67", "Ｍ-68", "Ｍ-78", "Ｍ-79", "Ｍ-80",
              "Ｍ-82", "Ｍ-83", "Ｍ-84", "Ｍ-85", "Ｍ-86"],
     ),
+    dict(
+        no=6,
+        midashi="会津北部４町村及び県との広域整合",
+        kigen="令和８年12月12日（金）",
+        riyu="本計画は、地域生活支援拠点、基幹相談支援センター、"
+             "医療的ケア児等支援、インクルージョン推進及び"
+             "強度行動障害支援を、猪苗代町、磐梯町及び湯川村との"
+             "広域で確保することとしています。"
+             "しかし、本村の計画に「広域で行う」と書いても、"
+             "相手方の計画で同じ連携単位、同じ会議体、"
+             "同じ数え方になっていなければ、"
+             "広域で確保したことになりません。"
+             "とくに医療的ケア児等支援については、"
+             "磐梯町及び湯川村の現行計画が協議の場を"
+             "「圏域１カ所」としており、"
+             "この「圏域」が会津北部の４町村を指すのか"
+             "会津障がい保健福祉圏域を指すのかが分かりません。"
+             "単位が違えば、設置すべき会議体そのものが変わります。"
+             "３町村と県への照会を挟むため、"
+             "他の便より期限を遅く置いています。"
+             "ただしＭ-101（成年後見センターの構成市町村）は"
+             "村内で確かめられるものですので、"
+             "分かり次第お知らせいただければ助かります。",
+        nos=["Ｍ-98", "Ｍ-99", "Ｍ-100", "Ｍ-101"],
+    ),
 ]
 
 # 文書にせず電話で確かめるもの
@@ -197,7 +224,7 @@ def verify(zenbu):
         if no in ireta:
             ng.append(f"村以外あてを村の照会文に入れている: {no}")
 
-    # ④ 番号に抜けがないこと（Ｍ-40からＭ-97まで）
+    # ④ 番号に抜けがないこと（Ｍ-40からＭ-101まで）
     ban = sorted(int(k.split("-")[1]) for k in mura)
     nuke = [n for n in range(ban[0], ban[-1] + 1) if n not in ban]
     if nuke:
@@ -228,7 +255,7 @@ def verify(zenbu):
         for x in ng:
             print("   -", x)
         raise SystemExit(1)
-    print(f"  自己点検: 村あて{len(mura)}件が5通{len(ireta)}件と"
+    print(f"  自己点検: 村あて{len(mura)}件が{len(BIN)}通{len(ireta)}件と"
           f"電話{len(DENWA)}件に過不足なく収まる／"
           f"番号Ｍ-{ban[0]}〜Ｍ-{ban[-1]}に抜けなし／"
           f"便をまたぐ重複なし／村以外あて{len(HOKA)}件を含めていない／"
@@ -345,7 +372,7 @@ def main():
     doc = build(zenbu)
     print(f"作成: {OUT_FILE}")
     print(f"  段落{len(doc.paragraphs)}・表{len(doc.tables)}")
-    print(f"  村あて{len(mura)}件＝5通{sum(len(b['nos']) for b in BIN)}件"
+    print(f"  村あて{len(mura)}件＝{len(BIN)}通{sum(len(b['nos']) for b in BIN)}件"
           f"＋電話{len(DENWA)}件")
     for b in BIN:
         print(f"  第{b['no']}便 {b['midashi']}　{len(b['nos'])}件　"
