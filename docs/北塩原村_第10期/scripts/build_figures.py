@@ -819,7 +819,11 @@ def fig_hokenryo_jorei():
         for j, (futan, _kikin, suijun, tsuki) in enumerate(sorted(p, key=lambda t: t[3])):
             y = base + j + 1
             ys.append(y); ylab.append(f"　{futan}・{suijun}")
-            jorei = int(round(tsuki / 100.0) * 100)
+            # 条例上の基準額の置き方は estimate_kikin を正本とする。
+            # ここで四捨五入をじか書きしていたため、第9期の実例（算定上
+            # 6,760.76円に対し条例6,700円＝百円未満切捨て）と食い違っていた。
+            import estimate_kikin as _EK
+            jorei = _EK.jorei(tsuki)
             ax.plot([tsuki], [y], marker=mk, ms=7, color=cl, zorder=5)
             # 文字は白地を敷く。第9期の縦線が文字を切らないようにするため
             ax.annotate(f"{tsuki:,} → 条例 {jorei:,}", (tsuki, y), xytext=(9, 0),
@@ -837,7 +841,7 @@ def fig_hokenryo_jorei():
     ax.annotate(f"第9期の条例基準額 {K9:,}円", (K9, -0.75), fontsize=9,
                 color=K["d"], fontweight="bold", ha="center", va="bottom")
     ax.xaxis.set_major_formatter(FuncFormatter(lambda v, p: f"{int(v):,}"))
-    style_ax(ax, xlab="算定上の保険料月額（円）／矢印の右は百円未満を四捨五入した条例上の基準額")
+    style_ax(ax, xlab="算定上の保険料月額（円）／矢印の右は百円未満を切り捨てた条例上の基準額")
     ax.grid(axis="x", visible=True); ax.grid(axis="y", visible=False)
     ax.set_title(f"算定上の月額と条例上の基準額　12パターンの幅は{hi-lo:,}円",
                  loc="left", pad=24)

@@ -2227,6 +2227,71 @@ def main():
         chk(64, "「実績がない」にどの年度の実績かを書いていること", False,
             "照合できない（%s）" % e)
 
+    # ── 65　第11期の分母の組み方が第10期で復元できること ────────────────
+    #    5-7の基金の3案は、第11期の基準額を当方が組んだ分母で割って出している。
+    #    国の中長期シートは第11期の所得段階別加入割合補正後被保険者数を持たないため、
+    #    令和12年度の第1号被保険者数×補正係数×12か月×予定収納率で組んでいる。
+    #    この組み方が妥当かは、同じ組み方で第10期の分母を復元して比べるほかない。
+    #    素案の注記は差を印字するだけなので、差が大きくなっても文面は成り立ってしまう。
+    #    組み方が通らなくなったことを機械で知るための点検である。
+    #    あわせて、第11期の値が当方の試算であることと、
+    #    ワークシートの出力そのもの（取崩額0のときの値）が併記されていることを見る。
+    try:
+        import estimate_kikin as _KK65
+        ws65, my65, sa65 = _KK65.reconstruct()
+        bad65 = []
+        GEN65 = 0.005          # 復元の差の許容（0.5%）
+        if abs(sa65) > GEN65:
+            bad65.append("第10期の分母の復元の差が%+.2f%%で許容(%.1f%%)を超える"
+                         % (sa65 * 100, GEN65 * 100))
+        # 5-7 の該当の節に、当方の試算である旨とワークシートの出力が書かれていること
+        txt65 = ""
+        for c in SC.CH:
+            for sec in c["sections"]:
+                if sec["no"] != "5-7":
+                    continue
+                on = False
+                for b in sec["blocks"]:
+                    if b["t"] == "h3":
+                        on = (b["v"] == "介護給付費準備基金の取崩しの水準")
+                        continue
+                    if on:
+                        txt65 += str(b.get("v", "")) + str(b.get("rows", ""))
+        for need in ("当方の試算", "単年", "3か年に均した",
+                     "ワークシートを操作", "第11期の取崩額を0",
+                     "百円未満を切り捨てた", "四捨五入"):
+            if need not in txt65:
+                bad65.append("5-7の基金の節に「%s」の断りがない" % need)
+        # 3案の表が estimate_kikin の算定と一致すること
+        an65 = None
+        for c in SC.CH:
+            for sec in c["sections"]:
+                if sec["no"] != "5-7":
+                    continue
+                for b in sec["blocks"]:
+                    if b["t"] == "table" and "残高の緩衝力" in b["head"]:
+                        an65 = b
+        if an65 is None:
+            bad65.append("5-7に基金の3案の表がない")
+        else:
+            got = _KK65.run()[0]
+            if len(an65["rows"]) != len(got):
+                bad65.append("3案の行数 素案%d≠算定%d" % (len(an65["rows"]), len(got)))
+            else:
+                for r, g in zip(an65["rows"], got):
+                    if "{:,.0f}円".format(g["第10期条例"]) not in r:
+                        bad65.append("%s の第10期（条例上）が算定と合わない" % g["案"])
+                    if "{:,.0f}円".format(g["第11期条例"]) not in r:
+                        bad65.append("%s の第11期（条例上）が算定と合わない" % g["案"])
+        chk(65, "第11期の分母の組み方が第10期で復元できること", not bad65,
+            "・".join(bad65[:3]) if bad65
+            else "第10期の分母はワークシート%d人・月に対し復元%d人・月（差%+.2f%%）。"
+                 "3案の値が算定と一致し、当方の試算である旨も書かれている"
+                 % (round(ws65), round(my65), sa65 * 100))
+    except Exception as e:
+        chk(65, "第11期の分母の組み方が第10期で復元できること", False,
+            "照合できない（%s）" % e)
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
