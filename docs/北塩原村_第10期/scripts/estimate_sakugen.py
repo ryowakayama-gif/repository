@@ -99,6 +99,15 @@ AN = [
   "介護サービス事業者経営情報データベースの制度を説明したもので、"
   "本計画は分析結果を用いていない（5-12）。制度の概要の表は資料編に移せる。"
   "供給の継続性を把握する旨は施策4-6に残る"),
+ ("M", "資8 図表番号一覧を図表データ管理台帳へ移す（納品物と重複）",
+  [("資8", None)],
+  False,
+  "図の番号・名称・掲載箇所・出典を並べた28行の表。同じ内容を図表データ管理台帳"
+  "（納品する電子媒体 04_図表データ の 11_北塩原村第10期_図表データ管理台帳.xlsx。"
+  "シート「04_資8の一覧との突合」で資8と突き合わせている）として別に納めており、重複している。"
+  "計画の読み手が必要とするのは本文中の図そのものであって、番号の一覧ではない。"
+  "第9期計画には対応する記載がない。1.3頁あり、削減案のなかでは効きが大きい。"
+  "令和8年10月10日に紙面を実測して加えた案である"),
 ]
 
 # 本文に現れない用語（案G）。資5の表から落とす行を見出し語で指定する。
@@ -109,6 +118,60 @@ YOUGO_NAI = (
 )
 # 資料編へ移せる図（案H）
 FIG_UTSUSU = ("fig_連携の加算.png", "fig_給付適正化の得点.png")
+
+
+# ══════════════════════════════════════════════════════════════
+# 実測（令和8年10月10日・scripts/render_check.py）
+#   組み合わせ → (測ったときの推定本文頁, 実測本文頁)
+#
+# 推定は送りによる空白を小さく見るため下限である。実測との差は0〜3頁と
+# ばらつき、一定ではない。**村にお示しする頁数は、組んで PDF に変換して
+# 数えた値を用いる。** 測り直すには次を走らせる。
+#   python3 scripts/estimate_sakugen.py --jissoku ABCDEFGHJKLM
+# 素案が変わると推定も動く。測ったときの推定を一緒に持っておき、
+# 現在の推定と食い違ったら「実測が古い」と分かるようにしている（点検52）。
+JISSOKU = {
+    "":              (118, 120),
+    "ABCDE":         (112, 113),
+    "ABCDEFH":       (107, 110),
+    "ABCDEFHJ":      (105, 107),
+    "ABCEFHJ":       (106, 107),
+    "ABCDEFGHJKL":   (105, 106),
+    "ABCDEFGHJKLM":  (104, 104),
+}
+MAE_PG = 4          # 前付（表紙・本書の見方・目次）
+KYOYO = 110         # 村が許容する頁数（令和8年10月10日のご判断）
+
+# 対応表に並べる組み合わせ（村が選ぶ順に意味のまとまりで並べる）
+TAIOU = [
+    ("",             "何も行わない"),
+    ("ABCDE",        "第5章 5-4・5-7 の算定の方法と検証を別冊へ"),
+    ("ABCDEFH",      "＋ 2-8 の交付金の明細と図2点を資料編へ"),
+    ("ABCDEFHJ",     "＋ 1-8の3・5（部会で示された事項）を資料編へ"),
+    ("ABCDEFGHJKL",  "＋ 資5の8語・2-5の介護経営DB・5-7の12パターン"),
+    ("ABCDEFGHJKLM", "＋ 資8 図表番号一覧を図表データ管理台帳へ"),
+]
+
+
+def jissoku_furui():
+    """実測が古くなっていないかを見る。古いものの一覧を返す。"""
+    furui = []
+    for k, (est0, _jis) in sorted(JISSOKU.items()):
+        tg, yg, fg = an_targets(k)
+        now = EL.pages(items_without(tg, yougo=yg, figs=fg), EL.BODY_H)
+        if now != est0:
+            furui.append((k or "なし", est0, now))
+    return furui
+
+
+def jissoku_of(keys):
+    """その組み合わせの本文の頁数。実測があれば実測、なければ推定＋差。"""
+    k = seiki(keys)
+    tg, yg, fg = an_targets(k)
+    est = EL.pages(items_without(tg, yougo=yg, figs=fg), EL.BODY_H)
+    if k in JISSOKU and JISSOKU[k][0] == est:
+        return JISSOKU[k][1], "実測"
+    return est + EL.JITSU_SA, "推定＋差"
 
 
 def h3_range(sec_no, h3):
@@ -129,15 +192,26 @@ def h3_range(sec_no, h3):
     return None
 
 
-def items_without(targets, yougo=(), figs=()):
-    """指定した範囲を落として要素を並べ直す。
+import contextlib
+
+
+@contextlib.contextmanager
+def nuki(targets, yougo=(), figs=()):
+    """指定した範囲を落とした状態にして、抜けたら必ず元へ戻す。
 
     targets 小見出しの範囲（節, 小見出し）
     yougo   資5の表から落とす見出し語（案G）
     figs    本文から落とす図のファイル名（案H。資料編へ移す）
+
+    推定（items_without）と、実紙面を測るための docx の組み立て（build_docx）の
+    両方がこれを使う。**同じ落とし方でなければ、推定と実測を比べる意味がない。**
     """
     ranges = []
+    marugoto = []          # 節まるごとを落とすもの（小見出しが None）
     for sec_no, h3 in targets:
+        if h3 is None:
+            marugoto.append(sec_no)
+            continue
         r = h3_range(sec_no, h3)
         if r:
             ranges.append(r)
@@ -155,6 +229,15 @@ def items_without(targets, yougo=(), figs=()):
                     drop |= set(range(st, en))
                 sec["blocks"] = [b for i, b in enumerate(sec["blocks"])
                                  if i not in drop]
+    # 節まるごとを落とす（案M）。章から節そのものを外す
+    orig_secs = []
+    if marugoto:
+        for ch in SC.CH:
+            if any(sec["no"] in marugoto for sec in ch["sections"]):
+                orig_secs.append((ch, ch["sections"]))
+                ch["sections"] = [sec for sec in ch["sections"]
+                                  if sec["no"] not in marugoto]
+
     # 案G　資5の表から、本文に現れない用語の行を落とす
     orig_rows = []
     if yougo:
@@ -169,14 +252,26 @@ def items_without(targets, yougo=(), figs=()):
                     b["rows"] = [r for r in b["rows"] if str(r[0]) not in yougo]
 
     # 案H　本文に置いた図を落とす（資料編へ移す）
+    #   対応表（figures_map.FIGS）から外すだけでは、本文の {"t":"fig"} の
+    #   ブロックが残り、docx を組むときに引く先が無くなって落ちる。
+    #   推定の側は高さ0として素通ししていたため気づかなかった。本文からも外す。
     import figures_map as _FM
     orig_figs = None
+    orig_fb = []
     if figs:
         orig_figs = list(_FM.FIGS)
         _FM.FIGS = [e for e in _FM.FIGS if e[1] not in figs]
+        for ch in SC.CH:
+            for sec in ch["sections"]:
+                if any(b.get("t") == "fig" and b.get("v") in figs
+                       for b in sec["blocks"]):
+                    orig_fb.append((sec, sec["blocks"]))
+                    sec["blocks"] = [b for b in sec["blocks"]
+                                     if not (b.get("t") == "fig"
+                                             and b.get("v") in figs)]
 
     try:
-        return EL.soan_items(True)
+        yield
     finally:
         for ch in SC.CH:
             for sec in ch["sections"]:
@@ -184,8 +279,69 @@ def items_without(targets, yougo=(), figs=()):
                     sec["blocks"] = orig[sec["no"]]
         for b, rows in orig_rows:
             b["rows"] = rows
+        for sec, bs in orig_fb:
+            sec["blocks"] = bs
+        for ch, secs in orig_secs:
+            ch["sections"] = secs
         if orig_figs is not None:
             _FM.FIGS = orig_figs
+
+
+def items_without(targets, yougo=(), figs=()):
+    """指定した範囲を落として要素を並べ直す（推定の側）。"""
+    with nuki(targets, yougo, figs):
+        return EL.soan_items(True)
+
+
+def seiki(keys):
+    """案の記号の並びを並べ替えて正規の形にする（JISSOKU の鍵と突き合わせるため）。"""
+    return "".join(sorted(set(keys)))
+
+
+def an_targets(keys):
+    """案の記号の並び（例 "ABCEFHJ"）から、落とす範囲と案G・案Hの指定を返す。"""
+    ks = [k for k in seiki(keys)]
+    shiru = {a[0] for a in AN}
+    for k in ks:
+        if k not in shiru:
+            raise SystemExit(f"案{k}は定義にない（あるのは {''.join(sorted(shiru))}）")
+    tg = [t for a in AN if a[0] in ks for t in a[2]]
+    return tg, (YOUGO_NAI if "G" in ks else ()), (FIG_UTSUSU if "H" in ks else ())
+
+
+def build_docx(keys, out):
+    """案を適用した計画書の docx を組む（実紙面を測るため）。
+
+    推定は送りによる空白を小さく見るため下限にとどまる。どの組み合わせが
+    村の許容に収まるかは、組んで変換して数えるのが確かである。
+    納品物は上書きしない。out に書く。
+    """
+    import json, subprocess, tempfile
+    tg, yg, fg = an_targets(keys)
+    here = os.path.dirname(os.path.abspath(__file__))
+    with nuki(tg, yg, fg):
+        import figures_map as _FM
+        figs_sec, figs_inline = {}, {}
+        for _sec, _fn, _cap, _src, _inline in _FM.FIGS:
+            rec = {"file": _fn, "caption": _cap, "source": _src}
+            if _inline:
+                figs_inline[_fn] = rec
+            else:
+                figs_sec.setdefault(_sec, []).append(rec)
+        data = {"title": SC.TITLE, "title2": SC.TITLE2, "subtitle": SC.SUBTITLE,
+                "draft": SC.DRAFT, "issuer": SC.ISSUER, "date": SC.DATE,
+                "chapters": SC.CH, "figures": figs_sec,
+                "figures_inline": figs_inline}
+        fd, js = tempfile.mkstemp(suffix=".json", prefix="sakugen_")
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+    r = subprocess.run(["node", os.path.join(here, "build_soan_docx.js"),
+                        "--keikaku", out, "--in", js],
+                       capture_output=True, text=True, timeout=900)
+    os.unlink(js)
+    if r.returncode != 0 or not os.path.exists(out):
+        raise SystemExit((r.stdout + r.stderr)[-2000:])
+    return out
 
 
 def main():
@@ -197,10 +353,10 @@ def main():
     #  判断する数であるから、ここでは実測との差（EL.JITSU_SA）を乗せる。
     MOKUYASU = 100
     print("■ 計画書の分量を仕様書の目安に近づける削減案\n")
-    print(f"  現在　本文 {base}頁 ＋ 前付 4頁 ＋ 実測との差 {EL.JITSU_SA}頁"
-          f" ＝ {base + MAE}頁"
-          f"（目安 {MOKUYASU}頁に対し {base + MAE - MOKUYASU:+d}頁、"
-          f"村が許容する110頁に対し {base + MAE - 110:+d}頁）\n")
+    n_ima, doko_ima = jissoku_of("")
+    print(f"  現在　本文 {n_ima}頁 ＋ 前付 {MAE_PG}頁 ＝ {n_ima + MAE_PG}頁（{doko_ima}）"
+          f"（目安 {MOKUYASU}頁に対し {n_ima + MAE_PG - MOKUYASU:+d}頁、"
+          f"村が許容する{KYOYO}頁に対し {n_ima + MAE_PG - KYOYO:+d}頁）\n")
     print(f"  {'案':3s} {'内容':44s} {'減る頁':>6s} {'法定':>4s}")
     print("  " + "─" * 70)
     rows = []
@@ -222,11 +378,42 @@ def main():
     allt = [t for _n, _m, tg, _h, _r in AN for t in tg]
     n_all = EL.pages(items_without(allt, yougo=YOUGO_NAI, figs=FIG_UTSUSU), EL.BODY_H)
     print("  " + "─" * 70)
-    print(f"  {'A〜H をすべて行った場合':50s} {base - n_all:5d}頁")
-    print(f"\n  本文 {n_all}頁 ＋ 前付 4頁 ＋ 実測との差 {EL.JITSU_SA}頁"
-          f" ＝ {n_all + MAE}頁"
-          f"（目安 {MOKUYASU}頁に対し {n_all + MAE - MOKUYASU:+d}頁、"
-          f"村が許容する110頁に対し {n_all + MAE - 110:+d}頁）")
+    print(f"  {'すべて行った場合（推定ベース）':50s} {base - n_all:5d}頁")
+    zenbu = seiki("".join(a[0] for a in AN))
+    n_zen, doko_zen = jissoku_of(zenbu)
+    print(f"\n  本文 {n_zen}頁 ＋ 前付 {MAE_PG}頁 ＝ {n_zen + MAE_PG}頁（{doko_zen}）"
+          f"（目安 {MOKUYASU}頁に対し {n_zen + MAE_PG - MOKUYASU:+d}頁、"
+          f"村が許容する{KYOYO}頁に対し {n_zen + MAE_PG - KYOYO:+d}頁）")
+
+    # ── 実測による対応表（村が選ぶための表） ──
+    furui = jissoku_furui()
+    print("\n■ 実測による対応表　どの案を行うと何頁になるか\n")
+    if furui:
+        print("  ※ 実測が古い（素案が変わっている）：" +
+              "・".join(f"{k}（測ったときの推定{a}頁→いまは{b}頁）"
+                        for k, a, b in furui))
+        print("    python3 scripts/estimate_sakugen.py --jissoku <案の記号> で測り直す\n")
+    print(f"  {'行う案':<14}{'本文':>5}{'前付':>5}{'合計':>5}"
+          f"{'目安100頁':>10}{'許容110頁':>10}  {'出どころ':<8}内容")
+    print("  " + "─" * 104)
+    for k, nm in TAIOU:
+        n, doko = jissoku_of(k)
+        g = n + MAE_PG
+        print(f"  {k or '（なし）':<14}{n:5d}{MAE_PG:5d}{g:5d}"
+              f"{g - MOKUYASU:+10d}{g - KYOYO:+10d}  {doko:<8}{nm}")
+    print("  " + "─" * 104)
+    n_min, _ = jissoku_of(TAIOU[-1][0])
+    if n_min + MAE_PG <= KYOYO:
+        print(f"  すべて行えば{n_min + MAE_PG}頁で、村が許容する{KYOYO}頁に"
+              f"{KYOYO - n_min - MAE_PG}頁の余裕がある。")
+    else:
+        print(f"  すべて行っても{n_min + MAE_PG}頁で、村が許容する{KYOYO}頁に"
+              f"{n_min + MAE_PG - KYOYO}頁足りない。")
+    print("  ※ 本文の頁数は docx を PDF に変換して数えた値である（doc83）。"
+          "推定は送りによる空白を小さく見るため0〜3頁少なく出る。")
+    print("  ※ 游ゴシックが無い環境のため IPAゴシックで組んだ紙面である。"
+          "Word＋游ゴシックではなお±1〜2頁動き得る。")
+    print("  ※ 案Mを行う場合は、資9（関連計画との対照）を資8に繰り上げる。")
 
     # ── 組み合わせを総当たりし、目安に近いものを示す ──
     #    案ごとの減り方は足し算にならない。頁の境目のため、
@@ -242,7 +429,9 @@ def main():
                 figs=FIG_UTSUSU if "H" in ks else ()), EL.BODY_H) + MAE
             kumi.setdefault(pg, []).append("".join(ks))
     mn = min(kumi)
-    print("\n■ 目安に近い組み合わせ（総当たり）\n")
+    print("\n■ 目安に近い組み合わせ（総当たり・推定ベース）\n")
+    print("  推定に実測との差を一律に乗せたものである。上の対応表（実測）と"
+          "1〜2頁食い違うことがある。\n")
     print(f"  {'合計頁':>6s}  {'目安差':>5s}  最も少ない案で届く組み合わせ")
     for pg in sorted(kumi)[:5]:
         saitan = min(kumi[pg], key=len)
@@ -275,5 +464,43 @@ def main():
     return 0
 
 
+def jissoku_measure(kumi):
+    """組み合わせごとに docx を組んで PDF に変換し、本文の頁数を数える。
+
+    JISSOKU に貼る行をそのまま出す。素案を直したら測り直す。
+    """
+    import tempfile
+    import render_check as RC
+    import pymupdf
+    out = tempfile.mkdtemp(prefix="sakugen_")
+    print("■ 実測（組んで変換して数える）\n")
+    for k in kumi:
+        nm = k or "なし"
+        tg, yg, fg = an_targets(k)
+        est = EL.pages(items_without(tg, yougo=yg, figs=fg), EL.BODY_H)
+        dx = os.path.join(out, nm + ".docx")
+        build_docx(k, dx)
+        pdf = RC.convert(dx, os.path.join(out, nm))
+        n = pymupdf.open(pdf).page_count - 3        # 前付3頁（目次は空のまま出る）
+        mae = JISSOKU.get(k)
+        shirushi = "" if mae is None else ("　（前は %d）" % mae[1] if mae[1] != n else "　（前と同じ）")
+        print(f'    "{k}": ({est}, {n}),'.ljust(34)
+              + f"# 推定{est}頁 → 実測{n}頁{shirushi}")
+    print("\n  上の行を estimate_sakugen.py の JISSOKU に貼る。")
+    print(f"  組んだ docx と PDF： {out}")
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    if "--docx" in sys.argv:
+        i = sys.argv.index("--docx")
+        keys = sys.argv[i + 1] if len(sys.argv) > i + 1 else ""
+        j = sys.argv.index("--out") if "--out" in sys.argv else -1
+        out = sys.argv[j + 1] if j >= 0 else os.path.join(
+            __import__("tempfile").gettempdir(), f"06_計画書_{keys or 'なし'}.docx")
+        print("組んだ:", build_docx(keys.replace("なし", ""), out))
+    elif "--jissoku" in sys.argv:
+        i = sys.argv.index("--jissoku")
+        jissoku_measure([a.replace("なし", "") for a in sys.argv[i + 1:]]
+                        or [k for k, _ in TAIOU])
+    else:
+        sys.exit(main())

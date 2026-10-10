@@ -1369,15 +1369,21 @@ def main():
     try:
         import estimate_sakugen as ES
         import estimate_layout as EL52
+        import soan_content as SC52
         bad52 = []
         tanto0 = []          # 単独では頁が減らない案（不適合ではなく、注記する）
         base52 = EL52.pages(EL52.soan_items(True), EL52.BODY_H)
         for no, nm, tg, hotei, _riyu in ES.AN:
             if not tg:
                 continue
-            # 指す小見出しが実在すること
+            # 指す小見出し（節まるごとの案は節）が実在すること
             for sec_no, h3 in tg:
-                if ES.h3_range(sec_no, h3) is None:
+                if h3 is None:          # 案M のように節まるごとを移すもの
+                    aru = any(sec["no"] == sec_no
+                              for ch in SC52.CH for sec in ch["sections"])
+                    if not aru:
+                        bad52.append(f"案{no}：{sec_no}という節がない")
+                elif ES.h3_range(sec_no, h3) is None:
                     bad52.append(f"案{no}：{sec_no}に「{h3[:18]}」という小見出しがない")
             # 中身が実際に減ること。
             #   もとは「減る頁が0でないこと」で見ていたが、頁は粗すぎる。
@@ -1402,25 +1408,27 @@ def main():
         # すべて行えば村が許容する範囲に収まること（前付4頁を含む）。
         # 令和8年10月10日に村から「10頁程度の超過は許容する」との判断を得たため、
         # 許容を110頁とした（それまでは105頁で判定していた）。
-        KYOYO52 = 110
-        allt = [t for _n, _m, tg, _h, _r in ES.AN for t in tg]
+        KYOYO52 = ES.KYOYO
         # 推定は下限である（送りによる空白を小さく見る）。令和8年10月10日に
-        # docx を PDF に変換して実測したところ、素案も計画書も推定より2頁多かった。
-        # 村の許容に収まるかを見るのだから、実測との差を乗せた値で判断する。
-        n_all = EL52.pages(ES.items_without(allt, yougo=ES.YOUGO_NAI,
-                                            figs=ES.FIG_UTSUSU), EL52.BODY_H) \
-                + 4 + EL52.JITSU_SA
+        # 組み合わせごとに docx を PDF へ変換して数えたところ、差は0〜3頁と
+        # ばらついた。一律に乗せるのでは足りないため、村の許容に収まるかは
+        # 実測（estimate_sakugen.JISSOKU）で判断する。
+        zenbu = ES.seiki("".join(a[0] for a in ES.AN))
+        n_all, doko52 = ES.jissoku_of(zenbu)
+        n_all += ES.MAE_PG
         if n_all > KYOYO52:
-            bad52.append(f"すべて行っても{n_all}頁（推定{n_all - EL52.JITSU_SA}頁＋"
-                          f"実測との差{EL52.JITSU_SA}頁）で、村が許容する{KYOYO52}頁に"
-                          f"{n_all - KYOYO52}頁収まらない")
+            bad52.append(f"すべて行っても{n_all}頁（{doko52}）で、"
+                         f"村が許容する{KYOYO52}頁に{n_all - KYOYO52}頁収まらない")
+        # 実測が古くなっていないこと（素案が変わると推定が動く）
+        for k52, est0, now in ES.jissoku_furui():
+            bad52.append(f"実測が古い（{k52}：測ったときの推定{est0}頁→いま{now}頁）")
         chk(52, "分量の削減案が成り立つこと", not bad52,
             "・".join(bad52[:3]) if bad52
             else f"{len(ES.AN)}案（うち小見出しを指すもの{len([a for a in ES.AN if a[2]])}案）。"
                  f"G 用語の絞り込みは{base52 - n_g}頁、H 図2点を資料編へは{base52 - n_h}頁。"
-                 f"すべて行えば本文{n_all - 4 - EL52.JITSU_SA}頁＋前付4頁"
-                 f"＋実測との差{EL52.JITSU_SA}頁＝{n_all}頁"
-                 f"（目安100頁に対し{n_all - 100:+d}頁。村が許容する{KYOYO52}頁の範囲内）"
+                 f"すべて行えば本文{n_all - ES.MAE_PG}頁＋前付{ES.MAE_PG}頁＝{n_all}頁"
+                 f"（{doko52}。目安100頁に対し{n_all - 100:+d}頁。"
+                 f"村が許容する{KYOYO52}頁に{KYOYO52 - n_all}頁の余裕）"
                  + (f"。単独では頁が減らない案{'・'.join(tanto0)}"
                     f"（中身は減る。他の案と重ねたときに効く）" if tanto0 else ""))
     except Exception as e:
@@ -1738,6 +1746,10 @@ def main():
         MACHI57 = {"本文%d頁＋前付4頁＝%d頁" % (n, n + 4)
                    for n in (n_kei57, n_kei57 + _EL57.JITSU_SA,
                              n_all57, n_all57 + _EL57.JITSU_SA)}
+        # 実測で数えた頁数も許す（村にお示しするのはこちらである）
+        for _k57 in _ES57.JISSOKU:
+            _n57v, _ = _ES57.jissoku_of(_k57)
+            MACHI57.add("本文%d頁＋前付4頁＝%d頁" % (_n57v, _n57v + 4))
         # 見る先は確認事項だけでなく、WBSの「着手しない理由」と「翌営業日の作業」も
         # 含める。理由の欄は WBS 進捗管理表として村に渡るのに、確認事項と違って
         # 誰も数を確かめていなかった。現に Ⅱ-113 の理由が「到達できる最小が102頁」

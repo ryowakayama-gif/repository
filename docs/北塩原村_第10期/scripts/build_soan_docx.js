@@ -2,7 +2,13 @@
 const fs = require('fs');
 const d = require(require('path').join(__dirname, 'docxlib.js'));
 const path = require('path');
-const BUILDJSON = path.join(
+// 入力のJSON。--in で差し替えられる。estimate_sakugen.py が削減案を適用した
+// 中身を一時のJSONに書き、実紙面の頁数を測るために使う。
+const ARGIN = (() => {
+  const i = process.argv.indexOf('--in');
+  return i >= 0 ? process.argv[i + 1] : null;
+})();
+const BUILDJSON = ARGIN || path.join(
   path.resolve(__dirname, '..', '..', '..'), 'output', '_build', 'soan.json');
 // 置き場所は自分の位置から数える（じか書きしない）。
 //   scripts/ → 北塩原村_第10期/ → docs/ → リポジトリの根
@@ -19,6 +25,7 @@ const OUTDIR = require('path').join(ROOT, 'output');
     console.error('入力の ' + js + ' がありません。先に build_soan.py を実行してください。');
     process.exit(1);
   }
+  if (ARGIN) return;        // --in の一時ファイルは作りたてなので見ない
   for (const src of srcs) {
     if (fs.statSync(js).mtimeMs < fs.statSync(src).mtimeMs) {
       console.error('入力の ' + js + ' が ' + src + ' より古いです。先に build_soan.py を実行してください。');
