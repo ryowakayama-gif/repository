@@ -9,7 +9,7 @@ const OUTDIR = path.join(ROOT, 'output');
 const d = require(path.join(__dirname, 'docxlib.js'));
 const {Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBreak,
        Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, Footer,
-       PageNumber, TableLayoutType} = d;
+       PageNumber, TableLayoutType, LineRuleType} = d;
 
 const C = JSON.parse(fs.readFileSync(path.join(OUTDIR, '_build', 'irai_bundle.json'), 'utf8'));
 const FONT = '游明朝', FONTG = '游ゴシック';
@@ -19,7 +19,7 @@ const TBLW = 9360;
 const PARTFILL = {1: KEYB};
 
 const p = (text, o = {}) => new Paragraph({
-  spacing: {after: o.after ?? 120, line: o.line ?? 300},
+  spacing: {after: o.after ?? 120, line: o.line ?? 300, lineRule: LineRuleType.EXACT},
   alignment: o.align, indent: o.indent, keepNext: o.keepNext,
   children: [new TextRun({text, font: o.font ?? FONT, size: o.size ?? 21,
                           bold: o.bold, color: o.color})],
@@ -35,7 +35,7 @@ function table(head, rows, widths, fill) {
               fill: isHead ? BLUE : (isAns ? 'FFFFFF' : (fill || 'FFFFFF'))},
     margins: {top: 70, bottom: 70, left: 90, right: 90},
     children: [new Paragraph({
-      spacing: {after: 0, line: 250},
+      spacing: {after: 0, line: 250, lineRule: LineRuleType.EXACT},
       alignment: isHead ? AlignmentType.CENTER : undefined,
       children: [new TextRun({text: String(txt), font: FONTG, size: 17,
                               bold: isHead, color: isHead ? 'FFFFFF' : '000000'})],
@@ -84,7 +84,7 @@ function build(b) {
       children: [new TextRun({text: s.title, font: FONTG, size: 26, bold: true, color: 'FFFFFF'})],
     }));
     if (s.lead) kids.push(new Paragraph({
-      spacing: {before: 60, after: 220, line: 280}, indent: {left: 200, right: 200},
+      spacing: {before: 60, after: 220, line: 280, lineRule: LineRuleType.EXACT}, indent: {left: 200, right: 200},
       shading: {type: ShadingType.CLEAR, fill: NOTE}, keepNext: true,
       border: {left: {style: BorderStyle.SINGLE, size: 18, color: 'C00000', space: 8}},
       children: [new TextRun({text: s.lead, font: FONTG, size: 18, color: GREY})],
@@ -104,7 +104,9 @@ function build(b) {
   kids.push(p('様式や記入の仕方についてのご相談も承ります。お手元にない資料は「なし」とご記入いただければ、当方で代わりの手だてを検討します。', {after: 120}));
 
   return new Document({
-    styles: {default: {heading1: {run: {font: FONTG, size: 26, bold: true, color: 'FFFFFF'}}}},
+    // 既定の書体と大きさを宣言する（宣言しないと Word の既定が段落記号に効く）
+    styles: {default: {document: {run: {font: FONT, size: 21}},
+                       heading1: {run: {font: FONTG, size: 26, bold: true, color: 'FFFFFF'}}}},
     sections: [{
       properties: {page: {margin: {top: 1134, bottom: 1134, left: 1134, right: 1134}}},
       footers: {default: new Footer({children: [new Paragraph({

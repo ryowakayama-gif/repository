@@ -21,6 +21,17 @@ BODY_W = 11906 - 1134 * 2          # 9638 twip
 BODY_H = 16838 - 1418 * 2          # 14002 twip
 FIGDIR = _P.FIGURES
 
+# 表の幅。build_*_docx.js の TBLW と同じ値でなければならない。**本文幅ではない。**
+# 以前は本文幅（9638）でセル幅を出していたため、実際より3%広いセルを前提に
+# 折り返し行数を少なく見積もっていた。PDF の実測で表の幅は 468pt（9360 twip）。
+# 点検68（verify_soan.py）で build 側の値との一致を固定している。
+TBLW = 9360
+
+# 表の1行の下駄（セルの上下余白と罫線）。宣言値は上下60＋60＝120 twip だが、
+# PDF の実測では1行の行高が 18.35pt（＝240＋127 twip）であった。罫線のぶん
+# 7 twip 多い。1371行では約1万 twip（0.8頁）になるため無視できない。
+ROW_GETA = 127
+
 def chars_per_line(pt):            # 全角は1文字＝フォントサイズと同じ幅
     return (BODY_W / 20) / pt
 
@@ -100,9 +111,9 @@ def block_h(b):
             lines = 1
             for i, cell in enumerate(row):
                 # 列幅から引く。セル余白（左右90twip）はその列のぶんだけ引く
-                cw = ((w[i] / tot) * BODY_W - 90 * 2) / 20 / 8.5
+                cw = ((w[i] / tot) * TBLW - 90 * 2) / 20 / 8.5
                 lines = max(lines, math.ceil(text_w(cell) / max(1.0, cw)))
-            h += lines * 240 + 120
+            h += lines * 240 + ROW_GETA
         return h + 160
     return 0
 
@@ -181,9 +192,9 @@ def shiryo_block_h(b):
         for row in [b["head"]] + [list(map(str, r)) for r in b["rows"]]:
             lines = 1
             for i, cell in enumerate(row):
-                cw = ((wid[i] / tot) * SH_W - 90 * 2) / 20 / 8.5
+                cw = ((wid[i] / tot) * TBLW - 90 * 2) / 20 / 8.5
                 lines = max(lines, math.ceil(text_w(cell) / max(1.0, cw)))
-            h += lines * 240 + 120
+            h += lines * 240 + ROW_GETA
         return h + 160
     return 0
 

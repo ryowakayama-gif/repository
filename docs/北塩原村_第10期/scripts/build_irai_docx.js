@@ -7,7 +7,8 @@ const ROOT = require('path').resolve(__dirname, '..', '..', '..');
 const OUTDIR = require('path').join(ROOT, 'output');
 const d = require(require('path').join(__dirname, 'docxlib.js'));
 const {Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBreak,
-       Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, Footer, PageNumber} = d;
+       Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, Footer, PageNumber,
+       LineRuleType} = d;
 
 const C = JSON.parse(fs.readFileSync(path.join(OUTDIR, '_build', 'irai.json'), 'utf8'));
 const FONT = '游明朝', FONTG = '游ゴシック';
@@ -15,7 +16,7 @@ const NAVY = '1F3864', BLUE = '2E75B6', NOTE = 'FFF3F3', KEYB = 'FFF2CC', GREY =
 const TBLW = 9360;
 
 const p = (text, o = {}) => new Paragraph({
-  spacing: {after: o.after ?? 120, line: o.line ?? 300},
+  spacing: {after: o.after ?? 120, line: o.line ?? 300, lineRule: LineRuleType.EXACT},
   alignment: o.align, indent: o.indent,
   children: [new TextRun({text, font: o.font ?? FONT, size: o.size ?? 21,
                           bold: o.bold, color: o.color})],
@@ -29,7 +30,7 @@ function table(head, rows, widths) {
     shading: {type: ShadingType.CLEAR, fill: isHead ? BLUE : (star ? KEYB : 'FFFFFF')},
     margins: {top: 70, bottom: 70, left: 90, right: 90},
     children: [new Paragraph({
-      spacing: {after: 0, line: 250},
+      spacing: {after: 0, line: 250, lineRule: LineRuleType.EXACT},
       alignment: isHead ? AlignmentType.CENTER : undefined,
       children: [new TextRun({text: String(txt), font: FONTG, size: 17,
                               bold: isHead, color: isHead ? 'FFFFFF' : '000000'})],
@@ -74,7 +75,7 @@ C.sections.forEach((s, i) => {
   }));
   if (s.lead) kids.push(p(s.lead, {after: 160}));
   if (s.note) kids.push(new Paragraph({
-    spacing: {before: 60, after: 200, line: 280}, indent: {left: 200, right: 200},
+    spacing: {before: 60, after: 200, line: 280, lineRule: LineRuleType.EXACT}, indent: {left: 200, right: 200},
     shading: {type: ShadingType.CLEAR, fill: NOTE},
     border: {left: {style: BorderStyle.SINGLE, size: 18, color: 'C00000', space: 8}},
     children: [new TextRun({text: '※ ' + s.note, font: FONTG, size: 18, color: GREY})],
@@ -89,7 +90,9 @@ kids.push(p('第10期北塩原村高齢者福祉計画・介護保険事業計�
 kids.push(p('本依頼書の各項目には管理番号を付しています。ご回答は項目ごとでも、まとめてでも結構です。ご不明な点や、様式・形式についてのご相談も承ります。', {after: 120}));
 
 const doc = new Document({
-  styles: {default: {heading1: {run: {font: FONTG, size: 26, bold: true, color: 'FFFFFF'}}}},
+  // 既定の書体と大きさを宣言する（宣言しないと Word の既定が段落記号に効く）
+  styles: {default: {document: {run: {font: FONT, size: 21}},
+                     heading1: {run: {font: FONTG, size: 26, bold: true, color: 'FFFFFF'}}}},
   sections: [{
     properties: {page: {margin: {top: 1134, bottom: 1134, left: 1134, right: 1134}}},
     footers: {default: new Footer({children: [new Paragraph({

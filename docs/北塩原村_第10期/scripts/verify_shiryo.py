@@ -696,6 +696,49 @@ except Exception as e:
     chk(24, "資料2-2 の確定した事項の一覧が各資料と合うこと", False,
         f"照合できない（{e}）")
 
+# ── 25　表紙と「本資料の見方」が回ごとに合っていること ───────────────
+#    もとは組立て（build_shiryo_docx.js）に第2回の資料名と本文をじか書きしており、
+#    第3回の表紙にも第2回の資料一覧が、見方にも「令和8年11月に開催する第2回
+#    策定委員会の資料」が出ていた（令和8年10月13日。PDFの紙面で見つけた）。
+#    内容の側（META）に移したので、回ごとに合っているかを見る。
+try:
+    KIGOU25 = ("【要確定】", "【要確認】", "【要設定】", "【試算中】", "【推計中】")
+    bad25 = []
+    for nm25, mod25, kai25, hoka25 in (("第2回", SH, "第2回", "第3回"),
+                                       ("第3回", SH3, "第3回", "第2回")):
+        M = mod25.META
+        shou = {c["no"]: c["title"] for c in mod25.CH}
+        # 表紙の資料が章に実在すること
+        for no in M.get("hyoshi", []):
+            if no not in shou:
+                bad25.append("%s 表紙の %s が章にない" % (nm25, no))
+        if not M.get("hyoshi"):
+            bad25.append("%s の表紙に並べる資料が決まっていない" % nm25)
+        # 見方が自分の回を指していること
+        mae = str(M.get("mikata_mae", ""))
+        if kai25 not in mae:
+            bad25.append("%s の見方に「%s」がない" % (nm25, kai25))
+        if hoka25 + "策定委員会の資料" in mae:
+            bad25.append("%s の見方が %s を指している" % (nm25, hoka25))
+        # 見方の表に挙げた記号が、本文で現に使われていること（逆も見る）
+        honbun = "".join(
+            str(b.get("v", "")) + "".join(str(x) for r in b.get("rows", []) for x in r)
+            for c in mod25.CH for sc in c["sections"] for b in sc["blocks"])
+        ageta = {r[0] for r in M.get("mikata_hyo", [])}
+        for k in KIGOU25:
+            tsukau = k in honbun
+            noseta = any(k in a for a in ageta)
+            if tsukau and not noseta:
+                bad25.append("%s は %s を使っているが見方の表にない" % (nm25, k))
+            if noseta and not tsukau:
+                bad25.append("%s は %s を見方の表に挙げているが使っていない" % (nm25, k))
+    chk(25, "表紙と「本資料の見方」が回ごとに合うこと", not bad25,
+        "・".join(bad25[:3]) if bad25
+        else "第2回・第3回とも表紙の資料は章に実在し、見方は自分の回を指し、"
+             "表記の記号は本文で使っているものと一致する")
+except Exception as e:
+    chk(25, "表紙と「本資料の見方」が回ごとに合うこと", False, "照合できない（%s）" % e)
+
 w = max(len(n) for _, n, _, _ in R)
 print("■ 策定委員会 資料の自己点検（第2回＋第3回の骨子）")
 ng = 0

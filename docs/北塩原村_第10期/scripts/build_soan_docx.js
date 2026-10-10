@@ -29,17 +29,39 @@ const OUTDIR = require('path').join(ROOT, 'output');
 
 const {Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBreak, ImageRun,
        Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, LevelFormat,
-       TableOfContents, Header, Footer, PageNumber, TableLayoutType} = d;
+       TableOfContents, Header, Footer, PageNumber, TableLayoutType, LineRuleType} = d;
 
 const C = JSON.parse(fs.readFileSync(BUILDJSON, 'utf8'));
 // 書式は協議用素案の体裁（本文 游ゴシック 10.5pt）に合わせる。図表の色味は現行のまま
 const FONT = '游ゴシック';
 const FONTG = '游ゴシック';
 const NAVY = '1F3864', BLUE = '2E75B6', BAND = 'DDEBF7', NOTE = 'FFF3F3', GREY = '595959';
-const TBLW = 9360;   // A4 縦 本文幅（DXA）
+const TBLW = 9360;   // 表の幅（DXA）。本文幅（9638）ではない。
+                     // estimate_pages.py の TBLW と同じ値でなければ推定が狂う
 
+// 計画書として組む指定。編集注記（note）と5-12（現時点で据え置いた項目）は
+// 策定の過程を委員と共有するために置いたもので、計画書には載せない
+// （素案5-12の注記による）。estimate_layout.py --keikaku と同じ外し方をする。
+//   node build_soan_docx.js --keikaku [保存先.docx]
+// 分量が村の許容（110頁）に収まるかを実紙面で確かめるために使う。既定の
+// 保存先は一時の場所であり、納品物の 06_…計画素案.docx は上書きしない。
+const KEIKAKU = process.argv.includes('--keikaku');
+const ARGOUT = (() => {
+  const i = process.argv.indexOf('--keikaku');
+  const v = i >= 0 ? process.argv[i + 1] : null;
+  return v && !v.startsWith('--') ? v : null;
+})();
+
+// 行送りは必ず lineRule を付けて固定する。
+// w:lineRule を省くと OOXML の既定は "auto" になり、w:line は twip ではなく
+// 「1行の高さの240分の1」倍として読まれる。すると1行の高さがフォント側の
+// ascent＋descent＋lineGap に左右され、游ゴシックが入っている Word と、
+// 代替フォントで開いた環境とで頁数が変わる。游ゴシックは行間が広く取られる
+// 作りのため、auto のままでは Word で紙面が膨らみ、110頁の枠に収まるかどうかの
+// 判断そのものが当てにならなくなる。exact にすれば 300 twip＝15pt に固定され、
+// どの環境でも、また estimate_pages.py の推定とも一致する。
 const p = (text, o = {}) => new Paragraph({
-  spacing: {after: o.after ?? 120, line: o.line ?? 300},
+  spacing: {after: o.after ?? 120, line: o.line ?? 300, lineRule: LineRuleType.EXACT},
   alignment: o.align, indent: o.indent,
   keepNext: o.keep, keepLines: o.keep,   // 見出し・図の表題を次の要素から切り離さない
   border: o.border,
@@ -57,7 +79,7 @@ function table(head, rows, widths) {
     shading: {type: ShadingType.CLEAR, fill: isHead ? BLUE : 'FFFFFF'},
     margins: {top: 60, bottom: 60, left: 90, right: 90},
     children: [new Paragraph({
-      spacing: {after: 0, line: 240},
+      spacing: {after: 0, line: 240, lineRule: LineRuleType.EXACT},
       alignment: isHead ? AlignmentType.CENTER : undefined,
       children: [new TextRun({text: String(txt), font: FONTG, size: 17,
                               bold: isHead, color: isHead ? 'FFFFFF' : '000000'})],
@@ -160,6 +182,7 @@ C.chapters.forEach((ch, ci) => {
                             bold: true, color: 'FFFFFF'})],
   }));
   ch.sections.forEach(sec => {
+    if (KEIKAKU && sec.no === '5-12') return;
     kids.push(new Paragraph({
       heading: HeadingLevel.HEADING_2,
       spacing: {before: 320, after: 180},
@@ -174,16 +197,17 @@ C.chapters.forEach((ch, ci) => {
       figure(f).forEach(x => kids.push(x));
     });
     sec.blocks.forEach(b => {
+      if (KEIKAKU && b.t === 'note') return;
       if (b.t === 'p') kids.push(p(b.v));
       else if (b.t === 'h3') kids.push(p(b.v, {size: 22, bold: true, font: FONTG,
                                                color: BLUE, after: 100, keep: true}));
       else if (b.t === 'bullets') b.v.forEach(x => kids.push(new Paragraph({
-        numbering: {reference: 'bul', level: 0}, spacing: {after: 60, line: 300},
+        numbering: {reference: 'bul', level: 0}, spacing: {after: 60, line: 300, lineRule: LineRuleType.EXACT},
         children: [new TextRun({text: x, font: FONT, size: 20})],
       })));
       else if (b.t === 'note') {
         kids.push(new Paragraph({
-          spacing: {before: 100, after: 160, line: 280},
+          spacing: {before: 100, after: 160, line: 280, lineRule: LineRuleType.EXACT},
           indent: {left: 200, right: 200},
           shading: {type: ShadingType.CLEAR, fill: NOTE},
           border: {left: {style: BorderStyle.SINGLE, size: 18, color: 'C00000', space: 8}},
@@ -228,7 +252,9 @@ const doc = new Document({
 });
 
 Packer.toBuffer(doc).then(buf => {
-  const out = path.join(OUTDIR, '06_北塩原村第10期_計画素案.docx');
+  const out = KEIKAKU
+    ? (ARGOUT || path.join(require('os').tmpdir(), '06_計画書_試作.docx'))
+    : path.join(OUTDIR, '06_北塩原村第10期_計画素案.docx');
   fs.writeFileSync(out, buf);
   console.log('保存:', out, (buf.length / 1024).toFixed(0) + ' KB');
 });

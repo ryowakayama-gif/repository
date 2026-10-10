@@ -190,11 +190,17 @@ def items_without(targets, yougo=(), figs=()):
 
 def main():
     base = EL.pages(EL.soan_items(True), EL.BODY_H)
-    MAE = 4          # 前付（表紙・本書の見方・目次）
+    MAE = 4 + EL.JITSU_SA   # 前付（表紙・本書の見方・目次）4頁 ＋ 実測との差
+    #  令和8年10月10日に docx を PDF に変換して実測したところ、計画書は
+    #  推定118頁に対し実測120頁であった（素案も推定135頁に対し実測137頁）。
+    #  推定は送りの空白を小さく見るため下限である。村の許容に収まるかを
+    #  判断する数であるから、ここでは実測との差（EL.JITSU_SA）を乗せる。
     MOKUYASU = 100
     print("■ 計画書の分量を仕様書の目安に近づける削減案\n")
-    print(f"  現在　本文 {base}頁 ＋ 前付 {MAE}頁 ＝ {base + MAE}頁"
-          f"（目安 {MOKUYASU}頁に対し {base + MAE - MOKUYASU:+d}頁）\n")
+    print(f"  現在　本文 {base}頁 ＋ 前付 4頁 ＋ 実測との差 {EL.JITSU_SA}頁"
+          f" ＝ {base + MAE}頁"
+          f"（目安 {MOKUYASU}頁に対し {base + MAE - MOKUYASU:+d}頁、"
+          f"村が許容する110頁に対し {base + MAE - 110:+d}頁）\n")
     print(f"  {'案':3s} {'内容':44s} {'減る頁':>6s} {'法定':>4s}")
     print("  " + "─" * 70)
     rows = []
@@ -217,8 +223,10 @@ def main():
     n_all = EL.pages(items_without(allt, yougo=YOUGO_NAI, figs=FIG_UTSUSU), EL.BODY_H)
     print("  " + "─" * 70)
     print(f"  {'A〜H をすべて行った場合':50s} {base - n_all:5d}頁")
-    print(f"\n  本文 {n_all}頁 ＋ 前付 {MAE}頁 ＝ {n_all + MAE}頁"
-          f"（目安 {MOKUYASU}頁に対し {n_all + MAE - MOKUYASU:+d}頁）")
+    print(f"\n  本文 {n_all}頁 ＋ 前付 4頁 ＋ 実測との差 {EL.JITSU_SA}頁"
+          f" ＝ {n_all + MAE}頁"
+          f"（目安 {MOKUYASU}頁に対し {n_all + MAE - MOKUYASU:+d}頁、"
+          f"村が許容する110頁に対し {n_all + MAE - 110:+d}頁）")
 
     # ── 組み合わせを総当たりし、目安に近いものを示す ──
     #    案ごとの減り方は足し算にならない。頁の境目のため、
@@ -240,8 +248,18 @@ def main():
         saitan = min(kumi[pg], key=len)
         print(f"  {pg:5d}頁  {pg - MOKUYASU:+5d}  {saitan}")
     print(f"\n  到達できる最小は {mn}頁（{min(kumi[mn], key=len)}）。"
-          f"目安{MOKUYASU}頁に対し {mn - MOKUYASU:+d}頁。")
-    print("  これ以上は、介護保険法第117条第2項が求める事項か前付に手を入れることになる。")
+          f"目安{MOKUYASU}頁に対し {mn - MOKUYASU:+d}頁、"
+          f"村が許容する110頁に対し {mn - 110:+d}頁。")
+    if mn > 110:
+        print(f"  **A〜L をすべて行っても村の許容に {mn - 110}頁足りない。** 次の手だてがある。")
+        print("    ① 1頁に収まらない表（3-5・4-6・資8）を分けるか詰める")
+        print("       estimate_layout.py が「1頁に収まらない要素」として挙げている。"
+              "いずれも1.0〜1.1頁で、残りの0.1頁ぶんが次頁に1行だけ乗って空白を生む")
+        print("    ② 送りで3割以上の空白が出る箇所（estimate_layout.py が挙げる13件）の"
+              "図と見出しの並びを入れ替える")
+        print("    ③ 村に111頁の可否を諮る（許容110頁は令和8年10月10日の口頭の判断）")
+    else:
+        print("  これ以上は、介護保険法第117条第2項が求める事項か前付に手を入れることになる。")
     print("\n■ 各案の理由と移し先\n")
     for no, nm, _tg, hotei, riyu in AN:
         print(f"  {no}　{nm}")

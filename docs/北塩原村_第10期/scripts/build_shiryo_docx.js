@@ -6,7 +6,7 @@ const fs = require('fs');
 const d = require(require('path').join(__dirname, 'docxlib.js'));
 const {Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBreak,
        Table, TableRow, TableCell, WidthType, ShadingType, BorderStyle, LevelFormat,
-       TableOfContents, Footer, PageNumber, ImageRun, TableLayoutType} = d;
+       TableOfContents, Footer, PageNumber, ImageRun, TableLayoutType, LineRuleType} = d;
 const path = require('path');
 // 置き場所は自分の位置から数える（じか書きしない）。
 //   scripts/ → 北塩原村_第10期/ → docs/ → リポジトリの根
@@ -82,7 +82,7 @@ const NAVY = '1F3864', BLUE = '2E75B6', BAND = 'DDEBF7', NOTE = 'FFF3F3', KEYB =
 const TBLW = 9360;
 
 const p = (text, o = {}) => new Paragraph({
-  spacing: {after: o.after ?? 120, line: o.line ?? 300},
+  spacing: {after: o.after ?? 120, line: o.line ?? 300, lineRule: LineRuleType.EXACT},
   alignment: o.align, indent: o.indent, border: o.border,
   keepNext: o.keep, keepLines: o.keep,   // 見出しを次の要素から切り離さない
   shading: o.shade ? {type: ShadingType.CLEAR, fill: o.shade} : undefined,
@@ -98,7 +98,7 @@ function table(head, rows, widths) {
     shading: {type: ShadingType.CLEAR, fill: isHead ? BLUE : 'FFFFFF'},
     margins: {top: 60, bottom: 60, left: 90, right: 90},
     children: [new Paragraph({
-      spacing: {after: 0, line: 240},
+      spacing: {after: 0, line: 240, lineRule: LineRuleType.EXACT},
       alignment: isHead ? AlignmentType.CENTER : undefined,
       children: [new TextRun({text: String(txt), font: FONTG, size: 17,
                               bold: isHead, color: isHead ? 'FFFFFF' : '000000'})],
@@ -120,28 +120,27 @@ kids.push(p('', {after: 2600}));
 kids.push(p(C.title,  {align: AlignmentType.CENTER, size: 32, bold: true, font: FONTG, color: NAVY, after: 160}));
 kids.push(p(C.title2, {align: AlignmentType.CENTER, size: 32, bold: true, font: FONTG, color: NAVY, after: 700}));
 kids.push(p(C.subtitle, {align: AlignmentType.CENTER, size: 24, font: FONTG, after: 1600}));
-kids.push(p('資料2　第9期計画の進捗と評価', {align: AlignmentType.CENTER, size: 24, font: FONTG, after: 100}));
-kids.push(p('資料4　第10期計画の基本理念・基本目標・施策体系（案）', {align: AlignmentType.CENTER, size: 24, font: FONTG, after: 100}));
-kids.push(p('資料5　サービス見込み量の考え方（案）', {align: AlignmentType.CENTER, size: 24, font: FONTG, after: 100}));
-kids.push(p('資料6　介護保険料の概算シミュレーション', {align: AlignmentType.CENTER, size: 24, font: FONTG, after: 100}));
-kids.push(p('資料7　成果目標・活動指標（案）', {align: AlignmentType.CENTER, size: 24, font: FONTG, after: 1600}));
+// 表紙に並べる資料。番号は内容の側（META.hyoshi）が持ち、名称は章から引く。
+//   もとはここに第2回の資料名をじか書きしており、第3回の表紙にも第2回の
+//   資料一覧が出ていた（令和8年10月13日。PDFの紙面で見つけた）。
+const hyoshi = C.hyoshi || [];
+hyoshi.forEach((no, i) => {
+  const ch = C.chapters.find(x => x.no === no);
+  if (!ch) throw new Error(`表紙の資料 ${no} が章にありません`);
+  kids.push(p(`${ch.no}　${ch.title}`, {align: AlignmentType.CENTER, size: 24,
+    font: FONTG, after: i === hyoshi.length - 1 ? 1600 : 100}));
+});
 kids.push(p(C.date,   {align: AlignmentType.CENTER, size: 24, font: FONTG, after: 120}));
 kids.push(p(C.issuer, {align: AlignmentType.CENTER, size: 28, bold: true, font: FONTG, after: 0}));
 kids.push(new Paragraph({children: [new PageBreak()]}));
 
 // 本書の見方
 kids.push(p('本資料の見方', {size: 28, bold: true, font: FONTG, color: NAVY, after: 240}));
-kids.push(p('本資料は、令和8年11月に開催する第2回策定委員会の資料の一部です。資料3（アンケート調査結果）は、調査の集計後に作成します。', {after: 180}));
-kids.push(table(['表記', '意味'], [
-  ['【要確認】', '北塩原村への確認により確定する事項です。'],
-  ['【要設定】', '目標値等を今後設定する箇所です。'],
-  ['【試算中】／【推計中】', '国の推計ワークシートの提供後に算出する数値です。'],
-  ['網掛けの囲み', '委員の皆様にご留意いただきたい点です。'],
-  ['注記の囲み', '未確定の事項と、その確定の見通しです。'],
-], [26, 74]));
+kids.push(p(C.mikata_mae, {after: 180}));
+kids.push(table(['表記', '意味'], C.mikata_hyo, [26, 74]));
 kids.push(p('', {after: 200}));
-kids.push(p('資料5・6は骨格です。数値は、国の推計ワークシートの提供（第10期基本指針の告示後）と、村の実績データの受領をもって確定します。本日は「考え方」についてご意見をいただきたく存じます。', {after: 180}));
-kids.push(p('資料4は、本委員会でご議論いただきたい事項の中心です。各施策の根拠となる住民ニーズの数値は、資料3で補足します。', {after: 240}));
+(C.mikata_ato || []).forEach((v, i, a) =>
+  kids.push(p(v, {after: i === a.length - 1 ? 240 : 180})));
 kids.push(new Paragraph({children: [new PageBreak()]}));
 
 // 目次
@@ -171,7 +170,7 @@ C.chapters.forEach((ch, ci) => {
       if (b.t === 'p') kids.push(p(b.v));
       else if (b.t === 'h3') kids.push(p(b.v, {size: 22, bold: true, font: FONTG, color: BLUE, after: 100, keep: true}));
       else if (b.t === 'bullets') b.v.forEach(x => kids.push(new Paragraph({
-        numbering: {reference: 'bul', level: 0}, spacing: {after: 60, line: 300},
+        numbering: {reference: 'bul', level: 0}, spacing: {after: 60, line: 300, lineRule: LineRuleType.EXACT},
         children: [new TextRun({text: x, font: FONT, size: 20})],
       })));
       else if (b.t === 'key') {
@@ -181,14 +180,14 @@ C.chapters.forEach((ch, ci) => {
           text: ln, font: FONTG, size: 20, bold: true, break: i > 0 ? 1 : 0,
         })));
         kids.push(new Paragraph({
-          spacing: {before: 140, after: 200, line: 300}, indent: {left: 200, right: 200},
+          spacing: {before: 140, after: 200, line: 300, lineRule: LineRuleType.EXACT}, indent: {left: 200, right: 200},
           shading: {type: ShadingType.CLEAR, fill: KEYB},
           border: {left: {style: BorderStyle.SINGLE, size: 18, color: 'BF8F00', space: 8}},
           children: runs,
         }));
       }
       else if (b.t === 'note') kids.push(new Paragraph({
-        spacing: {before: 120, after: 180, line: 280}, indent: {left: 200, right: 200},
+        spacing: {before: 120, after: 180, line: 280, lineRule: LineRuleType.EXACT}, indent: {left: 200, right: 200},
         shading: {type: ShadingType.CLEAR, fill: NOTE},
         border: {left: {style: BorderStyle.SINGLE, size: 18, color: 'C00000', space: 8}},
         children: [new TextRun({text: '※ ' + b.v, font: FONTG, size: 17, color: GREY})],
@@ -204,6 +203,9 @@ C.chapters.forEach((ch, ci) => {
 
 const doc = new Document({
   styles: {default: {
+    // 既定の書体と大きさを宣言する。宣言しないと Word の既定（Calibri・11pt）が
+    // 段落記号や目次のフィールドに効き、書体が揃わない。表の行高も 6 twip 変わる。
+    document: {run: {font: FONT, size: 21}},
     heading1: {run: {font: FONTG, size: 30, bold: true, color: 'FFFFFF'}},
     heading2: {run: {font: FONTG, size: 25, bold: true, color: NAVY}},
   }},

@@ -1370,6 +1370,7 @@ def main():
         import estimate_sakugen as ES
         import estimate_layout as EL52
         bad52 = []
+        tanto0 = []          # 単独では頁が減らない案（不適合ではなく、注記する）
         base52 = EL52.pages(EL52.soan_items(True), EL52.BODY_H)
         for no, nm, tg, hotei, _riyu in ES.AN:
             if not tg:
@@ -1378,10 +1379,19 @@ def main():
             for sec_no, h3 in tg:
                 if ES.h3_range(sec_no, h3) is None:
                     bad52.append(f"案{no}：{sec_no}に「{h3[:18]}」という小見出しがない")
-            # 減る頁が0でないこと（0なら案として意味をなさない）
+            # 中身が実際に減ること。
+            #   もとは「減る頁が0でないこと」で見ていたが、頁は粗すぎる。
+            #   令和8年10月10日に表の幅と行の下駄を実測に合わせたところ、
+            #   頁の境目が動き、案D・L・Kが単独では0頁になった。中身は現に
+            #   減っているのだから、案が空であることの証拠にはならない。
+            #   高さ（twip）で見れば、指す小見出しが空のときだけ0になる。
+            h0 = sum(i[2] for i in EL52.soan_items(True))
+            h1 = sum(i[2] for i in ES.items_without(tg))
+            if h0 - h1 <= 0:
+                bad52.append(f"案{no}：削っても中身が減らない（指す小見出しが空）")
             n = EL52.pages(ES.items_without(tg), EL52.BODY_H)
             if base52 - n <= 0:
-                bad52.append(f"案{no}：削っても頁が減らない")
+                tanto0.append(no)
             if hotei:
                 bad52.append(f"案{no}：法定記載事項を削る案になっている")
         # 小見出しを指さない案（G 用語の絞り込み・H 図を資料編へ）も、
@@ -1394,16 +1404,25 @@ def main():
         # 許容を110頁とした（それまでは105頁で判定していた）。
         KYOYO52 = 110
         allt = [t for _n, _m, tg, _h, _r in ES.AN for t in tg]
+        # 推定は下限である（送りによる空白を小さく見る）。令和8年10月10日に
+        # docx を PDF に変換して実測したところ、素案も計画書も推定より2頁多かった。
+        # 村の許容に収まるかを見るのだから、実測との差を乗せた値で判断する。
         n_all = EL52.pages(ES.items_without(allt, yougo=ES.YOUGO_NAI,
-                                            figs=ES.FIG_UTSUSU), EL52.BODY_H) + 4
+                                            figs=ES.FIG_UTSUSU), EL52.BODY_H) \
+                + 4 + EL52.JITSU_SA
         if n_all > KYOYO52:
-            bad52.append(f"すべて行っても{n_all}頁で、村が許容する{KYOYO52}頁に収まらない")
+            bad52.append(f"すべて行っても{n_all}頁（推定{n_all - EL52.JITSU_SA}頁＋"
+                          f"実測との差{EL52.JITSU_SA}頁）で、村が許容する{KYOYO52}頁に"
+                          f"{n_all - KYOYO52}頁収まらない")
         chk(52, "分量の削減案が成り立つこと", not bad52,
             "・".join(bad52[:3]) if bad52
             else f"{len(ES.AN)}案（うち小見出しを指すもの{len([a for a in ES.AN if a[2]])}案）。"
                  f"G 用語の絞り込みは{base52 - n_g}頁、H 図2点を資料編へは{base52 - n_h}頁。"
-                 f"すべて行えば本文{n_all - 4}頁＋前付4頁＝{n_all}頁"
-                 f"（目安100頁に対し{n_all - 100:+d}頁。村が許容する{KYOYO52}頁の範囲内）")
+                 f"すべて行えば本文{n_all - 4 - EL52.JITSU_SA}頁＋前付4頁"
+                 f"＋実測との差{EL52.JITSU_SA}頁＝{n_all}頁"
+                 f"（目安100頁に対し{n_all - 100:+d}頁。村が許容する{KYOYO52}頁の範囲内）"
+                 + (f"。単独では頁が減らない案{'・'.join(tanto0)}"
+                    f"（中身は減る。他の案と重ねたときに効く）" if tanto0 else ""))
     except Exception as e:
         chk(52, "分量の削減案が成り立つこと", False, f"照合できない（{e}）")
 
@@ -1712,8 +1731,13 @@ def main():
             _ES57.items_without([t for a in _ES57.AN for t in a[2]],
                                 yougo=_ES57.YOUGO_NAI, figs=_ES57.FIG_UTSUSU),
             _EL57.BODY_H)
-        MACHI57 = {"本文%d頁＋前付4頁＝%d頁" % (n_kei57, n_kei57 + 4),
-                   "本文%d頁＋前付4頁＝%d頁" % (n_all57, n_all57 + 4)}
+        # 推定の値と、実測との差（EL.JITSU_SA）を乗せた値のどちらも許す。
+        # 令和8年10月10日に紙面を実測してからは、村に示す数は実測の値である
+        # （計画書 本文120頁＋前付4頁＝124頁）。推定の値も、両者を並べて
+        # 述べるときに要るため残す。
+        MACHI57 = {"本文%d頁＋前付4頁＝%d頁" % (n, n + 4)
+                   for n in (n_kei57, n_kei57 + _EL57.JITSU_SA,
+                             n_all57, n_all57 + _EL57.JITSU_SA)}
         # 見る先は確認事項だけでなく、WBSの「着手しない理由」と「翌営業日の作業」も
         # 含める。理由の欄は WBS 進捗管理表として村に渡るのに、確認事項と違って
         # 誰も数を確かめていなかった。現に Ⅱ-113 の理由が「到達できる最小が102頁」
@@ -2425,6 +2449,42 @@ def main():
                     len(GD.MIKETTEI)))
     except Exception as e:
         chk(67, "概要版の骨子が素案から引けること", False, "照合できない（%s）" % e)
+
+    # ── 68　紙面の前提が build_*_docx.js と一致していること ──────────────
+    #    頁数の推定は build 側のレイアウト値から積み上げている。両者が離れると
+    #    推定も、削減案が村の許容に収まるかの判断も当てにならない。
+    #    令和8年10月10日に docx を PDF に変換して実測したところ、推定が表の幅に
+    #    本文幅（9638）を使っていたため、実際より3%広いセルを前提に折り返しを
+    #    少なく数えていた。同じ食い違いを二度起こさないよう、ここで固定する。
+    #    あわせて行送りの指定を見る。w:lineRule を省くと OOXML の既定は "auto"
+    #    になり、w:line は twip ではなく倍率として読まれる。1行の高さがフォント
+    #    次第になり、游ゴシックが入っている Word と代替フォントの環境とで頁数が
+    #    変わるため、line を指定する箇所にはすべて lineRule が要る。
+    try:
+        import re as _re68
+        import estimate_pages as EP68
+        bad68 = []
+        for js in ("build_soan_docx.js", "build_shiryo_docx.js",
+                   "build_irai_docx.js", "build_irai_bundle_docx.js"):
+            src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), js),
+                       encoding="utf-8").read()
+            m = _re68.search(r"const TBLW = (\d+)", src)
+            if not m:
+                bad68.append(f"{js}に TBLW がない")
+            elif int(m.group(1)) != EP68.TBLW:
+                bad68.append(f"{js}の TBLW={m.group(1)} が"
+                             f"estimate_pages.TBLW={EP68.TBLW} と違う")
+            # line: を指定していて lineRule が無い spacing
+            for sp in _re68.findall(r"\{[^{}]*\bline: [^{}]*\}", src):
+                if "lineRule" not in sp:
+                    bad68.append(f"{js}に lineRule の無い行送りがある（{sp[:46]}）")
+        chk(68, "紙面の前提が build 側と一致すること", not bad68,
+            "・".join(bad68[:3]) if bad68
+            else f"4つの build で TBLW={EP68.TBLW}・行の下駄{EP68.ROW_GETA} twip。"
+                 f"行送りを指定する箇所はすべて lineRule=exact"
+                 f"（実測との対比は scripts/render_check.py）")
+    except Exception as e:
+        chk(68, "紙面の前提が build 側と一致すること", False, f"照合できない（{e}）")
 
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)

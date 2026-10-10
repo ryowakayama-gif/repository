@@ -2,14 +2,20 @@
 """紙面の点検（改頁のまたぎ・図の送り・見出しの取り残し）を機械で代替する.
 
 【なぜ必要か】
-  この環境では LibreOffice が動かず docx を PDF に変換できない。紙面の目視確認が
-  できないため、代わりに build_soan_docx.js が指定しているレイアウト値から
-  要素を上から積み上げ、頁の境目に何が来るかを突き止める。
+  build_soan_docx.js が指定しているレイアウト値から要素を上から積み上げ、頁の
+  境目に何が来るかを突き止める。どの頁を見るべきかを絞るための道具である。
 
-  **推定は目視の代わりにはならない。** 字幅は全角1・半角0.5を目安とした概算であり、
-  Word の実際の組版（禁則処理・プロポーショナルな字送り・行末の追い込み）とは
-  食い違う。なお表の列幅は docx 側で TableLayoutType.FIXED を指定したため、
-  宣言した widths どおりに組まれる。
+  令和8年10月10日に libreoffice-writer と poppler-utils を入れ、docx を PDF に
+  変換して紙面を見られるようになった（scripts/render_check.py）。実紙面と突き
+  合わせた結果、次のことが分かっている。
+    ・用紙・余白・本文の高さ・行送り（本文300・表240 twip）・図の寸法は一致する
+    ・表の幅は本文幅（9638）ではなく TBLW（9360）である ← 直した
+    ・表の1行の下駄は宣言値120ではなく罫線を含めて127 twip である ← 直した
+    ・送りによる空白は、この推定よりも実際のほうが大きい（約3頁ぶん）
+  したがって**この推定はなお下限であり、目視の代わりにはならない。** 字幅は
+  全角1・半角0.5を目安とした概算であり、Word の実際の組版（禁則処理・
+  プロポーショナルな字送り・行末の追い込み）とは食い違う。なお表の列幅は docx 側で
+  TableLayoutType.FIXED を指定したため、宣言した widths どおりに組まれる。
   この点検が示すのは「ここを見てください」という箇所であり、「問題がない」ことの
   証明ではない。
 
@@ -42,8 +48,20 @@ BODY_H = EP.BODY_H                 # 14002 twip（素案）
 SH_H = EP.SH_H                     # 14570 twip（委員会資料）
 AKI = 0.30                         # 空白が頁のこの割合を超えたら挙げる
 
+# 実紙面との差（令和8年10月10日の実測）。
+#   素案　　推定135頁 → 実測137頁（LibreOffice・IPAゴシックに寄せた置換）
+#   計画書　推定118頁 → 実測120頁
+# どちらも＋2頁である。残りの差は送り（keepNext）による空白で、この推定は
+# Word よりも空白を小さく見る。したがって**推定は下限であり**、分量が収まるか
+# を判断するときはこの差を乗せる。節ごとの対比では推定と実測は±2頁で追えている。
+#   ※ 実測は游ゴシックが無い環境での置換（IPAゴシック）による。字幅は
+#     数字0.5em・漢字1.0emで推定の前提と一致するが、Word＋游ゴシックでは
+#     禁則処理と欧文の字送りの違いでなお±1〜2頁動き得る。
+#   ※ 突き合わせは scripts/render_check.py で再現できる。
+JITSU_SA = 2
 
-def flow(items, page_h):
+
+def flow(items, page_h, trace=None):
     """要素を上から積み上げ、頁の境目で起きることを拾う。
 
     items は (種別, 名, 高さ, 分割できるか, 次と離さないか, 最初のひとかたまり)
@@ -58,6 +76,8 @@ def flow(items, page_h):
     i = 0
     while i < len(items):
         kind, name, h, splittable, keep = items[i][:5]
+        if trace is not None:
+            trace.append((kind, name, page if y < page_h else page + 1))
         first = items[i][5] if len(items[i]) > 5 else h
         if kind == "改頁":
             if y > 0:
@@ -78,16 +98,23 @@ def flow(items, page_h):
                 break
         nokori = page_h - y
         if h > page_h:
-            # 1頁に収まらない要素。分割できるものは収まるところまで入れる
+            # 1頁に収まらない要素。挙げたうえで、送りは下の分岐と同じ数え方にする。
+            #
+            # 以前はここで page += max(1, int(h // page_h)) としていた。1.2頁の表が
+            # 頁の途中から始まると、残りは 1.2 − 残り で2頁にまたがるのに1頁しか
+            # 進めず、素案では5件で3頁ぶん少なく数えていた（PDF の実測で判明）。
+            # 表は cantSplit でも行の境目では割れるため、分割できるものは
+            # 「残りに入るぶんを入れ、続きを次頁へ」でよい。
+            out.append(("頁超", page, name, h))
             if splittable:
-                out.append(("頁超", page, name, h))
-                y = (y + h) % page_h
-                page += int((y + h) // page_h) if False else 0
-                page += max(1, int(h // page_h))
+                n = h - nokori
+                page += 1 + int(n // page_h)
+                y = n % page_h
             else:
-                out.append(("頁超", page, name, h))
-                page += 1
-                y = 0
+                if y > 0:
+                    page += 1
+                page += max(1, int(h // page_h)) - 1
+                y = h % page_h
             i += 1
             continue
         if h > nokori:
@@ -128,7 +155,7 @@ def first_unit(b, page_h=None):
     """
     t = b.get("t")
     if t in ("table", "kpi"):
-        return 240 * 2 + 120 * 2 + 160      # 見出し行＋1行＋セル余白＋表の前後
+        return (240 + EP.ROW_GETA) * 2 + 160   # 見出し行＋1行＋行の下駄＋表の前後
     if t in ("p", "note", "bullets", "key"):
         return 300 + 120
     # 分けられないもの（図など）は全体が最初のひとかたまりになる。
