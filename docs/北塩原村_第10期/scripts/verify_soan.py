@@ -2498,6 +2498,67 @@ def main():
     except Exception as e:
         chk(68, "紙面の前提が build 側と一致すること", False, f"照合できない（{e}）")
 
+    # ── 69　資6で「一部」とした事項に、追いかける先があること ──────────
+    #    資6は基本指針の別表11事項への対応を示す表である。「一部」とした事項は、
+    #    何が足りず、どう埋めるかが決まっていなければ、計画の確定時に「一部」の
+    #    まま残る。第2表（対応できていない指標）に行があること、そのうえで
+    #    その事項を指す確認事項があるか、当方の調査の結果を待つ旨が書かれて
+    #    いることを確かめる。
+    #    事項六（家族の就業の状況・意向）は在宅介護実態調査の結果で埋まるため、
+    #    村への照会はない。理由の欄がその旨を述べていれば足りるものとする。
+    try:
+        import re as _re69
+        import soan_content as SC69
+        import wbs_kakunin as KK69
+        KANSUU = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6,
+                  "七": 7, "八": 8, "九": 9, "十": 10, "十一": 11}
+        bad69, ichibu, dai2 = [], [], {}
+        for ch in SC69.CH:
+            for sec in ch["sections"]:
+                if sec["no"] != "資6":
+                    continue
+                tbls = [b for b in sec["blocks"] if b["t"] == "table"]
+                if len(tbls) < 2:
+                    bad69.append("資6の表が2つない")
+                    break
+                for r in tbls[0]["rows"]:
+                    if len(r) < len(tbls[0]["head"]):
+                        bad69.append(f"資6の第1表に列の足りない行がある（{r[:1]}）")
+                        continue
+                    if str(r[-1]).strip() == "一部":
+                        ichibu.append(str(r[0]).strip())
+                    elif str(r[-1]).strip() != "対応":
+                        bad69.append(f"資6の対応の欄が「対応」「一部」以外（{r[0]}：{r[-1]}）")
+                for r in tbls[1]["rows"]:
+                    # 列の足りない行は、落として黙るのではなく挙げる。
+                    # 自己試験で行を空にしたとき、例外で「照合できない」となり
+                    # 何が起きたか分からなかった（令和8年10月10日）。
+                    if len(r) < 4:
+                        bad69.append(f"資6の第2表に列の足りない行がある（{r[:1]}）")
+                        continue
+                    dai2[str(r[0]).strip()] = (str(r[2]), str(r[3]))
+        if not ichibu:
+            bad69.append("資6に「一部」の事項がない（表が読めていない）")
+        for j in ichibu:
+            if j not in dai2:
+                bad69.append(f"事項{j}が「一部」なのに第2表に行がない")
+                continue
+            riyu, kawari = dai2[j]
+            n = KANSUU.get(j)
+            pat = _re69.compile(f"事項{j}|別表第{j}" + (f"|事項{n}|別表第{n}" if n else ""))
+            kk = [k for k in KK69.K if pat.search(str(k[1]) + str(k[2]))]
+            machi = "並行して実施" in riyu or "調査" in riyu and "本計画" in riyu
+            if not kk and not machi:
+                bad69.append(f"事項{j}を指す確認事項がなく、理由も当方の調査の進行を述べていない")
+        chk(69, "資6で「一部」とした事項に追いかける先があること", not bad69,
+            "・".join(bad69[:3]) if bad69
+            else "「一部」は%d事項（%s）。いずれも第2表に何が足りないかを書き、"
+                 "確認事項か当方の調査で追いかける先がある"
+                 % (len(ichibu), "・".join(ichibu)))
+    except Exception as e:
+        chk(69, "資6で「一部」とした事項に追いかける先があること", False,
+            f"照合できない（{e}）")
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
