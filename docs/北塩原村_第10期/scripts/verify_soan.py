@@ -1756,6 +1756,46 @@ def main():
                     bad57.append("%s：照会票%s件（実際は%d件）"
                                  % (doko, m.group(1), n_irai57))
 
+        # 「認知症対応型共同生活介護はN施設」が、2-5の事業所数の表と合うこと。
+        #    サービスの種類の数（下）は数えていたが、個々のサービスの事業所の数は
+        #    見ていなかった。現に1-8の2が「村内の入所施設は認知症対応型共同生活介護
+        #    1施設のみ」と書いており、2-5の表は令和3年度から2施設である
+        #    （村の高齢者サービスの手引きもグループホームを2施設挙げている）。
+        #    令和8年10月10日に追加。
+        SHISETSU57 = {}
+        for c in SC.CH:
+            for sec in c["sections"]:
+                if sec["no"] != "2-5":
+                    continue
+                for b in sec["blocks"]:
+                    if (b["t"] == "table" and b["head"][0] == "サービス"
+                            and "令和6年度" in b["head"]):
+                        col = b["head"].index("令和6年度")
+                        for r in b["rows"]:
+                            try:
+                                SHISETSU57[str(r[0])] = int(float(str(r[col])))
+                            except ValueError:
+                                pass
+        for c in SC.CH:
+            for sec in c["sections"]:
+                for b in sec["blocks"]:
+                    tt = [str(b.get("v", ""))]
+                    if b["t"] in ("table", "kpi"):
+                        tt = [str(x) for r in b["rows"] for x in r]
+                    elif b["t"] == "bullets":
+                        tt = [str(x) for x in b["v"]]
+                    for t in tt:
+                        for nm, kazu in SHISETSU57.items():
+                            for m in _re57.finditer(
+                                    "%s(?:の)?([0-9]+)(?:施設|か所|事業所)"
+                                    % _re57.escape(nm), t):
+                                n57 += 1
+                                if int(m.group(1)) != kazu:
+                                    bad57.append(
+                                        "%s：%s%s（2-5の表では%d）"
+                                        % (sec["no"], nm, m.group(0)[len(nm):],
+                                           kazu))
+
         # 「村内で提供されているサービスはN種類」が、2-5の事業所数の表と合うこと。
         # 定員の表（居住系・通所系のみ）に引かれて訪問介護を数え落とし、
         # 7か所で「2種類」と述べていた。ケアマネジメント（居宅介護支援・
