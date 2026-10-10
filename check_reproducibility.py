@@ -83,12 +83,9 @@ BUILDERS = [
      "計画素案の本文。原本 source/北塩原村_骨子案_原本_20260731.docx から組む"),
     ("build_kitashiobara_mokuji.py", ["output/北塩原村_計画素案.docx"],
      "計画素案に目次を入れる（同じファイルを上書きするため素案の後）"),
-    ("build_kitashiobara_gaiyou.py", ["output/北塩原村_計画素案_概要版.docx"], ""),
     ("build_kitashiobara_review.py",
      ["output/北塩原村_骨子案レビュー_基本指針網羅性.xlsx"],
      "計画素案を読んで網羅性を見るため、素案の後に実行する"),
-    ("build_kitashiobara_taihi.py", ["output/北塩原村_目次構成_前回対比.xlsx"],
-     "計画素案と概要版を読むため、両方の後に実行する"),
     ("build_kitashiobara_kaigi.py", [
         "output/会議資料/01_協議会資料1_計画策定の概要.docx",
         "output/会議資料/02_協議会資料2_国の基本指針の改正点.docx",
@@ -147,7 +144,8 @@ BUILDERS = [
       "output/図表/07_緊急時の4場面.png",
       "output/図表/08_65歳到達時の判定の流れ.png",
       "output/図表/09_ライフコースと制度の移行.png",
-      "output/図表/10_両計画の関係.png"],
+      "output/図表/10_両計画の関係.png",
+      "output/図表/11_ライフコース_概要版.png"],
      "申し送りの表と正本の表から数値を読んで図を描くため、"
      "申し送りの後・正本の前に実行する"),
     ("build_kitashiobara_honpon.py",
@@ -183,6 +181,11 @@ BUILDERS = [
      ["output/北塩原村_MECE_利用の流れと報酬改定.xlsx"],
      "直した表現が入れ替わったか、足した記述が入ったかを現物で照合するため、"
      "移植後の正本を作った後に実行する"),
+    ("build_kitashiobara_gaiyou.py", ["output/北塩原村_計画素案_概要版.docx"],
+     "令和8年10月に加えた3節（方策・年齢到達・他計画との連携）は正本に"
+     "しかないため、その現物と突き合わせる。移植後の正本と図の後に実行する"),
+    ("build_kitashiobara_taihi.py", ["output/北塩原村_目次構成_前回対比.xlsx"],
+     "計画素案と概要版を読むため、両方の後に実行する"),
     ("build_kitashiobara_zuhyo_bangou.py",
      ["output/北塩原村_図表番号一覧.xlsx"],
      "付けた番号・表題が正本の図表と1対1に対応するかを現物で照合するため、"

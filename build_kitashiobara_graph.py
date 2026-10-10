@@ -904,6 +904,99 @@ def fig_life():
     return fit(_life, 18.0).save("09_ライフコースと制度の移行")
 
 
+def _life_gaiyou(h_cm):
+    """ライフコースと制度の移行（概要版）。
+
+    正本の図（_life）は章節の参照を添えるため縦に長い。
+    概要版は住民と委員が読むものであり、参照先ではなく
+    「いつ何が変わるか」だけが要る。参照を外し、
+    どの時期も続くものを1行にまとめて、A4の1ページに収める。
+    """
+    sh = Sheet(h_cm)
+    midashi = "児童期・成人期・高齢期を一続きでみる"
+    sh.text(0.5, 0.985, midashi, fs=10.0, ha="center", va="top")
+    top = 0.985 - sh.h_of(midashi, 0.96, 10.0, pad_lines=0.55)
+
+    w, aida = 0.300, 0.021
+    inner = w - 2 * PAD
+
+    # --- 上段 ほかの制度 ---------------------------------------------
+    hoka = [
+        ("こども施策",
+         "保育所・幼稚園・学校\n子育て短期支援事業\n"
+         "一時預かり・児童クラブ"),
+        ("―", ""),
+        ("介護保険・高齢者福祉",
+         "介護保険の給付\n老人クラブ・介護予防教室\n村単独の在宅福祉事業"),
+    ]
+    hm = max(sh.h_of(h, inner, 9.4, pad_lines=0.55)
+             + sh.h_of(b2, inner, 8.4, pad_lines=0.7)
+             for h, b2 in hoka if b2)
+    for i, (head, body) in enumerate(hoka):
+        if not body:
+            continue
+        x = 0.015 + i * (w + aida)
+        sh.box(x, top - hm, w, hm, fc=USUIRO["橙"], ec=COLORS["橙"])
+        sh.text(x + w / 2, top - 0.010, head, fs=9.4, w=inner, ha="center")
+        sh.text(x + PAD, top - sh.h_of(head, inner, 9.4, pad_lines=0.55),
+                body, fs=8.4, w=inner)
+    ue_shita = top - hm
+
+    # --- 中段 障がい福祉 -----------------------------------------------
+    naka_top = ue_shita - 0.075
+    shogai = [
+        ("児童期（０歳〜18歳）",
+         "児童発達支援\n放課後等デイサービス\n保育所等訪問支援\n"
+         "障がい児相談支援"),
+        ("成人期（18歳〜65歳）",
+         "訪問系・日中活動系\n居住系・相談支援\n地域生活支援事業"),
+        ("高齢期（65歳〜）",
+         "介護保険に相当しないもの\n（共同生活援助・就労系・\n"
+         "同行援護・行動援護等）は続く"),
+    ]
+    hm2 = max(sh.h_of(h, inner, 9.4, pad_lines=0.55)
+              + sh.h_of(b2, inner, 8.4, pad_lines=0.7) for h, b2 in shogai)
+    for i, (head, body) in enumerate(shogai):
+        x = 0.015 + i * (w + aida)
+        sh.box(x, naka_top - hm2, w, hm2, fc=USUIRO["緑"], ec=COLORS["緑"])
+        sh.text(x + w / 2, naka_top - 0.010, head, fs=9.4, w=inner,
+                ha="center")
+        sh.text(x + PAD,
+                naka_top - sh.h_of(head, inner, 9.4, pad_lines=0.55),
+                body, fs=8.4, w=inner)
+        if i:
+            sh.arrow(x - aida - 0.001, naka_top - hm2 / 2,
+                     x, naka_top - hm2 / 2)
+    naka_shita = naka_top - hm2
+
+    for i, t in enumerate(("18歳到達", "65歳到達")):
+        x = 0.015 + (i + 1) * (w + aida) - aida / 2
+        sh.text(x, (ue_shita + naka_top) / 2, t, fs=9.4, ha="center",
+                va="center", color=COLORS["橙"])
+
+    sh.panel(0.015, 0, 0.955,
+             "18歳到達　障がい児相談支援は計画相談支援に、"
+                     "特別児童扶養手当は障害基礎年金に切り替わります。"
+                     "介護給付を使う場合は障害支援区分の認定が"
+                     "新たに必要になります。\n"
+                     "65歳到達　一律に介護保険へ移すのではなく、"
+                     "本人の意向、要介護認定の有無、"
+                     "相当するサービスの有無、必要な量を確保できるかを"
+                     "順に確かめて決めます。",
+                     fs=8.4, head="制度が変わる二つの節目", head_fs=9.4,
+                     ec=COLORS["橙"], top=naka_shita - 0.032)
+
+    sh.notes([
+        "※ 橙はほかの制度（こども施策・介護保険・高齢者福祉）、"
+        "緑は障がい福祉サービス等です。",
+    ])
+    return sh
+
+
+def fig_life_gaiyou():
+    return fit(_life_gaiyou, 11.0).save("11_ライフコース_概要版")
+
+
 def _rendou(h_cm):
     """本計画と介護保険事業計画の関係。
 
@@ -1167,7 +1260,8 @@ def main():
     p3, xs, ys = fig_koureika()
     made = [p1, p2, p3,
             fig_taikei(), fig_renkei(), fig_kyoten(), fig_bamen(),
-            fig_flow65(), fig_life(), fig_rendou()]
+            fig_flow65(), fig_life(), fig_rendou(),
+            fig_life_gaiyou()]
     verify(made)
     print(f"作成: {OUT_DIR}")
     print(f"  フォント: {name}")

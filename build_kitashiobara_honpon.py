@@ -58,7 +58,9 @@ from build_kitashiobara_redteam_kyukyu import RT_EDITS  # noqa: E402
 from build_kitashiobara_mece_houshu import ME_EDITS, KAKIKAE  # noqa: E402
 from build_kitashiobara_mikomi_redteam import SA_EDITS  # noqa: E402
 from build_kitashiobara_anke_mikomi import AN_EDITS  # noqa: E402
-from build_kitashiobara_kaigo_seigo import KG_EDITS  # noqa: E402
+from build_kitashiobara_kaigo_seigo import (  # noqa: E402
+    KG_EDITS, KG_KAKIKAE,
+)
 from build_kitashiobara_graph import GRAPHS, OUT_DIR as ZU_DIR  # noqa: E402
 from build_kitashiobara_zuhyo_bangou import ZU, HYO  # noqa: E402
 
@@ -833,7 +835,7 @@ def apply_kakikae(doc):
     挿入ではなく置換であるため、直す前の文が本文にちょうど1つある
     ことを確かめてから書き換える。書式は先頭のランのものを残す。
     """
-    for rec in KAKIKAE:
+    for rec in list(KAKIKAE) + list(KG_KAKIKAE):
         atari = [p for p in doc.paragraphs
                  if _norm(rec["mae"]) in _norm(p.text)]
         if len(atari) != 1:
@@ -1149,7 +1151,8 @@ def verify(doc, src_dims):
           f"RedTeam{len(RT_EDITS)}件・MECE{len(ME_EDITS)}件・"
           f"見込量{len(SA_EDITS)}件・アンケート{len(AN_EDITS)}件・"
           f"介護整合{len(KG_EDITS)}件・"
-          f"書き換え{len(KAKIKAE)}件・図{len(GRAPHS)}点が実在／"
+          f"書き換え{len(KAKIKAE) + len(KG_KAKIKAE)}件・"
+          f"図{len(GRAPHS)}点が実在／"
           f"正本の記述{len(keep)}点が残存／見込量表{n_mikomi}表／"
           "表記の作法4点すべて合")
 
