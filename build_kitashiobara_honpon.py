@@ -53,6 +53,7 @@ from build_kitashiobara_ishoku_okurijo import ISHOKU  # noqa: E402
 from build_kitashiobara_murashiryo import MURA_EDITS  # noqa: E402
 from build_kitashiobara_juten12 import JUTEN_EDITS  # noqa: E402
 from build_kitashiobara_hp_shisaku import HP_EDITS  # noqa: E402
+from build_kitashiobara_graph import GRAPHS, OUT_DIR as ZU_DIR  # noqa: E402
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC = (f"{REPO_ROOT}/source/他メンバー素案_20261008/"
@@ -575,6 +576,46 @@ def apply_juten(doc, records=None, label="重点施策"):
         changes.append(f"{label}{rec['no']}：{rec['saki']}")
 
 
+def make_image(doc, path, width_cm):
+    """図（画像）を本文幅に収めて入れる。"""
+    from docx.shared import Cm
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_after = Pt(2)
+    p.add_run().add_picture(path, width=Cm(width_cm))
+    return _detach(doc, p._p)
+
+
+def make_caption(doc, text, size=9.5, center=True):
+    """図の表題・出所の行。"""
+    p = doc.add_paragraph()
+    if center:
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_after = Pt(0)
+    r = p.add_run(text)
+    r.font.size = Pt(size)
+    return _detach(doc, p._p)
+
+
+def apply_graphs(doc):
+    """当方が作ったモノクロの図を、対応する表の直後に入れる。"""
+    from PIL import Image
+    for g in GRAPHS:
+        path = f"{ZU_DIR}/{g['file']}"
+        if not os.path.exists(path):
+            raise LookupError(f"図が見つかりません: {path}")
+        im = Image.open(path)
+        cm = min(im.width / 200 * 2.54, 16.6)      # 200dpiで作っている
+        el = [
+            make_image(doc, path, cm),
+            make_caption(doc, g["title"]),
+            make_caption(doc, g["src"], size=9, center=False),
+            make_empty(doc),
+        ]
+        insert_after(next_tbl(find_para(doc, g["ichi"])), el)
+        changes.append(f"図{g['no']}：{g['title']}")
+
+
 def apply_mura(doc):
     """村資料点検の修正案のうち、最優先の追記5件を入れる。"""
     for rec in MURA_EDITS:
@@ -643,6 +684,10 @@ def apply_memo(doc, tail):
 # ===========================================================================
 # 自己点検
 # ===========================================================================
+def count_images(doc):
+    return len(doc.element.body.findall(".//" + qn("a:blip")))
+
+
 def verify(doc, src_dims):
     ng = []
     parts = []
@@ -731,6 +776,18 @@ def verify(doc, src_dims):
                         if v and _norm(str(v)) not in out:
                             ng.append(f"重点施策{rec['no']}の表のセルが"
                                       f"出力にない: {v[:28]}")
+
+    # ②d 当方が作った図とその表題・出所が入っていること
+    n_img = count_images(doc)
+    want = src_dims[2] + len(GRAPHS)
+    if n_img != want:
+        ng.append(f"図の数が合わない（画像{n_img}点。"
+                  f"正本{src_dims[2]}点＋当方{len(GRAPHS)}点＝{want}点）")
+    for g in GRAPHS:
+        if _norm(g["title"]) not in out:
+            ng.append(f"図の表題が出力にない: {g['title']}")
+        if _norm(g["src"]) not in out:
+            ng.append(f"図の出所が出力にない: {g['src']}")
 
     # ③ 正本の既存の記述が消えていないこと
     keep = [
@@ -829,7 +886,7 @@ def verify(doc, src_dims):
             ng.append(f"年度表に足した行の列数が10でない（{grid}）")
 
     # ⑥ 増えた量が妥当であること（既存を消していない）
-    sp, st = src_dims
+    sp, st = src_dims[0], src_dims[1]
     if len(doc.paragraphs) <= sp:
         ng.append(f"段落が増えていない（{sp}→{len(doc.paragraphs)}）")
     if len(doc.tables) <= st:
@@ -849,7 +906,7 @@ def verify(doc, src_dims):
           f"論点{len(MEMO_EDITS)}件・用語{len(YOUGO_ADD)}語・"
           f"村資料{len(MURA_EDITS)}件・"
           f"重点施策{len(JUTEN_EDITS)}件・"
-          f"村HP{len(HP_EDITS)}件が実在／"
+          f"村HP{len(HP_EDITS)}件・図{len(GRAPHS)}点が実在／"
           f"正本の記述{len(keep)}点が残存／見込量表{n_mikomi}表／"
           "表記の作法4点すべて合")
 
@@ -859,13 +916,14 @@ def main():
         raise SystemExit(f"正本が見つかりません: {SRC}")
     os.makedirs(f"{REPO_ROOT}/output", exist_ok=True)
     doc = docx.Document(SRC)
-    src_dims = (len(doc.paragraphs), len(doc.tables))
+    src_dims = (len(doc.paragraphs), len(doc.tables), count_images(doc))
 
     tail = apply_ishoku(doc)
     apply_memo(doc, tail)
     apply_mura(doc)
     apply_juten(doc)
     apply_juten(doc, HP_EDITS, label="村HP")
+    apply_graphs(doc)
     verify(doc, src_dims)
     doc.save(OUT_FILE)
 
