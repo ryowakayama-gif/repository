@@ -368,8 +368,19 @@ def c3_pairs(rep, tracked):
         if f.startswith("build_") and f.endswith(".py") and f not in listed:
             bad.append(f"対応表に未記載の生成器: {f}")
 
-    return rep.check("C-3", "成果物と生成器が対応する", bad,
-                     f"生成器 {len(listed)}本 ／ 成果物 {len(declared)}点")
+    # 複数の生成器が同じ成果物に書くもの（後の生成器が前の出力を加工する）。
+    # 禁じるのではなく、順序が効くことを毎回表に出す。
+    # 前の生成器だけを単独で走らせると、後の加工が消えたまま残る。
+    kasanari = []
+    for out, scripts in sorted(declared.items()):
+        if len(scripts) > 1:
+            kasanari.append(f"{out} ← {' → '.join(scripts)}")
+
+    nokori = f"生成器 {len(listed)}本 ／ 成果物 {len(declared)}点"
+    if kasanari:
+        nokori += ("　※順序が効く成果物（前の生成器だけを単独で走らせない）: "
+                   + "／".join(kasanari))
+    return rep.check("C-3", "成果物と生成器が対応する", bad, nokori)
 
 
 def c4_abs_paths(rep):

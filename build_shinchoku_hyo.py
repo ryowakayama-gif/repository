@@ -1135,7 +1135,13 @@ NEXTDAY = [
      "計画素案を直したあとに点検を回し、生成器から同じものが作り直せる"
      "状態を保つ。素案だけを単独で作り直すと目次が落ちるため、"
      "BUILDERS の依存順で全体を作り直してから確定させる。"
-     "python3 check_reproducibility.py --regenerate で約2分",
+     "python3 check_reproducibility.py --regenerate で約2分。"
+     "令和8年10月10日に実際にこれを踏んだ（Red Teamレビューの反映で"
+     "build_kitashiobara_kosshi_rev.py だけを手で走らせ、"
+     "その出力に目次を書き足す build_kitashiobara_mokuji.py を"
+     "走らせないまま確定させた。C-6b が検出）。"
+     "再発を防ぐため、C-3 に「順序が効く成果物」を毎回表示するようにした。"
+     "確定の前に --regenerate を回すこと",
      "0.2時間", "点検結果（終了コード0）", "なし（当方で完結）",
      "WBS 1-7／docs/北塩原村_成果物の再現性点検と再発防止.md"),
 ]
