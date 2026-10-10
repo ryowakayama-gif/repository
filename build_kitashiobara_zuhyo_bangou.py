@@ -251,6 +251,8 @@ HYO = [
          atama=_h("区分", "主なサービス・事業"), moto=""),
     dict(sho=5, midashi="見込量を定めるまでの段階",
          atama=_h("段階", "何を見るか"), moto=""),
+    dict(sho=5, midashi="必要な利用者数の組み立て",
+         atama=_h("加減", "項目"), moto=""),
     dict(sho=5, midashi="訪問系サービスの実績",
          atama=_h("サービス種別", "単位"), moto=A_MURA),
     dict(sho=5, midashi="訪問系サービスの見込量",
