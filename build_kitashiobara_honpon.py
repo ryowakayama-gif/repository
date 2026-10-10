@@ -56,6 +56,7 @@ from build_kitashiobara_hp_shisaku import HP_EDITS  # noqa: E402
 from build_kitashiobara_hp_3bunya import HP3_EDITS  # noqa: E402
 from build_kitashiobara_redteam_kyukyu import RT_EDITS  # noqa: E402
 from build_kitashiobara_graph import GRAPHS, OUT_DIR as ZU_DIR  # noqa: E402
+from build_kitashiobara_zuhyo_bangou import ZU, HYO  # noqa: E402
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC = (f"{REPO_ROOT}/source/他メンバー素案_20261008/"
@@ -624,12 +625,202 @@ def apply_graphs(doc):
         kata = g.get("kata", "表の後")
         para = find_para(doc, g["ichi"])
         if kata == "表の後":
-            insert_after(next_tbl(para), el)
+            # 表の直後に（各年４月１日現在）のような添え書きがあるときは、
+            # その後に入れる（添え書きは表に属するため）
+            anchor = next_tbl(para)
+            while True:
+                tsugi = anchor.getnext()
+                if tsugi is None or tsugi.tag.split("}")[-1] != "p":
+                    break
+                if not _is_kakko(Paragraph(tsugi, doc)):
+                    break
+                anchor = tsugi
+            insert_after(anchor, el)
         elif kata == "本文":
             insert_after(para, el)
         else:
             raise LookupError(f"図の挿入位置の型が未定義: {g['no']} {kata}")
         changes.append(f"図{g['no']}：{g['title']}")
+
+
+# ===========================================================================
+# 図表番号・表題・図表目次（規約は図表一覧06シート）
+#   番号は章ごとの通し番号。表題は表の上、図の表題は図の下。
+#   注記ボックス（1×1）には番号を振らない。
+# ===========================================================================
+SUJI = "０１２３４５６７８９"
+
+
+def _zenkaku(n):
+    """1桁は全角、2桁以上は半角（表記の作法）。"""
+    return SUJI[n] if n < 10 else str(n)
+
+
+def _bangou(kigou, no):
+    """「表5-34」のような番号を「表５-34」の形に直す。"""
+    m = re.match(r"^(図|表)(\d+)-(\d+)$", no)
+    if not m:
+        raise LookupError(f"番号の形が違う: {no}")
+    return f"{m.group(1)}{_zenkaku(int(m.group(2)))}-{_zenkaku(int(m.group(3)))}"
+
+
+def make_midashi(doc, text, center=False, size=10, bold=True):
+    """図表の表題。"""
+    p = doc.add_paragraph()
+    if center:
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.space_before = Pt(4)
+    p.paragraph_format.space_after = Pt(1)
+    r = p.add_run(text)
+    r.font.size = Pt(size)
+    r.font.bold = bold
+    return _detach(doc, p._p)
+
+
+def _is_kakko(para):
+    """（単位：人）（令和８年４月１日現在）のような添え書きか。
+
+    「（２）財源構成（令和７年度・法定負担割合による試算）」のような
+    項の見出しも「（」で始まり「）」で終わるため、
+    最初の「（」に対応する「）」が末尾にあることまで確かめる。
+    本文スタイル以外（小見出し等）は添え書きではない。
+    """
+    if hasattr(para, "style") and para.style.name != "Normal":
+        return False
+    t = (para.text if hasattr(para, "text") else str(para)).strip()
+    if len(t) < 2 or t[0] != "（" or t[-1] != "）":
+        return False
+    fukasa = 0
+    for i, ch in enumerate(t):
+        if ch == "（":
+            fukasa += 1
+        elif ch == "）":
+            fukasa -= 1
+            if fukasa == 0:
+                return i == len(t) - 1
+    return False
+
+
+def apply_bangou(doc):
+    """図と表に番号と表題を付け、出所を添える。
+
+    表題は表の上に置くが、表のすぐ上に（単位：…）のような添え書きが
+    あるときは、その上に置く（添え書きは表に属するため）。
+    """
+    tag = lambda e: e.tag.split("}")[-1]          # noqa: E731
+    zu_i = hyo_i = 0
+    sho = 0
+    tsuketa = []
+    for e in list(doc.element.body.iterchildren()):
+        if tag(e) == "p":
+            para = Paragraph(e, doc)
+            t = para.text.strip()
+            m = re.match(r"^第([０-９])章", t)
+            if para.style.name == "Heading 1" and m:
+                sho = SUJI.index(m.group(1))
+            ookii = any(int(x.get("cx")) > 19 * 360000
+                        for x in e.findall(".//" + qn("wp:extent")))
+            if not e.findall(".//" + qn("a:blip")) or not sho or ookii:
+                continue
+            # --- 図 ---
+            z = ZU[zu_i]
+            if z["sho"] != sho:
+                raise LookupError(f"図の章が合わない: {z['no']} ← 第{sho}章")
+            zu_i += 1
+            midashi = f"{_bangou('図', z['no'])}　{z['midashi']}"
+            tsugi = e.getnext()
+            tsugi_t = (Paragraph(tsugi, doc).text.strip()
+                       if tsugi is not None and tag(tsugi) == "p" else "")
+            if _norm(tsugi_t) == _norm(z["midashi"]):
+                # 当方の図。既にある表題の行に番号を足す
+                for r in Paragraph(tsugi, doc).runs:
+                    r.text = ""
+                Paragraph(tsugi, doc).runs[0].text = midashi
+            else:
+                insert_after(e, [make_midashi(doc, midashi, center=True,
+                                              size=9.5)])
+                if z["moto"]:
+                    if tsugi is not None and tag(tsugi) == "p" \
+                            and _is_kakko(Paragraph(tsugi, doc)):
+                        # （令和８年４月１日現在）のような添え書きを
+                        # 出所の行に置き換える（日付が二重にならないよう）
+                        pp = Paragraph(tsugi, doc)
+                        for r in pp.runs[1:]:
+                            r.text = ""
+                        pp.runs[0].text = z["moto"]
+                    elif not tsugi_t.startswith("資料："):
+                        insert_after(e.getnext(),
+                                     [make_caption(doc, z["moto"], size=9,
+                                                   center=False)])
+            tsuketa.append(midashi)
+        elif tag(e) == "tbl" and sho:
+            tbl = Table(e, doc)
+            if len(tbl.rows) == 1 and len(tbl.columns) == 1:
+                continue
+            h = HYO[hyo_i]
+            if h["sho"] != sho:
+                raise LookupError(f"表の章が合わない: {h['no']} ← 第{sho}章")
+            atama = [c.text.strip() for c in tbl.rows[0].cells]
+            uniq = []
+            for x in atama:
+                if x not in uniq:
+                    uniq.append(x)
+            if [_norm(x) for x in uniq[:len(h["atama"])]] != \
+                    [_norm(x) for x in h["atama"]]:
+                raise LookupError(f"表頭が合わない: {h['no']} ← {uniq[:2]}")
+            hyo_i += 1
+            midashi = f"{_bangou('表', h['no'])}　{h['midashi']}"
+            # 表のすぐ上の添え書きは表に属する。その上に表題を置く
+            ue = e
+            while True:
+                mae = ue.getprevious()
+                if mae is None or tag(mae) != "p":
+                    break
+                if not _is_kakko(Paragraph(mae, doc)):
+                    break
+                ue = mae
+            ue.addprevious(make_midashi(doc, midashi))
+            if h["moto"]:
+                shita = e
+                while True:
+                    tsugi = shita.getnext()
+                    if tsugi is None or tag(tsugi) != "p":
+                        break
+                    if not _is_kakko(Paragraph(tsugi, doc)):
+                        break
+                    shita = tsugi          # （単位：…）は表に属する
+                tsugi = shita.getnext()
+                tsugi_t = (Paragraph(tsugi, doc).text.strip()
+                           if tsugi is not None and tag(tsugi) == "p" else "")
+                if not tsugi_t.startswith("資料："):
+                    insert_after(shita, [make_caption(doc, h["moto"], size=9,
+                                                      center=False)])
+            tsuketa.append(midashi)
+    if zu_i != len(ZU) or hyo_i != len(HYO):
+        raise LookupError(f"図表の数が合わない: 図{zu_i}/{len(ZU)}・"
+                          f"表{hyo_i}/{len(HYO)}")
+    changes.append(f"図表番号：図{zu_i}点・表{hyo_i}点に番号と表題を付与")
+    return tsuketa
+
+
+def apply_zuhyo_mokuji(doc):
+    """目次の後に図表目次を置く。"""
+    saigo = None
+    for p in doc.paragraphs:
+        if p.style.name.startswith("toc "):
+            saigo = p._p
+    if saigo is None:
+        raise LookupError("目次が見つかりません")
+    el = [make_midashi(doc, "図表目次", center=True, size=12)]
+    for kigou, items in (("図", ZU), ("表", HYO)):
+        el.append(make_midashi(doc, f"【{kigou}】", size=10))
+        for it in items:
+            no = _bangou(kigou, it["no"])
+            el.append(make_para(doc, f"{no}　{it['midashi']}",
+                                indent=False, size=9))
+    el.append(make_empty(doc))
+    insert_after(saigo, el)
+    changes.append(f"図表目次：図{len(ZU)}点・表{len(HYO)}点を目次の後に掲載")
 
 
 def apply_mura(doc):
@@ -948,6 +1139,8 @@ def main():
     apply_juten(doc, HP3_EDITS, label="村HP3分野")
     apply_juten(doc, RT_EDITS, label="RedTeam")
     apply_graphs(doc)
+    apply_bangou(doc)
+    apply_zuhyo_mokuji(doc)
     verify(doc, src_dims)
     doc.save(OUT_FILE)
 
