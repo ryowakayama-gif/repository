@@ -553,12 +553,16 @@ def apply_juten(doc):
     for rec in JUTEN_EDITS:
         el = []
         for blk in rec["nakami"]:
-            if blk[0] == "p":
+            if blk[0] == "h3":
+                el.append(make_sub(doc, blk[1]))
+            elif blk[0] == "p":
                 el.append(make_para(doc, blk[1]))
             elif blk[0] == "tbl":
                 el.append(make_table(doc, blk[1], blk[2]))
             elif blk[0] == "note":
                 el.append(make_note(doc, blk[1]))
+            else:
+                raise LookupError(f"ブロックの型が未定義: {rec['no']} {blk[0]}")
         el.append(make_empty(doc))
         if rec["kata"] == "注記後":
             anchor = find_note_tbl(doc, rec["ichi"])
@@ -713,10 +717,10 @@ def verify(doc, src_dims):
                 if v and _norm(v) not in out:
                     ng.append(f"村資料{rec['no']}の表のセルが出力にない: {v[:28]}")
 
-    # ②c 12重点施策の再レビューからの追記7件が入っていること
+    # ②c 12重点施策の再レビューからの追記が入っていること
     for rec in JUTEN_EDITS:
         for blk in rec["nakami"]:
-            if blk[0] in ("p", "note"):
+            if blk[0] in ("h3", "p", "note"):
                 if _norm(blk[1]) not in out:
                     ng.append(f"重点施策{rec['no']}の文章が出力にない: "
                               f"{blk[1][:38]}")
@@ -795,6 +799,10 @@ def verify(doc, src_dims):
         for midashi, _honbun in rec.get("ko", []):
             if midashi.startswith("（"):
                 want_sub.append(midashi)
+    for rec in JUTEN_EDITS:
+        for blk in rec["nakami"]:
+            if blk[0] == "h3" and blk[1].startswith("（"):
+                want_sub.append(blk[1])
     styles = {p.text.strip(): p.style.name for p in doc.paragraphs
               if p.text.strip()}
     for t in want_h2:
