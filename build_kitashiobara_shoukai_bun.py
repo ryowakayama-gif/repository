@@ -55,6 +55,7 @@ from build_kitashiobara_kaigo_seigo import SHOUKAI as S_KG  # noqa: E402
 from build_kitashiobara_kouiki_redteam import SHOUKAI as S_KO  # noqa: E402
 from build_kitashiobara_jouhou_kouhyou import SHOUKAI as S_KJ  # noqa: E402
 from build_kitashiobara_yosan_mece import SHOUKAI as S_YS  # noqa: E402
+from build_kitashiobara_kyoseigata import SHOUKAI as S_KY  # noqa: E402
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT_FILE = f"{REPO_ROOT}/output/北塩原村_村への照会_6通.docx"
@@ -80,7 +81,7 @@ def atsumeru():
             out[_zen(r[0])] = dict(no=_zen(r[0]), atesaki="村", kenmei=r[1],
                                    naiyo=r[2], tsukaimichi=r[3], kigen=r[4])
     for recs in (S_HP3, S_RT, S_ME, S_SA, S_ZEN, S_KG, S_KO, S_KJ,
-                 S_YS,
+                 S_YS, S_KY,
                  K_ZUHYO, K_BAN, K_ANKE):
         for r in recs:
             out[_zen(r[0])] = dict(no=_zen(r[0]), atesaki=r[1], kenmei=r[2],
@@ -156,12 +157,19 @@ BIN = [
              "「あること」ではなく「使われていること」を書きます。"
              "実績が分かれば、計画の評価と次の３年間の目標を"
              "数字で示せます。"
+             "村内の事業所についても同じで、"
+             "何カ所あるかではなく、"
+             "どの指定の形で提供しているか"
+             "（通常の指定か、共生型の指定か、"
+             "基準該当障害福祉サービスとしての取扱いか）が分からないと、"
+             "村内の介護保険の事業所の力を障がい福祉の供給に"
+             "生かせるかどうかを判断できません。"
              "計画の確定にすぐ要るものではありませんので、"
              "他の便より後で差し支えありません。",
         nos=["Ｍ-59", "Ｍ-60", "Ｍ-61", "Ｍ-62", "Ｍ-63", "Ｍ-66",
              "Ｍ-67", "Ｍ-68", "Ｍ-78", "Ｍ-79", "Ｍ-80",
              "Ｍ-82", "Ｍ-83", "Ｍ-84", "Ｍ-85", "Ｍ-86",
-             "Ｍ-103", "Ｍ-105"],
+             "Ｍ-103", "Ｍ-105", "Ｍ-106"],
     ),
     dict(
         no=6,
@@ -228,7 +236,7 @@ def verify(zenbu):
         if no in ireta:
             ng.append(f"村以外あてを村の照会文に入れている: {no}")
 
-    # ④ 番号に抜けがないこと（Ｍ-40からＭ-105まで）
+    # ④ 番号に抜けがないこと（Ｍ-40からＭ-106まで）
     ban = sorted(int(k.split("-")[1]) for k in mura)
     nuke = [n for n in range(ban[0], ban[-1] + 1) if n not in ban]
     if nuke:
