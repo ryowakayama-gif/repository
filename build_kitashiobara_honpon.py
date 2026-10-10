@@ -54,6 +54,7 @@ from build_kitashiobara_murashiryo import MURA_EDITS  # noqa: E402
 from build_kitashiobara_juten12 import JUTEN_EDITS  # noqa: E402
 from build_kitashiobara_hp_shisaku import HP_EDITS  # noqa: E402
 from build_kitashiobara_hp_3bunya import HP3_EDITS  # noqa: E402
+from build_kitashiobara_redteam_kyukyu import RT_EDITS  # noqa: E402
 from build_kitashiobara_graph import GRAPHS, OUT_DIR as ZU_DIR  # noqa: E402
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -779,7 +780,8 @@ def verify(doc, src_dims):
                     ng.append(f"村資料{rec['no']}の表のセルが出力にない: {v[:28]}")
 
     # ②c 再レビューからの追記が入っていること
-    for rec in list(JUTEN_EDITS) + list(HP_EDITS) + list(HP3_EDITS):
+    for rec in (list(JUTEN_EDITS) + list(HP_EDITS) + list(HP3_EDITS)
+                + list(RT_EDITS)):
         for blk in rec["nakami"]:
             if blk[0] in ("h2", "h3", "p", "note"):
                 if _norm(blk[1]) not in out:
@@ -872,7 +874,8 @@ def verify(doc, src_dims):
         for midashi, _honbun in rec.get("ko", []):
             if midashi.startswith("（"):
                 want_sub.append(midashi)
-    for rec in list(JUTEN_EDITS) + list(HP_EDITS) + list(HP3_EDITS):
+    for rec in (list(JUTEN_EDITS) + list(HP_EDITS) + list(HP3_EDITS)
+                + list(RT_EDITS)):
         for blk in rec["nakami"]:
             if blk[0] in ("h2", "h3") and blk[1].startswith("（"):
                 want_sub.append(blk[1])
@@ -925,7 +928,7 @@ def verify(doc, src_dims):
           f"村資料{len(MURA_EDITS)}件・"
           f"重点施策{len(JUTEN_EDITS)}件・"
           f"村HP{len(HP_EDITS)}件・村HP3分野{len(HP3_EDITS)}件・"
-          f"図{len(GRAPHS)}点が実在／"
+          f"RedTeam{len(RT_EDITS)}件・図{len(GRAPHS)}点が実在／"
           f"正本の記述{len(keep)}点が残存／見込量表{n_mikomi}表／"
           "表記の作法4点すべて合")
 
@@ -943,6 +946,7 @@ def main():
     apply_juten(doc)
     apply_juten(doc, HP_EDITS, label="村HP")
     apply_juten(doc, HP3_EDITS, label="村HP3分野")
+    apply_juten(doc, RT_EDITS, label="RedTeam")
     apply_graphs(doc)
     verify(doc, src_dims)
     doc.save(OUT_FILE)
