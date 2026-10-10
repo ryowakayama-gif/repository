@@ -537,6 +537,17 @@ def find_note_tbl(doc, prefix):
     return cell._tc.getparent().getparent()
 
 
+def next_tbl(element):
+    """ある段落の次に現れる表を返す（直後に続けて入れるため）。"""
+    cur = element
+    while True:
+        cur = cur.getnext()
+        if cur is None:
+            raise LookupError("後ろに表が見つかりません")
+        if cur.tag.split("}")[-1] == "tbl":
+            return cur
+
+
 def apply_juten(doc):
     """12重点施策の再レビューのうち、枠組みとして書ける7件を入れる。"""
     for rec in JUTEN_EDITS:
@@ -551,6 +562,8 @@ def apply_juten(doc):
         el.append(make_empty(doc))
         if rec["kata"] == "注記後":
             anchor = find_note_tbl(doc, rec["ichi"])
+        elif rec["kata"] == "表の後":
+            anchor = next_tbl(find_para(doc, rec["ichi"]))
         else:
             anchor = find_para(doc, rec["ichi"])
         insert_after(anchor, el)
