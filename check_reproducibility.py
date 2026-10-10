@@ -166,6 +166,10 @@ BUILDERS = [
      ["output/北塩原村_村HP3分野の棚卸し.xlsx"],
      "高齢者・児童・社会福祉の施策が正本に入ったかを現物で照合するため、"
      "移植後の正本を作った後に実行する"),
+    ("build_kitashiobara_anke_mikomi.py",
+     ["output/北塩原村_アンケートと見込量の整合.xlsx"],
+     "正本の調査結果の記述と割合が合うかを現物で照合するため、"
+     "移植後の正本を作った後に実行する"),
     ("build_kitashiobara_mikomi_redteam.py",
      ["output/北塩原村_見込量算定のRedTeam再レビュー.xlsx"],
      "直した定義が入れ替わったかを正本と告示の現物で照合するため、"
