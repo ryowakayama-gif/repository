@@ -52,6 +52,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kitashiobara_ishoku_okurijo import ISHOKU  # noqa: E402
 from build_kitashiobara_murashiryo import MURA_EDITS  # noqa: E402
 from build_kitashiobara_juten12 import JUTEN_EDITS  # noqa: E402
+from build_kitashiobara_hp_shisaku import HP_EDITS  # noqa: E402
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC = (f"{REPO_ROOT}/source/他メンバー素案_20261008/"
@@ -548,9 +549,9 @@ def next_tbl(element):
             return cur
 
 
-def apply_juten(doc):
-    """12重点施策の再レビューのうち、枠組みとして書ける7件を入れる。"""
-    for rec in JUTEN_EDITS:
+def apply_juten(doc, records=None, label="重点施策"):
+    """再レビューからの追記を入れる（JUTEN_EDITS と HP_EDITS に使う）。"""
+    for rec in (JUTEN_EDITS if records is None else records):
         el = []
         for blk in rec["nakami"]:
             if blk[0] == "h3":
@@ -571,7 +572,7 @@ def apply_juten(doc):
         else:
             anchor = find_para(doc, rec["ichi"])
         insert_after(anchor, el)
-        changes.append(f"重点施策{rec['no']}：{rec['saki']}")
+        changes.append(f"{label}{rec['no']}：{rec['saki']}")
 
 
 def apply_mura(doc):
@@ -717,8 +718,8 @@ def verify(doc, src_dims):
                 if v and _norm(v) not in out:
                     ng.append(f"村資料{rec['no']}の表のセルが出力にない: {v[:28]}")
 
-    # ②c 12重点施策の再レビューからの追記が入っていること
-    for rec in JUTEN_EDITS:
+    # ②c 再レビューからの追記が入っていること
+    for rec in list(JUTEN_EDITS) + list(HP_EDITS):
         for blk in rec["nakami"]:
             if blk[0] in ("h3", "p", "note"):
                 if _norm(blk[1]) not in out:
@@ -799,7 +800,7 @@ def verify(doc, src_dims):
         for midashi, _honbun in rec.get("ko", []):
             if midashi.startswith("（"):
                 want_sub.append(midashi)
-    for rec in JUTEN_EDITS:
+    for rec in list(JUTEN_EDITS) + list(HP_EDITS):
         for blk in rec["nakami"]:
             if blk[0] == "h3" and blk[1].startswith("（"):
                 want_sub.append(blk[1])
@@ -847,7 +848,8 @@ def verify(doc, src_dims):
     print(f"  自己点検: 移植{len(ISHOKU)}件の文章と表が出力に実在／"
           f"論点{len(MEMO_EDITS)}件・用語{len(YOUGO_ADD)}語・"
           f"村資料{len(MURA_EDITS)}件・"
-          f"重点施策{len(JUTEN_EDITS)}件が実在／"
+          f"重点施策{len(JUTEN_EDITS)}件・"
+          f"村HP{len(HP_EDITS)}件が実在／"
           f"正本の記述{len(keep)}点が残存／見込量表{n_mikomi}表／"
           "表記の作法4点すべて合")
 
@@ -863,6 +865,7 @@ def main():
     apply_memo(doc, tail)
     apply_mura(doc)
     apply_juten(doc)
+    apply_juten(doc, HP_EDITS, label="村HP")
     verify(doc, src_dims)
     doc.save(OUT_FILE)
 
