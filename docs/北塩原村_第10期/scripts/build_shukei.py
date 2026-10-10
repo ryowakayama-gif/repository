@@ -11,6 +11,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from shukei_data import N, Z, DERIVED, CROSS, AXES, SHU_HO
+import shukei_check as SC   # 論理チェックの項目は実際に走る側から引く
 
 OUT = os.path.join(_P.OUT, "07_北塩原村第10期_集計仕様書.xlsx")
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
@@ -258,6 +259,113 @@ for t in TIPS:
     w.row_dimensions[rr].height = 26
     rr += 1
 
+# ── Sheet7 精度管理 ───────────────────────────
+w = wb.create_sheet("精度管理")
+w.column_dimensions["A"].width = 3
+title_bar(w, "A1:E1", "入力データの精度管理（論理チェックとベリファイ）")
+sub_bar(w, "A2:E2",
+        "集計を回す前に scripts/shukei_check.py を通し、鳴った件を1件ずつ原票に当たって直します。"
+        "　｜　この表は実際に走る側（shukei_check.py）から生成しているため、"
+        "点検の内容と本表は食い違いません。", h=32)
+
+rr = 3
+sub_bar(w, f"A{rr}:E{rr}", "■ 論理チェック（%d項目）" % len(SC.RULES), h=22, fill=C["key"]); rr += 1
+head_row(w, rr, ["記号", "項目", "いつ鳴るか", "鳴ったときの直し方", ""],
+         [8, 24, 48, 48, 2]); rr += 1
+for i, (kigou, nm, itsu, naoshi) in enumerate(SC.RULES, 1):
+    put(w, rr, [kigou, nm, itsu, naoshi, ""], wraps=(2, 3, 4), center=(1,),
+        fill=C["alt"] if i % 2 == 0 else None)
+    w.row_dimensions[rr].height = 30
+    rr += 1
+
+rr += 1
+sub_bar(w, f"A{rr}:E{rr}",
+        "■ コードブックの点検（%d項目）　論理チェックは設問の番号・選択肢・分岐をコードブックから引くため、"
+        "コードブックが壊れていれば鳴った件はデータの誤りではありません。先にここを見ます。"
+        % len(SC.CB_RULES), h=26, fill=C["chk"]); rr += 1
+head_row(w, rr, ["記号", "項目", "いつ鳴るか", "直し方", ""], [8, 24, 48, 48, 2]); rr += 1
+for i, (kigou, nm, itsu, naoshi) in enumerate(SC.CB_RULES, 1):
+    put(w, rr, [kigou, nm, itsu, naoshi, ""], wraps=(2, 3, 4), center=(1,),
+        fill=C["alt"] if i % 2 == 0 else None)
+    w.row_dimensions[rr].height = 30
+    rr += 1
+
+rr += 1
+sub_bar(w, f"A{rr}:E{rr}",
+        "■ 分岐の規則（%d件）　親が無回答のときはどちらとも言えないため鳴らせません。"
+        "マトリクス設問の親（ニーズ 問5(1)・在宅A 問9）はデータの列を持たないため対象外です。"
+        % len(SC.BRANCH), h=26, fill=C["key"]); rr += 1
+head_row(w, rr, ["票", "親", "子を答える条件", "子", "根拠（調査票の指示）"],
+         [10, 16, 16, 16, 44]); rr += 1
+for i, (hyo, oya, jouken, ko, konkyo) in enumerate(SC.BRANCH, 1):
+    put(w, rr, [hyo, oya, "・".join(str(x) for x in jouken), ko, konkyo],
+        wraps=(5,), center=(1, 3), fill=C["alt"] if i % 2 == 0 else None)
+    w.row_dimensions[rr].height = 26
+    rr += 1
+
+rr += 1
+sub_bar(w, f"A{rr}:E{rr}", "■ 複数回答の上限と数値の範囲", h=22, fill=C["key"]); rr += 1
+head_row(w, rr, ["区分", "変数・列", "とりうる値", "備考", ""], [14, 22, 20, 40, 2]); rr += 1
+for v, n in sorted(SC.LIMIT.items()):
+    put(w, rr, ["複数回答の上限", v, "%d個まで" % n,
+                "上限を超えた件はL05。原票でも超えていればそのまま集計し件数を記録", ""],
+        wraps=(4,), center=(1, 3))
+    w.row_dimensions[rr].height = 24
+    rr += 1
+for col, (lo, hi) in sorted(SC.RANGE.items()):
+    put(w, rr, ["数値の範囲", col, "%d〜%d" % (lo, hi),
+                "範囲の外はL08。欠測として扱い件数を記録（身長・体重は1問が2列）", ""],
+        wraps=(4,), center=(1, 3))
+    w.row_dimensions[rr].height = 24
+    rr += 1
+
+rr += 1
+sub_bar(w, f"A{rr}:E{rr}",
+        "■ ベリファイ（再入力による照合）　全件を二重入力する余力はないため、"
+        "層の判定に効くものを全件、そうでないものを抽出とします。", h=26, fill=C["chk"]); rr += 1
+head_row(w, rr, ["対象", "方法", "理由", "", ""], [34, 22, 64, 2, 2]); rr += 1
+VERIFY = [
+ ("区分が「必須」の設問", "全件を二重入力して照合",
+  "単純集計の中心であり、無回答の扱いが報告書の全図表に及ぶ"),
+ ("派生変数に使う設問（R01〜R10・L01・S01・S02）", "全件を二重入力して照合",
+  "資料3の3-3（元気な軽度者）・3-4（生活機能からみた4つの層）・3-6（担い手の可能性）の基礎。"
+  "1件の誤りが層の人数を動かし、基本理念・基本目標の判断材料が狂う"),
+ ("上記以外（オプション・村独自）", "10パーセントを抽出して照合",
+  "構成比に効くが層の判定には使わない。抽出で誤りが見つかった設問は全件に広げる"),
+ ("ウェブ回答", "対象外（入力を経ない）",
+  "ただし取込の件数がフォームの回答数と一致することを確かめる"),
+]
+for i, row in enumerate(VERIFY, 1):
+    put(w, rr, list(row) + ["", ""], wraps=(1, 3),
+        fill=C["alt"] if i % 2 == 0 else None)
+    w.row_dimensions[rr].height = 34
+    rr += 1
+rr += 1
+w.merge_cells(start_row=rr, start_column=1, end_row=rr, end_column=5)
+c = w.cell(row=rr, column=1,
+           value="・照合の結果は「入力の誤りの件数 ÷ 照合した項目数」として記録し、報告書に記載します。")
+c.font = Font(name=F, size=9); c.alignment = Alignment(vertical="top", wrap_text=True, indent=1)
+w.row_dimensions[rr].height = 22
+rr += 2
+
+sub_bar(w, f"A{rr}:E{rr}", "■ コードブックの版（重要）", h=22, fill=C["note"]); rr += 1
+BAN = [
+ "コードブックは令和8年9月4日版の調査票から作られています。実際に配られたのは9月9日の校了版です（doc34 §4）。",
+ "版が違うと、鳴るべきものが鳴らず、鳴らなくてよいものが鳴ります。"
+ "このため shukei_check.py は版を確かめ、食い違っていれば止まります（承知のうえで動かすときは --暫定）。",
+ "校了版の調査票（Word）を受領してコードブックを作り直すまで、論理チェックの結果は暫定です。",
+ "9月4日版から作ったコードブックには7件の不備が残っています"
+ "（C01 ZB_問8の重複／C02 ニーズ問3(10)・在宅A問5・問8・問14・在宅B問7の選択肢／C03 ニーズ問7(10)の列数）。"
+ "いずれも作り直しで同時に解消します。",
+]
+for t in BAN:
+    w.merge_cells(start_row=rr, start_column=1, end_row=rr, end_column=5)
+    c = w.cell(row=rr, column=1, value="・" + t)
+    c.font = Font(name=F, size=9); c.alignment = Alignment(vertical="top", wrap_text=True, indent=1)
+    w.row_dimensions[rr].height = 26
+    rr += 1
+
 wb.save(OUT)
 print(f"保存: {OUT}")
 print(f"ニーズ {len(N)}設問 / 在宅 {len(Z)}設問 / 派生変数 {len(DERIVED)}件 / クロス表 {len(CROSS)}件")
+print(f"論理チェック {len(SC.RULES)}項目 / コードブックの点検 {len(SC.CB_RULES)}項目 / 分岐 {len(SC.BRANCH)}件")

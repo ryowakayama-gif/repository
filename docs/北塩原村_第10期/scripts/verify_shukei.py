@@ -8,10 +8,12 @@ import os as _os_p
 import sys as _sys_p
 _sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
 import paths as _P   # 置き場所はここで決める（じか書きしない）
-import os, re, sys
+import io, os, re, sys
 sys.dont_write_bytecode = True   # 古いバイトコードで誤った結果が出ることを防ぐ
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from shukei_data import N, Z, DERIVED, CROSS, AXES, SHU_HO
+import json
+import shukei_check as SC   # 精度管理は実際に走る側から引く
 
 MD = os.path.join(_P.BASE, "25_集計仕様書.md")
 MD24 = os.path.join(_P.BASE, "24_アンケート調査報告書_骨子案.md")
@@ -120,6 +122,77 @@ chk(16, "中核の★表の数が一致すること",
     say in md and f"**★を付した{len(star)}表が分析編（第Ⅱ部）の中核**" in md24
     and f"残る{len(hokyo)}表" in md,
     f"★{len(star)}表・補強{len(hokyo)}表")
+
+# ── ここから精度管理（doc25 §7）との照合 ───────────────
+#    論理チェックは shukei_check.py が実際に走る側。仕様書がそれと
+#    食い違えば、村にお示しした内容と現に走る点検が別物になる。
+
+# 17 論理チェックの12項目が、記号も項目名も集計仕様書にあること
+miss17 = [k for k, nm, _i, _n in SC.RULES if k not in md or nm not in md]
+chk(17, "論理チェックの項目が集計仕様書にあること",
+    len(SC.RULES) == 12 and not miss17 and "論理チェック（12項目）" in md,
+    f"mdにない {miss17}" if miss17 else f"L01〜L12の{len(SC.RULES)}項目を記載")
+
+# 18 コードブックの点検5項目が、記号も項目名も集計仕様書にあること
+miss18 = [k for k, nm, _i, _n in SC.CB_RULES if k not in md or nm not in md]
+chk(18, "コードブックの点検が集計仕様書にあること",
+    len(SC.CB_RULES) == 5 and not miss18 and "コードブックの点検（5項目）" in md,
+    f"mdにない {miss18}" if miss18 else f"C01〜C05の{len(SC.CB_RULES)}項目を記載")
+
+# 19 ベリファイの3つの扱いが集計仕様書に書かれていること
+need19 = ["全件を二重入力して照合", "10パーセントを抽出して照合", "対象外",
+          "入力の誤りの件数 ÷ 照合した項目数"]
+miss19 = [x for x in need19 if x not in md]
+chk(19, "ベリファイの対象と方法が集計仕様書にあること", not miss19,
+    f"欠落 {miss19}" if miss19 else "全件・抽出・対象外・記録の仕方を記載")
+
+# 20 分岐の規則が、親も子も集計仕様書にあること
+miss20 = [f"{oya}→{ko}" for _h, oya, _j, ko, _k in SC.BRANCH
+          if oya not in md or ko not in md]
+chk(20, "分岐の規則が集計仕様書にあること", len(SC.BRANCH) >= 5 and not miss20,
+    f"mdにない {miss20}" if miss20 else f"{len(SC.BRANCH)}件の親子を記載")
+
+# 21 コードブックの版が合っていないことの断りがあること
+#    版が合えば ban_chigai() が None を返すので、断りは不要になる
+chigai21 = SC.ban_chigai()
+need21 = ["令和8年9月4日版", "校了版", "暫定", "--暫定"]
+miss21 = [x for x in need21 if x not in md]
+chk(21, "コードブックの版の断りが集計仕様書にあること",
+    (not chigai21) or (not miss21),
+    f"欠落 {miss21}" if miss21 else
+    ("版が合っているため断りは不要" if not chigai21 else "版違い・暫定の断りを記載"))
+
+# 22 §1 のシートの件数が shukei_data と一致すること
+need22 = [f"**{len(DERIVED)}件**", f"**{len(CROSS)}表**",
+          f"**{len(N)}設問**", f"**{len(Z)}設問**"]
+miss22 = [x for x in need22 if x not in md]
+chk(22, "シートの件数が集計仕様書と一致すること", not miss22,
+    f"§1と不一致 {miss22}" if miss22 else
+    f"ニーズ{len(N)}・在宅{len(Z)}・派生{len(DERIVED)}・クロス{len(CROSS)}")
+
+# 23 派生変数がすべて集計仕様書に載っていること
+miss23 = [d[0] for d in DERIVED if d[0] not in md]
+chk(23, "派生変数がすべて集計仕様書にあること", not miss23,
+    f"mdにない {miss23}" if miss23 else f"{len(DERIVED)}件すべて記載")
+
+# 24 上限・範囲の参照先がコードブックに実在すること（C05 を点検側でも押さえる）
+kb24 = json.load(open(os.path.join(_P.DATA, "集計_コードブック.json"), encoding="utf-8"))
+v24 = {e["変数"] for e in kb24}
+c24 = {c for e in kb24 for c in e["列"]}
+bad24 = ([v for v in SC.LIMIT if v not in v24]
+         + [c for c in SC.RANGE if c not in c24])
+chk(24, "上限・範囲の参照先がコードブックにあること", not bad24,
+    f"参照先がない {bad24}" if bad24 else
+    f"LIMIT {len(SC.LIMIT)}件・RANGE {len(SC.RANGE)}件とも実在")
+
+# 25 点検そのものが自己試験を通ること（欠陥を入れて鳴ることを確かめた記録）
+#    selftest() は標準出力に書くため、ここでは結果だけを見る
+import contextlib
+_buf = io.StringIO() if hasattr(io, "StringIO") else None
+with contextlib.redirect_stdout(_buf):
+    jiko = SC.selftest()
+chk(25, "論理チェックが自己試験を通ること", jiko == 0,
+    "自己試験が通らない" if jiko else "欠陥を入れて19件すべてが鳴ることを確認")
 
 w = max(len(n) for _, n, _, _ in R)
 print("■ 集計仕様書の自己点検")

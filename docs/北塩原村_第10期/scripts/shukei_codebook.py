@@ -33,6 +33,26 @@ DOCX_NEEDS = os.path.join(UPLOAD, "20085979-0904__10____________________________
 DOCX_ZAI = os.path.join(UPLOAD, "fdc7d3d0-0904__10____________________1.docx")
 OUT = os.path.join(BASE, "data", "集計_コードブック.json")
 
+# ── 何版の調査票から作ったか ──────────────────────────────
+#   この定数は shukei_check.ban_chigai() が参照し、実際に配られた版
+#   （令和8年9月9日 校了版）と食い違えば集計を止める。
+#   コードブックを作り直したら BAN_BY_NAME に新しい版を足し、BUILT_FROM を直す。
+#   build() はファイル名から読んだ版と BUILT_FROM を突き合わせて止まるので、
+#   BUILT_FROM を直さずに作り直すことはできない。
+BUILT_FROM = "令和8年9月4日版"
+
+#   調査票のdocxの名前に入っている日付と、版の対応
+BAN_BY_NAME = [("0904", "令和8年9月4日版"), ("0909", "令和8年9月9日 校了版")]
+
+
+def ban_of(path):
+    """調査票のdocxの名前から版を読む。分からなければ None"""
+    base = os.path.basename(path)
+    for key, ban in BAN_BY_NAME:
+        if key in base:
+            return ban
+    return None
+
 # 在宅調査はA票とB票で設問番号が重複するため、B票の開始位置で切り分ける
 ZAI_B_START = "ご家族やご親族の中で"
 
@@ -103,6 +123,16 @@ def guess_format(item, spec_fmt):
 
 
 def build():
+    # ── 版の突き合わせ ──────────────────────────
+    #   ファイル名から読んだ版が BUILT_FROM と合わなければ止める。
+    #   （作り直したのに BUILT_FROM を直し忘れると、版の判定が黙って嘘になる）
+    yomi = {ban_of(DOCX_NEEDS), ban_of(DOCX_ZAI)}
+    if yomi != {BUILT_FROM}:
+        raise SystemExit(
+            "調査票のファイル名から読んだ版（%s）が BUILT_FROM（%s）と合いません。\n"
+            "  BUILT_FROM を直してから作り直してください。"
+            % ("・".join(sorted(x or "不明" for x in yomi)), BUILT_FROM))
+
     # ── 集計仕様の索引 ─────────────────────────
     spec_n = {}
     for (_hyo, q, e, text, kb, fm, sh, cr, mr, note) in SD.N:
