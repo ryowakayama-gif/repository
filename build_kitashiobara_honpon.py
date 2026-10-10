@@ -598,7 +598,11 @@ def make_caption(doc, text, size=9.5, center=True):
 
 
 def apply_graphs(doc):
-    """当方が作ったモノクロの図を、対応する表の直後に入れる。"""
+    """当方が作った図を、対応する表又は段落の直後に入れる。
+
+    kata が「表の後」（既定）なら、ichi の段落の次に現れる表の直後に、
+    「本文」ならその段落の直後に入れる。
+    """
     from PIL import Image
     for g in GRAPHS:
         path = f"{ZU_DIR}/{g['file']}"
@@ -612,7 +616,14 @@ def apply_graphs(doc):
             make_caption(doc, g["src"], size=9, center=False),
             make_empty(doc),
         ]
-        insert_after(next_tbl(find_para(doc, g["ichi"])), el)
+        kata = g.get("kata", "表の後")
+        para = find_para(doc, g["ichi"])
+        if kata == "表の後":
+            insert_after(next_tbl(para), el)
+        elif kata == "本文":
+            insert_after(para, el)
+        else:
+            raise LookupError(f"図の挿入位置の型が未定義: {g['no']} {kata}")
         changes.append(f"図{g['no']}：{g['title']}")
 
 

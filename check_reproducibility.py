@@ -140,7 +140,12 @@ BUILDERS = [
     ("build_kitashiobara_graph.py",
      ["output/図表/01_給付費の推移.png",
       "output/図表/02_サービス別の給付費.png",
-      "output/図表/03_高齢化率の推移.png"],
+      "output/図表/03_高齢化率の推移.png",
+      "output/図表/04_計画の体系.png",
+      "output/図表/05_関係機関との連携.png",
+      "output/図表/06_地域生活支援拠点の5機能.png",
+      "output/図表/07_緊急時の4場面.png",
+      "output/図表/08_65歳到達時の判定の流れ.png"],
      "申し送りの表と正本の表から数値を読んで図を描くため、"
      "申し送りの後・正本の前に実行する"),
     ("build_kitashiobara_honpon.py",
