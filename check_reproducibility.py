@@ -202,6 +202,10 @@ BUILDERS = [
      ["output/北塩原村_広域連携_RedTeam再レビュー.xlsx"],
      "直した表現が入れ替わったか、足した記述と表が入ったかを現物で照合する"
      "ため、移植後の正本を作った後に実行する"),
+    ("build_kitashiobara_yosan_mece.py",
+     ["output/北塩原村_国予算R7R8_MECE.xlsx"],
+     "国の予算資料2件の原典と正本を読んで、足した記述が入ったかを"
+     "現物で照合するため、移植後の正本を作った後に実行する"),
     ("build_kitashiobara_ishi_kettei.py",
      ["output/北塩原村_意思決定支援ガイドライン第2版_MECE.xlsx"],
      "国のガイドライン第2版の原典と正本を読んで、直した用語が"
