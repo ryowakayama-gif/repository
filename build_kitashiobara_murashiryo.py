@@ -32,6 +32,7 @@
 """
 
 import os
+import re
 import sys
 
 import docx
@@ -49,6 +50,8 @@ REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT_FILE = f"{REPO_ROOT}/output/北塩原村_村資料点検_20261010.xlsx"
 SRC_DIR = f"{REPO_ROOT}/source/村資料_自立支援協議会_20260525"
 HONPON = f"{REPO_ROOT}/output/北塩原村_計画素案_正本_移植後.docx"
+MEMBER = (f"{REPO_ROOT}/source/他メンバー素案_20261008/"
+          "北塩原村_第8期障がい福祉計画_第4期障がい児福祉計画_素案_他メンバー版.docx")
 
 SRC_FILES = [
     "計画策定方針.pdf",
@@ -831,6 +834,115 @@ SHUUSEI = [
 
 
 # ===========================================================================
+# 6b. 正本に入れる文章（修正案のうち最優先の5件）
+#   村の計画策定方針に明記があり、村の回答を待たずに書けるものだけを置く。
+#   build_kitashiobara_honpon.py がここから読み込んで正本に入れるため、
+#   文章の出所はこの一覧だけとする。
+#   型  本文     挿入位置の段落の直後に段落を入れる
+#       項       挿入位置の段落の直後に小見出しと本文を入れる
+#       計画の表 第1章2の「計画名／項目／内容」の表に行を足す
+#       年度表   第1章3の年度表に行を足す
+# ===========================================================================
+MURA_EDITS = [
+    dict(
+        no="V-1",
+        kata="計画の表",
+        saki="第1章2 計画の位置づけ（計画名／項目／内容の表）",
+        ichi="計画名",
+        konkyo="計画策定方針 3（2）③。"
+               "成年後見制度の利用促進に関する法律第14条第1項",
+        gyou=[
+            ["成年後見制度の利用の\n促進に関する施策に\nついての基本的な計画",
+             "根拠法令", "成年後見制度の利用促進に関する法律第14条第１項"],
+            ["", "策定内容",
+             "地域の実情に応じた成年後見制度の利用の促進に関する施策を定める"
+             "（計画期間：令和９年度～令和13年度）"],
+        ],
+    ),
+    dict(
+        no="V-2",
+        kata="年度表",
+        saki="第1章3 計画の期間（年度表と本文）",
+        ichi="なお、いずれの計画も計画期間中において、"
+             "社会情勢の変化や国の方針変更等に伴い、"
+             "計画の見直しが必要と判断された場合は、見直しを行います。",
+        konkyo="計画策定方針 2・3（2）③",
+        honbun=[
+            "また、本計画には、成年後見制度の利用促進に関する法律第14条第１項に"
+            "基づく「成年後見制度の利用の促進に関する施策についての"
+            "基本的な計画」を内包します。"
+            "同計画の計画期間は、令和９年度から令和13年度までの５年間とし、"
+            "障がい福祉計画及び障がい児福祉計画の計画期間（３年間）とは"
+            "異なります。",
+        ],
+        gyou=[["成年後見\n利用促進計画", "―", "本計画に内包（５年間）", ""]],
+    ),
+    dict(
+        no="V-3",
+        kata="本文",
+        saki="第1章2 計画の位置づけ（末尾。移植17の前）",
+        ichi="また、北塩原村第五次総合振興計画の施策体系においては、"
+             "政策分野「福祉」の中の「生活弱者」に位置づけられる"
+             "施策19「穏やかな暮らしの支援」として、"
+             "「障がい者福祉制度の運営、適切な生活保障」が掲げられており、"
+             "本計画はこの施策を具体化する分野別計画として位置づけられます。"
+             "本計画期間中に策定される次期総合振興計画についても、"
+             "その内容との整合を図ります。",
+        konkyo="計画策定方針 3（1）",
+        honbun=[
+            "なお、第４次北塩原村障がい者計画（令和６年度～令和11年度）は、"
+            "本計画の策定にあわせて中間見直しを行います。"
+            "中間見直しでは、第３章に掲げる基本施策ごとの目標値について"
+            "達成状況を確認し、"
+            "目標値を改める場合は同章に改定後の値を掲げます。",
+        ],
+    ),
+    dict(
+        no="V-4",
+        kata="項",
+        saki="第1章5 計画策定の体制（（5）〜（7）として追加）",
+        ichi="本計画案を、令和９年２月８日～令和９年２月22日まで"
+             "村ホームページ等で公開し、広く村民の方々から意見を募りました。",
+        konkyo="計画策定方針 7（4）（6）（7）",
+        ko=[
+            ("（５）４町村広域の障がい者自立支援協議会の開催",
+             "猪苗代町、磐梯町、湯川村及び本村の４町村で構成する広域の"
+             "障がい者自立支援協議会においても、保健・福祉の関係者、"
+             "障がい当事者、教育関係者、障がい福祉サービス事業者等の"
+             "委員の意見を聴取しながら検討しました。"
+             "本村単独では確保が難しいサービスの広域的な利用や、"
+             "地域生活支援拠点の共同整備については、この場で協議します。"),
+            ("（６）村議会への説明",
+             "議会全員協議会において、計画案について説明しました。"),
+            ("（７）計画の公表",
+             "策定した計画は、関係機関へ送付するとともに、"
+             "村のホームページに掲載して公表します。"),
+        ],
+    ),
+    dict(
+        no="V-5",
+        kata="本文",
+        saki="第6章 成年後見制度の利用促進（章の冒頭）",
+        ichi="第６章　成年後見制度の利用促進",
+        konkyo="計画策定方針 2・3（2）③",
+        honbun=[
+            "本章は、成年後見制度の利用促進に関する法律第14条第１項に基づく"
+            "「成年後見制度の利用の促進に関する施策についての基本的な計画」"
+            "として定めるものです。"
+            "同項は、市町村が国の成年後見制度利用促進基本計画を勘案して、"
+            "その区域における成年後見制度の利用の促進に関する施策についての"
+            "基本的な計画を定めるよう努めるものとしています。",
+            "本章の計画期間は、令和９年度から令和13年度までの５年間とします。"
+            "障がい福祉計画及び障がい児福祉計画の計画期間"
+            "（令和９年度から令和11年度まで）とは異なるため、"
+            "次期計画の策定時には、本章の進捗状況を確認したうえで、"
+            "残る期間の取組みを引き継ぎます。",
+        ],
+    ),
+]
+
+
+# ===========================================================================
 # 7. 村への照会（この点検で新たに生じたもの）
 #   番号, 事項, 聞きたいこと, なぜ要るか, 期限の目安
 # ===========================================================================
@@ -911,10 +1023,26 @@ SHOUKAI = [
 
 
 # ===========================================================================
+# 照合に使う語
+#   ZERO_MEMBER  受領した他メンバー版（令和8年10月8日）に0件であること
+#   ADDED        そのうち V-1〜V-5 で入れたため現在の正本にはあること
+#   PRESENT      現在の正本にあること（村資料で裏づけが取れた語）
+# ===========================================================================
+ZERO_MEMBER = ["地域公共交通", "医療的ケアサポート", "障がいの手引き", "NET119",
+               "住所地特例", "就学奨励費", "村議会", "全員協議会", "中間見直し",
+               "障がい者基本計画", "成年後見制度の利用促進に関する法律",
+               "ICカード"]
+ADDED = ["村議会", "全員協議会", "中間見直し",
+         "成年後見制度の利用促進に関する法律"]
+PRESENT = ["法定雇用率", "高次脳機能", "住宅セーフティネット", "再入院",
+           "ペアレント", "要支援者名簿", "個別避難計画"]
+
+
+# ===========================================================================
 # 読み取りと照合
 # ===========================================================================
-def load_honpon():
-    doc = docx.Document(HONPON)
+def load_docx(path):
+    doc = docx.Document(path)
     parts = []
     for ch in doc.element.body.iterchildren():
         tag = ch.tag.split("}")[-1]
@@ -931,7 +1059,7 @@ def load_honpon():
     return "\n".join(parts)
 
 
-def verify(honpon):
+def verify(honpon, member):
     ng = []
 
     # ① 読んだ村資料が実在すること
@@ -939,23 +1067,58 @@ def verify(honpon):
         if not os.path.exists(f"{SRC_DIR}/{name}"):
             ng.append(f"村資料が見つからない: {name}")
 
-    # ② 「正本に0件」と書いた語が本当に0件であること
-    #    （村資料にあって正本にない事実の主張を機械で確かめる）
-    zero = ["地域公共交通", "医療的ケアサポート", "障がいの手引き", "NET119",
-            "住所地特例", "就学奨励費", "村議会", "全員協議会", "中間見直し",
-            "基本計画", "成年後見制度の利用促進に関する法律", "ICカード"]
-    for w in zero:
+    # ② 「正本に0件」と書いた語が、受領した他メンバー版に本当に0件であること
+    #    （村資料にあって正本にない事実の主張を機械で確かめる。
+    #     受領時の版で見るのは、当方が後から入れた語と混ざらないようにするため）
+    for w in ZERO_MEMBER:
+        if w in member:
+            ng.append(f"「正本に0件」としたが受領時の版に実在する: {w}")
+
+    # ②b V-1〜V-5 で入れた語は、現在の正本に実在すること
+    for w in ADDED:
+        if w not in honpon:
+            ng.append(f"V-1〜V-5で入れたはずの語が現在の正本にない: {w}")
+
+    # ②c まだ入れていない語は、現在の正本にも0件であること
+    for w in ZERO_MEMBER:
+        if w in ADDED:
+            continue
         if w in honpon:
-            ng.append(f"「正本に0件」としたが実在する: {w}")
+            ng.append(f"まだ入れていない語が現在の正本に実在する: {w}")
 
     # ③ 正本にある語を「ない」と書いていないこと（逆の取り違え）
-    present = ["法定雇用率", "高次脳機能", "住宅セーフティネット", "再入院",
-               "ペアレント", "要支援者名簿", "個別避難計画"]
-    for w in present:
+    for w in PRESENT:
         if w not in honpon:
             ng.append(f"正本にあるとした語が見つからない: {w}")
 
-    # ④ 重さの語彙と件数
+    # ④ 入れる文章が、最優先の修正案と1対1で対応していること
+    saiyusen = [r[0] for r in SHUUSEI if r[5] == "最優先" and r[4] == "追記"]
+    kaku = [r["no"] for r in MURA_EDITS]
+    if saiyusen != kaku:
+        ng.append(f"入れる文章と最優先の追記が対応しない: {saiyusen} ≠ {kaku}")
+    for rec in MURA_EDITS:
+        assert rec["kata"] in ("本文", "項", "計画の表", "年度表"), \
+            f"型が未定義: {rec['no']}"
+        if rec["kata"] in ("本文", "年度表") and "honbun" in rec:
+            for t in rec["honbun"]:
+                if "〜" in t:
+                    ng.append(f"波ダッシュ（〜）が混じっている: {rec['no']}")
+                if "か所" in t or "ヶ所" in t:
+                    ng.append(f"「カ所」に揃っていない: {rec['no']}")
+        if rec["kata"] == "項":
+            for _m, t in rec["ko"]:
+                if "〜" in t:
+                    ng.append(f"波ダッシュ（〜）が混じっている: {rec['no']}")
+
+    # ⑤ 挿入位置の引用が正本に実在すること
+    for rec in MURA_EDITS:
+        if rec["kata"] == "計画の表":
+            continue
+        if re.sub(r"[\s　]+", "", rec["ichi"]) not in \
+                re.sub(r"[\s　]+", "", honpon):
+            ng.append(f"挿入位置の引用が正本にない: {rec['no']}")
+
+    # ⑥ 重さの語彙と件数
     for rec in HOUSHIN:
         assert rec[5] in ("最優先", "高", "中", "低"), f"重さが未定義: {rec[0]}"
     for rec in SHUUSEI:
@@ -965,13 +1128,13 @@ def verify(honpon):
     assert len(JIYUKIJUTSU) == 14, "アンケート自由記述は14件"
     assert len(HYOKA) == 7, "進捗管理評価シートは7施策"
 
-    # ⑤ 照会番号が既存の番号と重ならないこと（M-39まで使用済み）
+    # ⑦ 照会番号が既存の番号と重ならないこと（M-39まで使用済み）
     for rec in SHOUKAI:
         n = int(rec[0].split("-")[1])
         if n <= 39:
             ng.append(f"照会番号が既存と重なる: {rec[0]}")
 
-    # ⑥ 他団体の名を出さない
+    # ⑧ 他団体の名を出さない
     joined = "\n".join(
         "".join(str(x) for x in rec)
         for grp in (HOUSHIN, SCHEDULE_CMP, HYOKA, IKEN, JIYUKIJUTSU,
@@ -987,7 +1150,9 @@ def verify(honpon):
             print("   -", e)
         raise SystemExit(1)
     print(f"  自己点検: 村資料{len(SRC_FILES)}点が実在／"
-          f"「正本に0件」{len(zero)}語・「正本にある」{len(present)}語を照合／"
+          f"受領時の版に0件{len(ZERO_MEMBER)}語・"
+          f"V-1〜V-5で入れた{len(ADDED)}語・"
+          f"現在の正本にある{len(PRESENT)}語を照合／"
           f"照会番号{len(SHOUKAI)}件が既存と重複なし")
 
 
@@ -1049,6 +1214,15 @@ def sheet_matome(wb):
          "リスク（自立支援協議会の開催時期が未定）も"
          "計画策定方針のスケジュールで解ける",
          "修正案V-12。02シート"),
+        ("すでに正本に入れたもの",
+         "最優先の追記5件（V-1 成年後見の計画を位置づけの表に追加／"
+         "V-2 計画の期間に成年後見の5年間を追加／"
+         "V-3 障がい者計画の中間見直しの明記／"
+         "V-4 策定体制に4町村広域の協議会・村議会への説明・公表を追加／"
+         "V-5 第6章の冒頭に根拠法と計画期間）は、"
+         "村の方針に明記があり回答を待たずに書けるため、"
+         "令和8年10月10日に正本へ入れた",
+         "06b・06シートの状態欄"),
         ("件数",
          f"計画策定方針との照合{len(HOUSHIN)}件／"
          f"スケジュールの照合{len(SCHEDULE_CMP)}件／"
@@ -1057,7 +1231,8 @@ def sheet_matome(wb):
          f"アンケート自由記述{len(JIYUKIJUTSU)}件／"
          f"正本の修正案{len(SHUUSEI)}件"
          f"（追記{sum(1 for r in SHUUSEI if r[4] == '追記')}・"
-         f"要確認{sum(1 for r in SHUUSEI if r[4] == '要確認')}）／"
+         f"要確認{sum(1 for r in SHUUSEI if r[4] == '要確認')}。"
+         f"うち{len(MURA_EDITS)}件は反映済み）／"
          f"村への照会{len(SHOUKAI)}件", "―"),
     ]
     r = 6
@@ -1164,18 +1339,52 @@ def sheet_shuusei(wb):
         "「追記」は村資料にあって正本にない事実を足すもの、"
         "「要確認」は村資料と正本（又は村資料どうし）が食い違い、"
         "村の決定を待つものである。",
-        [8, 34, 70, 36, 10, 8])
+        [8, 34, 66, 34, 10, 8, 22])
     style_header_row(ws, 5, ["番号", "箇所", "何を直すか", "根拠（村資料）",
-                             "区分", "重さ"])
+                             "区分", "重さ", "状態"])
+    hanei = {rec["no"] for rec in MURA_EDITS}
     r = 6
     for i, rec in enumerate(SHUUSEI):
-        r = write_row(ws, r, list(rec), alt=(i % 2 == 1),
+        jotai = ("反映済み（令和8年10月10日）" if rec[0] in hanei else "未反映")
+        r = write_row(ws, r, list(rec) + [jotai], alt=(i % 2 == 1),
                       aligns=["center", "left", "left", "left", "center",
-                              "center"])
+                              "center", "center"])
         if rec[4] == "要確認":
             ws.cell(row=r - 1, column=5).fill = PatternFill("solid", fgColor=NG)
         if rec[5] == "最優先":
             ws.cell(row=r - 1, column=6).fill = PatternFill("solid", fgColor=NG)
+        if rec[0] in hanei:
+            ws.cell(row=r - 1, column=7).fill = PatternFill(
+                "solid", fgColor="E2EFDA")
+    return ws
+
+
+def sheet_bunsho(wb):
+    ws = add_sheet(
+        wb, "06b_正本に入れる文章",
+        "正本に入れる文章（最優先の追記5件）",
+        "村の計画策定方針に明記があり、村の回答を待たずに書けるものだけを"
+        "置いた。build_kitashiobara_honpon.py がこの一覧から読み込んで"
+        "正本に入れるため、文章の出所はここだけである。",
+        [8, 10, 34, 40, 36, 70])
+    style_header_row(ws, 5, ["番号", "型", "入れる先", "挿入位置",
+                             "根拠（村資料）", "入れる文章"])
+    r = 6
+    for i, rec in enumerate(MURA_EDITS):
+        blocks = []
+        for t in rec.get("honbun", []):
+            blocks.append(t)
+        for midashi, t in rec.get("ko", []):
+            blocks.append(f"【{midashi}】{t}")
+        for row in rec.get("gyou", []):
+            blocks.append("［表の行］" + " ／ ".join(x for x in row if x))
+        r = write_row(ws, r, [rec["no"], rec["kata"], rec["saki"],
+                              rec["ichi"], rec["konkyo"],
+                              "\n\n".join(blocks)],
+                      alt=(i % 2 == 1),
+                      aligns=["center", "center", "left", "left", "left",
+                              "left"],
+                      fills=[None, None, None, None, None, HI])
     return ws
 
 
@@ -1200,8 +1409,9 @@ def sheet_shoukai(wb):
 
 def main():
     ensure_out_dir()
-    honpon = load_honpon()
-    verify(honpon)
+    honpon = load_docx(HONPON)
+    member = load_docx(MEMBER)
+    verify(honpon, member)
 
     wb = Workbook()
     wb.remove(wb.active)
@@ -1212,6 +1422,7 @@ def main():
     sheet_iken(wb)
     sheet_jiyu(wb)
     sheet_shuusei(wb)
+    sheet_bunsho(wb)
     sheet_shoukai(wb)
     wb.save(OUT_FILE)
 
@@ -1226,6 +1437,8 @@ def main():
           f"要確認{sum(1 for r in SHUUSEI if r[4] == '要確認')}）"
           f"／最優先{len(saiyusen)}件 {'・'.join(saiyusen)}")
     print(f"  村への照会{len(SHOUKAI)}件（M-40〜M-{39 + len(SHOUKAI)}）")
+    print(f"  正本に入れる文章{len(MURA_EDITS)}件"
+          f"（{'・'.join(r['no'] for r in MURA_EDITS)}）")
 
 
 if __name__ == "__main__":

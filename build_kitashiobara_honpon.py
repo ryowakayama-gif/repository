@@ -7,7 +7,9 @@
 経緯
   令和8年10月9日に、他メンバー版の計画素案を正本として進めることが
   決まった。申し送り（北塩原村_申し送り_他メンバー版への移植_20261009.docx）に
-  まとめた移植20件と、論点メモからの修正のうちデータ待ちでないものを、
+  まとめた移植20件と、論点メモからの修正のうちデータ待ちでないもの、
+  村資料点検（北塩原村_村資料点検_20261010.xlsx）の修正案のうち
+  村の方針に明記があって回答を待たずに書ける5件を、
   正本に実際に入れたものが本書の出力である。
   移植17〜20（県計画との整合・年齢到達・関係機関との連携・費用と財源）は
   網羅性点検の残りのうち、村・県の回答を待たずに入れられるものである。
@@ -15,8 +17,9 @@
   間に挿し込まず末尾に足す。
 
 作り
-  ・入れる文章は申し送りの生成器（build_kitashiobara_ishoku_okurijo.py）から
-    読み込む。申し送りと出力が食い違わないようにするため、文章はそちらを
+  ・入れる文章は申し送りの生成器（build_kitashiobara_ishoku_okurijo.py）と
+    村資料点検の生成器（build_kitashiobara_murashiryo.py の MURA_EDITS）から
+    読み込む。指示書と出力が食い違わないようにするため、文章はそちらを
     唯一の出所とする。
   ・挿入位置は申し送りが示した「直前の段落の末尾」を正本の現物から探す。
     見つからなければ止める。
@@ -32,6 +35,7 @@
   一覧は出力の末尾ではなく、北塩原村_論点整理_20261009.xlsx による。
 """
 
+import copy
 import os
 import re
 import sys
@@ -46,6 +50,7 @@ from docx.text.paragraph import Paragraph
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kitashiobara_ishoku_okurijo import ISHOKU  # noqa: E402
+from build_kitashiobara_murashiryo import MURA_EDITS  # noqa: E402
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC = (f"{REPO_ROOT}/source/他メンバー素案_20261008/"
@@ -421,6 +426,138 @@ def apply_ishoku(doc):
     return tail
 
 
+def find_table(doc, header):
+    """表頭が一致する表を1つだけ見つける。"""
+    hits = []
+    for t in doc.tables:
+        hdr = [c.text.strip() for c in t.rows[0].cells]
+        if hdr[:len(header)] == list(header):
+            hits.append(t)
+    if len(hits) != 1:
+        raise LookupError(f"表が一意に決まりません（{len(hits)}件）: {header}")
+    return hits[0]
+
+
+def _grid(tbl):
+    """tblGrid の列幅（dxa）。"""
+    g = tbl.find(qn("w:tblGrid"))
+    if g is None:
+        return []
+    return [int(c.get(qn("w:w"))) for c in g.findall(qn("w:gridCol"))]
+
+
+def _set_cell_text(tc, text):
+    """セルの文字列を書き替える（書式は元のまま使う）。"""
+    ps = tc.findall(qn("w:p"))
+    for extra in ps[1:]:
+        tc.remove(extra)
+    p = ps[0]
+    runs = p.findall(qn("w:r"))
+    keep = runs[0] if runs else None
+    for r in runs[1:]:
+        p.remove(r)
+    if keep is None:
+        keep = OxmlElement("w:r")
+        p.append(keep)
+    for t in keep.findall(qn("w:t")):
+        keep.remove(t)
+    for br in keep.findall(qn("w:br")):
+        keep.remove(br)
+    first = True
+    for line in text.split("\n"):
+        if not first:
+            keep.append(OxmlElement("w:br"))
+        t = OxmlElement("w:t")
+        t.text = line
+        t.set(qn("xml:space"), "preserve")
+        keep.append(t)
+        first = False
+
+
+def _set_span(tc, n, grid, start):
+    """セルの gridSpan と幅を合わせる。"""
+    tcpr = tc.get_or_add_tcPr()
+    for old in tcpr.findall(qn("w:gridSpan")):
+        tcpr.remove(old)
+    if n > 1:
+        tcpr.append(_el("gridSpan", val=n))
+    if grid:
+        w = sum(grid[start:start + n])
+        for old in tcpr.findall(qn("w:tcW")):
+            tcpr.remove(old)
+        tcpr.append(_el("tcW", w=w, type="dxa"))
+
+
+def add_rows(tbl, src_index, rows, spans=None):
+    """既存の行を写して行を足す（書式・罫線・幅をそのまま引き継ぐ）。
+
+    spans を渡すと、写した行の gridSpan を組み替える。
+    """
+    grid = _grid(tbl)
+    src = tbl.findall(qn("w:tr"))[src_index]
+    for values in rows:
+        tr = copy.deepcopy(src)
+        # 縦の結合は写さない（新しい行は独立させる。vMerge は呼び手が付ける）
+        tcs = tr.findall(qn("w:tc"))
+        if spans:
+            if len(tcs) != len(spans):
+                raise LookupError(
+                    f"写した行のセル数が spans と合いません（{len(tcs)}≠{len(spans)}）")
+            pos = 0
+            for tc, n in zip(tcs, spans):
+                _set_span(tc, n, grid, pos)
+                pos += n
+        if len(tcs) != len(values):
+            raise LookupError(
+                f"写した行のセル数が値の数と合いません（{len(tcs)}≠{len(values)}）")
+        for tc, v in zip(tcs, values):
+            _set_cell_text(tc, str(v))
+        tbl.append(tr)
+    return tbl
+
+
+def _vmerge(tbl, rows_from_end, col=0):
+    """末尾から数えた複数行の指定列を縦に結合する。"""
+    trs = tbl.findall(qn("w:tr"))[-rows_from_end:]
+    for i, tr in enumerate(trs):
+        tc = tr.findall(qn("w:tc"))[col]
+        tcpr = tc.get_or_add_tcPr()
+        for old in tcpr.findall(qn("w:vMerge")):
+            tcpr.remove(old)
+        vm = _el("vMerge")
+        if i == 0:
+            vm.set(qn("w:val"), "restart")
+        tcpr.append(vm)
+
+
+def apply_mura(doc):
+    """村資料点検の修正案のうち、最優先の追記5件を入れる。"""
+    for rec in MURA_EDITS:
+        kata = rec["kata"]
+        if kata == "計画の表":
+            tbl = find_table(doc, ("計画名", "項目", "内容"))._tbl
+            add_rows(tbl, -2, rec["gyou"])      # 直前の2行の書式を写す
+            _vmerge(tbl, 2, col=0)
+        elif kata == "年度表":
+            el = [make_para(doc, t) for t in rec["honbun"]]
+            insert_after(find_para(doc, rec["ichi"]), el)
+            tbl = find_table(doc, ("年度", "R6\n(2024)"))._tbl
+            # 1列目＋R6〜R8（3列）＋R9〜R13（5列）＋R14（1列）＝10列
+            add_rows(tbl, -1, rec["gyou"], spans=[1, 3, 5, 1])
+        elif kata == "本文":
+            el = [make_para(doc, t) for t in rec["honbun"]]
+            insert_after(find_para(doc, rec["ichi"]), el)
+        elif kata == "項":
+            el = []
+            for midashi, honbun in rec["ko"]:
+                el.append(make_sub(doc, midashi))
+                el.append(make_para(doc, honbun))
+            insert_after(find_para(doc, rec["ichi"]), el)
+        else:
+            raise LookupError(f"型が未定義: {rec['no']}")
+        changes.append(f"村資料{rec['no']}：{rec['saki']}")
+
+
 def apply_memo(doc, tail):
     """論点メモからの修正のうち、データ待ちでないものを入れる。"""
     for no, midashi, honbun, anchor in MEMO_EDITS:
@@ -522,6 +659,20 @@ def verify(doc, src_dims):
         if _norm(desc) not in out:
             ng.append(f"用語解説に入っていない: {word}")
 
+    # ②b 村資料点検の修正案（最優先の追記5件）が入っていること
+    for rec in MURA_EDITS:
+        for t in rec.get("honbun", []):
+            if _norm(t) not in out:
+                ng.append(f"村資料{rec['no']}の文章が出力にない: {t[:38]}")
+        for midashi, honbun in rec.get("ko", []):
+            for t in (midashi, honbun):
+                if _norm(t) not in out:
+                    ng.append(f"村資料{rec['no']}の文章が出力にない: {t[:38]}")
+        for row in rec.get("gyou", []):
+            for v in row:
+                if v and _norm(v) not in out:
+                    ng.append(f"村資料{rec['no']}の表のセルが出力にない: {v[:28]}")
+
     # ③ 正本の既存の記述が消えていないこと
     keep = [
         "障がいのあるなしに関わらず、お互いの人格や個性を尊重し",
@@ -586,6 +737,10 @@ def verify(doc, src_dims):
                 want_sub.append(t)
             elif re.match(r"^[０-９0-9]+[　 ]", t):
                 want_h2.append(t)
+    for rec in MURA_EDITS:
+        for midashi, _honbun in rec.get("ko", []):
+            if midashi.startswith("（"):
+                want_sub.append(midashi)
     styles = {p.text.strip(): p.style.name for p in doc.paragraphs
               if p.text.strip()}
     for t in want_h2:
@@ -594,6 +749,21 @@ def verify(doc, src_dims):
     for t in want_sub:
         if styles.get(t) != "小見出し":
             ng.append(f"項の見出しが 小見出し でない: {t}（{styles.get(t)}）")
+
+    # ⑤c 村資料点検で足した表の行が実在すること
+    keikaku = find_table(doc, ("計画名", "項目", "内容"))
+    if len(keikaku.rows) != 9:
+        ng.append(f"計画の表が9行でない（{len(keikaku.rows)}行）")
+    nendo = find_table(doc, ("年度", "R6\n(2024)"))
+    if len(nendo.rows) != 5:
+        ng.append(f"年度表が5行でない（{len(nendo.rows)}行）")
+    else:
+        grid = sum(int(tc.tcPr.find(qn("w:gridSpan")).get(qn("w:val")))
+                   if tc.tcPr is not None
+                   and tc.tcPr.find(qn("w:gridSpan")) is not None else 1
+                   for tc in nendo.rows[4]._tr.tc_lst)
+        if grid != 10:
+            ng.append(f"年度表に足した行の列数が10でない（{grid}）")
 
     # ⑥ 増えた量が妥当であること（既存を消していない）
     sp, st = src_dims
@@ -613,7 +783,8 @@ def verify(doc, src_dims):
             print("   -", e)
         raise SystemExit(1)
     print(f"  自己点検: 移植{len(ISHOKU)}件の文章と表が出力に実在／"
-          f"論点{len(MEMO_EDITS)}件・用語{len(YOUGO_ADD)}語が実在／"
+          f"論点{len(MEMO_EDITS)}件・用語{len(YOUGO_ADD)}語・"
+          f"村資料{len(MURA_EDITS)}件が実在／"
           f"正本の記述{len(keep)}点が残存／見込量表{n_mikomi}表／"
           "表記の作法4点すべて合")
 
@@ -627,6 +798,7 @@ def main():
 
     tail = apply_ishoku(doc)
     apply_memo(doc, tail)
+    apply_mura(doc)
     verify(doc, src_dims)
     doc.save(OUT_FILE)
 
