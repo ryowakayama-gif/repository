@@ -51,6 +51,7 @@ from docx.text.paragraph import Paragraph
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kitashiobara_ishoku_okurijo import ISHOKU  # noqa: E402
 from build_kitashiobara_murashiryo import MURA_EDITS  # noqa: E402
+from build_kitashiobara_juten12 import JUTEN_EDITS  # noqa: E402
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC = (f"{REPO_ROOT}/source/他メンバー素案_20261008/"
@@ -530,6 +531,32 @@ def _vmerge(tbl, rows_from_end, col=0):
         tcpr.append(vm)
 
 
+def find_note_tbl(doc, prefix):
+    """1x1の注記ボックスの表そのものを返す。"""
+    cell = find_note_cell(doc, prefix)
+    return cell._tc.getparent().getparent()
+
+
+def apply_juten(doc):
+    """12重点施策の再レビューのうち、枠組みとして書ける7件を入れる。"""
+    for rec in JUTEN_EDITS:
+        el = []
+        for blk in rec["nakami"]:
+            if blk[0] == "p":
+                el.append(make_para(doc, blk[1]))
+            elif blk[0] == "tbl":
+                el.append(make_table(doc, blk[1], blk[2]))
+            elif blk[0] == "note":
+                el.append(make_note(doc, blk[1]))
+        el.append(make_empty(doc))
+        if rec["kata"] == "注記後":
+            anchor = find_note_tbl(doc, rec["ichi"])
+        else:
+            anchor = find_para(doc, rec["ichi"])
+        insert_after(anchor, el)
+        changes.append(f"重点施策{rec['no']}：{rec['saki']}")
+
+
 def apply_mura(doc):
     """村資料点検の修正案のうち、最優先の追記5件を入れる。"""
     for rec in MURA_EDITS:
@@ -673,6 +700,20 @@ def verify(doc, src_dims):
                 if v and _norm(v) not in out:
                     ng.append(f"村資料{rec['no']}の表のセルが出力にない: {v[:28]}")
 
+    # ②c 12重点施策の再レビューからの追記7件が入っていること
+    for rec in JUTEN_EDITS:
+        for blk in rec["nakami"]:
+            if blk[0] in ("p", "note"):
+                if _norm(blk[1]) not in out:
+                    ng.append(f"重点施策{rec['no']}の文章が出力にない: "
+                              f"{blk[1][:38]}")
+            elif blk[0] == "tbl":
+                for row in blk[1]:
+                    for v in row:
+                        if v and _norm(str(v)) not in out:
+                            ng.append(f"重点施策{rec['no']}の表のセルが"
+                                      f"出力にない: {v[:28]}")
+
     # ③ 正本の既存の記述が消えていないこと
     keep = [
         "障がいのあるなしに関わらず、お互いの人格や個性を尊重し",
@@ -784,7 +825,8 @@ def verify(doc, src_dims):
         raise SystemExit(1)
     print(f"  自己点検: 移植{len(ISHOKU)}件の文章と表が出力に実在／"
           f"論点{len(MEMO_EDITS)}件・用語{len(YOUGO_ADD)}語・"
-          f"村資料{len(MURA_EDITS)}件が実在／"
+          f"村資料{len(MURA_EDITS)}件・"
+          f"重点施策{len(JUTEN_EDITS)}件が実在／"
           f"正本の記述{len(keep)}点が残存／見込量表{n_mikomi}表／"
           "表記の作法4点すべて合")
 
@@ -799,6 +841,7 @@ def main():
     tail = apply_ishoku(doc)
     apply_memo(doc, tail)
     apply_mura(doc)
+    apply_juten(doc)
     verify(doc, src_dims)
     doc.save(OUT_FILE)
 
