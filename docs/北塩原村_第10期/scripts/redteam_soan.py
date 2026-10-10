@@ -16,6 +16,13 @@ BUILDER = os.path.join(BASE, 'scripts', 'build_soan_docx.js')
 # 資料は JSON を介して組むため、本文を取り出してから走査する。
 SHIRYO = [('第2回委員会資料', 'shiryo_content'),
           ('第3回委員会資料（骨子）', 'shiryo3_content')]
+# 様式（doc74）も村へ渡すものである。走査は c（禁止表現）と d（個人情報の形）だけ。
+#   a は罫線（┌─┬┐）が当然に出る。b は様式の性質上「受託者」が主語になる
+#   （名簿は受託者が村へ提出し、誓約書は受託者において保管する）。
+#   f も表の体裁で出る。d が鳴ったときは、記入後の様式を記録に貼ったということである
+#   （doc16 §5-3 により記入後の様式は版管理に置かない）。
+FORM_TARGETS = [('様式（従事者名簿・誓約書ほか）',
+                 os.path.join(BASE, '74_従事者名簿と誓約書等の様式.md'))]
 
 
 def shiryo_text(mod):
@@ -182,6 +189,18 @@ def run():
             mark = '適合' if not hits else '要確認 %d件' % len(hits)
             print('  %-38s %s' % (label, mark))
             for h in hits[:40]:
+                print('      %5d  %s  %s  | %s' % h)
+            if hits:
+                ng += len(hits)
+    # 様式は c と d だけで走査する（上の断りのとおり）
+    for name, path in FORM_TARGETS:
+        print('■', name, path)
+        for label, hits in scan(name, path):
+            if label[0] not in ('c', 'd'):
+                continue
+            mark = '適合' if not hits else '要確認 %d件' % len(hits)
+            print('  %-38s %s' % (label, mark))
+            for h in hits[:20]:
                 print('      %5d  %s  %s  | %s' % h)
             if hits:
                 ng += len(hits)

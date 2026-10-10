@@ -1385,18 +1385,21 @@ def main():
         # 示せていればよいので、減らないことを不適合にはしない。
         n_g = EL52.pages(ES.items_without([], yougo=ES.YOUGO_NAI), EL52.BODY_H)
         n_h = EL52.pages(ES.items_without([], figs=ES.FIG_UTSUSU), EL52.BODY_H)
-        # すべて行えば目安の約100頁に収まること（前付4頁を含む）
+        # すべて行えば村が許容する範囲に収まること（前付4頁を含む）。
+        # 令和8年10月10日に村から「10頁程度の超過は許容する」との判断を得たため、
+        # 許容を110頁とした（それまでは105頁で判定していた）。
+        KYOYO52 = 110
         allt = [t for _n, _m, tg, _h, _r in ES.AN for t in tg]
         n_all = EL52.pages(ES.items_without(allt, yougo=ES.YOUGO_NAI,
                                             figs=ES.FIG_UTSUSU), EL52.BODY_H) + 4
-        if n_all > 105:
-            bad52.append(f"すべて行っても{n_all}頁で目安100頁に収まらない")
+        if n_all > KYOYO52:
+            bad52.append(f"すべて行っても{n_all}頁で、村が許容する{KYOYO52}頁に収まらない")
         chk(52, "分量の削減案が成り立つこと", not bad52,
             "・".join(bad52[:3]) if bad52
             else f"{len(ES.AN)}案（うち小見出しを指すもの{len([a for a in ES.AN if a[2]])}案）。"
                  f"G 用語の絞り込みは{base52 - n_g}頁、H 図2点を資料編へは{base52 - n_h}頁。"
                  f"すべて行えば本文{n_all - 4}頁＋前付4頁＝{n_all}頁"
-                 f"（目安100頁に対し{n_all - 100:+d}頁）")
+                 f"（目安100頁に対し{n_all - 100:+d}頁。村が許容する{KYOYO52}頁の範囲内）")
     except Exception as e:
         chk(52, "分量の削減案が成り立つこと", False, f"照合できない（{e}）")
 
