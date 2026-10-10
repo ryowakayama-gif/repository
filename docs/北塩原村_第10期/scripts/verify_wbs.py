@@ -192,10 +192,14 @@ chk(13, "翌営業日の作業の妥当性", not bad13, "／".join(bad13) if bad
     else f"{len(READY)}件すべてが未完了・ペンディングなし")
 
 # 14
+#    もとは「Ⅰで始まる」WBSをすべて除いていた。調査工程が他メンバーの担当
+#    だったためである。10月10日に束7（調査票の設計・印刷・発送・回収）と
+#    束8（集計・分析）を分け、束8は当方の担当になったので、
+#    除くのは束7に入っているものだけとする（令和8年10月13日）。
 ready_ids = {r[1] for r in READY}
 bad14 = [w[0] for w in W
          if PROG[w[0]][0] < 1.0 and PROG[w[0]][1] != "対象外"
-         and not w[0].startswith("Ⅰ")
+         and w[0] not in TADA7
          and w[0] not in ready_ids and w[0] not in HOLD_REASON]
 over14 = [x for x in HOLD_REASON if x not in IDX or PROG.get(x, (0,))[0] >= 1.0
           or x in ready_ids]

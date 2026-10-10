@@ -17,6 +17,7 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import shukei_data as SD
 from shukei_derive import derive_needs, derive_zaitaku, JUDGE_PROVISIONAL
+import shukei_dedupe as DD   # 集計は必ず重複を落としたデータで行う
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -359,8 +360,23 @@ def main():
         if q["列"]:
             LAB_CACHE[q["列"][0]] = q["選択肢"]
 
-    needs = [derive_needs(r) for r in read_csv(a.needs)]
-    zai = [derive_zaitaku(r) for r in read_csv(a.zaitaku)]
+    # ── 重複回答の排除（集計仕様書 §8）─────────────────
+    #    集計の手前で必ず通す。ここを省くと、紙とウェブの両方で答えた方が
+    #    2件として数えられ、回収数と構成比が狂う。
+    #    点検（shukei_check.py）は先に通して原票の誤りを直しておくこと。
+    needs_raw, zai_raw = read_csv(a.needs), read_csv(a.zaitaku)
+    n_sai, _nk, n_kaz = DD.dedupe(needs_raw, "ニーズ", book)
+    z_sai, _zk, z_kaz = DD.dedupe(zai_raw, "在宅", book)
+    for na, kaz in (("ニーズ", n_kaz), ("在宅", z_kaz)):
+        print("  %s　読み込み %d件 − 重複の除外 %d件 ＝ 集計 %d件"
+              % (na, kaz["読み込み"], kaz["除外"], kaz["採用"]))
+        fubi = [(k, kaz[k]) for k in ("D4", "D5", "D6", "D7") if kaz.get(k)]
+        if fubi:
+            print("    管理番号の不備 " +
+                  "・".join("%s %d件" % (k, v) for k, v in fubi) +
+                  "（属性のクロスには入れない）")
+    needs = [derive_needs(r) for r in n_sai]
+    zai = [derive_zaitaku(r) for r in z_sai]
 
     wb = Workbook()
     wb.remove(wb.active)

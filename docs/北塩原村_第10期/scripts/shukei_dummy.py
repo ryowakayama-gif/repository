@@ -71,11 +71,23 @@ def skewed(n):
     return random.choices(range(1, n + 1), weights=ws)[0]
 
 
+# ── 管理番号・回答方法・受付日（doc43 §2-4／doc25 §6-1）──────────
+#    管理番号の形式は名簿のとおり。ニーズは数字のみ、在宅は英字＋数字である。
+#    「ニ0001」のような形で持つと、重複回答の排除（shukei_dedupe.py）の
+#    形式の点検（D5）が全件に鳴り、試験が成り立たない。
+BAN = {"ニーズ": lambda i: "%04d" % i, "在宅A": lambda i: "N%04d" % i}
+WEB_RATE = 0.25                                   # ウェブ回答の割合
+UKETSUKE = ["2026/10/%02d" % d for d in range(5, 17)]   # 回収期限は10/16
+
+
 def gen(book, hyos, n, extra):
     recs = []
     qs = [q for q in book if q["票"] in hyos]
     for i in range(1, n + 1):
-        r = {"管理番号": f"{hyos[0][:1]}{i:04d}"}
+        web = random.random() < WEB_RATE
+        r = {"管理番号": BAN[hyos[0]](i),
+             "回答方法": "Web" if web else "紙",
+             "受付日": random.choice(UKETSUKE)}
         r.update(extra())
         for q in qs:
             if not q["列"]:
@@ -127,7 +139,51 @@ def gen(book, hyos, n, extra):
                     if k.startswith(f"N_問7_{e}_c"):
                         r[k] = 1 if k.endswith("_c8") else 0
         recs.append(r)
+    recs += juufuku(recs, hyos)
     return qs, recs
+
+
+# ── わざと入れる重複・不備 ──────────────────────────
+#    重複回答の排除（shukei_dedupe.py）と論理チェック（shukei_check.py）が
+#    実際に鳴ることを、ダミーデータで確かめられるようにする。
+#    ここを0件にすると、両者の試験は「鳴らなかった」ことしか示せない。
+#    (記号, 何件, 作り方)
+JUUFUKU = [
+ ("D1", 2, "紙をもう1件（受付日を後にする）"),
+ ("D2", 3, "ウェブをもう1件（受付日を後にする）"),
+ ("D3", 1, "ウェブが2件（1件目もウェブに替える）"),
+ ("D4", 2, "管理番号を空にしたウェブ"),
+ ("D5", 1, "管理番号の末尾に余分な文字を足す（手入力の打ち間違い）"),
+]
+
+
+def juufuku(recs, hyos):
+    """わざと重複・不備を作って足す"""
+    tasu = []
+    i = 0
+    for kigou, kensuu, _tsukurikata in JUUFUKU:
+        for _ in range(kensuu):
+            moto = recs[i]
+            i += 1
+            r = dict(moto)
+            r["受付日"] = "2026/10/16"
+            if kigou == "D1":
+                r["回答方法"] = moto["回答方法"] = "紙"
+            elif kigou == "D2":
+                moto["回答方法"] = "紙"
+                r["回答方法"] = "Web"
+            elif kigou == "D3":
+                r["回答方法"] = moto["回答方法"] = "Web"
+            elif kigou == "D4":
+                r["管理番号"] = ""
+                r["回答方法"] = "Web"
+            elif kigou == "D5":
+                # 末尾に文字が入ると、正規化しても形式に合わない。
+                # なお在宅で「頭の英字」を打ち間違えた場合（N0001→NN0001）は
+                # 形式としては正しいため D5 では拾えず、名簿との突合（D6）で拾う。
+                r["管理番号"] = str(moto["管理番号"]) + "A"
+            tasu.append(r)
+    return tasu
 
 
 def apply_skip(r, hyos):
@@ -185,7 +241,9 @@ def main():
             w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")
             w.writeheader()
             w.writerows(recs)
-        print(f"  -> data/dummy_{name}.csv　{len(recs)}件 / {len(cols)}列")
+        wake = "＋".join("%s %d" % (k, c) for k, c, _t in JUUFUKU)
+        print(f"  -> data/dummy_{name}.csv　{len(recs)}件 / {len(cols)}列"
+              f"（うちわざと入れた重複・不備 {sum(c for _k, c, _t in JUUFUKU)}件：{wake}）")
 
 
 if __name__ == "__main__":

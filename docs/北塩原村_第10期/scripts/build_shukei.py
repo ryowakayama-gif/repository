@@ -12,6 +12,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from shukei_data import N, Z, DERIVED, CROSS, AXES, SHU_HO
 import shukei_check as SC   # 論理チェックの項目は実際に走る側から引く
+import shukei_dedupe as DD  # 重複回答の排除も同じく
 
 OUT = os.path.join(_P.OUT, "07_北塩原村第10期_集計仕様書.xlsx")
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
@@ -348,6 +349,46 @@ c.font = Font(name=F, size=9); c.alignment = Alignment(vertical="top", wrap_text
 w.row_dimensions[rr].height = 22
 rr += 2
 
+sub_bar(w, f"A{rr}:E{rr}",
+        "■ 重複回答の排除（仕様書4Ⅰ(2)。第10期からの新規要件）　"
+        "大事なのは「一意に定まること」である。同じ管理番号で2件あったとき、"
+        "どちらを採るかが実行のたびに変われば回収数も構成比も変わる。", h=26,
+        fill=C["key"]); rr += 1
+head_row(w, rr, ["段", "採る方", "理由", "", ""], [6, 34, 64, 2, 2]); rr += 1
+for i, (dan, toru, riyuu) in enumerate(DD.SAIHI, 1):
+    put(w, rr, [dan, toru, riyuu, "", ""], wraps=(2, 3), center=(1,),
+        fill=C["alt"] if i % 2 == 0 else None)
+    w.row_dimensions[rr].height = 26
+    rr += 1
+rr += 1
+head_row(w, rr, ["記号", "型", "何が起きているか", "どう扱うか", ""],
+         [8, 24, 48, 48, 2]); rr += 1
+for i, (kigou, nm, nani, dou) in enumerate(DD.KATA, 1):
+    put(w, rr, [kigou, nm, nani, dou, ""], wraps=(2, 3, 4), center=(1,),
+        fill=C["alt"] if i % 2 == 0 else None)
+    w.row_dimensions[rr].height = 30
+    rr += 1
+rr += 1
+DEDUPE_TIPS = [
+ "管理番号は正規化してから突き合わせる（全角→半角・区切りを除く・英字を大文字に・先頭の0を落とす）。"
+ "論理チェックのL09と同じ規則を使う。規則が2か所に分かれると、点検は「重複なし」と言い、排除は1件落とす。",
+ "管理番号の形式は、ニーズ調査が数字のみ、在宅介護実態調査が英字＋数字である（doc43 §2-4）。"
+ "在宅の頭の英字を打ち間違えた場合は形式としては正しいままであり、名簿との突合（D6）でしか拾えない。",
+ "管理番号が空・形式違い・名簿にない回答も捨てない。単純集計には入れ、属性のクロス"
+ "（軸B 地区・軸C 年齢・軸D 性別・軸E 認定状況）には入れられない件数を記録する。",
+ "管理番号が空の回答どうしの重複は機械では見つけられない。件数を報告書に明記する。",
+ "2つの名簿に重複する2人（doc43 §2-3）は重複回答ではない。調査ごとに1件として数え、"
+ "2つの調査を合わせて1人を数える表は作らない。扱いは村のご確認事項（優先度S）。",
+ "ウェブ回答はベリファイの対象外であるため、取込の件数がフォームの回答数と一致することを必ず確かめる。",
+]
+for t in DEDUPE_TIPS:
+    w.merge_cells(start_row=rr, start_column=1, end_row=rr, end_column=5)
+    c = w.cell(row=rr, column=1, value="・" + t)
+    c.font = Font(name=F, size=9); c.alignment = Alignment(vertical="top", wrap_text=True, indent=1)
+    w.row_dimensions[rr].height = 26
+    rr += 1
+rr += 1
+
 sub_bar(w, f"A{rr}:E{rr}", "■ コードブックの版（重要）", h=22, fill=C["note"]); rr += 1
 BAN = [
  "コードブックは令和8年9月4日版の調査票から作られています。実際に配られたのは9月9日の校了版です（doc34 §4）。",
@@ -369,3 +410,4 @@ wb.save(OUT)
 print(f"保存: {OUT}")
 print(f"ニーズ {len(N)}設問 / 在宅 {len(Z)}設問 / 派生変数 {len(DERIVED)}件 / クロス表 {len(CROSS)}件")
 print(f"論理チェック {len(SC.RULES)}項目 / コードブックの点検 {len(SC.CB_RULES)}項目 / 分岐 {len(SC.BRANCH)}件")
+print(f"重複の型 {len(DD.KATA)}件 / 採否の順序 {len(DD.SAIHI)}段")

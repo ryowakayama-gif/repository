@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from shukei_data import N, Z, DERIVED, CROSS, AXES, SHU_HO
 import json
 import shukei_check as SC   # 精度管理は実際に走る側から引く
+import shukei_dedupe as DD  # 重複回答の排除も同じく
 
 MD = os.path.join(_P.BASE, "25_集計仕様書.md")
 MD24 = os.path.join(_P.BASE, "24_アンケート調査報告書_骨子案.md")
@@ -188,11 +189,102 @@ chk(24, "上限・範囲の参照先がコードブックにあること", not b
 # 25 点検そのものが自己試験を通ること（欠陥を入れて鳴ることを確かめた記録）
 #    selftest() は標準出力に書くため、ここでは結果だけを見る
 import contextlib
-_buf = io.StringIO() if hasattr(io, "StringIO") else None
-with contextlib.redirect_stdout(_buf):
+with contextlib.redirect_stdout(io.StringIO()):
     jiko = SC.selftest()
 chk(25, "論理チェックが自己試験を通ること", jiko == 0,
     "自己試験が通らない" if jiko else "欠陥を入れて19件すべてが鳴ることを確認")
+
+# ── ここから重複回答の排除（doc25 §8）との照合 ──────────────
+
+# 26 重複の型7件が、記号も型名も集計仕様書にあること
+miss26 = [k for k, nm, _n, _d in DD.KATA if k not in md or nm not in md]
+chk(26, "重複の型が集計仕様書にあること",
+    len(DD.KATA) == 7 and not miss26 and "重複と不備の型（D1〜D7）" in md,
+    f"mdにない {miss26}" if miss26 else f"D1〜D7の{len(DD.KATA)}件を記載")
+
+# 27 採否の順序5段が、段も採る方も集計仕様書にあること
+miss27 = [d for d, toru, _r in DD.SAIHI if d not in md or toru not in md]
+chk(27, "採否の順序が集計仕様書にあること",
+    len(DD.SAIHI) == 5 and not miss27,
+    f"mdにない {miss27}" if miss27 else f"①〜⑤の{len(DD.SAIHI)}段を記載")
+
+# 28 管理番号の正規化が、点検側と排除側で同じ規則であること
+#    規則が分かれると、点検は「重複なし」と言い、排除は1件落とす
+chk(28, "管理番号の正規化が点検と排除で同じ規則であること",
+    DD.seiki is SC.seiki and DD.kata_ga_au is SC.kata_ga_au
+    and DD.KEISHIKI is SC.KEISHIKI,
+    "規則が分かれている" if DD.seiki is not SC.seiki else
+    "shukei_dedupe は shukei_check.seiki を使っている")
+
+# 29 管理番号の形式が doc43 のとおり集計仕様書にあること
+need29 = ["数字のみ", "英字＋数字", "文字列として扱"]
+miss29 = [x for x in need29 if x not in md]
+chk(29, "管理番号の形式が集計仕様書にあること", not miss29,
+    f"欠落 {miss29}" if miss29 else "ニーズ＝数字のみ・在宅＝英字＋数字・文字列扱いを記載")
+
+# 30 名簿に当たらない回答を捨てない方針が書かれていること
+need30 = ["捨てません", "単純集計", "属性のクロス", "重複は見つけられません"]
+miss30 = [x for x in need30 if x not in md]
+chk(30, "名簿に当たらない回答の扱いが集計仕様書にあること", not miss30,
+    f"欠落 {miss30}" if miss30 else "単純集計には入れ、属性のクロスには入れない旨を記載")
+
+# 31 2つの名簿に重複する2人の扱いが書かれ、村の確認事項になっていること
+from wbs_kakunin import K as KAKUNIN
+k31 = [k for k in KAKUNIN if "2つの名簿" in k[1] or "在宅介護実態調査の名簿にも" in k[2]]
+need31 = ["2つの名簿に重複する2人", "重複回答ではありません"]
+miss31 = [x for x in need31 if x not in md] + ([] if k31 else ["確認事項への起票"])
+chk(31, "2つの名簿に重複する2人の扱いが集計仕様書と確認事項にあること", not miss31,
+    f"欠落 {miss31}" if miss31 else "doc25 §8-5 に記載・確認事項に起票済み")
+
+# 32 重複回答の排除が自己試験を通ること
+with contextlib.redirect_stdout(io.StringIO()):
+    jiko32 = DD.selftest()
+chk(32, "重複回答の排除が自己試験を通ること", jiko32 == 0,
+    "自己試験が通らない" if jiko32 else
+    "正規化・型D1〜D7・採否①〜⑤・順序に依存しないこと・件数の帳尻を確認")
+
+# 33 ダミーデータにわざと重複が入っていること
+#    0件のダミーでは「鳴らなかった」ことしか示せない
+import shukei_dummy as DM
+chk(33, "ダミーデータにわざと重複・不備が入っていること",
+    sum(c for _k, c, _t in DM.JUUFUKU) >= 5 and len(DM.JUUFUKU) >= 5,
+    f"{len(DM.JUUFUKU)}型・計{sum(c for _k, c, _t in DM.JUUFUKU)}件を仕込んでいる")
+
+# 34 集計本体が重複を落としたデータで動くこと
+#    shukei_run.py が排除を通さないと、紙とウェブの両方で答えた方が2件になる
+run_py = io.open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                              "shukei_run.py"), encoding="utf-8").read()
+#    文字列を1か所見るだけでは、片方の票だけ素通しにしても通ってしまう。
+#    2票それぞれが排除を通り、派生変数が排除後の行から作られることを見る。
+bad34 = []
+if "import shukei_dedupe" not in run_py:
+    bad34.append("shukei_dedupe を取り込んでいない")
+if run_py.count("DD.dedupe(") != 2:
+    bad34.append("DD.dedupe の呼び出しが%d回（2票で2回であるべき）"
+                 % run_py.count("DD.dedupe("))
+for yobi in ('DD.dedupe(needs_raw, "ニーズ"', 'DD.dedupe(zai_raw, "在宅"'):
+    if yobi not in run_py:
+        bad34.append("%s がない" % yobi)
+for tsukai in ("derive_needs(r) for r in n_sai", "derive_zaitaku(r) for r in z_sai"):
+    if tsukai not in run_py:
+        bad34.append("%s がない（排除後の行を使っていない）" % tsukai)
+if "for r in read_csv(" in run_py:
+    bad34.append("read_csv の結果を直に派生変数へ渡している")
+chk(34, "集計本体が重複を落としたデータで動くこと", not bad34,
+    "／".join(bad34[:2]) if bad34 else
+    "2票それぞれが DD.dedupe を通り、派生変数は排除後の行から作られている")
+
+# 35 ダミーデータの件数が、集計プログラムの文書（doc31）と合っていること
+md31 = io.open(os.path.join(_P.BASE, "31_集計プログラムの構成と実行手順.md"),
+               encoding="utf-8").read()
+tasu = sum(c for _k, c, _t in DM.JUUFUKU)
+need35 = ["ニーズ%d件" % (DM.N_NEEDS + tasu), "在宅%d件" % (DM.N_ZAITAKU + tasu),
+          "ニーズ%d件" % (DM.N_NEEDS + tasu - 6), "在宅%d件" % (DM.N_ZAITAKU + tasu - 6)]
+miss35 = [x for x in need35 if x not in md31]
+chk(35, "ダミーデータの件数が集計プログラムの文書と合うこと", not miss35,
+    f"doc31にない {miss35}" if miss35 else
+    f"読み込み {DM.N_NEEDS + tasu}／{DM.N_ZAITAKU + tasu}・"
+    f"集計 {DM.N_NEEDS + tasu - 6}／{DM.N_ZAITAKU + tasu - 6}")
 
 w = max(len(n) for _, n, _, _ in R)
 print("■ 集計仕様書の自己点検")

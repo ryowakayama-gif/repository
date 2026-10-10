@@ -43,7 +43,9 @@ import csv
 import io
 import json
 import os
+import re
 import sys
+import unicodedata
 
 sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -84,7 +86,9 @@ RULES = [
   "数値の設問が、定めた範囲の外にある",
   "原票に当たって直す"),
  ("L09", "管理番号の不備",
-  "管理番号が空、または同じ番号が2件以上ある",
+  "管理番号が空、同じ番号が2件以上ある、または票の形式"
+  "（ニーズ＝数字のみ／在宅＝英字＋数字）に合わない。"
+  "突合は全角・小文字・ハイフン・先頭の0を正規化してから行う",
   "重複は L09 で挙げ、重複回答の排除（Ⅰ-36）で扱う"),
  ("L10", "名簿にない管理番号",
   "対象者名簿にない管理番号",
@@ -126,6 +130,37 @@ RANGE = {
 #    2択の設問（問4の「はい・いいえ」など）が連なる箇所では、
 #    同じ値が10問続くのはごく普通に起きる（問4(4)〜(16)は13問が2択）。
 #    偶然で起きにくい4択以上の単一回答だけを数える。
+# ── 管理番号の正規化（doc43 §2-4）────────────────────
+#    ウェブの管理番号は回答者が手で入れる（依頼状に欄がある。doc04 B-1）。
+#    全角・小文字・ハイフン・前後の空白・先頭の0の有無が揺れるため、
+#    L09（管理番号の不備）と重複回答の排除（shukei_dedupe.py）は
+#    **同じ規則で正規化してから**突き合わせる。
+#    規則が2か所に分かれると、点検は「重複なし」と言い、排除は1件落とす。
+KEISHIKI = {"ニーズ": (r"^\d+$", "数字のみ"),
+            "在宅": (r"^[A-Z]+\d+$", "英字＋数字")}
+OTOSU = "-－ー_.． \u3000\t/／"      # 手入力で混ざる区切り
+
+
+def seiki(ban):
+    """管理番号を正規化する。戻り値は (正規化後, 元が空か)"""
+    t = unicodedata.normalize("NFKC", str(ban or "")).strip()
+    if not t:
+        return "", True
+    for c in OTOSU:
+        t = t.replace(c, "")
+    t = t.upper()
+    m = re.match(r"^([A-Z]*)(\d+)$", t)
+    if m:
+        t = m.group(1) + str(int(m.group(2)))   # 先頭の0は手入力で揺れる
+    return t, False
+
+
+def kata_ga_au(ban, hyo):
+    """管理番号が票の形式に合っているか"""
+    pat, _na = KEISHIKI["ニーズ" if hyo == "ニーズ" else "在宅"]
+    return bool(re.match(pat, ban))
+
+
 CHOKUSEN = 10          # 直線回答とみなす連続の数
 CHOKUSEN_MIN = 4       # 数える対象とする選択肢の数の下限
 KUGIRI = ",，、 /・"    # L04 単一回答に複数の印とみなす区切り
@@ -259,16 +294,25 @@ def check(rows, hyo, kb, meibo=None):
            if e["形式"] == "単一" and len(e["選択肢"]) >= CHOKUSEN_MIN]
     hissu = [e for e in ent if e["区分"] == "必須" and e["変数"] not in ko]
 
-    # L09 管理番号
-    ban = collections.Counter(_val(r, "管理番号") for r in rows)
+    # L09 管理番号（正規化してから突き合わせる。seiki の定めによる）
+    ban = collections.Counter(seiki(_val(r, "管理番号"))[0] for r in rows
+                              if seiki(_val(r, "管理番号"))[0])
+    meibo_s = {seiki(b)[0] for b in meibo} if meibo is not None else None
     for r in rows:
-        b = _val(r, "管理番号")
-        if not b:
+        nama = _val(r, "管理番号")
+        b, kara = seiki(nama)
+        if kara:
             out.append(("（空）", "L09", "管理番号", "管理番号が空"))
-        elif ban[b] > 1:
-            out.append((b, "L09", "管理番号", "同じ管理番号が%d件ある" % ban[b]))
-        if meibo is not None and b and b not in meibo:
-            out.append((b, "L10", "管理番号", "対象者名簿にない"))
+            continue
+        if ban[b] > 1:
+            out.append((nama, "L09", "管理番号",
+                        "同じ管理番号が%d件ある（正規化後「%s」）" % (ban[b], b)))
+        if not kata_ga_au(b, hyo):
+            out.append((nama, "L09", "管理番号",
+                        "%s の形式（%s）に合わない"
+                        % (hyo, KEISHIKI["ニーズ" if hyo == "ニーズ" else "在宅"][1])))
+        if meibo_s is not None and b not in meibo_s:
+            out.append((nama, "L10", "管理番号", "対象者名簿にない"))
 
     for r in rows:
         b = _val(r, "管理番号") or "（空）"
@@ -374,7 +418,9 @@ def _kirei(kb, hyo):
         kyou = set.intersection(*jlist) if jlist else set()
         oyaval[oya] = sorted(kyou)[0] if kyou else sorted(jlist[0])[0]
 
-    r = {"管理番号": "試0001"}
+    # 管理番号は票の形式に合わせる（ニーズ＝数字のみ／在宅＝英字＋数字）。
+    # 形式の合わない番号を置くと L09 が鳴り、試験が成り立たない。
+    r = {"管理番号": "1" if hyo == "ニーズ" else "N1"}
     for i, e in enumerate(ent):
         opts = [n for n, _l in e["選択肢"]]
         if e["変数"] in oyaval:
@@ -484,7 +530,15 @@ def selftest():
     miru("管理番号を空にする", [r], "ニーズ", "L09")
 
     r = dict(base)                                    # L10 名簿にない
-    miru("名簿にない管理番号", [r], "ニーズ", "L10", meibo={"試9999"})
+    miru("名簿にない管理番号", [r], "ニーズ", "L10", meibo={"9999"})
+
+    r = dict(base)                                    # L09 形式の不一致
+    r["管理番号"] = "1A"
+    miru("管理番号が票の形式に合わない", [r], "ニーズ", "L09")
+
+    r = dict(base)                                    # L09 正規化して重複
+    r["管理番号"] = "０００１"
+    miru("全角と半角の同じ番号が重複と判定される", [dict(base), r], "ニーズ", "L09")
 
     r = dict(base)                                    # L12 直線回答
     for e in tan4[:CHOKUSEN]:
