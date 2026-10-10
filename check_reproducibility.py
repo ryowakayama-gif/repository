@@ -194,6 +194,9 @@ BUILDERS = [
      ["output/北塩原村_12重点施策_評価設計.xlsx"],
      "12重点施策の接続を正本の現物で照合するため、"
      "移植後の正本を作った後に実行する"),
+    ("build_kitashiobara_shoukai_bun.py",
+     ["output/北塩原村_村への照会_5通.docx"],
+     "各点検・レビューの照会を読み込んで組むため、それらの後に実行する"),
     ("build_shinchoku_hyo.py", ["output/北塩原村_業務進捗管理表.xlsx"],
      "build_kitashiobara_progress.py のデータを取り込むため、その後に実行する"),
 ]
