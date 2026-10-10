@@ -65,6 +65,7 @@ from build_kitashiobara_kouiki_redteam import (  # noqa: E402
     KO_EDITS, KO_KAKIKAE,
 )
 from build_kitashiobara_jouhou_kouhyou import KJ_EDITS  # noqa: E402
+from build_kitashiobara_ishi_kettei import IK_EDITS  # noqa: E402
 from build_kitashiobara_graph import GRAPHS, OUT_DIR as ZU_DIR  # noqa: E402
 from build_kitashiobara_zuhyo_bangou import ZU, HYO  # noqa: E402
 
@@ -394,8 +395,13 @@ def apply_ishoku(doc):
         elif no == "８":
             # 前半（意思決定支援）は第4章2（7）、後半（経営基盤）は第5章2の続き
             a = rec["nakami"]
-            front = [b for b in a[1:3]]            # p, note
-            back = a[4:]                           # p, tbl, note
+            # 2つめの見出し（第5章に入れる分）で前後に切る。
+            # 位置を数で書くと、文章を足したときに切る場所がずれる。
+            midashi = [i for i, b in enumerate(a) if b[0] == "h3"]
+            if len(midashi) != 2:
+                raise LookupError(f"移植８の見出しが2つでない: {midashi}")
+            front = a[midashi[0] + 1:midashi[1]]   # p … note
+            back = a[midashi[1] + 1:]              # p, tbl, note
             el = []
             for b in front:
                 el.append(make_para(doc, b[1]) if b[0] == "p"
@@ -403,7 +409,7 @@ def apply_ishoku(doc):
             el.append(make_empty(doc))
             put("4-2-7", ANCHOR_8A, el)
             # 見出しは ISHOKU の指示書きを外して作る（書き写さない）
-            h = a[3][1].split("】", 1)[1]
+            h = a[midashi[1]][1].split("】", 1)[1]
             el2 = [make_sub(doc, h)]
             for b in back:
                 if b[0] == "p":
@@ -1005,7 +1011,8 @@ def verify(doc, src_dims):
     for rec in (list(JUTEN_EDITS) + list(HP_EDITS) + list(HP3_EDITS)
                 + list(RT_EDITS) + list(ME_EDITS) + list(SA_EDITS)
                 + list(AN_EDITS) + list(KG_EDITS)
-                + list(KO_EDITS) + list(KJ_EDITS)):
+                + list(KO_EDITS) + list(KJ_EDITS)
+                + list(IK_EDITS)):
         for blk in rec["nakami"]:
             if blk[0] in ("h2", "h3", "p", "note"):
                 if _norm(blk[1]) not in out:
@@ -1101,7 +1108,8 @@ def verify(doc, src_dims):
     for rec in (list(JUTEN_EDITS) + list(HP_EDITS) + list(HP3_EDITS)
                 + list(RT_EDITS) + list(ME_EDITS) + list(SA_EDITS)
                 + list(AN_EDITS) + list(KG_EDITS)
-                + list(KO_EDITS) + list(KJ_EDITS)):
+                + list(KO_EDITS) + list(KJ_EDITS)
+                + list(IK_EDITS)):
         for blk in rec["nakami"]:
             if blk[0] in ("h2", "h3") and blk[1].startswith("（"):
                 want_sub.append(blk[1])
@@ -1158,6 +1166,7 @@ def verify(doc, src_dims):
           f"見込量{len(SA_EDITS)}件・アンケート{len(AN_EDITS)}件・"
           f"介護整合{len(KG_EDITS)}件・"
           f"広域{len(KO_EDITS)}件・情報公表{len(KJ_EDITS)}件・"
+          f"意思決定{len(IK_EDITS)}件・"
           f"書き換え{len(KAKIKAE) + len(KG_KAKIKAE) + len(KO_KAKIKAE)}件・"
           f"図{len(GRAPHS)}点が実在／"
           f"正本の記述{len(keep)}点が残存／見込量表{n_mikomi}表／"
@@ -1184,6 +1193,7 @@ def main():
     apply_juten(doc, KG_EDITS, label="介護整合")
     apply_juten(doc, KO_EDITS, label="広域")
     apply_juten(doc, KJ_EDITS, label="情報公表")
+    apply_juten(doc, IK_EDITS, label="意思決定")
     apply_kakikae(doc)
     apply_graphs(doc)
     apply_bangou(doc)
