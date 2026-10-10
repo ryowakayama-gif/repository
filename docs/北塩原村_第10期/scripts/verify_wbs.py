@@ -125,7 +125,13 @@ for w in W:
 SA = [(i, k) for i, k in enumerate(K, 1) if k[5] in ("S", "A")]
 # IMPACT は確認事項の**見出し**で引く（並びの位置で引くと足し引きでずれる）
 MIDASHI = {i: k[1] for i, k in SA}
-SURVEY = {k[1] for i, k in SA if _ids(k) and all(x.startswith("Ⅰ") for x in _ids(k))}
+# 調査工程（他メンバー担当）は束7に入っているWBSだけで判定する。
+# もとは「Ⅰで始まる」ことだけを見ており、当方の担当である集計・分析（束8）の
+# 照会まで調査工程に分類していた。build_wbs._lv と同じ規則にそろえる
+# （令和8年10月10日。規則が食い違うと、WBSの表には影響度が空のまま出るのに
+#  点検は適合と言う）。
+TADA7 = {x for no, _nm, wids, _r in BUNDLE if no == "束7" for x in wids}
+SURVEY = {k[1] for i, k in SA if _ids(k) and all(x in TADA7 for x in _ids(k))}
 PLAN = {k[1] for i, k in SA} - SURVEY
 
 # 9

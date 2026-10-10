@@ -536,8 +536,14 @@ def _lv(i, k):
     """
     if k[1] in IMPACT:
         return IMPACT[k[1]][0]
+    # 影響度5（調査工程）は、関連WBSがすべて束7（調査票の設計・印刷・発送・回収。
+    # 他メンバー担当）に入っているときだけ与える。
+    # もとは「Ⅰで始まる」ことだけを見ていたため、当方の担当である
+    # 集計・分析（束8）の照会まで他メンバーの担当に分類していた
+    # （令和8年10月10日に直した）。
+    TADA7 = {x for no, _nm, wids, _r in BUNDLE if no == "束7" for x in wids}
     ids = _ids(k)
-    if ids and all(x.startswith("Ⅰ") for x in ids):
+    if ids and all(x in TADA7 for x in ids):
         return 5
     return None
 
