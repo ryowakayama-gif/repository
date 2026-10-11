@@ -89,9 +89,10 @@ BUILDERS = [
     ("build_kitashiobara_kaigi.py", [
         "output/会議資料/01_協議会資料1_計画策定の概要.docx",
         "output/会議資料/02_協議会資料2_国の基本指針の改正点.docx",
-        "output/会議資料/03_協議会資料8_提供体制の課題.docx",
-        "output/会議資料/04_庁議資料2_関連計画との整合.docx",
-        "output/会議資料/05_庁議資料4_庁内各課への依頼事項.docx",
+        "output/会議資料/03_協議会資料3_前回計画の評価.docx",
+        "output/会議資料/04_協議会資料8_提供体制の課題.docx",
+        "output/会議資料/05_庁議資料2_関連計画との整合.docx",
+        "output/会議資料/06_庁議資料4_庁内各課への依頼事項.docx",
     ], ""),
     ("build_kitashiobara_mece.py",
      ["output/北塩原村_見込量算定_MECEチェック.xlsx"],
@@ -233,6 +234,11 @@ BUILDERS = [
     ("build_kitashiobara_shoukai_bun.py",
      ["output/北塩原村_村への照会_6通.docx"],
      "各点検・レビューの照会を読み込んで組むため、それらの後に実行する"),
+    ("build_kitashiobara_koubetsu_daicho.py",
+     ["output/北塩原村_第2次算定_個別台帳.xlsx"],
+     "正本と照会文の現物を読んで、集計先の表が実在することと"
+     "列が参照する照会が起票済みであることを照合するため、"
+     "正本と照会文を作った後に実行する"),
     ("build_kitashiobara_sagyou_houshin.py",
      ["output/北塩原村_作業方針_20261011.xlsx"],
      "整理内容の総括と正本・照会文の現物を読んで、"
