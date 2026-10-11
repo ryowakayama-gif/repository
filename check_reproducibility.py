@@ -232,7 +232,8 @@ BUILDERS = [
      "Ｗ-11の食い違いが消えたことと足した記述が入ったことを現物で照合する"
      "ため、移植後の正本を作った後に実行する"),
     ("build_kitashiobara_shoukai_bun.py",
-     ["output/北塩原村_村への照会_6通.docx"],
+     ["output/北塩原村_村への照会_6通.docx",
+      "output/北塩原村_他メンバーへの確認_1通.docx"],
      "各点検・レビューの照会を読み込んで組むため、それらの後に実行する"),
     ("build_kitashiobara_koubetsu_daicho.py",
      ["output/北塩原村_第2次算定_個別台帳.xlsx"],

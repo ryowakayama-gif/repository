@@ -1160,6 +1160,18 @@ def verify(doc, src_dims):
         if bad in "\n".join(parts):
             ng.append(f"他団体名が含まれている: {bad}")
 
+    # ⑧ 照会番号の表記が揺れていないこと。
+    #    記号は全角（Ｍ・Ｓ）、数字は半角に揃える。
+    #    半角のMとSが混ざると、照会文との突き合わせで取りこぼす。
+    zenbun = "\n".join(parts)
+    han = re.findall(r"(?<![A-Za-zＡ-Ｚａ-ｚ])[MS]-\d+", zenbun)
+    if han:
+        ng.append(f"照会番号の記号が半角になっている: {sorted(set(han))}")
+    zen_suji = re.findall(r"[ＭＳ]-[０-９]+", zenbun)
+    if zen_suji:
+        ng.append(f"照会番号の数字が全角になっている: "
+                  f"{sorted(set(zen_suji))}")
+
     if ng:
         print("自己点検 不合格:")
         for e in ng:
