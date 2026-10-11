@@ -679,7 +679,7 @@ def main():
                     for fn in _figs.get(f'{ch["no"]}|{sec["no"]}', []):
                         w, hh = EP.png_size(_os.path.join(EP.FIGDIR, fn))
                         h += (160 + (6.3 * hh / w) * 1440 + 60
-                              + 18 * 20 + 40 + 16 * 20 + 200)
+                              + 240 + 40 + 220 + 200)
                     for b in sec['blocks']:
                         if skip_notes and b['t'] == 'note':
                             continue
@@ -1769,11 +1769,17 @@ def main():
                 if m.group() not in MACHI57:
                     bad57.append("%s：%s（推定は %s）"
                                  % (doko, m.group(), "／".join(sorted(MACHI57))))
+            # 推定の値と、実測の値のどちらも許す（村に示すのは実測の値）
+            koeru57 = {n_kei57 + 4 - 100}
+            for _k57 in _ES57.JISSOKU:
+                _n57v, _ = _ES57.jissoku_of(_k57)
+                koeru57.add(_n57v + 4 - 100)
             for m in _re57.finditer(r"目安100頁を([0-9]+)頁上回る", t):
                 n57 += 1
-                if int(m.group(1)) != n_kei57 + 4 - 100:
-                    bad57.append("%s：目安100頁を%s頁上回る（推定は%d頁）"
-                                 % (doko, m.group(1), n_kei57 + 4 - 100))
+                if int(m.group(1)) not in koeru57:
+                    bad57.append("%s：目安100頁を%s頁上回る（推定は%s頁）"
+                                 % (doko, m.group(1),
+                                    "／".join(str(x) for x in sorted(koeru57))))
             # 「目安100頁に対し+N頁」は、今の分量を言うときと
             # 削減案をすべて行った到達点を言うときの両方に使う言い方であるため、
             # どちらかに合っていればよいとする。

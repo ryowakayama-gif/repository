@@ -93,13 +93,17 @@ const p = (text, o = {}) => new Paragraph({
 function table(head, rows, widths) {
   const cols = widths.map(w => Math.round(TBLW * w / 100));
   cols[cols.length - 1] += TBLW - cols.reduce((a, b) => a + b, 0);
-  const cell = (txt, i, isHead) => new TableCell({
+  // 表の最後の行が次の頁にひとりで残るのを防ぐ（寡婦行の処理）。
+  // 考え方は build_soan_docx.js の注のとおり。委員会資料は頁数の枠が
+  // ないため、素案と違って**行数によらずすべての表に掛ける**。
+  const cell = (txt, i, isHead, keep) => new TableCell({
     width: {size: cols[i], type: WidthType.DXA},
     shading: {type: ShadingType.CLEAR, fill: isHead ? BLUE : 'FFFFFF'},
     margins: {top: 60, bottom: 60, left: 90, right: 90},
     children: [new Paragraph({
       spacing: {after: 0, line: 240, lineRule: LineRuleType.EXACT},
       alignment: isHead ? AlignmentType.CENTER : undefined,
+      keepNext: keep,
       children: [new TextRun({text: String(txt), font: FONTG, size: 17,
                               bold: isHead, color: isHead ? 'FFFFFF' : '000000'})],
     })],
@@ -109,8 +113,11 @@ function table(head, rows, widths) {
     // 列幅を宣言どおりに固定する。既定の自動調整だと Word が中身に合わせて
     // 列幅を変えてしまい、widths で決めた割付も頁数の推定も当てにならなくなる。
     layout: TableLayoutType.FIXED,
-    rows: [new TableRow({tableHeader: true, cantSplit: true, children: head.map((h, i) => cell(h, i, true))}),
-           ...rows.map(r => new TableRow({cantSplit: true, children: r.map((v, i) => cell(v, i, false))}))],
+    rows: [new TableRow({tableHeader: true, cantSplit: true,
+                         children: head.map((h, i) => cell(h, i, true, undefined))}),
+           ...rows.map((r, ri) => new TableRow({cantSplit: true,
+             children: r.map((v, i) => cell(v, i, false,
+               (ri === rows.length - 2) || undefined))}))],
   });
 }
 

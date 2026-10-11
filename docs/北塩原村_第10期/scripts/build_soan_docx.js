@@ -77,17 +77,37 @@ const p = (text, o = {}) => new Paragraph({
                           bold: o.bold, color: o.color})],
 });
 
+// 表の最後の行が次の頁にひとりで残るのを防ぐ（寡婦行の処理）。
+//
+// 紙面を通して見たところ、表が割れて次の頁に見出し行＋1行しか残らない箇所が
+// 7か所あった（令和8年10月10日・doc86）。読み手は続きの1行だけを見ても
+// 何の表か分からない。
+//
+// 表は頁の切れ目で割れるため、「続きが1行」とは最後の行がひとりで残ることに
+// ほかならない。そこで**最後から2番目の行にだけ** keepNext を掛け、最後の行と
+// 一緒に送る。8行までの表を丸ごとまたがせない指定も試したが、素案が137頁から
+// 139頁へ2頁増えた。寡婦行の処理なら増えない。
+// 行にじかに掛ける指定が docx になく、セルの段落の keepNext で代える。
+// 最後の行には掛けない（掛けると表の次の要素まで引き連れてしまう）。
+//
+// ただし**短い表だけ**に掛ける。すべての表に掛けると素案が137頁から139頁へ
+// 2頁増え、削減案で村の許容110頁に収めたときの余裕（2頁）がちょうど消える。
+// 長い表は見出し行が次頁の頭で繰り返されるため、続きが1行でも何の表かは読める。
+// 短い表が2行と1行に割れるときだけが読みにくい。
+const KAFU_MAX = 7;      // 見出し行を含めてこの行数までの表に掛ける
+
 function table(head, rows, widths) {
   const cols = widths.map(w => Math.round(TBLW * w / 100));
   const diff = TBLW - cols.reduce((a, b) => a + b, 0);
   cols[cols.length - 1] += diff;
-  const cell = (txt, i, isHead) => new TableCell({
+  const cell = (txt, i, isHead, keep) => new TableCell({
     width: {size: cols[i], type: WidthType.DXA},
     shading: {type: ShadingType.CLEAR, fill: isHead ? BLUE : 'FFFFFF'},
     margins: {top: 60, bottom: 60, left: 90, right: 90},
     children: [new Paragraph({
       spacing: {after: 0, line: 240, lineRule: LineRuleType.EXACT},
       alignment: isHead ? AlignmentType.CENTER : undefined,
+      keepNext: keep,
       children: [new TextRun({text: String(txt), font: FONTG, size: 17,
                               bold: isHead, color: isHead ? 'FFFFFF' : '000000'})],
     })],
@@ -98,8 +118,12 @@ function table(head, rows, widths) {
     // 列幅を変えてしまい、widths で決めた割付も頁数の推定も当てにならなくなる。
     layout: TableLayoutType.FIXED,
     width: {size: TBLW, type: WidthType.DXA},
-    rows: [new TableRow({tableHeader: true, cantSplit: true, children: head.map((h, i) => cell(h, i, true))}),
-           ...rows.map(r => new TableRow({cantSplit: true, children: r.map((v, i) => cell(v, i, false))}))],
+    rows: [new TableRow({tableHeader: true, cantSplit: true,
+                         children: head.map((h, i) => cell(h, i, true, undefined))}),
+           ...rows.map((r, ri) => new TableRow({cantSplit: true,
+             children: r.map((v, i) => cell(v, i, false,
+               (rows.length + 1 <= KAFU_MAX && ri === rows.length - 2)
+               || undefined))}))],
   });
 }
 
@@ -188,8 +212,17 @@ C.chapters.forEach((ch, ci) => {
     children: [new TextRun({text: `${ch.no}　${ch.title}`, font: FONTG, size: 30,
                             bold: true, color: 'FFFFFF'})],
   }));
-  ch.sections.forEach(sec => {
+  ch.sections.forEach((sec, si) => {
     if (KEIKAKU && sec.no === '5-12') return;
+    const secFigs = C.figures[ch.no + '|' + sec.no] || [];
+    // 節の冒頭の図が1頁の図版になるときは、節見出しの「前」で改頁する。
+    // 見出しの後で改頁すると、見出しだけが前の頁に取り残される。
+    // 現に頁46で「3-4　施策の体系」だけが残り、図3-1 は次の頁にあった
+    // （令和8年10月10日・doc86）。章の最初の節は、章見出しの直後で改頁すると
+    // 章見出しだけの頁ができるため掛けない。
+    if (si > 0 && secFigs.length && figTall(secFigs[0])) {
+      kids.push(new Paragraph({children: [new PageBreak()]}));
+    }
     kids.push(new Paragraph({
       heading: HeadingLevel.HEADING_2,
       spacing: {before: 320, after: 180},
@@ -199,8 +232,11 @@ C.chapters.forEach((ch, ci) => {
       children: [new TextRun({text: `${sec.no}　${sec.title}`, font: FONTG, size: 25,
                               bold: true, color: NAVY})],
     }));
-    (C.figures[ch.no + '|' + sec.no] || []).forEach(f => {
-      if (figTall(f)) kids.push(new Paragraph({children: [new PageBreak()]}));
+    secFigs.forEach((f, fi) => {
+      // 冒頭の図のぶんは見出しの前で改頁済み
+      if (figTall(f) && !(fi === 0 && si > 0)) {
+        kids.push(new Paragraph({children: [new PageBreak()]}));
+      }
       figure(f).forEach(x => kids.push(x));
     });
     sec.blocks.forEach(b => {

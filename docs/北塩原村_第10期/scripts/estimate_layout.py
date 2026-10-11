@@ -49,11 +49,16 @@ SH_H = EP.SH_H                     # 14570 twip（委員会資料）
 AKI = 0.30                         # 空白が頁のこの割合を超えたら挙げる
 
 # 実紙面との差（令和8年10月10日の実測）。
-#   素案　　推定135頁 → 実測137頁（LibreOffice・IPAゴシックに寄せた置換）
-#   計画書　推定118頁 → 実測120頁
-# どちらも＋2頁である。残りの差は送り（keepNext）による空白で、この推定は
-# Word よりも空白を小さく見る。したがって**推定は下限であり**、分量が収まるか
-# を判断するときはこの差を乗せる。節ごとの対比では推定と実測は±2頁で追えている。
+#   素案　　推定135頁 → 実測139頁（LibreOffice・IPAゴシックに寄せた置換）
+#   計画書　推定119頁 → 実測120頁
+# 残りの差は送り（keepNext）による空白で、この推定は Word よりも空白を小さく見る。
+# 素案の差が大きいのは、**表の寡婦行の処理（最後の行がひとりで次頁に残らない
+# よう、最後から2番目の行に掛けた keepNext）をこの推定が写していない**ためで、
+# 実紙面ではこれで2頁増えている（doc86）。要素ごとの高さしか持たず、表の行の
+# 並びを持たないため、写すには作り替えが要る。
+# したがって**推定は下限であり**、分量が収まるかを判断するときはこの差を乗せる。
+# 組み合わせごとの実測は estimate_sakugen.JISSOKU にあり、そちらが取れるときは
+# 実測を使う（点検52）。実測のない組み合わせにだけこの差を乗せる。
 #   ※ 実測は游ゴシックが無い環境での置換（IPAゴシック）による。字幅は
 #     数字0.5em・漢字1.0emで推定の前提と一致するが、Word＋游ゴシックでは
 #     禁則処理と欧文の字送りの違いでなお±1〜2頁動き得る。
@@ -180,18 +185,43 @@ def soan_items(keikaku=False):
         if ci > 0:
             it.append(("改頁", f'{ch["no"]} の前', 0, False, False))
         it.append(("章見出し", f'{ch["no"]}　{ch["title"]}', 300 + 30 * 20, False, True))
-        for sec in ch["sections"]:
+        for si, sec in enumerate(ch["sections"]):
             if keikaku and sec["no"] == "5-12":
                 continue
+            # 節の冒頭の図が1頁の図版になるときは、節見出しの前で改頁する
+            # （build_soan_docx.js と同じ。見出しだけを前の頁に残さないため）
+            sec_figs = figs.get(f'{ch["no"]}|{sec["no"]}', [])
+            zenmen = False
+            if si > 0 and sec_figs:
+                _, h0 = EP.fig_in(os.path.join(EP.FIGDIR, sec_figs[0]))
+                if fig_tall(h0):
+                    zenmen = True
+                    it.append(("改頁", f'{sec["no"]} の前（1頁の図版）',
+                               0, False, False, 0))
+            mi_h = 320 + 25 * 20 + 180
+            if zenmen:
+                # 頁の頭に来る見出しは before の空きが付かない（Word の挙動）。
+                # 頁47の図3-1 を実測すると、見出しは本文の上端70.9ptから始まり、
+                # 図は97.9ptから738.4pt、表題・出典が761.0ptで終わる。
+                # 本文の下端は771.0ptで、見出し＋図＋表題・出典でちょうど1頁に
+                # 収まっている。積み上げの値（見出し680＋図13,730＝14,410twip）は
+                # 1頁（14,002twip）を超え、図が次頁へ送られると見なしてしまう。
+                # 実測の割り（見出し540・残り13,462twip）に置き換える。
+                mi_h = 540
             it.append(("節見出し", f'{sec["no"]}　{sec.get("title", "")}',
-                       320 + 25 * 20 + 180, False, True))
-            for fn in figs.get(f'{ch["no"]}|{sec["no"]}', []):
+                       mi_h, False, True))
+            for fi, fn in enumerate(sec_figs):
                 _, h_in = EP.fig_in(os.path.join(EP.FIGDIR, fn))
-                # 画像＋表題＋出典。keepNext により1つのかたまりとして動く
-                h = 160 + h_in * 1440 + 60 + 18 * 20 + 40 + 16 * 20 + 200
-                if fig_tall(h_in):
+                # 画像＋表題＋出典。keepNext により1つのかたまりとして動く。
+                # 表題・出典まわりの空きは実測に合わせてある（画像の下3pt・
+                # 表題の行12pt・あいだ2pt・出典の行11pt・あと10pt＝920twip。
+                # 令和8年10月10日に頁47の図3-1 で測った）。
+                h = 160 + h_in * 1440 + 60 + 240 + 40 + 220 + 200
+                if fig_tall(h_in) and not (fi == 0 and si > 0):
                     it.append(("改頁", f'{sec["no"]}　{fn} の前（1頁の図版）',
                                0, False, False, 0))
+                if zenmen and fi == 0:
+                    h = BODY_H - 540        # 見出しと合わせてちょうど1頁（実測）
                 it.append(("図", f'{sec["no"]}　{fn}', h, False, False, h))
             for b in sec["blocks"]:
                 if keikaku and b["t"] == "note":
@@ -206,7 +236,7 @@ def soan_items(keikaku=False):
                               None)
                     if fn:
                         _, h_in = EP.fig_in(os.path.join(EP.FIGDIR, fn))
-                        h = 160 + h_in * 1440 + 60 + 18 * 20 + 40 + 16 * 20 + 200
+                        h = 160 + h_in * 1440 + 60 + 240 + 40 + 220 + 200
                         if fig_tall(h_in):
                             it.append(("改頁", f'{sec["no"]}　{b["v"]} の前（1頁の図版）',
                                        0, False, False, 0))

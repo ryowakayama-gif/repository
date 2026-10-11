@@ -266,6 +266,115 @@ def aki(pdf, mae=3, yohaku=1418, n=15):
     return out
 
 
+def toushi(pdf, mae=3, yohaku=1418, yoko=1134):
+    """紙面を通して見るための洗い出し（Ⅱ-75）。
+
+    137頁を1枚ずつ目で見る前に、機械で見つかるものを挙げる。挙がった頁だけを
+    画像にして見れば、見落としを減らしつつ目で見る枚数を抑えられる。
+
+    見るもの
+      1 はみ出し    本文の枠から出ている文字・罫線（列幅の取り違えで起きる）
+      2 孤立行      表が頁をまたぎ、続きの頁に見出し行＋1行しか残らない
+      3 見出しの取り残し  節・小見出しが頁の最後に来て、中身が次の頁にある
+      4 図の離れ    図とその題・出典が別の頁に分かれている
+      5 小さすぎる字 本文の指定（8pt）より小さい字（図の中の字は除く）
+    """
+    import pymupdf
+    d = pymupdf.open(pdf)
+    W, H = d[0].rect.width, d[0].rect.height
+    # 左右の余白は上下と違う（素案は上下1418・左右1134 twip）
+    L, R = yoko / 20, W - yoko / 20
+    T, B = yohaku / 20, H - yohaku / 20
+    MIDASHI = {12.5, 11.0, 15.0}
+    out = {"はみ出し": [], "孤立行": [], "見出しの取り残し": [], "図の離れ": [],
+           "小さすぎる字": []}
+    mae_shita = None      # 前の頁で表が届いていた一番下のy
+    for pg in d:
+        if pg.number < mae:
+            continue
+        no = pg.number + 1
+        lines = []        # (y0, y1, size, text)
+        for b in pg.get_text("dict")["blocks"]:
+            if b["type"] != 0:
+                continue
+            for l in b["lines"]:
+                if not l["spans"]:
+                    continue
+                sz = round(max(s["size"] for s in l["spans"]), 1)
+                t = "".join(x["text"] for x in l["spans"]).strip()
+                if not t:
+                    continue
+                bb = l["bbox"]
+                lines.append((bb[1], bb[3], sz, t, bb))
+                if bb[1] < T - 36 or bb[3] > B + 36:
+                    continue          # 柱・頁番号は枠の外でよい
+                # 行末の句読点・閉じ括弧は枠の外へぶら下がる（ぶら下げ組）。
+                # これは正しい組み方であって、はみ出しではない。
+                # 18件すべてが「。」のぶら下がりであった（令和8年10月10日）。
+                BURA = "。、）」』】〕〉》”’!?,."
+                migi = bb[2] - (len(t) - len(t.rstrip(BURA))) * sz
+                if bb[0] < L - 1.5 or migi > R + 1.5:
+                    out["はみ出し"].append(
+                        (no, f'{sz}pt {t[:40]} x={bb[0]:.0f}〜{bb[2]:.0f}'))
+                if sz < 8.0:
+                    out["小さすぎる字"].append((no, f'{sz}pt {t[:40]}'))
+        lines.sort()
+        honbun = [l for l in lines if T - 5 < l[0] and l[1] < B + 5]
+        # 3 見出しの取り残し
+        if honbun:
+            last = honbun[-1]
+            if last[2] in MIDASHI:
+                out["見出しの取り残し"].append((no, f'{last[2]}pt {last[3][:44]}'))
+        # 2 孤立行（表のセルの塗りで数える）
+        TH = {"2E75B6", "FFFFFF", "DDEBF7"}
+        by = {}
+        aozu = False
+        for dr in pg.get_drawings():
+            f = _hex(dr.get("fill"))
+            if f not in TH:
+                continue
+            r = dr["rect"]
+            if r.width < 15 or r.height < 4 or r.height > 500:
+                continue
+            by.setdefault(round(r.y0 * 2) / 2, []).append((f, r))
+        ys = sorted(by)
+        # 前の頁が表で終わっていなければ、頁の頭の表は「続き」ではなく
+        # その頁から始まる表である。1行しかない表を孤立行と数えていた
+        # （第3回資料の頁9。令和8年10月10日）。
+        tsuzuki = mae_shita is not None and mae_shita > B - 24
+        mae_shita = max((max(r.y1 for _, r in by[y]) for y in by), default=None)
+        if tsuzuki and ys and ys[0] < T + 3:          # 頁の頭から表が続いている
+            # 続きの帯のうち、見出し行（青）に続く本体の行数を数える
+            aoi = [y for y in ys if any(f == "2E75B6" for f, _ in by[y])]
+            if aoi and aoi[0] < T + 3:
+                nokori = [y for y in ys if y > aoi[0] + 1]
+                # 次の表が始まるまで（帯の間が6pt以上空いたら別の表）
+                n = 0
+                mae_y = aoi[0]
+                for y in nokori:
+                    if y - mae_y > max(r.y1 for _, r in by[mae_y]) - mae_y + 6:
+                        break
+                    n += 1
+                    mae_y = y
+                if n <= 1:
+                    out["孤立行"].append((no, f'続きの行が{n}行しかない'))
+        # 4 図の離れ
+        img = [b["bbox"] for b in pg.get_text("dict")["blocks"] if b["type"] == 1]
+        dai = [l for l in honbun if l[2] == 9.0 and l[3].startswith("図")]
+        if img and not dai:
+            out["図の離れ"].append((no, f'図{len(img)}点があるのに題がない'))
+        if dai and not img:
+            out["図の離れ"].append((no, f'題「{dai[0][3][:30]}」があるのに図がない'))
+    print(f"\n  紙面の洗い出し（本文{d.page_count - mae}頁）")
+    for k, v in out.items():
+        print(f"    {k}　{len(v)}件")
+        for no, t in v[:12]:
+            print(f"      頁{no:4d}  {t}")
+        if len(v) > 12:
+            print(f"      … ほか{len(v) - 12}件")
+    return out
+
+
 def images(pdf, rng, outdir):
     a, _, b = rng.partition("-")
     b = b or a
@@ -286,6 +395,8 @@ def main():
     ap.add_argument("--mae", type=int, default=3, help="前付の頁数")
     ap.add_argument("--shiryo", action="store_true",
                     help="委員会資料として見る（余白1134・本文14570 twip）")
+    ap.add_argument("--toushi", action="store_true",
+                    help="紙面を通して見るための洗い出し（はみ出し・孤立行・取り残し）")
     ap.add_argument("--aki", action="store_true",
                     help="頁の下に残った空白の大きい順に挙げる（分量を詰めるとき）")
     a = ap.parse_args()
@@ -298,6 +409,8 @@ def main():
     outdir = a.out or tempfile.mkdtemp(prefix="render_check_")
     pdf = convert(a.docx, outdir)
     report(pdf, a.mae, a.shiryo)
+    if a.toushi:
+        toushi(pdf, a.mae, 1134 if a.shiryo else 1418, 1134)
     if a.aki:
         aki(pdf, a.mae, 1134 if a.shiryo else 1418)
     if a.images:

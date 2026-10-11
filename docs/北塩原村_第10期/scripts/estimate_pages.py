@@ -134,7 +134,7 @@ def run():
             for fn in figs.get(f'{ch["no"]}|{sec["no"]}', []):
                 nf += 1
                 _, h_in = fig_in(os.path.join(FIGDIR, fn))
-                h += 160 + h_in * 1440 + 60 + 18 * 20 + 40 + 16 * 20 + 200
+                h += 160 + h_in * 1440 + 60 + 240 + 40 + 220 + 200
             for b in sec["blocks"]:
                 if b["t"] in ("table", "kpi"):
                     nt += 1
