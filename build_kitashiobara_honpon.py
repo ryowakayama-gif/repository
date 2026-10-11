@@ -69,6 +69,7 @@ from build_kitashiobara_ishi_kettei import IK_EDITS  # noqa: E402
 from build_kitashiobara_yosan_mece import YS_EDITS  # noqa: E402
 from build_kitashiobara_kyoseigata import KY_EDITS  # noqa: E402
 from build_kitashiobara_kojino import KN_EDITS  # noqa: E402
+from build_kitashiobara_chiikishien import CS_EDITS  # noqa: E402
 from build_kitashiobara_graph import GRAPHS, OUT_DIR as ZU_DIR  # noqa: E402
 from build_kitashiobara_zuhyo_bangou import ZU, HYO  # noqa: E402
 
@@ -1016,7 +1017,8 @@ def verify(doc, src_dims):
                 + list(AN_EDITS) + list(KG_EDITS)
                 + list(KO_EDITS) + list(KJ_EDITS)
                 + list(IK_EDITS) + list(YS_EDITS)
-                + list(KY_EDITS) + list(KN_EDITS)):
+                + list(KY_EDITS) + list(KN_EDITS)
+                + list(CS_EDITS)):
         for blk in rec["nakami"]:
             if blk[0] in ("h2", "h3", "p", "note"):
                 if _norm(blk[1]) not in out:
@@ -1114,7 +1116,8 @@ def verify(doc, src_dims):
                 + list(AN_EDITS) + list(KG_EDITS)
                 + list(KO_EDITS) + list(KJ_EDITS)
                 + list(IK_EDITS) + list(YS_EDITS)
-                + list(KY_EDITS) + list(KN_EDITS)):
+                + list(KY_EDITS) + list(KN_EDITS)
+                + list(CS_EDITS)):
         for blk in rec["nakami"]:
             if blk[0] in ("h2", "h3") and blk[1].startswith("（"):
                 want_sub.append(blk[1])
@@ -1174,6 +1177,7 @@ def verify(doc, src_dims):
           f"意思決定{len(IK_EDITS)}件・国予算{len(YS_EDITS)}件・"
           f"共生型{len(KY_EDITS)}件・"
           f"高次脳{len(KN_EDITS)}件・"
+          f"地域支援{len(CS_EDITS)}件・"
           f"書き換え{len(KAKIKAE) + len(KG_KAKIKAE) + len(KO_KAKIKAE)}件・"
           f"図{len(GRAPHS)}点が実在／"
           f"正本の記述{len(keep)}点が残存／見込量表{n_mikomi}表／"
@@ -1204,6 +1208,7 @@ def main():
     apply_juten(doc, YS_EDITS, label="国予算")
     apply_juten(doc, KY_EDITS, label="共生型")
     apply_juten(doc, KN_EDITS, label="高次脳")
+    apply_juten(doc, CS_EDITS, label="地域支援")
     apply_kakikae(doc)
     apply_graphs(doc)
     apply_bangou(doc)
