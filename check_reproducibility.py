@@ -233,6 +233,11 @@ BUILDERS = [
     ("build_kitashiobara_shoukai_bun.py",
      ["output/北塩原村_村への照会_6通.docx"],
      "各点検・レビューの照会を読み込んで組むため、それらの後に実行する"),
+    ("build_kitashiobara_sagyou_houshin.py",
+     ["output/北塩原村_作業方針_20261011.xlsx"],
+     "整理内容の総括と正本・照会文の現物を読んで、"
+     "優先Aを済とした根拠と優先Bの照会番号が実在することを"
+     "照合するため、正本と照会文を作った後に実行する"),
     ("build_shinchoku_hyo.py", ["output/北塩原村_業務進捗管理表.xlsx"],
      "build_kitashiobara_progress.py のデータを取り込むため、その後に実行する"),
 ]
