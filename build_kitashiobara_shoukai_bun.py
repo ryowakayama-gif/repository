@@ -56,6 +56,7 @@ from build_kitashiobara_kouiki_redteam import SHOUKAI as S_KO  # noqa: E402
 from build_kitashiobara_jouhou_kouhyou import SHOUKAI as S_KJ  # noqa: E402
 from build_kitashiobara_yosan_mece import SHOUKAI as S_YS  # noqa: E402
 from build_kitashiobara_kyoseigata import SHOUKAI as S_KY  # noqa: E402
+from build_kitashiobara_kojino import SHOUKAI as S_KN  # noqa: E402
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT_FILE = f"{REPO_ROOT}/output/北塩原村_村への照会_6通.docx"
@@ -81,7 +82,7 @@ def atsumeru():
             out[_zen(r[0])] = dict(no=_zen(r[0]), atesaki="村", kenmei=r[1],
                                    naiyo=r[2], tsukaimichi=r[3], kigen=r[4])
     for recs in (S_HP3, S_RT, S_ME, S_SA, S_ZEN, S_KG, S_KO, S_KJ,
-                 S_YS, S_KY,
+                 S_YS, S_KY, S_KN,
                  K_ZUHYO, K_BAN, K_ANKE):
         for r in recs:
             out[_zen(r[0])] = dict(no=_zen(r[0]), atesaki=r[1], kenmei=r[2],
@@ -193,8 +194,16 @@ BIN = [
              "他の便より期限を遅く置いています。"
              "ただしＭ-101（成年後見センターの構成市町村）は"
              "村内で確かめられるものですので、"
-             "分かり次第お知らせいただければ助かります。",
-        nos=["Ｍ-98", "Ｍ-99", "Ｍ-100", "Ｍ-101", "Ｍ-102"],
+             "分かり次第お知らせいただければ助かります。"
+             "また、高次脳機能障害者支援法が令和８年４月１日に"
+             "施行されたことに伴い、"
+             "県の支援センターの指定、地域協議会への参画、"
+             "及び実施状況の公表の様式について"
+             "県に確かめていただく事項を加えています"
+             "（Ｍ-107）。"
+             "このうちＭ-107の⑤と⑥は村内で分かるものです。",
+        nos=["Ｍ-98", "Ｍ-99", "Ｍ-100", "Ｍ-101", "Ｍ-102",
+             "Ｍ-107"],
     ),
 ]
 
@@ -236,7 +245,7 @@ def verify(zenbu):
         if no in ireta:
             ng.append(f"村以外あてを村の照会文に入れている: {no}")
 
-    # ④ 番号に抜けがないこと（Ｍ-40からＭ-106まで）
+    # ④ 番号に抜けがないこと（Ｍ-40からＭ-107まで）
     ban = sorted(int(k.split("-")[1]) for k in mura)
     nuke = [n for n in range(ban[0], ban[-1] + 1) if n not in ban]
     if nuke:
