@@ -235,6 +235,10 @@ BUILDERS = [
      ["output/北塩原村_村への照会_6通.docx",
       "output/北塩原村_他メンバーへの確認_1通.docx"],
      "各点検・レビューの照会を読み込んで組むため、それらの後に実行する"),
+    ("build_kitashiobara_shihyou_sokutei.py",
+     ["output/北塩原村_指標の測定可能性.xlsx"],
+     "アンケートの集計表と正本の現物を読んで、指標を測る設問が"
+     "実在するかを照合するため、移植後の正本を作った後に実行する"),
     ("build_kitashiobara_houteikisai.py",
      ["output/北塩原村_法定記載事項チェック.xlsx"],
      "基本指針の告示本文と正本の現物を読んで、条項の文言と"

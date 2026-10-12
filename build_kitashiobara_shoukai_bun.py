@@ -65,6 +65,12 @@ from build_kitashiobara_review2_taiou import (  # noqa: E402
 from build_kitashiobara_houteikisai import (  # noqa: E402
     KAKUNIN as K_HT, SHOUKAI as S_HT,
 )
+from build_kitashiobara_shihyou_sokutei import (  # noqa: E402
+    SHOUKAI as S_SS,
+)
+from build_kitashiobara_progress import (  # noqa: E402
+    SHOUKAI as S_PR,
+)
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT_FILE = f"{REPO_ROOT}/output/北塩原村_村への照会_6通.docx"
@@ -100,6 +106,7 @@ def atsumeru():
                                    naiyo=r[2], tsukaimichi=r[3], kigen=r[4])
     for recs in (S_HP3, S_RT, S_ME, S_SA, S_ZEN, S_KG, S_KO, S_KJ,
                  S_YS, S_KY, S_KN, S_CS, K_IK, S_HT, K_HT,
+                 S_SS, S_PR,
                  K_ZUHYO, K_BAN, K_ANKE):
         for r in recs:
             out[_zen(r[0])] = dict(no=_zen(r[0]), atesaki=r[1], kenmei=r[2],
@@ -152,7 +159,7 @@ BIN = [
         nos=["Ｍ-45", "Ｍ-46", "Ｍ-47", "Ｍ-48", "Ｍ-49", "Ｍ-50",
              "Ｍ-51", "Ｍ-52", "Ｍ-53", "Ｍ-54", "Ｍ-55", "Ｍ-56",
              "Ｍ-57", "Ｍ-58", "Ｍ-64", "Ｍ-65", "Ｍ-71", "Ｍ-72",
-             "Ｍ-73", "Ｍ-81"],
+             "Ｍ-73", "Ｍ-81", "Ｍ-112"],
     ),
     dict(
         no=4,
@@ -198,7 +205,7 @@ BIN = [
         nos=["Ｍ-59", "Ｍ-60", "Ｍ-61", "Ｍ-62", "Ｍ-63", "Ｍ-66",
              "Ｍ-67", "Ｍ-68", "Ｍ-78", "Ｍ-79", "Ｍ-80",
              "Ｍ-82", "Ｍ-83", "Ｍ-84", "Ｍ-85", "Ｍ-86",
-             "Ｍ-103", "Ｍ-105", "Ｍ-106", "Ｍ-108"],
+             "Ｍ-103", "Ｍ-105", "Ｍ-106", "Ｍ-108", "Ｍ-111"],
     ),
     dict(
         no=6,
@@ -360,7 +367,7 @@ def verify(zenbu):
         if no in ireta:
             ng.append(f"村以外あてを村の照会文に入れている: {no}")
 
-    # ④ 番号に抜けがないこと（Ｍ-40からＭ-110まで）
+    # ④ 番号に抜けがないこと（Ｍ-40からＭ-112まで）
     ban = sorted(int(k.split("-")[1]) for k in mura)
     nuke = [n for n in range(ban[0], ban[-1] + 1) if n not in ban]
     if nuke:
