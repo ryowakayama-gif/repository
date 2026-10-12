@@ -2565,6 +2565,147 @@ def main():
         chk(69, "資6で「一部」とした事項に追いかける先があること", False,
             f"照合できない（{e}）")
 
+    # ── 70　同時に策定している計画との突合が、古い版で行われていないこと ────
+    #    doc81（令和8年10月10日）は障がい福祉計画を「令和8年10月4日が最終」として
+    #    突合したが、その時点で相手は60コミット進んでおり、10月8日に立てられた
+    #    照会Ｋ-1〜Ｋ-8を見落とした。判断の違いではなく受け渡しの事故である。
+    #    日付ではなくコミットのハッシュで記録し、受け取った照会は1件ずつ
+    #    応答の行を持たせる（scripts/seigo_han.py）。
+    try:
+        import re as _re70
+        import subprocess as _sp70
+        import seigo_han as SH
+        import soan_content as SC70
+        import wbs_kakunin as KK70
+        bad70 = []
+        secs70 = {sec["no"] for ch in SC70.CH for sec in ch["sections"]}
+        mids70 = {str(k[1]) for k in KK70.K}
+        if not SH.AITE:
+            bad70.append("突合した相手が記録されていない")
+        for a in SH.AITE:
+            if not _re70.fullmatch(r"[0-9a-f]{7,40}", a.get("han", "")):
+                bad70.append(f"{a['nm'][:14]}の版がコミットのハッシュでない（{a.get('han')}）")
+        # いちばん新しい突合が、いま手元にある相手の枝の先頭と一致するか。
+        # 枝を取っていない環境では確かめられないため、その旨だけを示す。
+        atara = max(SH.AITE, key=lambda a: a["totsugo"])
+        furui70 = ""
+        try:
+            r70 = _sp70.run(["git", "rev-parse", "--short",
+                             "origin/" + atara["branch"]],
+                            capture_output=True, text=True, timeout=30,
+                            cwd=os.path.dirname(os.path.dirname(
+                                os.path.dirname(os.path.abspath(__file__)))))
+            saki70 = r70.stdout.strip()
+            if r70.returncode != 0 or not saki70:
+                furui70 = "（相手の枝が手元にないため先頭との一致は確かめていない）"
+            elif not atara["han"].startswith(saki70) and not saki70.startswith(atara["han"]):
+                bad70.append(f"突合した版 {atara['han']} が相手の枝の先頭 {saki70} と違う"
+                             f"（git fetch origin {atara['branch']} のうえ読み直す）")
+        except Exception:
+            furui70 = "（git を呼べないため先頭との一致は確かめていない）"
+        for u in SH.UKETORI:
+            if not u.get("kotae"):
+                bad70.append(f"{u['han_no']}に応答がない")
+            for sk in u.get("saki", []):
+                if sk not in secs70:
+                    bad70.append(f"{u['han_no']}の反映先「{sk}」が素案にない")
+            if u.get("kakunin") and u["kakunin"] not in mids70:
+                bad70.append(f"{u['han_no']}が指す確認事項がない（{u['kakunin'][:22]}）")
+        if not SH.WATASHI:
+            bad70.append("相手へ渡す事項が1件もない")
+        chk(70, "同時に策定している計画との突合が古い版でないこと", not bad70,
+            "・".join(bad70[:3]) if bad70
+            else f"相手{len({a['branch'] for a in SH.AITE})}件・突合{len(SH.AITE)}回。"
+                 f"受け取った照会{len(SH.UKETORI)}件すべてに応答と反映先があり、"
+                 f"渡す事項{len(SH.WATASHI)}件。"
+                 f"最新の突合は {atara['han']}（{atara['han_hi']}）{furui70}")
+    except Exception as e:
+        chk(70, "同時に策定している計画との突合が古い版でないこと", False,
+            f"照合できない（{e}）")
+
+    # ── 71　アンケートを出所とする目標値に、支える設問があること ──────────
+    #    調査票は令和8年9月9日に校了し、10月10日に発送が完了している。
+    #    いまから設問を足すことはできないため、支える設問のない指標は
+    #    計画の期間中ずっと測れないまま残る。現に施策3-4の
+    #    「家族介護者の負担感」は在宅介護実態調査B票に対応する設問がなかった。
+    #    障がい福祉計画の側でも同じことが起きている（前回 問17 で測っていた
+    #    「外出の目的」の設問が今回の調査票にない）。
+    try:
+        import shihyo_setsumon as SS
+        bad71 = []
+        ank71 = SS.shihyo_anke()
+        tai71 = {(t[0], t[1]) for t in SS.TAIOU}
+        for sec71, nm71 in ank71:
+            if (sec71, nm71) not in tai71:
+                bad71.append(f"{sec71}「{nm71[:24]}」が対応表にない")
+        for sec71, nm71, chosa71, ban71, _b in SS.TAIOU:
+            if not SS.setsumon_aru(chosa71, ban71):
+                bad71.append(f"{sec71}が指す設問 {ban71[0]}{ban71[1]} がコードブックにない")
+            if (sec71, nm71) not in {(a, b) for a, b in ank71}:
+                bad71.append(f"対応表の{sec71}「{nm71[:20]}」が素案の指標にない")
+        chk(71, "アンケートを出所とする目標値に支える設問があること", not bad71,
+            "・".join(bad71[:3]) if bad71
+            else f"アンケートを出所とする指標{len(ank71)}件すべてに設問が対応し、"
+                 f"いずれもコードブックに実在する"
+                 f"（コードブックは令和8年9月4日版による。校了版の選択肢は受領待ち）")
+    except Exception as e:
+        chk(71, "アンケートを出所とする目標値に支える設問があること", False,
+            f"照合できない（{e}）")
+
+    # ── 72　法が定めることを求めている量が空欄のとき、5-12に掲げていること ──
+    #    老人福祉法第20条の8第2項の「確保すべき老人福祉事業の量の目標」（4-6）と、
+    #    介護保険法第117条第2項第2号の地域支援事業の量の見込み（5-5）は、
+    #    法が計画に定めることを求めている事項である。実績の未受領により
+    #    令和9〜11年度が空欄のままになっているが、空欄であること自体が
+    #    どこにも書かれていなければ、そのまま計画書になる。
+    #    5-12（現時点で据え置いた項目）に掲げ、確定の条件を示すことを求める。
+    try:
+        import soan_content as SC72
+        bad72, kara72 = [], {}
+        go72 = {"4-6": "老人福祉事業の量", "5-5": "地域支援事業の量"}
+        for ch in SC72.CH:
+            for sec in ch["sections"]:
+                if sec["no"] not in go72:
+                    continue
+                for b in sec["blocks"]:
+                    if b["t"] not in ("table", "kpi"):
+                        continue
+                    h = [str(x) for x in b["head"]]
+                    mi = [j for j, x in enumerate(h)
+                          if any(y in x for y in ("R9", "R10", "R11", "見込",
+                                                  "令和9", "令和10", "令和11"))]
+                    if not mi:
+                        continue
+                    n = sum(1 for r in b["rows"]
+                            if all(str(r[j]).strip() in ("―", "")
+                                   for j in mi if j < len(r)))
+                    if n:
+                        kara72[sec["no"]] = kara72.get(sec["no"], 0) + n
+        noseta = set()
+        for ch in SC72.CH:
+            for sec in ch["sections"]:
+                if sec["no"] != "5-12":
+                    continue
+                for b in sec["blocks"]:
+                    if b["t"] not in ("table", "kpi"):
+                        continue
+                    for r in b["rows"]:
+                        for no72 in go72:
+                            if no72 in str(r[0]) and "空欄" in "".join(map(str, r)):
+                                noseta.add(no72)
+        for no72, n in sorted(kara72.items()):
+            if no72 not in noseta:
+                bad72.append(f"{no72}（{go72[no72]}）の見込が{n}行空欄なのに"
+                             f"5-12に掲げていない")
+        chk(72, "法が定めることを求めている量の空欄が5-12に掲げてあること", not bad72,
+            "・".join(bad72[:3]) if bad72
+            else (("空欄は " + "・".join(f"{k} {v}行" for k, v in sorted(kara72.items()))
+                   + "。いずれも5-12に掲げ、確定の条件を示している")
+                  if kara72 else "4-6・5-5とも見込が空欄の行はない"))
+    except Exception as e:
+        chk(72, "法が定めることを求めている量の空欄が5-12に掲げてあること", False,
+            f"照合できない（{e}）")
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
