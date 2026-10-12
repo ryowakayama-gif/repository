@@ -41,16 +41,32 @@ warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
 
 OUT_FILE = f"{OUT_DIR}/北塩原村_障がい計画と介護保険事業計画の整合.xlsx"
 SHOGAI_SUAN = f"{OUT_DIR}/北塩原村_計画素案.docx"
+# 介護保険側の素案。版をハッシュで固定する（下の KAIGO_SHA）。
+# 以前は「本文テキスト.txt」を読んでいたが、どの版か分からなかった。
+# 相手方のブランチの素案そのもの（18_計画素案.md）を取り込み、
+# ファイル名にコミットを入れ、内容のハッシュを自己点検で照合する。
 KAIGO_SUAN = (f"{SRC_DIR}/関連計画/"
-              f"北塩原村_第10期介護保険事業計画_素案_本文テキスト.txt")
+              f"北塩原村_第10期介護保険事業計画_素案_e591fe8.md")
 GENKO_SHOGAI = (f"{SRC_DIR}/現行計画/"
                 f"第4次障がい者計画_第7期障がい福祉計画_"
                 f"第3期障がい児福祉計画_本編.pdf")
-KIJUNBI = "基準日：令和8年10月10日"
+KIJUNBI = "基準日：令和8年10月12日"
 
 # 介護保険の素案の出所（C-5 の入手先の記録）
+#   版をコミットのハッシュと内容のハッシュの両方で固定する。
+#   令和8年10月12日のレビューで、両計画が互いに古い版を見て
+#   突合していたことが分かった。当方は ff96899（10月8日）を見ており、
+#   その後に相手方は6コミット進んでいた。
+#   相手方は当方を「令和8年10月4日が最終」として見ており、
+#   その時点で当方は60コミット以上進んでいた。
+#   判断の相違ではなく受け渡しの事故である。
 KAIGO_BRANCH = "claude/kitashiobara-elderly-care-plan-i6bgzm"
-KAIGO_COMMIT = "ff96899"
+KAIGO_COMMIT = "e591fe8"
+KAIGO_COMMIT_HI = "令和8年10月11日"
+KAIGO_SHUTOKU = "令和8年10月12日"
+KAIGO_SHA = "eb2fe7dbd93f9542"      # 素案の内容の sha256 の先頭16桁
+KAIGO_MAE = "ff96899"               # 前に突合した版
+SHOGAI_COMMIT_TSUTAERU = True       # 当方の版を相手方に伝える（09シート）
 
 ARI, NASHI, KATAGAWA = "両計画にあり", "両計画になし", "片側のみ"
 ST_FILL = {ARI: "2CA02C", KATAGAWA: "ED7D31", NASHI: "C00000"}
@@ -447,11 +463,22 @@ def kaigo_text():
     if not os.path.exists(KAIGO_SUAN):
         raise SystemExit(
             f"介護保険事業計画の素案が見つかりません: {KAIGO_SUAN}\n"
-            f"ブランチ {KAIGO_BRANCH} の {KAIGO_COMMIT} 時点の\n"
-            "output/06_北塩原村第10期_計画素案.docx から本文を取り出した"
-            "テキストです。")
+            f"ブランチ {KAIGO_BRANCH} の {KAIGO_COMMIT}"
+            f"（{KAIGO_COMMIT_HI}）の\n"
+            "docs/北塩原村_第10期/18_計画素案.md です。\n"
+            f"git show {KAIGO_BRANCH}:docs/北塩原村_第10期/"
+            "18_計画素案.md で取り出せます。")
     with open(KAIGO_SUAN, encoding="utf-8") as fh:
-        return fh.read()
+        t = fh.read()
+    import hashlib
+    sha = hashlib.sha256(t.encode("utf-8")).hexdigest()[:16]
+    if sha != KAIGO_SHA:
+        raise SystemExit(
+            f"介護保険の素案の内容が記録と違います。\n"
+            f"  記録 {KAIGO_SHA}／現物 {sha}\n"
+            "版が入れ替わっています。KAIGO_COMMIT と KAIGO_SHA を"
+            "新しい版に合わせ、突合をやり直してください。")
+    return t
 
 
 def genko_shogai_text():

@@ -62,6 +62,9 @@ from build_kitashiobara_ishi_kettei import KAKUNIN as K_IK  # noqa: E402
 from build_kitashiobara_review2_taiou import (  # noqa: E402
     KAKUNIN as K_R2,
 )
+from build_kitashiobara_houteikisai import (  # noqa: E402
+    KAKUNIN as K_HT, SHOUKAI as S_HT,
+)
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT_FILE = f"{REPO_ROOT}/output/北塩原村_村への照会_6通.docx"
@@ -96,7 +99,7 @@ def atsumeru():
             out[_zen(r[0])] = dict(no=_zen(r[0]), atesaki="村", kenmei=r[1],
                                    naiyo=r[2], tsukaimichi=r[3], kigen=r[4])
     for recs in (S_HP3, S_RT, S_ME, S_SA, S_ZEN, S_KG, S_KO, S_KJ,
-                 S_YS, S_KY, S_KN, S_CS, K_IK,
+                 S_YS, S_KY, S_KN, S_CS, K_IK, S_HT, K_HT,
                  K_ZUHYO, K_BAN, K_ANKE):
         for r in recs:
             out[_zen(r[0])] = dict(no=_zen(r[0]), atesaki=r[1], kenmei=r[2],
@@ -119,7 +122,7 @@ BIN = [
              "計画の名称と数値の食い違いも、資料に載せる前に"
              "確かめておく必要があります。",
         nos=["Ｍ-41", "Ｍ-42", "Ｍ-43", "Ｍ-44", "Ｍ-69", "Ｍ-70",
-             "Ｍ-95", "Ｍ-96", "Ｍ-104"],
+             "Ｍ-95", "Ｍ-96", "Ｍ-104", "Ｍ-110"],
     ),
     dict(
         no=2,
@@ -237,7 +240,7 @@ DENWA = ["Ｍ-40"]
 
 # 村以外に出すもの（村の照会文には入れない。他メンバーへの確認）
 HOKA = ["Ｓ-19", "Ｓ-20", "Ｓ-21", "Ｓ-22", "Ｓ-23", "Ｓ-24",
-        "Ｓ-25", "Ｓ-26"]
+        "Ｓ-25", "Ｓ-26", "Ｓ-27"]
 
 # 県あてだが他メンバーを通じてお願いするもの
 KEN_KEIYU = ["Ｓ-12"]
@@ -267,7 +270,7 @@ MEMBER_SETSU = [
     ),
     dict(
         no=2,
-        midashi="制度名称の表記の統一",
+        midashi="制度名称の表記の統一と策定経過の日付",
         kigen="令和８年10月16日（金）",
         riyu="計画の冒頭の注記は、法律用語や施設名等の固有名称を除き"
              "「害」の字をひらがなで表記するとしています。"
@@ -276,8 +279,12 @@ MEMBER_SETSU = [
              "同じ並びの中で食い違っている箇所もあるため、"
              "どちらに揃えるかを決めていただきたく存じます。"
              "当方の追記は決まった方に合わせます。"
-             "決まり次第、置換の一覧を作ってお送りします。",
-        nos=["Ｓ-25"],
+             "決まり次第、置換の一覧を作ってお送りします。"
+             "あわせて、第１章５（４）のパブリックコメントの記述が"
+             "令和９年２月の日程を過去形で書いていますので、"
+             "日程の確定と、計画の確定時の時制の扱いを"
+             "確かめさせていただきたく存じます。",
+        nos=["Ｓ-25", "Ｓ-27"],
     ),
     dict(
         no=3,
@@ -353,7 +360,7 @@ def verify(zenbu):
         if no in ireta:
             ng.append(f"村以外あてを村の照会文に入れている: {no}")
 
-    # ④ 番号に抜けがないこと（Ｍ-40からＭ-109まで）
+    # ④ 番号に抜けがないこと（Ｍ-40からＭ-110まで）
     ban = sorted(int(k.split("-")[1]) for k in mura)
     nuke = [n for n in range(ban[0], ban[-1] + 1) if n not in ban]
     if nuke:
