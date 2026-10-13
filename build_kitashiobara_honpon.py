@@ -75,6 +75,7 @@ from build_kitashiobara_shihyou_sokutei import SS_EDITS  # noqa: E402
 from build_kitashiobara_review3_taiou import RV_EDITS  # noqa: E402
 from build_kitashiobara_houkaisei_r8 import HK_EDITS  # noqa: E402
 from build_kitashiobara_uchiawase_ronten import UR_EDITS  # noqa: E402
+from build_kitashiobara_kanren_hourei import KH_EDITS  # noqa: E402
 from build_kitashiobara_graph import GRAPHS, OUT_DIR as ZU_DIR  # noqa: E402
 from build_kitashiobara_zuhyo_bangou import ZU, HYO  # noqa: E402
 
@@ -1025,7 +1026,8 @@ def verify(doc, src_dims):
                 + list(KY_EDITS) + list(KN_EDITS)
                 + list(CS_EDITS) + list(KT_EDITS)
                 + list(SS_EDITS) + list(RV_EDITS)
-                + list(HK_EDITS) + list(UR_EDITS)):
+                + list(HK_EDITS) + list(UR_EDITS)
+                + list(KH_EDITS)):
         for blk in rec["nakami"]:
             if blk[0] in ("h2", "h3", "p", "note"):
                 if _norm(blk[1]) not in out:
@@ -1126,7 +1128,8 @@ def verify(doc, src_dims):
                 + list(KY_EDITS) + list(KN_EDITS)
                 + list(CS_EDITS) + list(KT_EDITS)
                 + list(SS_EDITS) + list(RV_EDITS)
-                + list(HK_EDITS) + list(UR_EDITS)):
+                + list(HK_EDITS) + list(UR_EDITS)
+                + list(KH_EDITS)):
         for blk in rec["nakami"]:
             if blk[0] in ("h2", "h3") and blk[1].startswith("（"):
                 want_sub.append(blk[1])
@@ -1204,6 +1207,7 @@ def verify(doc, src_dims):
           f"再レビュー{len(RV_EDITS)}件・"
           f"令和8年法改正{len(HK_EDITS)}件・"
           f"打合せ論点{len(UR_EDITS)}件・"
+          f"関連法令{len(KH_EDITS)}件・"
           f"書き換え{len(KAKIKAE) + len(KG_KAKIKAE) + len(KO_KAKIKAE)}件・"
           f"図{len(GRAPHS)}点が実在／"
           f"正本の記述{len(keep)}点が残存／見込量表{n_mikomi}表／"
@@ -1240,6 +1244,7 @@ def main():
     apply_juten(doc, RV_EDITS, label="再レビュー")
     apply_juten(doc, HK_EDITS, label="令和8年法改正")
     apply_juten(doc, UR_EDITS, label="打合せ論点")
+    apply_juten(doc, KH_EDITS, label="関連法令")
     apply_kakikae(doc)
     apply_graphs(doc)
     apply_bangou(doc)

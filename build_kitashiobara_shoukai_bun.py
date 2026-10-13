@@ -80,6 +80,9 @@ from build_kitashiobara_houkaisei_r8 import (  # noqa: E402
 from build_kitashiobara_uchiawase_ronten import (  # noqa: E402
     SHOUKAI as S_UR,
 )
+from build_kitashiobara_kanren_hourei import (  # noqa: E402
+    SHOUKAI as S_KH,
+)
 # 図表の点数は番号一覧の定義から取る。数を直書きすると、
 # 図表が増減したときに照会文だけが古くなる（Ｓ-21で一度そうなった）。
 from build_kitashiobara_zuhyo_bangou import (  # noqa: E402
@@ -120,7 +123,7 @@ def atsumeru():
                                    naiyo=r[2], tsukaimichi=r[3], kigen=r[4])
     for recs in (S_HP3, S_RT, S_ME, S_SA, S_ZEN, S_KG, S_KO, S_KJ,
                  S_YS, S_KY, S_KN, S_CS, K_IK, S_HT, K_HT,
-                 S_SS, S_PR, S_RV, S_HK, S_UR,
+                 S_SS, S_PR, S_RV, S_HK, S_UR, S_KH,
                  K_ZUHYO, K_BAN, K_ANKE):
         for r in recs:
             out[_zen(r[0])] = dict(no=_zen(r[0]), atesaki=r[1], kenmei=r[2],
@@ -222,7 +225,7 @@ BIN = [
              "Ｍ-67", "Ｍ-68", "Ｍ-78", "Ｍ-79", "Ｍ-80",
              "Ｍ-82", "Ｍ-83", "Ｍ-84", "Ｍ-85", "Ｍ-86",
              "Ｍ-103", "Ｍ-105", "Ｍ-106", "Ｍ-108", "Ｍ-111",
-             "Ｍ-114", "Ｍ-121"],
+             "Ｍ-114", "Ｍ-121", "Ｍ-122"],
     ),
     dict(
         no=6,
@@ -264,13 +267,14 @@ DENWA = ["Ｍ-40"]
 
 # 村以外に出すもの（村の照会文には入れない。他メンバーへの確認）
 HOKA = ["Ｓ-19", "Ｓ-20", "Ｓ-21", "Ｓ-22", "Ｓ-23", "Ｓ-24",
-        "Ｓ-25", "Ｓ-26", "Ｓ-27", "Ｓ-28", "Ｓ-29", "Ｓ-30"]
+        "Ｓ-25", "Ｓ-26", "Ｓ-27", "Ｓ-28", "Ｓ-29", "Ｓ-30",
+        "Ｓ-31"]
 
 # 県あてだが他メンバーを通じてお願いするもの
 KEN_KEIYU = ["Ｓ-11", "Ｓ-12"]
 
 # 法令の原典の入手をお願いするもの（当方は取得できない）
-GENTEN_IRAI = ["Ｓ-28"]
+GENTEN_IRAI = ["Ｓ-28", "Ｓ-31"]
 
 
 # ===========================================================================
@@ -455,8 +459,9 @@ def verify(zenbu):
     # 原典の入手をお願いするものは、第2回レビューの確認事項（K_R2）と
     # 再レビューの照会（S_RV）の2か所に置いてある。
     genten_moto = dict(hoka_moto)
-    for r in S_RV:
-        genten_moto[_zen(r[0])] = r[2] + r[3]
+    for recs in (S_RV, S_KH):
+        for r in recs:
+            genten_moto[_zen(r[0])] = r[2] + r[3]
     for no in GENTEN_IRAI:
         if no not in genten_moto:
             ng.append(f"原典の入手をお願いする番号が実在しない: {no}")
