@@ -2784,6 +2784,76 @@ def main():
         chk(74, "両計画の接点にある語が片側のみになっていないこと", False,
             f"照合できない（{e}）")
 
+    # ── 75　相手へ渡す申し送りが、控えと食い違っていないこと ─────────
+    #    相手の照会Ｋ-7は、当方の成果物の中に置かれただけで相手の票に行として
+    #    立っていなかったため届かなかった。当方から渡す事項も同じ轍を踏まないよう、
+    #    控え（seigo_han.WATASHI）から申し送り（output/14_...docx）を組む。
+    #    じか書きすると、控えを直しても申し送りが古いままになる。
+    #    組んだものが控えと同じ数で、指す節が素案に実在することを確かめる。
+    try:
+        import seigo_han as SH75
+        import soan_content as SC75
+        import build_okurijo as OK75
+        bad75 = []
+        secs75 = {sec["no"] for ch in SC75.CH for sec in ch["sections"]}
+        # 渡す事項が1件もないのは、受け渡しをやめたのと同じである
+        if not SH75.WATASHI:
+            bad75.append("相手へ渡す事項が1件もない")
+        for w75 in SH75.WATASHI:
+            if w75["bu"] not in SH75.BU:
+                bad75.append(f"「{w75['nm'][:18]}」の部{w75['bu']}が BU にない")
+            for ko in ("jijitsu", "onegai", "nai", "yurai", "naze"):
+                if not str(w75.get(ko, "")).strip():
+                    bad75.append(f"「{w75['nm'][:18]}」の{ko}が空")
+            # 「回答がない場合の扱い」を書くと当方の作業が止まらない。
+            # 当方からの回答・お知らせには要らない。
+            if w75["kubun"] == "照会" and w75["nai"].strip() in ("―", "-", ""):
+                bad75.append(f"照会「{w75['nm'][:18]}」に回答がない場合の扱いがない")
+            for sk in w75.get("saki", []):
+                if sk not in secs75:
+                    bad75.append(f"「{w75['nm'][:18]}」の関わる節「{sk}」が素案にない")
+        # 組んだ申し送り（docx）が控えに追いついていること。
+        #   申し送りは控えから組むため、中間JSONと控えを比べても必ず一致する
+        #   （同じものを2度読むだけである）。実際に落ちるのは
+        #   **控えを直したのに docx を組み直していない**ときであるから、
+        #   成果品そのものを開いて事項の見出しがあるかを見る。
+        ok75 = OK75.build()
+        import re as _re75
+        import zipfile as _zip75
+        import paths as _P75          # 置き場所はここで決める（じか書きしない）
+        dx75 = _P75.out("14_北塩原村第10期_障がい福祉計画担当への申し送り.docx")
+        if not os.path.exists(dx75):
+            bad75.append("申し送りの docx が組まれていない"
+                         "（python3 scripts/build_okurijo.py のうえ"
+                         " node scripts/build_okurijo_docx.js）")
+        else:
+            z75 = _zip75.ZipFile(dx75)
+            hon75 = ""
+            for nm75 in z75.namelist():
+                if nm75.startswith("word/") and nm75.endswith(".xml"):
+                    x75 = z75.read(nm75).decode("utf-8", "replace")
+                    hon75 += "".join(_re75.findall(
+                        r"<w:t[^>]*>([^<]*)</w:t>", x75))
+            z75.close()
+            for w75 in SH75.WATASHI:
+                if w75["nm"] not in hon75:
+                    bad75.append(f"申し送りの docx に「{w75['nm'][:20]}」がない"
+                                 "（組み直していない）")
+        # 宛先に向けた文書として、内向きの言い方が残っていないこと
+        for muki in OK75.soto_muki(ok75):
+            bad75.append(f"申し送りに内向きの言い方（{muki[:30]}）")
+        chk(75, "相手へ渡す申し送りが控えと食い違っていないこと", not bad75,
+            "・".join(bad75[:3]) if bad75
+            else f"渡す事項{len(SH75.WATASHI)}件（"
+                 + "・".join(f"{SH75.BU[b][0]} "
+                             f"{len([w for w in SH75.WATASHI if w['bu'] == b])}件"
+                             for b in sorted(SH75.BU))
+                 + f"）。照会{len([w for w in SH75.WATASHI if w['kubun'] == '照会'])}件は"
+                   "すべて回答がない場合の扱いを持ち、指す節は素案に実在する")
+    except Exception as e:
+        chk(75, "相手へ渡す申し送りが控えと食い違っていないこと", False,
+            f"照合できない（{e}）")
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
