@@ -67,7 +67,8 @@ from openpyxl import Workbook
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from kitashiobara_common import (  # noqa: E402
-    add_sheet, ensure_out_dir, style_header_row, style_note, write_row,
+    COLORS, add_sheet, ensure_out_dir, style_header_row, style_note,
+    style_title, write_row,
 )
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -75,6 +76,9 @@ OUT_FILE = f"{REPO_ROOT}/output/北塩原村_法定記載事項チェック.xlsx
 HONPON = f"{REPO_ROOT}/output/北塩原村_計画素案_正本_移植後.docx"
 MOTO = (f"{REPO_ROOT}/source/他メンバー素案_20261008/"
         "北塩原村_第8期障がい福祉計画_第4期障がい児福祉計画_素案_他メンバー版.docx")
+PDF_SHAFUKU = (f"{REPO_ROOT}/source/国資料/"
+               f"社会福祉法等の一部を改正する法律の概要"
+               f"_令和8年法律第51号_001717214.pdf")
 KOKUJI = (f"{REPO_ROOT}/source/基本指針/"
           "第8期基本指針_告示本文_令和8年3月31日.pdf")
 
@@ -121,6 +125,42 @@ JOUBUN_NASHI = [
     ("児童福祉法第33条の20第2項・第3項各号", "同じ",
      "障害児通所支援及び障害児相談支援に係る同様の事項",
      "告示 第三の二で代替して突合した"),
+]
+
+
+# ===========================================================================
+# 1c. 本計画期間中に加わる記載事項（現在の告示には無いもの）
+#     令和8年10月13日に社会福祉法等の一部を改正する法律（令和8年法律第51号）
+#     の原典を受領した。
+#     同法により市町村の計画の記載事項が増えるが、
+#     基本指針（令和8年3月31日告示第4号）はまだこれを取り込んでいない。
+#     告示22項目の突合に混ぜると、
+#     告示にある事項と無い事項の区別が付かなくなるため、別に置く。
+#     (根拠, 加わる記載事項, 施行の日, 障がい福祉分野の扱い, 当方の状態)
+# ===========================================================================
+KISAI_KONGO = [
+    ("社会福祉法等の一部を改正する法律（令和8年法律第51号）。"
+     "厚生労働省「社会福祉法等の一部を改正する法律の概要について」11頁",
+     "サービス量の中長期的な推計",
+     "令和9年4月1日",
+     "「※ 障害福祉分野においても同様の見直しを行う。」と明記されている。"
+     "障がい福祉分野の施行の日は同資料に別に記載されていない",
+     "当方の推計は令和11年度まで。中長期の推計を持っていない。"
+     "第5章1に、次期計画までに整えることと、"
+     "介護保険事業計画の令和22年度（2040年度）を見据えた推計と"
+     "同じ年次で揃えることを書いた（ＨＫ-1）。"
+     "本計画に載せるか次期計画からかを県に確かめる（Ｍ-118・Ｓ-29）"),
+    ("同上", "将来に向けたサービス提供体制の確保に関する施策",
+     "令和9年4月1日", "同上",
+     "第5章2（必要な見込量の確保のための方策）が実質的に対応するが、"
+     "「将来に向けた」＝本計画期間の後を見据えた記述にはなっていない。"
+     "第5章1に、村内及び圏域の事業所が本計画期間の後も"
+     "提供を続けられるかを毎年度確かめることを書いた（ＨＫ-1）"),
+    ("同上", "医療と介護の連携の状況等の勘案",
+     "令和9年4月1日", "同上",
+     "第7章3（高齢者福祉計画・介護保険事業計画との連携）と"
+     "第5章2（15）医療へのアクセスで対応している。"
+     "介護保険側への申し送りで版を固定して突合している"),
 ]
 
 
@@ -366,6 +406,13 @@ def load_kokuji():
         len(r.pages)
 
 
+def load_pdf_text(path):
+    """原典のPDFから本文テキストを取り出す。記憶で書かないための裏づけ。"""
+    from pypdf import PdfReader
+    r = PdfReader(path)
+    return "\n".join((pg.extract_text() or "") for pg in r.pages)
+
+
 def verify(ko):
     ng = []
     for p in (HONPON, MOTO):
@@ -479,12 +526,38 @@ def verify(ko):
     if "か所" in zenbun and "カ所" in zenbun:
         ng.append("「か所」と「カ所」が混在している")
 
+    # ⑨ 本計画期間中に加わる記載事項が、原典に実在すること。
+    #    告示に無いものを告示にあるかのように書かないため、
+    #    別の原典（社会福祉法等改正の概要）で確かめる。
+    if not os.path.exists(PDF_SHAFUKU):
+        ng.append(f"原典が無い: {os.path.basename(PDF_SHAFUKU)}")
+    else:
+        sha = _norm(load_pdf_text(PDF_SHAFUKU))
+        for go in ("介護サービス量の中長期的な推計",
+                   "将来に向けたサービス提供体制の確保に関する施策",
+                   "障害福祉分野においても同様の見直しを行う",
+                   "施行日：令和９年４月１日",
+                   "医療と介護の連携の状況"):
+            if _norm(go) not in sha:
+                ng.append(f"社会福祉法等改正の原典に無い: {go}")
+        # 告示には無いことを確かめる（混ぜていないことの裏づけ）
+        for go in ("中長期的な推計",):
+            if _norm(go) in ko:
+                ng.append(f"告示に既にある語を「今後加わる」としている: {go}")
+    for kon in KISAI_KONGO:
+        if len(kon) != 5:
+            ng.append(f"今後加わる記載事項の列数が5でない: {kon[1]}")
+        if kon[2] != "令和9年4月1日":
+            ng.append(f"施行の日が想定外: {kon[1]} -> {kon[2]}")
+
     if ng:
         print("自己点検 不合格:")
         for x in ng:
             print("   -", x)
         return False
     fusoku = [k for k in KISAI if k[5].startswith("不足")]
+    print(f"  本計画期間中に加わる記載事項{len(KISAI_KONGO)}件を"
+          f"社会福祉法等改正の原典と照合（告示には無いことも確認）")
     print(f"  自己点検: 条項{len(JOUKOU)}件の文言を告示の現物と照合／"
           f"義務{len(gimu)}件と努力義務{len(doryoku)}件の別／"
           f"告示の項目{len(KISAI)}件の照合語が告示に実在／"
@@ -579,6 +652,30 @@ def sheet_kisai(wb):
                       aligns=["center", None, None, None, None, "center"])
         ws.cell(row=row0, column=6).fill = PatternFill(
             "solid", fgColor=(MI if rec[5].startswith("不足") else OK))
+
+    r += 1
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
+    style_title(ws.cell(row=r, column=1),
+                "本計画期間中に加わる記載事項（現在の告示には無いもの）",
+                fill=COLORS["subhead"], size=11)
+    r += 1
+    style_header_row(ws, r, ["根拠", "加わる記載事項", "施行の日",
+                             "障がい福祉分野の扱い", "当方の状態", "―"])
+    r += 1
+    for i, rec in enumerate(KISAI_KONGO):
+        row0 = r
+        r = write_row(ws, r, list(rec) + [""], alt=(i % 2 == 1),
+                      aligns=[None, None, "center", None, None, None])
+        ws.cell(row=row0, column=3).fill = PatternFill(
+            "solid", fgColor="FFF2CC")
+    r += 1
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=6)
+    style_note(ws.cell(row=r, column=1),
+               "※ 基本指針（令和8年3月31日告示第4号）はまだこの改正を"
+               "取り込んでいない。告示22項目の突合に混ぜると、"
+               "告示にある事項と無い事項の区別が付かなくなるため別に置く。"
+               "施行の日（令和9年4月1日）は第8期計画の期間の初日に当たる。")
+    ws.row_dimensions[r].height = 40
     return ws
 
 
