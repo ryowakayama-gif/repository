@@ -6,15 +6,19 @@
 出力: output/北塩原村_サービス見込量.xlsx
 
 推計方式
-    翌年度利用者数 ＝ 前年度継続利用者
-                    ＋ 新規支給決定見込
-                    ＋ 年齢・進学・卒業等による流入
-                    ＋ 施設・病院等からの地域移行
-                    － 介護保険等への移行
-                    － 一般就労・サービス終了
-                    － 死亡・転出・長期入院等
-    月間サービス量 ＝ 利用者数 × 1人当たり月利用量
+    利用者数の算式は、計画本文の表5-3（必要な利用者数の組み立て）と
+    同じものを用いる。文言は build_kitashiobara_mikomi_redteam.py の
+    KUMITATE に一本化し、本ブックはそれを読み込んで表示する
+    （正本とワークペーパーで算式が違う状態を作らないため）。
 
+    起点は実際に利用している方ではなく、期首（令和8年度末）に
+    支援を必要とする方である。実利用者だけを起点にすると、
+    令和8年度に既に足りていない分がそのまま次の3年間にも残る。
+    令和8年10月13日の再レビュー（優先A②③）により、
+    起点を改め、22歳到達（障害児入所施設からの移行）と
+    40〜64歳の特定疾病による介護保険移行を項として立てた。
+
+    月間サービス量 ＝ 利用者数 × 1人当たり月利用量
     ＋ 未特定の潜在需要（第3層）／－ 供給制約により利用困難な量
 
 採用理由（令和8年3月31日 こども家庭庁・厚生労働省告示第4号による改正後の基本指針で確認済み）
@@ -38,6 +42,9 @@
   告示は65歳到達による減算を求める規定を置いておらず、別表第一の勘案要素にも現れない。
 """
 
+import os
+import sys
+
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
@@ -48,6 +55,9 @@ from kitashiobara_common import (
     add_sheet, ensure_out_dir, set_col_widths, style_data_cell,
     style_header_row, style_note, style_status, style_title, write_row,
 )
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from build_kitashiobara_mikomi_redteam import KUMITATE  # noqa: E402
 
 OUT_FILE = f"{OUT_DIR}/北塩原村_サービス見込量.xlsx"
 
@@ -149,19 +159,27 @@ def sheet_method(wb):
     r += 1
     style_header_row(ws, r, ["区分", "算式", "備考"])
     r += 1
+    # 計画本文の表5-3（必要な利用者数の組み立て）を1行の算式に直す。
+    # 文言は KUMITATE に一本化しており、ここでは組み直すだけ。
+    kiten = [x[1] for x in KUMITATE if x[0] == "基"][0]
+    kuwaeru = [x[1] for x in KUMITATE if x[0] == "＋"]
+    hiku = [x[1] for x in KUMITATE if x[0] == "－"]
+    sanshiki = (f"必要な利用者数 ＝ {kiten}"
+                + "".join(f" ＋ {x}" for x in kuwaeru)
+                + "".join(f" － {x}" for x in hiku))
     for i, (k, f, n) in enumerate([
-        ("利用者数",
-         "翌年度利用者数 ＝ 前年度継続利用者 ＋ 新規支給決定見込 ＋ 年齢・進学・卒業等による流入 "
-         "＋ 施設・病院等からの地域移行 － 介護保険等への移行 － 一般就労・サービス終了 "
-         "－ 死亡・転出・長期入院等",
-         "各項を1人単位で加減算する。03・04の各サービスブロックがこの構造"),
+        ("利用者数", sanshiki,
+         "計画本文の表5-3と同じ。各項を1人単位で加減算する。"
+         "03・04の各サービスブロックがこの構造。"
+         "起点は実利用者ではなく期首の必要者数であり、"
+         "令和8年度に既に足りていない分を含める"),
         ("サービス量",
          "月間サービス量 ＝ 利用者ごとの月間予定利用量の合計 ＋ 未特定の潜在需要分 "
          "－ 供給制約により利用困難な量",
          "潜在需要（07）と実際の利用見込量は分けて記載する"),
     ]):
         write_row(ws, r, [k, f, n], alt=(i % 2 == 1))
-        ws.row_dimensions[r].height = 60
+        ws.row_dimensions[r].height = 76
         r += 1
 
     r += 1
