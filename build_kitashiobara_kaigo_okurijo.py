@@ -36,7 +36,6 @@
 """
 
 import os
-import subprocess
 import sys
 
 import docx
@@ -49,6 +48,9 @@ from build_kitashiobara_kaigo_seigo import (  # noqa: E402
     KAIGO_BRANCH, KAIGO_COMMIT, KAIGO_COMMIT_HI, KAIGO_MAE,
     KAIGO_SHA, KAIGO_SHUTOKU, TENKEN,
 )
+# 内容署名は再現性点検と同じ定義を使う。
+# 同じ計算を2か所に書くと、片方だけ直したときに食い違う。
+from check_reproducibility import sig_docx  # noqa: E402
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT_FILE = f"{REPO_ROOT}/output/北塩原村_介護保険側への申し送り.docx"
@@ -239,8 +241,12 @@ YAKUSOKU = [
      "取得日・内容の sha256 の先頭16桁を生成器に書き、"
      "生成のたびに現物のハッシュと突き合わせます。"
      "版が入れ替わっていれば生成が止まります。"
-     "相手方からも当方の版をコミットで指定していただけますと、"
-     "どの版を見た突合なのかが後から分かります"),
+     "当方の正本の版も、コミットではなく本文テキストの sha256 の"
+     "先頭12桁でお示しします。"
+     "コミットは本書を作り直すたびに動いてしまい、"
+     "どの版を見た突合なのかが後から分からなくなるためです。"
+     "同じ正本からは必ず同じ値になりますので、"
+     "お手元でも確かめられます"),
     ("照会は相手方の票に行として立てる",
      "当方は照会を当方の成果物の中に置くだけにしていました。"
      "これでは相手方に届きません。"
@@ -279,17 +285,23 @@ def _norm(s):
     return re.sub(r"\s+", "", str(s))
 
 
-def shogai_commit():
-    """当方の版（コミット）を git から取る。直書きしない。"""
-    try:
-        out = subprocess.run(
-            ["git", "rev-parse", "--short=7", "HEAD"],
-            cwd=REPO_ROOT, capture_output=True, text=True, timeout=20)
-        if out.returncode == 0 and out.stdout.strip():
-            return out.stdout.strip()
-    except Exception:      # noqa: BLE001
-        pass
-    return "（取得できませんでした）"
+def shogai_sha():
+    """当方の正本の版を、本文テキストの sha256 の先頭12桁で指す。
+
+    以前は git rev-parse HEAD の短縮形を用いていた。
+    しかし本書を作り直した版をコミットすると HEAD が動くため、
+    本書は作った時点の HEAD を抱えたまま HEAD と食い違う。
+    再現性点検 C-6b が毎回このファイルを不一致として挙げていた。
+
+    ファイルのバイト列そのものも使えない。
+    docx は ZIP であり、中に生成時刻が入るため、
+    同じ中身でも作り直すたびにバイト列が変わる。
+    本文テキストだけを取り出して要約する（再現性点検の sig_docx と同じ）。
+    同じ正本からは必ず同じ値になる。
+    相手方の版を KAIGO_SHA で指しているのと同じやり方に揃える。
+    """
+    with open(HONPON, "rb") as f:
+        return sig_docx(f.read())[2]
 
 
 def kazoeru(t, go):
@@ -341,8 +353,13 @@ def verify(hon, kaigo):
             ng.append(f"版の記録が空: {na}")
     if KAIGO_COMMIT == KAIGO_MAE:
         ng.append("突合した版が前と同じ。版を更新してください")
-    if shogai_commit().startswith("（"):
-        ng.append("当方のコミットを取得できませんでした")
+    #    当方の版は中身のハッシュで指す（コミットでは版が動く）
+    mine = shogai_sha()
+    if len(mine) != 12 or not all(c in "0123456789abcdef" for c in mine):
+        ng.append(f"当方の正本のハッシュが取れていません: {mine}")
+    #    同じ正本から2度計算して同じ値になること（作り直して変わらない）
+    if shogai_sha() != mine:
+        ng.append("当方の正本のハッシュが計算のたびに変わっています")
 
     # ⑥ 申し送る事項の優先度が定義どおりであること
     for g in (KAITOU, OKURI):
@@ -397,7 +414,7 @@ def verify(hon, kaigo):
 # 6. 文書
 # ===========================================================================
 def build(hon, kaigo):
-    mine = shogai_commit()
+    mine = shogai_sha()
     doc = new_doc("北塩原村　第８期障がい福祉計画・第４期障がい児福祉計画",
                   "第10期高齢者福祉計画・介護保険事業計画のご担当者様への"
                   "申し送り（令和８年10月12日　"
@@ -435,7 +452,7 @@ def build(hon, kaigo):
         ["（前に読んでいた版）", KAIGO_BRANCH, KAIGO_MAE,
          "令和８年10月８日", "―", "―"],
         ["当方の正本（貴側にお読みいただきたい版）", SHOGAI_BRANCH,
-         mine, "令和８年10月12日", "―",
+         "―（中身のハッシュで指定）", "令和８年10月13日", mine,
          f"git show {SHOGAI_BRANCH}:{SHOGAI_SUAN_PATH}"],
     ], widths=[2600, 4400, 1400, 1800, 1800, 4400], size=8)
     note(doc,
@@ -518,7 +535,7 @@ def main():
     print(f"  前提の訂正{len(ZENTEI)}件／貴側への回答{len(KAITOU)}件／"
           f"申し送り{len(OKURI)}件／約束{len(YAKUSOKU)}件")
     print(f"  版：貴側 {KAIGO_COMMIT}（{KAIGO_COMMIT_HI}）"
-          f"／当方 {shogai_commit()}")
+          f"／当方 {shogai_sha()}（正本の本文の sha256 先頭12桁）")
 
 
 if __name__ == "__main__":
