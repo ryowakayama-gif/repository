@@ -185,6 +185,16 @@ BUILDERS = [
     ("build_kitashiobara_gaiyou.py", ["output/北塩原村_計画素案_概要版.docx"],
      "令和8年10月に加えた3節（方策・年齢到達・他計画との連携）は正本に"
      "しかないため、その現物と突き合わせる。移植後の正本と図の後に実行する"),
+    ("build_kitashiobara_gaiyou_2hon.py", [
+        "output/北塩原村_前回計画の評価_概要版.docx",
+        "output/北塩原村_アンケート結果報告_概要版.docx",
+     ],
+     "前回計画の評価とアンケート結果報告の概要版。"
+     "数値を書き写さず、評価の件数は"
+     "build_kitashiobara_zenkai_hyouka.py のデータから数え上げ、"
+     "アンケートの割合は正本 第2章7 の現物と照合するため、"
+     "移植後の正本を作った後に実行する。"
+     "照会（Ｓ-36）は照会文へ読み込まれる"),
     ("build_kitashiobara_taihi.py", ["output/北塩原村_目次構成_前回対比.xlsx"],
      "計画素案と概要版を読むため、両方の後に実行する"),
     ("build_kitashiobara_zuhyo_bangou.py",

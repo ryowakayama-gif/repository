@@ -92,6 +92,9 @@ from build_kitashiobara_taikei_hanei import (  # noqa: E402
 from build_kitashiobara_shogaiji_ronten import (  # noqa: E402
     SHOUKAI as S_SJ,
 )
+from build_kitashiobara_gaiyou_2hon import (  # noqa: E402
+    SHOUKAI as S_G2,
+)
 # 図表の点数は番号一覧の定義から取る。数を直書きすると、
 # 図表が増減したときに照会文だけが古くなる（Ｓ-21で一度そうなった）。
 from build_kitashiobara_zuhyo_bangou import (  # noqa: E402
@@ -133,7 +136,7 @@ def atsumeru():
     for recs in (S_HP3, S_RT, S_ME, S_SA, S_ZEN, S_KG, S_KO, S_KJ,
                  S_YS, S_KY, S_KN, S_CS, K_IK, S_HT, K_HT,
                  S_SS, S_PR, S_RV, S_HK, S_UR, S_KH, S_TK, S_TH,
-                 S_SJ, K_ZUHYO, K_BAN, K_ANKE):
+                 S_SJ, S_G2, K_ZUHYO, K_BAN, K_ANKE):
         for r in recs:
             out[_zen(r[0])] = dict(no=_zen(r[0]), atesaki=r[1], kenmei=r[2],
                                    naiyo=r[3], tsukaimichi="", kigen=r[4])
@@ -286,7 +289,7 @@ DENWA = ["Ｍ-40"]
 # 村以外に出すもの（村の照会文には入れない。他メンバーへの確認）
 HOKA = ["Ｓ-19", "Ｓ-20", "Ｓ-21", "Ｓ-22", "Ｓ-23", "Ｓ-24",
         "Ｓ-25", "Ｓ-26", "Ｓ-27", "Ｓ-28", "Ｓ-29", "Ｓ-30",
-        "Ｓ-31", "Ｓ-32", "Ｓ-33", "Ｓ-34", "Ｓ-35"]
+        "Ｓ-31", "Ｓ-32", "Ｓ-33", "Ｓ-34", "Ｓ-35", "Ｓ-36"]
 
 # 県あてだが他メンバーを通じてお願いするもの
 KEN_KEIYU = ["Ｓ-11", "Ｓ-12"]
@@ -346,8 +349,15 @@ MEMBER_SETSU = [
              "報告書のクロス集計をお願いしたい事項があります。"
              "本調査は無記名であり回答者本人は特定できないため、"
              "報告書で示していただくのはアンケート内のクロスまでとし、"
-             "そこから先の個別の確認は当方が行政のデータで行います。",
-        nos=["Ｓ-26"],
+             "そこから先の個別の確認は当方が行政のデータで行います。"
+             "あわせて、前回計画の評価とアンケート結果報告の"
+             "概要版（各Ａ４・２ページ）を作成しましたので、"
+             "アンケートの概要版に載せた割合を"
+             "分析報告書の確定値と照合させてください（Ｓ-36）。"
+             "分析報告書が課題を８件としている一方で"
+             "当方の計画素案 第２章７の表は７区分であり、"
+             "区分の数が違います。",
+        nos=["Ｓ-26", "Ｓ-36"],
     ),
     dict(
         no=4,
