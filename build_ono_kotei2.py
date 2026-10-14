@@ -30,12 +30,16 @@ from collections import Counter
 import ono_style as S
 from build_ono_gyomu_shinchoku import (ASOF_ISO, WBS_DISABILITY, WBS_ELDERLY,
                                        kairi_rows)
+from build_ono_gyomu_shinchoku import ASOF_JP as WBS_ASOF_JP
 
 ROOT = pathlib.Path(__file__).parent
 OUT = ROOT / "小野町_引継ぎ_整理済" / "02_キックオフ・業務計画"
 ASOF = "20261005"
 ASOF_JP = "令和8年10月5日"
 ASOF_D = datetime.date.fromisoformat("2026-10-04")
+# 本書の基準日（ASOF_JP）と、引いているWBSの基準日（WBS_ASOF_JP）は別である。
+# WBSを更新しても本書を作り直していなかったため、出典が本書の日付を指したまま
+# 中身だけがWBSの新しい日付のものになっていた。出典はWBSの基準日を指す。
 
 # 動かせない期限。仕様書の定めであり、こちらで動かせるものではない。
 NOUKI_E = "2027-03-31"      # 高齢者　仕様書3（業務期間）
@@ -272,7 +276,7 @@ def main():
            for nm, k in (("高齢者保健福祉計画・第10期介護保険事業計画", KE),
                          ("障がい者計画・障がい児福祉計画・障がい福祉計画", KD))],
           widths=[5.4, 1.5, 2.2, 2.2, 1.8, 2.1, 2.0], right=(1, 2, 3, 4, 5, 6))
-    r.src(f"資料：業務進捗管理表（17_業務進捗管理）{ASOF_JP}時点。"
+    r.src(f"資料：業務進捗管理表（17_業務進捗管理）{WBS_ASOF_JP}時点。"
           "予定進捗率は、予定開始の月初から予定完了の月末までを直線で見たときの値。")
     r.p(f"**高齢者計画は予定を{KE['ev'] - KE['pv']:+.1f}ポイント上回っています。**"
         "見込量推計・保険料算定・計画素案が前倒しで進んだためです。"

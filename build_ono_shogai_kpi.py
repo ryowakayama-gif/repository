@@ -331,6 +331,19 @@ def seika_rows():
     return rows
 
 
+KANSUJI = "一二三四五六七八"
+
+
+def _sorted_nos(nos):
+    """指針の番号を漢数字の順に並べた組にして返す。
+
+    集合のまま点検の表に出すと、Pythonの集合は並びが実行ごとに変わるため、
+    **中身が同じでも成果品の文字列が変わってしまう**（作り直して突き合わせる
+    点検で、変わっていないものが変わったと出る）。並びを固定する。
+    """
+    return tuple(sorted(nos, key=lambda c: KANSUJI.find(c)))
+
+
 def shishin_nos(rows):
     out = set()
     for r in rows:
@@ -338,7 +351,7 @@ def shishin_nos(rows):
             m = re.search(r"第二・([一二三四五六七八])", str(c))
             if m:
                 out.add(m.group(1))
-    return out
+    return _sorted_nos(out)
 
 
 def setsumon():
@@ -399,7 +412,7 @@ def selfcheck(ztxt, zpages, ctxt, cpages, rows, q, hq):
     nos = shishin_nos(rows)
     chk("10", "受領シートの成果目標の行数", True, len(rows) >= 15)
     chk("11", "対応表の番号のうちシートに行があるもの", nos,
-        {t[0] for t in TAIO} & nos)
+        _sorted_nos({t[0] for t in TAIO} & set(nos)))
     chk("12", "第二・二が受領シートに行がない", True, "二" not in nos)
     # 設問番号の実在
     miss2 = []

@@ -7,6 +7,13 @@
   用紙・余白　　A4縦　上下2.0cm・左右1.9cm　ヘッダ／フッタ1.25cm
   本文　　　　　游ゴシック 10.5pt　段落前後3pt
   見出し　　　　H1 15pt 太字 #2E74B5／H2 12.5pt 太字 #2E74B5／H3 11pt 太字 #1F4D78
+  　　　　　　　**令和8年10月14日に、Wordの見出しスタイル（Heading 1〜3）を
+  　　　　　　　当てるように改めた。** 見た目は変えていない。従前はすべて
+  　　　　　　　「標準」スタイルで、大きさと色を直に指定していたため、
+  　　　　　　　ナビゲーションウィンドウ・PDFのしおり・スクリーンリーダーの
+  　　　　　　　いずれにも見出しが出なかった（外部レビューの指摘）。
+  　　　　　　　run への直の指定は残してある。既存の点検が run の大きさで
+  　　　　　　　見出しを判定しているため。
   表　　　　　　見出し行 塗り#1F3864・白文字8.5pt太字・中央／本文8.5pt
 
   **令和8年9月29日に、書体と文字の大きさを他団体の協議用素案に合わせた。**
@@ -87,6 +94,29 @@ def _fldchar(kind):
     return e
 
 
+# 見出しの体裁。(スタイル名, 大きさpt, 色, 段落前pt, 段落後pt)
+# 見た目は従前のまま。変えたのは「Wordの見出しスタイルを当てる」ことだけである。
+HEAD_SPEC = {
+    1: ("Heading 1", 15,   C_H1, 12, 5),
+    2: ("Heading 2", 12.5, C_H1,  9, 5),
+    3: ("Heading 3", 11,   C_H3,  9, 4),
+}
+
+
+def _set_outline(style, level):
+    """スタイルに見出しの階層（w:outlineLvl）を書く。
+
+    これが無いと、Wordのナビゲーションウィンドウにも、
+    PDFのしおりにも、スクリーンリーダーの見出し一覧にも出ない。
+    """
+    pPr = style.element.get_or_add_pPr()
+    for old in pPr.findall(qn("w:outlineLvl")):
+        pPr.remove(old)
+    e = OxmlElement("w:outlineLvl")
+    e.set(qn("w:val"), str(level - 1))          # 0起点
+    pPr.append(e)
+
+
 def _auto_widths(rows, total=TEXTW, minw=1.8):
     """列幅を中身の長さから決める。合計は本文幅にそろえる。"""
     ncol = max(len(r) for r in rows)
@@ -124,6 +154,44 @@ class Report:
             st.element.rPr.rFonts.set(qn(a), FONT)
         st.paragraph_format.space_before = Pt(3)
         st.paragraph_format.space_after = Pt(3)
+        self._setup_heading_styles()
+
+    # ------------------------------------------------------------ 見出しスタイル
+    def _setup_heading_styles(self):
+        """Wordの見出しスタイル（Heading 1〜3）を本書の体裁に合わせる。
+
+        見た目は従前と同じにしたうえで、スタイルと w:outlineLvl を与える。
+        これにより次が働くようになる。
+
+          ・Wordのナビゲーションウィンドウでの章立ての移動
+          ・PDFのしおり
+          ・スクリーンリーダー・PDFのタグ付け（見出し構造）
+          ・町が節を足したときに目次のフィールドが拾えること
+
+        段落側でも従前どおり run に大きさ・色・太字を直に書いている。
+        既存の点検（`build_ono_kosshi.soan_kosei`・`check_ono_taihi.midashi_check`）が
+        run のフォントの大きさで見出しを判定しているため、そちらを壊さない。
+        """
+        for lv, (name, sz, color, before, after) in HEAD_SPEC.items():
+            st = self.doc.styles[name]
+            st.base_style = self.doc.styles["Normal"]
+            st.quick_style = True
+            st.hidden = False
+            st.font.name = FONT
+            st.font.size = Pt(sz)
+            st.font.bold = True
+            st.font.italic = False
+            st.font.color.rgb = color
+            rf = st.element.get_or_add_rPr().get_or_add_rFonts()
+            for a in ("w:eastAsia", "w:ascii", "w:hAnsi"):
+                rf.set(qn(a), FONT)
+            pf = st.paragraph_format
+            pf.space_before = Pt(before)
+            pf.space_after = Pt(after)
+            pf.keep_with_next = True
+            pf.left_indent = Cm(0)
+            pf.first_line_indent = Cm(0)
+            _set_outline(st, lv)
 
     # ------------------------------------------------------------ 体裁
     def _setup_section(self, s, pageno=True):
@@ -197,30 +265,36 @@ class Report:
         self.doc.add_page_break()
 
     # ------------------------------------------------------------ 見出し
-    def _head(self, text, sz, color, before, after, level):
-        q = self.doc.add_paragraph()
+    def _head(self, text, level, toc=True):
+        """見出しを1つ置く。
+
+        level … 見出しの階層（1〜3）。Heading 1〜3 のスタイルを当てる。
+        toc   … 目次に載せるか。H3は従前どおり載せない（スタイルは当てる）。
+        """
+        name, sz, color, before, after = HEAD_SPEC[level]
+        q = self.doc.add_paragraph(style=self.doc.styles[name])
         q.paragraph_format.space_before = Pt(before)
         q.paragraph_format.space_after = Pt(after)
         q.paragraph_format.keep_with_next = True
         _set_font(q.add_run(str(text).replace("**", "")), sz=sz, b=True,
                   color=color)
-        if level:
+        if toc:
             self._register(q, str(text).replace("**", ""), level)
         return q
 
     def h1(self, text):
-        return self._head(text, 15, C_H1, 12, 5, 1)
+        return self._head(text, 1)
 
     def h2(self, text):
-        return self._head(text, 12.5, C_H1, 9, 5, 2)
+        return self._head(text, 2)
 
     def h3(self, text):
-        return self._head(text, 11, C_H3, 9, 4, 0)
+        return self._head(text, 3, toc=False)
 
     def part(self, text):
         """第1部・第2部のような大区切り。改ページして中央に置く。"""
         self.pagebreak()
-        q = self.doc.add_paragraph()
+        q = self.doc.add_paragraph(style=self.doc.styles["Heading 1"])
         q.alignment = WD_ALIGN_PARAGRAPH.CENTER
         q.paragraph_format.space_before = Pt(24)
         q.paragraph_format.space_after = Pt(18)
@@ -371,7 +445,16 @@ class Report:
         p._p.append(en)
         return p
 
-    def toc_here(self, title="目　次"):
+    def toc_here(self, title="目　次", field=False):
+        """目次を置く位置を決める。
+
+        field=False（既定）… 見出しの一覧を当方で組み、ページ番号だけを
+            PAGEREF フィールドにする。**開いた瞬間から中身が見える**ため、
+            Wordでフィールドを更新しなくても、PDFに変換しても目次が空にならない。
+        field=True … Word の目次フィールド（TOC）を置く。町が節を足しても
+            更新すれば拾えるが、**更新するまで中身は空である**。
+            見出しスタイルを当てたことで、どちらも使える状態になっている。
+        """
         self.pagebreak()
         q = self.doc.add_paragraph()
         q.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -380,8 +463,17 @@ class Report:
         r = self.doc.add_paragraph()
         r.alignment = WD_ALIGN_PARAGRAPH.CENTER
         r.paragraph_format.space_after = Pt(10)
-        _set_font(r.add_run("各行をクリックすると本文へ移動します。"
-                            "ページ番号はWordで開いた時点で更新されます"), sz=9)
+        _set_font(r.add_run(
+            "各行をクリックすると本文へ移動します。"
+            + ("ページ番号はWordで開いた時点で更新されます" if not field else
+               "Wordで「フィールドの更新」を行うと作り直されます")), sz=9)
+        if field:
+            p = self.doc.add_paragraph()
+            self._field(p, ' TOC \\o "1-2" \\h \\z \\u ')
+            self._toc_anchor = None
+            self._toc_field = True
+            self._update_fields()
+            return p
         self._toc_anchor = self.doc.add_paragraph()
         return self._toc_anchor
 
@@ -495,8 +587,27 @@ class Report:
         self._update_fields()
 
     # ------------------------------------------------------------ 保存
+    def _set_lang(self, lang="ja-JP"):
+        """既定の言語を日本語にする。
+
+        PDFに変換したときの言語の指定になり、スクリーンリーダーが
+        読み上げる言語を取り違えない。
+        """
+        st = self.doc.styles["Normal"]
+        rPr = st.element.get_or_add_rPr()
+        for old in rPr.findall(qn("w:lang")):
+            rPr.remove(old)
+        e = OxmlElement("w:lang")
+        e.set(qn("w:val"), "en-US")
+        e.set(qn("w:eastAsia"), lang)
+        rPr.append(e)
+
     def save(self, path):
         p = pathlib.Path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
+        # 文書の題名はPDFのしおり・ウィンドウの題・読み上げに使われる
+        self.doc.core_properties.title = self.title
+        self.doc.core_properties.language = "ja-JP"
+        self._set_lang()
         self.doc.save(p)
         return p
