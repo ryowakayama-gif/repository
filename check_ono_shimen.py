@@ -4,10 +4,26 @@
 見るもので、**頁の切れ目に何が来るかは見ていない。** 本スクリプトはそこを見る。
 
   ・枠からのはみ出し　　列幅の取り違えで字が右の余白に出ていないか
-  ・表の孤立行　　　　　表が頁をまたぎ、続きの頁に最後の1行だけが残っていないか
   ・見出しの取り残し　　見出しが頁の最後に来て、中身が次の頁にないか
   ・図とその題の離れ　　【図N】と図・出典が別の頁に分かれていないか
   ・小さすぎる字　　　　8pt より小さい字がないか
+
+**表の孤立行は検出していない。** 続きの頁に最後の1行だけが残る欠陥である。
+当方の環境では確実に見分けられなかった。試したのは次の2通りで、いずれも誤った。
+
+  ① 行の文字列で頁を突き合わせる
+     同じ様式の表を並べた文書では、見出し行や値の行が表どうしで同じ文字列に
+     なる。成果指標の仕様の文書は「区分／内容」の同じ表が48個並び、
+     **別の表の行に当たって3件を誤検出した。**
+  ② 頁の最初の中身の行が表の最後の行かどうかを見る
+     語を行にまとめる際の丸めが粗く、1行の中の語が分かれることがある。
+     長い表では LibreOffice が見出し行を続きの頁の頭で繰り返すため、
+     「頁の最初の行」が見出し行になる場合もある。
+
+**代わりに、起きないようにしてある。** `ono_style.tbl` が、見出し行を含めて
+12行までの表について、最後から2番目の行に `keepNext` を掛け、最後の行と
+一緒に次の頁へ送る。これより長い表は、見出し行が続きの頁の頭で繰り返される
+ため、続きが1行でも読める。**検出ではなく予防で担保している。**
 
 やり方は2段である。
 
@@ -74,6 +90,7 @@ TARGETS = [
     "04_算定・見込量/小野町_第10期_サービス見込量推計結果報告書_20261006.docx",
     "10_納品・印刷/小野町_第10期計画_印刷の発注仕様書_20261006.docx",
     "04_算定・見込量/小野町_令和8年法改正の反映と3区分の仕分け_20261014.docx",
+    "03_計画素案/小野町_第10期_成果指標の仕様_20261014.docx",
 ]
 
 A4W_PT = 595.276          # A4の幅（pt）＝21.0cm
@@ -169,20 +186,6 @@ def table_start_page(rows, pages, cur):
     return None
 
 
-def table_row_pages(rows, pages, start):
-    """表の各行が載った頁を、先頭から順に求める。
-
-    行は「行5」のように短いことがあるため、**頁を戻らない**ことと
-    **表の長さ分しか先を見ない**ことで取り違えを防ぐ。
-    """
-    out, cur = [], start
-    span = len(rows) + 2            # 表が占めうる頁数の上限の目安
-    for r in rows:
-        pg = find_page(r, pages, cur, minlen=2, span=span)
-        if pg is not None:
-            cur = pg
-        out.append(pg)
-    return out
 
 
 # ---------------------------------------------------------------- 各点検
@@ -339,8 +342,8 @@ def heading_orphans(pdf, boxes, page_h=841.89, foot=60.0):
     return bad
 
 
-def check_koritsu_midashi(doc, pages):
-    """表の孤立行・見出しの取り残し・図とその題の離れ。"""
+def check_koritsu_midashi(doc, pages, lines):
+    """表の孤立行・図とその題の離れ。"""
     bad = []
     cur = body_start(pages)
     items = _body_items(doc)
@@ -359,15 +362,7 @@ def check_koritsu_midashi(doc, pages):
     for i, ((kind, obj), pg) in enumerate(zip(items, loc)):
         if pg is None:
             continue
-        # --- 表の孤立行（最後の1行だけが次の頁に残る）
-        if kind == "t" and len(obj.rows) >= 3:
-            rows = ["".join(c.text for c in r.cells) for r in obj.rows]
-            rp = table_row_pages(rows, pages, pg)
-            if rp[-1] is not None and rp[-2] is not None \
-                    and rp[-1] > rp[-2] and None not in rp[1:]:
-                bad.append("p%d 表の最後の1行だけが次の頁に残っている"
-                           "（%d行の表・先頭「%s」）"
-                           % (rp[-1] + 1, len(rows), rows[0][:24]))
+        # （表の孤立行は検出しない。理由は冒頭の説明のとおり）
         # （見出しの取り残しは heading_orphans が PDF のしおりで見る）
         # --- 図とその題の離れ
         if kind == "p" and re.match(r"【図\d+】", obj.text):
@@ -392,7 +387,7 @@ def check(path, workdir):
     bad += check_hamidashi(boxes)
     bad += check_chiisai(doc)
     bad += heading_orphans(pdf, boxes)
-    bad += check_koritsu_midashi(doc, pages)
+    bad += check_koritsu_midashi(doc, pages, page_lines(boxes))
     return bad, len(pages) - (1 if pages and not pages[-1] else 0)
 
 
@@ -434,15 +429,6 @@ def jiko_shiken():
         ok.append(("見出しの取り残し",
                    any("見出しだけ" in x for x in b), b[:1]))
 
-        # (4) 表の孤立行 ― 本文33行＋6行の表で、最後の1行だけが次の頁に落ちる
-        r = S.Report("自己試験4")
-        for i in range(33):
-            r.p("本文の行 %02d" % i)
-        r.tbl([["区分", "値"]] + [["行%d" % i, str(i)] for i in range(1, 6)])
-        p = r.save(pathlib.Path(wd) / "s4.docx")
-        b, _ = check(p, wd)
-        ok.append(("表の孤立行",
-                   any("最後の1行" in x for x in b), b[:1]))
 
     print("■ 自己試験（壊したものを検査が見つけるか）\n")
     rc = 0
@@ -452,7 +438,7 @@ def jiko_shiken():
             print("        %s" % sample[0])
         if not hit:
             rc = 1
-    print("\n  4件中 %d件を検出" % sum(1 for _, h, _ in ok if h))
+    print("\n  %d件中 %d件を検出" % (len(ok), sum(1 for _, h, _ in ok if h)))
     return rc
 
 

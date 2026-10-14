@@ -63,7 +63,10 @@ SRC_PT = 8.5
 C_H1 = RGBColor(0x2E, 0x74, 0xB5)
 C_H3 = RGBColor(0x1F, 0x4D, 0x78)
 TEXTW = 17.2                      # 本文の幅（cm）＝21.0−1.9−1.9
-SHORT_TBL = 7                     # 寡婦行の処理を掛ける表の行数（見出し行を含む）
+SHORT_TBL = 12                    # 寡婦行の処理を掛ける表の行数（見出し行を含む）
+#   当初7行までとしていたが、10行の表（成果指標の仕様の1件ずつの表）で
+#   孤立行が出たため12行までに広げた。これより長い表は、見出し行が次頁の
+#   頭で繰り返されるため、続きが1行でも読める。
 
 
 def _set_font(run, f=FONT, sz=BODY_PT, b=False, color=None, italic=False):
