@@ -76,6 +76,9 @@ from build_kitashiobara_review3_taiou import RV_EDITS  # noqa: E402
 from build_kitashiobara_houkaisei_r8 import HK_EDITS  # noqa: E402
 from build_kitashiobara_uchiawase_ronten import UR_EDITS  # noqa: E402
 from build_kitashiobara_kanren_hourei import KH_EDITS  # noqa: E402
+from build_kitashiobara_taikei_hanei import (  # noqa: E402
+    TK_EDITS, TK_KAKIKAE,
+)
 from build_kitashiobara_graph import GRAPHS, OUT_DIR as ZU_DIR  # noqa: E402
 from build_kitashiobara_zuhyo_bangou import ZU, HYO  # noqa: E402
 
@@ -870,6 +873,32 @@ def apply_kakikae(doc):
         changes.append(f"書き換え{rec['no']}：{rec['saki']}")
 
 
+def apply_taikei_kakikae(doc):
+    """体系・工程の変更による書き換え（村の決定によるもの）。
+
+    apply_kakikae は「他メンバー版の事実の誤り」に限っている。
+    こちらは事実の誤りではなく、村が決めた体系（案Ｃ）と
+    工程（案Ａ）に合わせる書き換えであるため、別に置く。
+
+    章題は本文（Heading 1）と目次（toc 1）の2カ所に同じ字で現れる。
+    目次は Word の目次フィールドであり、当方の環境では更新できないため、
+    本文の側だけを書き換える（目次の更新はＳ-33で依頼する）。
+    """
+    for rec in TK_KAKIKAE:
+        atari = [p for p in doc.paragraphs
+                 if p.style.name == rec["style"]
+                 and _norm(rec["mae"]) == _norm(p.text)]
+        if len(atari) != 1:
+            raise LookupError(f"体系の書き換え先が一意でない"
+                              f"（{len(atari)}件）: {rec['no']}"
+                              f"／{rec['style']}")
+        para = atari[0]
+        for r in para.runs[1:]:
+            r.text = ""
+        para.runs[0].text = rec["ato"]
+        changes.append(f"体系の書き換え{rec['no']}：{rec['saki']}")
+
+
 def apply_mura(doc):
     """村資料点検の修正案のうち、最優先の追記5件を入れる。"""
     for rec in MURA_EDITS:
@@ -1027,7 +1056,7 @@ def verify(doc, src_dims):
                 + list(CS_EDITS) + list(KT_EDITS)
                 + list(SS_EDITS) + list(RV_EDITS)
                 + list(HK_EDITS) + list(UR_EDITS)
-                + list(KH_EDITS)):
+                + list(KH_EDITS) + list(TK_EDITS)):
         for blk in rec["nakami"]:
             if blk[0] in ("h2", "h3", "p", "note"):
                 if _norm(blk[1]) not in out:
@@ -1129,7 +1158,7 @@ def verify(doc, src_dims):
                 + list(CS_EDITS) + list(KT_EDITS)
                 + list(SS_EDITS) + list(RV_EDITS)
                 + list(HK_EDITS) + list(UR_EDITS)
-                + list(KH_EDITS)):
+                + list(KH_EDITS) + list(TK_EDITS)):
         for blk in rec["nakami"]:
             if blk[0] in ("h2", "h3") and blk[1].startswith("（"):
                 want_sub.append(blk[1])
@@ -1208,7 +1237,9 @@ def verify(doc, src_dims):
           f"令和8年法改正{len(HK_EDITS)}件・"
           f"打合せ論点{len(UR_EDITS)}件・"
           f"関連法令{len(KH_EDITS)}件・"
+          f"体系{len(TK_EDITS)}件・"
           f"書き換え{len(KAKIKAE) + len(KG_KAKIKAE) + len(KO_KAKIKAE)}件・"
+          f"体系の書き換え{len(TK_KAKIKAE)}件・"
           f"図{len(GRAPHS)}点が実在／"
           f"正本の記述{len(keep)}点が残存／見込量表{n_mikomi}表／"
           "表記の作法4点すべて合")
@@ -1245,7 +1276,9 @@ def main():
     apply_juten(doc, HK_EDITS, label="令和8年法改正")
     apply_juten(doc, UR_EDITS, label="打合せ論点")
     apply_juten(doc, KH_EDITS, label="関連法令")
+    apply_juten(doc, TK_EDITS, label="体系")
     apply_kakikae(doc)
+    apply_taikei_kakikae(doc)
     apply_graphs(doc)
     apply_bangou(doc)
     apply_zuhyo_mokuji(doc)
