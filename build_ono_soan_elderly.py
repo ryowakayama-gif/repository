@@ -127,6 +127,7 @@ DEC = "【決定後に記載】"       # 町・国の意思決定
 # サービス見込量（回数・日数ベース）。build_ono_kaisu が年報と国保連月報から組む。
 import build_ono_tanka as T                     # noqa: E402
 import ono_style as S                           # noqa: E402
+import ono_setten as SET  # noqa: E402
 import ono_figs as FG                           # noqa: E402
 from build_ono_kaisu import plan_rows, teiin_plan  # noqa: E402
 import ono_shizentai as SZ                      # noqa: E402
@@ -2214,6 +2215,11 @@ def main():
               "「移動支援やヘルパーが不足しており、外出や就労が困難」"
               "「高齢・障がいなどの分野別の縦割りが強く、分野横断的な連携体制が必要」"
               "等の指摘がありました。本計画でも同じ課題認識を共有します。")
+
+    # ── 第4章4　障がい福祉計画との接点 ────────────────────
+    #    本文は ono_setten に1か所だけ持つ。障がい側の骨子案も同じものを引く。
+    doc.h2("4　障がい福祉計画との接点")
+    SET.render(doc, table, body, note, TBD)
 
     # ============================================================ 第5章
     chapter(doc, "第5章　施策の展開")

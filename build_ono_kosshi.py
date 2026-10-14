@@ -19,6 +19,7 @@ import re
 from docx import Document
 
 import ono_style as S
+import ono_setten as SET
 
 OUT = pathlib.Path(__file__).parent / "小野町_引継ぎ_整理済" / "09_骨子案"
 
@@ -453,6 +454,12 @@ def build_disability():
          "県計画との整合。県障がい者計画は令和9年度で満了するため、本計画期間の後半は"
          "県の次期計画の策定状況を踏まえて整合を図る"),
     ])
+
+    # ── 高齢者計画との接点 ───────────────────────────
+    #    本文は ono_setten に1か所だけ持つ。高齢者計画の素案（第4章4）と
+    #    同じものを引いている。片方だけ直すと食い違うため ono_setten を直す。
+    doc.h3("4-1　高齢者福祉計画・介護保険事業計画との接点")
+    SET.render(doc, table, body, note, "【データ待ち】")
 
     doc.h2("第2章　障がいのある人を取り巻く状況")
     table(doc, ["節", "記載内容", "現時点の状況"], [

@@ -63,6 +63,7 @@ SRC_PT = 8.5
 C_H1 = RGBColor(0x2E, 0x74, 0xB5)
 C_H3 = RGBColor(0x1F, 0x4D, 0x78)
 TEXTW = 17.2                      # 本文の幅（cm）＝21.0−1.9−1.9
+SHORT_TBL = 7                     # 寡婦行の処理を掛ける表の行数（見出し行を含む）
 
 
 def _set_font(run, f=FONT, sz=BODY_PT, b=False, color=None, italic=False):
@@ -393,6 +394,15 @@ class Report:
                 va = OxmlElement("w:vAlign")
                 va.set(qn("w:val"), "center")
                 tcPr.append(va)
+        # 短い表の寡婦行の処理。
+        #   表が頁をまたぐと、続きの頁に見出し行＋最後の1行だけが残ることがある。
+        #   最後から2番目の行に keepNext を掛け、最後の行と一緒に次の頁へ送る。
+        #   表そのものを分割させない形にすると頁が増えるため、こちらを採る。
+        #   長い表は見出し行が次頁の頭で繰り返されるため、続きが1行でも読める。
+        if 3 <= len(rows) <= SHORT_TBL:
+            for c in t.rows[-2].cells:
+                for para in c.paragraphs:
+                    para.paragraph_format.keep_with_next = True
         w = widths or _auto_widths(rows)
         for ci, cw in enumerate(w):
             for r in t.rows:
