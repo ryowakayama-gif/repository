@@ -80,6 +80,7 @@ from build_kitashiobara_taikei_hanei import (  # noqa: E402
     TK_EDITS, TK_KAKIKAE,
 )
 from build_kitashiobara_shogaiji_ronten import SJ_EDITS  # noqa: E402
+from build_kitashiobara_anke_kaitei import AK_EDITS  # noqa: E402
 from build_kitashiobara_graph import GRAPHS, OUT_DIR as ZU_DIR  # noqa: E402
 from build_kitashiobara_zuhyo_bangou import ZU, HYO  # noqa: E402
 
@@ -874,6 +875,20 @@ def apply_kakikae(doc):
         changes.append(f"書き換え{rec['no']}：{rec['saki']}")
 
 
+def apply_gyou(doc):
+    """他メンバー版の表に行を足す（AK_EDITS）。
+
+    表そのものは置き換えない。表頭で表を一つに絞り、
+    直前の行の書式を写して行を足す。
+    """
+    for rec in AK_EDITS:
+        if rec["kata"] != "表に行を足す":
+            raise LookupError(f"型が未定義: {rec['no']} {rec['kata']}")
+        tbl = find_table(doc, rec["atama"])._tbl
+        add_rows(tbl, -1, rec["gyou"])
+        changes.append(f"表に行を足す{rec['no']}：{rec['saki']}")
+
+
 def apply_taikei_kakikae(doc):
     """体系・工程の変更による書き換え（村の決定によるもの）。
 
@@ -1242,6 +1257,7 @@ def verify(doc, src_dims):
           f"関連法令{len(KH_EDITS)}件・"
           f"体系{len(TK_EDITS)}件・"
           f"障がい児{len(SJ_EDITS)}件・"
+          f"表に行を足す{len(AK_EDITS)}件・"
           f"書き換え{len(KAKIKAE) + len(KG_KAKIKAE) + len(KO_KAKIKAE)}件・"
           f"体系の書き換え{len(TK_KAKIKAE)}件・"
           f"図{len(GRAPHS)}点が実在／"
@@ -1282,6 +1298,7 @@ def main():
     apply_juten(doc, KH_EDITS, label="関連法令")
     apply_juten(doc, TK_EDITS, label="体系")
     apply_juten(doc, SJ_EDITS, label="障がい児")
+    apply_gyou(doc)
     apply_kakikae(doc)
     apply_taikei_kakikae(doc)
     apply_graphs(doc)
