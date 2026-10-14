@@ -69,6 +69,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
+import data_kyufuhi_bunkakai as KB                      # noqa: E402
 import repo_paths as RP
 
 if isinstance(sys.stdout, io.TextIOWrapper):
@@ -261,6 +262,17 @@ def _assign(path, *names):
 
 
 CHECKLEDGER = _assign(RP.ROOT + "/build_process_control.py", "CHECK")["CHECK"]
+# 軸C' 介護給付費分科会の論点。当方の反映先の判定は受領点検の側に1つだけ持つ
+# （同じものを2か所に書かない。CLAUDE.md §4）。
+BUNKA_TOUHOU = _assign(RP.ROOT + "/build_receipt_kyufuhi_bunkakai.py",
+                       "TOUHOU")["TOUHOU"]
+# 素案に当該の論点を扱う記述があることを示す語（置いていないものは判定しない）
+BUNKA_WORD = {
+    "I05": "特定地域", "I07": "夜間対応型訪問介護", "I14": "積雪",
+    "I21": "指定を受けない", "I28": "地域区分", "I30": "介護情報基盤",
+    "I23": "協力医療機関", "I19": "定員と見込量", "I20": "介護医療院",
+    "I31": "給付適正化",
+}
 CHECK_NO = {x[0] for x in CHECKLEDGER}
 CHECK_TXT = {x[0]: " ".join(str(y) for y in x) for x in CHECKLEDGER}
 
@@ -872,6 +884,10 @@ _kanren_ng = [x for x in KANREN if x[4] != "対応済"]
 _s6_ng = [x for x in SHIRYO6 if x[2] not in ("対応済",)]
 _kacho_new = [x for x in KACHO if "令和8年9月29日" in x[5]]
 _kacho_ng = [x for x in KACHO if x[3] == "―"]
+# 軸C' は「当区域に直結し、かつ計画素案に扱いを書いていないもの」を未対応と数える
+_bunka_ng = [x for x in KB.RONTEN
+             if BUNKA_TOUHOU[x[0]][0] == "直結"
+             and BUNKA_WORD.get(x[0]) and not in_draft(BUNKA_WORD[x[0]])]
 _dok = collections.Counter(v[0] for v in DOKUJI.values())
 _han = collections.Counter(v[1] for v in DOKUJI.values())
 r = header(ws, r, ["軸", "件数", "うち対応済", "うち一部対応・課題あり・未対応",
@@ -885,6 +901,8 @@ for nm, tot, ok, ng, sh in [
      len(SHIRYO6) - len(_s6_ng), len(_s6_ng), "03"),
     ("C　令和8年3月 全国課長会議資料", len(KACHO),
      len(KACHO) - len(_kacho_ng), len(_kacho_ng), "04"),
+    ("C'　介護給付費分科会（第256〜270回）の論点", len(KB.RONTEN),
+     len(KB.RONTEN) - len(_bunka_ng), len(_bunka_ng), "04"),
 ]:
     r = body(ws, r, [nm, tot, ok, ng, sh],
              {4: NG_O if ng else OK_G}, height=18,
@@ -1052,12 +1070,44 @@ for gi, nm, naiyo, saki, words, tori in KACHO:
                      "ある" if aru else "ない", tori],
              {5: OK_G if aru else NG_O}, height=52,
              align={1: "center", 5: "center"})
+r = note(ws, r + 1,
+         "注1）「素案に語があるか」が「ない」であるものは、"
+         "国から資料が示されていないため記載できないもの（点検ツール）である。\n"
+         "注2）令和8年度介護報酬改定は、令和9年度改定を待たずに行われるものである。"
+         "見込量・給付費の基準年度である令和7年度の単価には反映されていないため、"
+         "改定率が示された時点で令和9年度改定とあわせて反映する。", 6, 44)
+
+r += 1
+r = lead(ws, r, "【介護給付費分科会（第256回〜第270回）の論点との対比】", 6)
+r = note(ws, r,
+         "介護給付費分科会は介護報酬（単位数・算定の要件・運営の基準）を扱う"
+         "別の審議の場である。課長会議資料及び介護保険部会の対比では"
+         "この場の論点を軸に持っていなかった。"
+         "本表は当区域に直結するものに絞って掲げる"
+         "（全%d件の対比は別冊「介護給付費分科会の論点整理の受領点検」による）。"
+         "**資料の原本を確認できていないため、"
+         "計画素案には検討されている事項があることまでを記載し、"
+         "単位数・要件・施行時期を書いていない**（確認事項No.182）。"
+         % len(KB.RONTEN), 6, 48)
+r = header(ws, r, ["ID", "論点", "検討されている内容", "計画素案の反映先",
+                   "素案に語があるか", "本計画における取扱い"])
+for _rid, _bun, _ron, _dan, _naiyo, _kakunin, _kon, _yusen in KB.RONTEN:
+    if BUNKA_TOUHOU[_rid][0] != "直結":
+        continue
+    _w = BUNKA_WORD.get(_rid)
+    _aru = in_draft(_w) if _w else True
+    r = body(ws, r, [_rid, _ron, _naiyo, BUNKA_TOUHOU[_rid][1],
+                     ("ある" if _aru else "ない") if _w else "―",
+                     BUNKA_TOUHOU[_rid][2]],
+             {5: (OK_G if _aru else NG_O) if _w else GRAY}, height=52,
+             align={1: "center", 5: "center"})
 note(ws, r + 1,
-     "注1）「素案に語があるか」が「ない」であるものは、"
-     "国から資料が示されていないため記載できないもの（点検ツール）である。\n"
-     "注2）令和8年度介護報酬改定は、令和9年度改定を待たずに行われるものである。"
-     "見込量・給付費の基準年度である令和7年度の単価には反映されていないため、"
-     "改定率が示された時点で令和9年度改定とあわせて反映する。", 6, 44)
+     "注）「素案に語があるか」は、当該の論点を素案で扱っていることを示す語が"
+     "現れるかを機械的に確かめた結果である（「―」は語による判定を"
+     "置いていないもの）。"
+     "国の公表の予定は、改定の考え方及び運営基準に関する整理が令和8年12月頃、"
+     "諮問及び答申が令和9年1月頃とされており、"
+     "いずれも本計画の第2次概算（令和8年10月30日）より後である。", 6, 40)
 
 # ============================================================ 05 記載漏れ
 ws = sheet("05_記載漏れと追加の方針", "記載漏れと追加の方針",
@@ -1852,6 +1902,29 @@ for _w, _no in [("老人福祉法第20条の8", 1),
     chk(41 + _no / 10, "「%s」が計画素案にあること" % _w,
         "現れる章節", "、".join("".join(k) for k in where(_w))[:60] or "現れない",
         in_draft(_w))
+
+# --- 軸C' 介護給付費分科会の論点
+chk(43, "介護給付費分科会の論点を31件読めていること", "len(KB.RONTEN)",
+    "%d件" % len(KB.RONTEN), len(KB.RONTEN) == 31)
+chk(44, "論点の全件に当方の反映先の判定があること", "BUNKA_TOUHOU",
+    "%d／%d件" % (len(BUNKA_TOUHOU), len(KB.RONTEN)),
+    set(BUNKA_TOUHOU) == {x[0] for x in KB.RONTEN})
+chk(45, "当区域に直結する論点が計画素案で扱われていること",
+    "語による判定", "未対応 %d件%s"
+    % (len(_bunka_ng),
+       "（%s）" % "、".join(x[0] for x in _bunka_ng) if _bunka_ng else ""),
+    not _bunka_ng)
+chk(46, "計画素案 第1章第9節に介護給付費分科会の項があること",
+    "in_draft", "記載%s" % ("あり" if in_draft("介護給付費分科会") else "なし"),
+    in_draft("介護給付費分科会"))
+#   「単位数」の語は「単位数は示されていない」という注意書きに用いている。
+#   確かめたいのは単位数の値を書いていないことであるから、数値を伴う
+#   「○○単位」を探す（CLAUDE.md §4 の表記のゆれと同じ型）。
+_TANI_RE = re.compile(r"[0-9０-９][0-9０-９,，]*\s*単位(?!数|：|:)")
+_tani_ng = [k for k, v in SECT.items() if _TANI_RE.search("\n".join(v["txt"]))]
+chk(47, "計画素案に単位数の値を書いていないこと",
+    "数値を伴う「○○単位」の走査",
+    "、".join("".join(k) for k in _tani_ng) or "現れない", not _tani_ng)
 
 ws = sheet("12_自己点検", "自己点検",
            "本表の数値と判定が、計画素案の実物及び業務工程管理表と"
