@@ -131,17 +131,23 @@ FIG_UTSUSU = ("fig_連携の加算.png", "fig_給付適正化の得点.png")
 # 素案が変わると推定も動く。測ったときの推定を一緒に持っておき、
 # 現在の推定と食い違ったら「実測が古い」と分かるようにしている（点検52）。
 JISSOKU = {
-    # 令和8年10月13日（障がい福祉計画からの申し送りを受けて1-4・施策3-1・
-    # 施策4-1・施策4-7・資9に書き足したあとに測り直した。実測は6つとも
-    # 前と同じで、推定だけが ABCDEFGHJKL で105→106に動いた・doc89）
-    "":              (119, 121),
-    "ABCDE":         (112, 114),
-    "ABCDEFH":       (108, 111),
-    "ABCDEFHJ":      (106, 108),
-    "ABCEFHJ":       (107, 108),
-    "ABCDEFGHJKL":   (106, 106),
-    "ABCDEFGHJKLM":  (104, 105),
+    # 令和8年10月14日（令和9年度改定の論点の反映で5-4・5-12・施策3-1・
+    # 施策4-1・施策4-6・1-8に書き足したあとに測り直した・doc90）
+    #   このとき**推定はどの組み合わせでも動かなかったが、実測は6つとも
+    #   1〜2頁増えていた**。推定だけを見る鮮度の判定では取りこぼす。
+    #   JISSOKU_HAN（素案の内容のハッシュ）を併せて見る形に改めた。
+    "":              (119, 123),
+    "ABCDE":         (112, 115),
+    "ABCDEFH":       (108, 112),
+    "ABCDEFHJ":      (106, 109),
+    "ABCEFHJ":       (107, 108),     # 対応表に載せないため測り直していない
+    "ABCDEFGHJKL":   (106, 107),
+    "ABCDEFGHJKLM":  (104, 106),
 }
+# 上の実測を取ったときの素案（18_計画素案.md）の内容の sha256 先頭16桁。
+# 素案を直したら測り直し、この値も書き替える（jissoku_furui が見ている）。
+JISSOKU_HAN = "a36eb6111c6e8f86"
+
 MAE_PG = 4          # 前付（表紙・本書の見方・目次）
 KYOYO = 110         # 村が許容する頁数（令和8年10月10日のご判断）
 
@@ -156,9 +162,30 @@ TAIOU = [
 ]
 
 
+def soan_hash():
+    """素案の本文（組んだマークダウン）の sha256 先頭16桁"""
+    import hashlib
+    f = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                     "18_計画素案.md")
+    try:
+        return hashlib.sha256(open(f, "rb").read()).hexdigest()[:16]
+    except OSError:
+        return ""
+
+
 def jissoku_furui():
-    """実測が古くなっていないかを見る。古いものの一覧を返す。"""
+    """実測が古くなっていないかを見る。古いものの一覧を返す。
+
+    **推定だけを見ると取りこぼす。** 令和8年10月14日、素案に書き足したところ
+    推定はどの組み合わせでも動かなかったが、実測は A〜M で105→106頁に動いた。
+    頁の境目は寡婦行の処理により推定と実測で違うためである。
+    そこで**測ったときの素案の内容のハッシュ**も併せて見る。
+    素案が変わっていれば、推定が同じでも測り直す。
+    """
     furui = []
+    ima = soan_hash()
+    if ima and JISSOKU_HAN and ima != JISSOKU_HAN:
+        furui.append(("素案が測ったときから変わっている", JISSOKU_HAN, ima))
     for k, (est0, _jis) in sorted(JISSOKU.items()):
         tg, yg, fg = an_targets(k)
         now = EL.pages(items_without(tg, yougo=yg, figs=fg), EL.BODY_H)
@@ -489,7 +516,8 @@ def jissoku_measure(kumi):
         shirushi = "" if mae is None else ("　（前は %d）" % mae[1] if mae[1] != n else "　（前と同じ）")
         print(f'    "{k}": ({est}, {n}),'.ljust(34)
               + f"# 推定{est}頁 → 実測{n}頁{shirushi}")
-    print("\n  上の行を estimate_sakugen.py の JISSOKU に貼る。")
+    print(f'\n    JISSOKU_HAN = "{soan_hash()}"')
+    print("\n  上の行を estimate_sakugen.py の JISSOKU・JISSOKU_HAN に貼る。")
     print(f"  組んだ docx と PDF： {out}")
 
 

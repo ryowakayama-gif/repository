@@ -2854,6 +2854,83 @@ def main():
         chk(75, "相手へ渡す申し送りが控えと食い違っていないこと", False,
             f"照合できない（{e}）")
 
+    # ── 76　令和9年度改定の論点に、本計画での扱いが決まっていること ──────
+    #    第10期の計画は、介護保険部会（制度・計画）と介護給付費分科会（報酬）の
+    #    2つの決定の過程の上にある。1-8は前者を扱っているが、後者を追う場所が
+    #    なかった。論点ごとに「効く節」と「いまの扱い」を台帳に持ち
+    #    （scripts/seido_ronten.py）、扱いの決まっていないものが残らないようにする。
+    try:
+        import seido_ronten as SR76
+        import soan_content as SC76
+        bad76 = []
+        secs76 = {sec["no"] for ch in SC76.CH for sec in ch["sections"]}
+        OK76 = {"反映済み", "要反映", "置かない", "確認事項", "原典未確認"}
+        for i76, r76, d76, a76, sk76, m76, y76 in SR76.R:
+            if a76 not in OK76:
+                bad76.append(f"{i76}の扱い「{a76}」が区分にない")
+            if not sk76:
+                bad76.append(f"{i76}に効く節が書かれていない")
+            for x76 in sk76:
+                if x76 not in secs76:
+                    bad76.append(f"{i76}の効く節「{x76}」が素案にない")
+            if not str(m76).strip():
+                bad76.append(f"{i76}に扱いの説明がない")
+            # 置かないと決めたものは理由が要る
+            if a76 == "置かない" and not str(y76).strip():
+                bad76.append(f"{i76}を置かないと決めた理由がない")
+        for i76, nm76, st76, sk76, m76 in SR76.P:
+            for x76 in sk76:
+                if x76 not in secs76:
+                    bad76.append(f"{i76}の節「{x76}」が素案にない")
+        # 要反映が残っていれば、それは素案に書くべきものが書かれていないということ
+        nok76 = SR76.yohanei()
+        if nok76:
+            bad76.append("まだ反映していない論点が%d件（%s）"
+                         % (len(nok76), "・".join(x[0] for x in nok76[:4])))
+        k76 = SR76.kubun()
+        chk(76, "令和9年度改定の論点に本計画での扱いが決まっていること", not bad76,
+            "・".join(bad76[:3]) if bad76
+            else f"論点{len(SR76.R)}件（"
+                 + "・".join(f"{a} {b}件" for a, b in sorted(k76.items()))
+                 + f"）と実務対応{len(SR76.P)}件。効く節はすべて素案に実在し、"
+                   "置かないと決めたものには理由がある")
+    except Exception as e:
+        chk(76, "令和9年度改定の論点に本計画での扱いが決まっていること", False,
+            f"照合できない（{e}）")
+
+    # ── 77　受け取った整理の資料IDが成果品に漏れていないこと ─────────
+    #    令和8年10月14日に受け取った論点の整理は二次情報であり、出典に用いない。
+    #    その整理が資料に振っている記号（E268-01・B135-21・M258 など）は、
+    #    原典にたどる当方の手がかりであって、計画書に書くものではない。
+    #    台帳（seido_ronten.py）には持ち、素案には出さない。
+    try:
+        import re as _re77
+        import soan_content as SC77
+        ID77 = _re77.compile(r"\b[EBM]\d{3}(?:-\d{2})?\b")
+        bad77, n77 = [], 0
+        for ch in SC77.CH:
+            for sec in ch["sections"]:
+                for b in sec["blocks"]:
+                    if b["t"] in ("p", "note", "h3"):
+                        tt = [str(b["v"])]
+                    elif b["t"] == "bullets":
+                        tt = [str(x) for x in b["v"]]
+                    elif b["t"] in ("table", "kpi"):
+                        tt = [" ".join(str(x) for x in r) for r in b["rows"]]
+                    else:
+                        continue
+                    for x77 in tt:
+                        n77 += 1
+                        for h77 in ID77.findall(x77):
+                            bad77.append(f"{sec['no']}：{h77}")
+        chk(77, "受け取った整理の資料IDが素案に漏れていないこと", not bad77,
+            "・".join(sorted(set(bad77))[:3]) if bad77
+            else f"{n77}件の文・ます目に、受け取った整理の資料IDはない"
+                 "（原典で確かめたもののみを素案に書く）")
+    except Exception as e:
+        chk(77, "受け取った整理の資料IDが素案に漏れていないこと", False,
+            f"照合できない（{e}）")
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
