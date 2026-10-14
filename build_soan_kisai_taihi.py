@@ -69,6 +69,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
+import data_bunkakai_gentyo as GT                       # noqa: E402
 import data_kyufuhi_bunkakai as KB                      # noqa: E402
 import repo_paths as RP
 
@@ -1085,21 +1086,27 @@ r = note(ws, r,
          "この場の論点を軸に持っていなかった。"
          "本表は当区域に直結するものに絞って掲げる"
          "（全%d件の対比は別冊「介護給付費分科会の論点整理の受領点検」による）。"
-         "**資料の原本を確認できていないため、"
-         "計画素案には検討されている事項があることまでを記載し、"
+         "令和8年10月14日に資料%d件（第268回・第269回・第270回）のご提供を受け、"
+         "うち%d件の論点を原典により確かめた"
+         "（別冊「介護給付費分科会資料（原典）の受領点検」）。"
+         "**計画素案には検討されている事項があることまでを記載し、"
          "単位数・要件・施行時期を書いていない**（確認事項No.182）。"
-         % len(KB.RONTEN), 6, 48)
+         % (len(KB.RONTEN), len(GT.GENTYO), len(GT.KAKUNIN)), 6, 56)
 r = header(ws, r, ["ID", "論点", "検討されている内容", "計画素案の反映先",
-                   "素案に語があるか", "本計画における取扱い"])
+                   "素案に語があるか", "原典", "本計画における取扱い"])
 for _rid, _bun, _ron, _dan, _naiyo, _kakunin, _kon, _yusen in KB.RONTEN:
     if BUNKA_TOUHOU[_rid][0] != "直結":
         continue
     _w = BUNKA_WORD.get(_rid)
     _aru = in_draft(_w) if _w else True
+    _g = GT.kakunin_of(_rid)
     r = body(ws, r, [_rid, _ron, _naiyo, BUNKA_TOUHOU[_rid][1],
                      ("ある" if _aru else "ない") if _w else "―",
+                     ("%s（%s）" % (_g[1], _g[2])) if _g else "未受領",
                      BUNKA_TOUHOU[_rid][2]],
-             {5: (OK_G if _aru else NG_O) if _w else GRAY}, height=52,
+             {5: (OK_G if _aru else NG_O) if _w else GRAY,
+              6: (NG_O if _g and _g[2] == "要是正"
+                  else (OK_G if _g else GRAY))}, height=52,
              align={1: "center", 5: "center"})
 note(ws, r + 1,
      "注）「素案に語があるか」は、当該の論点を素案で扱っていることを示す語が"
@@ -1925,6 +1932,32 @@ _tani_ng = [k for k, v in SECT.items() if _TANI_RE.search("\n".join(v["txt"]))]
 chk(47, "計画素案に単位数の値を書いていないこと",
     "数値を伴う「○○単位」の走査",
     "、".join("".join(k) for k in _tani_ng) or "現れない", not _tani_ng)
+#   原典により確かめた論点は、要約ではなく原典を出所とする。
+chk(47.1, "原典により確かめた論点のIDがいずれも論点の一覧にあること",
+    "IDの照合", "%d件" % len(GT.KAKUNIN),
+    all(x[0] in {y[0] for y in KB.RONTEN} for x in GT.KAKUNIN))
+_gt_zesei = [x for x in GT.KAKUNIN if x[2] == "要是正"]
+chk(47.2, "原典と食い違っていたものが計画素案に反映されていること",
+    "素案の走査",
+    "要是正 %d件／2通りの記載の説明 %s"
+    % (len(_gt_zesei),
+       "あり" if in_draft("令和11年度末") and in_draft("令和11年3月")
+       else "なし"),
+    in_draft("令和11年度末") and in_draft("令和11年3月"))
+#   原典により新たに分かった事項は、反映先の章節が素案に現にあるものに限る。
+_gt_saki = []
+for _s in GT.SHINJIKO:
+    for _x in re.findall(r"第(\d+)章第(\d+)節", _s[5]):
+        if ("第%s章" % _x[0], "第%s節" % _x[1]) not in SECT:
+            _gt_saki.append("第%s章第%s節" % _x)
+chk(47.3, "原典により新たに分かった事項の反映先が素案に現にある章節であること",
+    "素案の章節との照合",
+    "存在しない章節 %d件" % len(set(_gt_saki)), not _gt_saki)
+chk(47.4, "社会福祉法等改正法の改正事項に生産性向上推進のための"
+          "協議会が入っていること",
+    "素案の走査",
+    "記載%s" % ("あり" if in_draft("生産性向上推進") else "なし"),
+    in_draft("生産性向上推進"))
 
 ws = sheet("12_自己点検", "自己点検",
            "本表の数値と判定が、計画素案の実物及び業務工程管理表と"

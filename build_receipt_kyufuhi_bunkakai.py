@@ -4,11 +4,12 @@
 令和8年10月14日に受領した社内の整理（Word 1件・Excel 1件）を、
 当方の計画素案・サービス見込量の算定・確認事項の台帳と突き合わせる。
 
-**原本（分科会の資料PDF）は同梱されていない。**
+**この整理に原本（分科会の資料PDF）は同梱されていない。**
 受領した整理自体が「確認要旨と参照先を保存したもので、原本PDFの代替ではない」
-と断っており、本文を確認できていない資料が3件ある。
-当方は外部に接続できないため原本を確認できない。
-したがって本表は、**国において検討されている事項があることまで**を扱い、
+と断っており、本文を確認できていない資料が3件あった。
+同日、別途、分科会の資料11件を受領しており、
+原典による確認は別冊（`build_receipt_bunkakai_gentyo.py`）による。
+本表は、**国において検討されている事項があることまで**を扱い、
 単位数・要件・施行時期を確定として扱わない。
 
 シート構成
@@ -33,6 +34,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import data_bunkakai_gentyo as GT                       # noqa: E402
 import data_kyufuhi_bunkakai as KB                      # noqa: E402
 import kakunin_score as KS                              # noqa: E402
 import repo_paths as RP                                 # noqa: E402
@@ -296,18 +298,28 @@ r = note(ws, r,
          "受領した整理は、公開資料の記載を要約して記録したものであり、"
          "原本の代替ではない旨が本文に明記されています。"
          "次の3件は本文を確認できていないものとして扱われています。", 4, 32)
-r = header(ws, r, ["資料", "内容", "受領した整理での扱い", "当方の扱い"])
+r = header(ws, r, ["資料", "内容", "受領した整理での扱い", "その後の状況"])
+_KAISHO = {k[0].split("（")[0]: k for k in GT.KAISHO}
 for shiryo, naiyo, atsukai in KB.MIKAKUNIN:
-    r = body(ws, r, [shiryo, naiyo, atsukai,
-                     "計画素案に反映しない"], {4: NG_O}, height=28)
+    _k = _KAISHO.get(shiryo)
+    _sta = ("解消（原典により確認）" if _k and _k[1] == "解消"
+            else "なお確認できていない")
+    r = body(ws, r, [shiryo, naiyo, atsukai, _sta],
+             {4: OK_G if _sta.startswith("解消") else NG_O}, height=28)
 r = note(ws, r,
-         "注1）当方は外部に接続できないため、分科会の資料を直接確認できません。"
-         "原本のご提供を確認事項No.%d によりお願いしています。\n"
+         "注1）本整理の受領の後、別途、分科会の資料%d件（全%d頁）の"
+         "ご提供を受けました。上表のうち%d件はこれにより解消しています。"
+         "原典による確認は別冊「介護給付費分科会資料（原典）の受領点検」に"
+         "よります。第256回から第267回までの資料はなお受領していないため、"
+         "これらに係る論点は本整理によるものです"
+         "（確認事項No.%d は一部解決です）。\n"
          "注2）介護給付費分科会は報酬（単位数・加算・基準）を、"
          "社会保障審議会介護保険部会は計画・制度を扱う別の審議の場です。"
          "本表は両者を区別して整理しています。\n"
          "注3）確認基準は%sです。これより後に公表された資料は含みません。"
-         % (SHIN_CHECK[0][0], KB.UKE["確認基準"]), 4, 72)
+         % (len(GT.GENTYO), GT.pages(),
+            len([x for x in GT.KAISHO if x[1] == "解消"]),
+            SHIN_CHECK[0][0], KB.UKE["確認基準"]), 4, 84)
 
 r += 1
 r = lead(ws, r, "【会議の経過】", 4)

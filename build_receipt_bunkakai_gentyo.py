@@ -1,0 +1,726 @@
+# -*- coding: utf-8 -*-
+"""介護給付費分科会の資料（原典）の受領点検.
+
+令和8年10月14日に、社会保障審議会介護給付費分科会の資料11件（PDF・全311頁）を
+受領した。確認事項No.182（原本のご提供）に当たるものである。
+
+社内の整理（原典の要約）の受領点検は別冊「介護給付費分科会の論点整理の受領点検」
+によるものであり、本表は**原典そのものを読んで確かめた事項**を扱う。
+原典により、整理の論点のうち7件を確かめ、1件に是正を要することが分かり、
+整理にない12件が新たに分かった。
+
+シート構成
+  00_この表について
+  01_受領した原典
+  02_原典による確認
+  03_是正を要するもの
+  04_新たに分かったもの
+  05_見込量・保険料への効き
+  06_計画素案への反映
+  07_確認できた範囲と残る範囲
+  08_自己点検
+"""
+
+import os
+import re
+import sys
+
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import data_bunkakai_gentyo as GT                       # noqa: E402
+import data_kyufuhi_bunkakai as KB                      # noqa: E402
+import kakunin_score as KS                              # noqa: E402
+import repo_paths as RP                                 # noqa: E402
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
+ODIR = RP.ROOT + "/output"
+OUT = os.path.join(ODIR, "第10期計画_介護給付費分科会資料（原典）の受領点検.xlsx")
+
+FONT = "游ゴシック"
+NAVY, HEAD = "1F3864", "4472C4"
+IN_Y, OK_G, NG_O, MID_B, GRAY = "FFF2CC", "E2EFDA", "FCE4D6", "DEEBF7", "F2F2F2"
+_thin = Side(style="thin", color="BFBFBF")
+BORDER = Border(left=_thin, right=_thin, top=_thin, bottom=_thin)
+
+KIJUNBI = "令和8年10月14日"
+
+wb = Workbook()
+wb.remove(wb.active)
+
+# シートの番号は記号で持つ（注記にシート番号を直書きしない。CLAUDE.md §4）
+SH = {"about": 0, "uke": 1, "kakunin": 2, "zesei": 3, "shin": 4,
+      "kiki": 5, "hanei": 6, "hani": 7, "chk": 8}
+
+
+def shn(key):
+    return "%02dシート" % SH[key]
+
+
+def sheet(name, title, subtitle, widths, freeze="A5"):
+    ws = wb.create_sheet(name)
+    ws.sheet_view.showGridLines = False
+    for i, w in enumerate(widths, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    c = ws.cell(row=1, column=1, value=title)
+    c.font = Font(name=FONT, size=14, bold=True, color=NAVY)
+    ws.row_dimensions[1].height = 22
+    c = ws.cell(row=2, column=1, value=subtitle)
+    c.font = Font(name=FONT, size=9)
+    c.alignment = Alignment(wrap_text=True, vertical="top")
+    ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=len(widths))
+    ws.row_dimensions[2].height = 56
+    ws.freeze_panes = freeze
+    return ws
+
+
+def header(ws, row, cols, height=30):
+    for i, v in enumerate(cols, start=1):
+        c = ws.cell(row=row, column=i, value=v)
+        c.font = Font(name=FONT, size=9, bold=True, color="FFFFFF")
+        c.fill = PatternFill("solid", fgColor=HEAD)
+        c.alignment = Alignment(horizontal="center", vertical="center",
+                                wrap_text=True)
+        c.border = BORDER
+    ws.row_dimensions[row].height = height
+    return row + 1
+
+
+def body(ws, row, vals, fills=None, height=24, align=None, bold=False):
+    for i, v in enumerate(vals, start=1):
+        c = ws.cell(row=row, column=i, value=v)
+        c.font = Font(name=FONT, size=9, bold=bold)
+        c.alignment = Alignment(wrap_text=True, vertical="top",
+                                horizontal=(align or {}).get(i, "left"))
+        c.border = BORDER
+        if fills and fills.get(i):
+            c.fill = PatternFill("solid", fgColor=fills[i])
+    ws.row_dimensions[row].height = height
+    return row + 1
+
+
+def lead(ws, row, text, span):
+    c = ws.cell(row=row, column=1, value=text)
+    c.font = Font(name=FONT, size=10, bold=True, color=NAVY)
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=span)
+    ws.row_dimensions[row].height = 18
+    return row + 1
+
+
+def note(ws, row, text, span, height=84):
+    c = ws.cell(row=row, column=1, value=text)
+    c.font = Font(name=FONT, size=8.5)
+    c.alignment = Alignment(wrap_text=True, vertical="top")
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=span)
+    ws.row_dimensions[row].height = height
+    return row + 1
+
+
+# ============================================================ 当方の側の値
+SECT = RP.draft_sections()
+CHECK_NO = {c[0] for c in KS.CHECK}
+MIKETSU = {c[0] for c in KS.CHECK if c[7] not in
+           ("完了", "了承済", "了承済（保管せず廃棄）", "代替により解消", "解決")}
+
+
+def where(word):
+    return [k for k, v in SECT.items() if word in v]
+
+
+def in_draft(*words):
+    hay = "\n".join(SECT.values())
+    return all(w in hay for w in words)
+
+
+_JUDGE = {"一致": OK_G, "詳細判明": MID_B, "要是正": NG_O}
+
+# 原典により改めた計画素案の箇所
+#   (反映先, 改めた内容, 根拠（原典）)
+HANEI = (
+    ("第1章第9節2",
+     "改正事項の表に「介護人材の確保及び生産性向上の推進」を加えた。"
+     "人材確保及び生産性向上の取組の推進が国及び都道府県の責務とされ、"
+     "生産性向上推進のための協議会の設置が都道府県の義務とされたこと。"
+     "協議会を設置するのは北海道であり、本広域連合及び構成3町は"
+     "これに参画し、又は支援を受ける立場であることを記した［要確認］。",
+     "第268回 資料1"),
+    ("第1章第9節6",
+     "基本的な視点の5点を原典の表現により掲げ、"
+     "第10期計画期間を令和22（2040）年を見据えた取組を本格化させる時期と"
+     "位置づけていることを加えた。"
+     "検討されている事項の表を6件から11件に広げ、"
+     "出典に回・資料番号・開催日を明示した。",
+     "第268回 資料1、第269回 資料1〜4、第270回 資料1〜5"),
+    ("第1章第9節6 注2",
+     "夜間対応型訪問介護の経過措置の期限について、"
+     "原典の中に令和11年度末までとするものと令和11年3月までとするものの"
+     "2通りの記載があることを書き、"
+     "本計画の期間中は従前どおりの実施が可能であるとする説明と"
+     "沿うのは令和11年度末であることを記した［要確認］。",
+     "第269回 資料1 p15・p34"),
+    ("第2章第1節3",
+     "認知症高齢者の状況の注に、国が認知症又は軽度認知障害の高齢者を"
+     "65歳以上の約3割としていること、"
+     "本広域連合における軽度認知障害を含む割合は把握していないことを"
+     "加えた［要確認］。",
+     "第268回 資料1"),
+    ("第1章第9節1",
+     "交通の便が悪い地域における経営の安定等を目的とする加算が"
+     "特別地域加算、中山間地域等における小規模事業所加算及び"
+     "中山間地域等に居住する者へのサービス提供加算の3種類であり、"
+     "いずれも区分支給限度基準額の対象外であること、"
+     "地域の区分が2つの告示によることを注に加えた。"
+     "従前は特別地域加算のみを掲げていた［要確認］。",
+     "第270回 資料5 p9、第269回 資料1 p11"),
+    ("第6章第2節 注1-1",
+     "短期入所生活介護の長期利用減算の見直しが2方向であること、"
+     "短期入所療養介護にも長期利用に係る減算を新たに設けることが"
+     "検討されていること、中山間地域等において通所介護等で"
+     "入浴介助を目的とするサービスを認める特例が検討されていることを"
+     "加えた。あわせて、中山間・離島その他の農村地域において"
+     "積雪期等の季節による利用の受入れが他の地域よりも高い傾向にあることと、"
+     "本計画が令和7年度（12か月）によっているため年間の水準としては"
+     "これを含んでいることを加えた［要確認］。",
+     "第270回 資料4 p11・p14・p21、第270回 資料5 p12、"
+     "第270回 資料1 p15・p16"),
+    ("第6章第6節2",
+     "中山間地域の加算のあり方の見直しが基本的な視点に掲げられており、"
+     "当広域連合が対象となる場合は単価を上げる向きに働くこと、"
+     "告示を確認できていないため見込んでいないことを加えた［要確認］。",
+     "第268回 資料1、第270回 資料5 p9"),
+    ("第6章第2節（2）注2",
+     "認知症対応型通所介護について、請求事業所数及び受給者数が"
+     "全国的に減少傾向にあることを踏まえ、"
+     "地域密着型通所介護の報酬体系及び単位数を参考にしつつ"
+     "基本報酬の在り方を検討することとされていることを加えた［要確認］。",
+     "第270回 資料1 p42"),
+    ("第6章第2節 注2",
+     "夜間対応型訪問介護の経過措置の期限を"
+     "「移行の猶予は令和11年3月」から、"
+     "原典の中に2通りの記載があり確定していない旨に改めた。"
+     "あわせて、移行を見据えた評価の内容（24時間の通報及び相談への"
+     "対応の機能の確保と日中の支援の評価）を加えた。",
+     "第269回 資料1 p15・p34"),
+    ("第6章第4節1",
+     "定期巡回・随時対応型訪問介護看護について、"
+     "新規開設時の訪問介護員等の配置基準の見直しと、"
+     "区域外の指定を受けて複数の市町村にまたがって提供する事業所の"
+     "評価の在り方が検討されていることを加えた。"
+     "いずれも整備を検討する際の条件に関わる［要協議］。",
+     "第269回 資料1 p18、第269回 資料2 p18"),
+    ("第6章第5節",
+     "通所リハビリテーションの退院時共同指導加算の対象に"
+     "介護老人保健施設及び介護医療院の退所者を加えることが"
+     "検討されていることを加えた。",
+     "第270回 資料3 p22"),
+)
+
+# 見込量・保険料への効き
+#   (事項, 向き, 及ぶ区分, 当方の扱い)
+KIKI = (
+    ("短期入所生活介護の長期利用減算の強化", "単価を下げる",
+     "短期入所生活介護",
+     "令和7年度の実績単価で固定しており織り込んでいない（区分C）"),
+    ("季節による利用のみの方への減算の不適用", "単価を維持する",
+     "短期入所生活介護",
+     "同上。積雪地である当区域は例外の対象となり得る"),
+    ("短期入所療養介護への長期利用減算の新設", "単価を下げる",
+     "短期入所療養介護",
+     "同上。対計画比の補正では解消しない開きが残る種別である"),
+    ("中山間地域等における入浴介助を目的とするサービスの特例", "量を動かす",
+     "訪問入浴介護・通所介護",
+     "訪問入浴介護は月5.2人であり、通所介護で代替が認められる場合は"
+     "両区分の量が動く"),
+    ("入浴介助加算及び送迎加算の単価の見直し", "単価を上げる",
+     "通所介護・短期入所生活介護・短期入所療養介護",
+     "物価及び人件費の上昇への対応であり、単価を上げる向きである"),
+    ("認知症対応型通所介護の基本報酬の在り方", "単価を下げる",
+     "認知症対応型通所介護",
+     "地域密着型通所介護の水準を参考とするもの。"
+     "当区域の令和11年度の見込量は月1.05人であり効きは小さい"),
+    ("同一建物減算に代わる報酬区分（通所系）", "いずれともいえない",
+     "通所介護・地域密着型通所介護・認知症対応型通所介護",
+     "指定を受けない住まいが339人・戸あり在宅受給者の約3分の1に当たる"),
+    ("同一建物減算に代わる報酬区分（訪問系）", "対応案が示されていない",
+     "訪問介護ほか",
+     "訪問介護の1人1月あたり利用回数は全国の1.87倍である。"
+     "別に議論を行うこととされている"),
+    ("中山間地域の加算のあり方の見直し", "単価を上げる",
+     "全サービス（対象地域に限る）",
+     "特別地域加算の対象地域の告示を確認できていない（確認事項No.1）"),
+    ("定期巡回の新規開設時の配置基準の見直し", "量を動かす",
+     "定期巡回・随時対応型訪問介護看護",
+     "整備による上乗せを含めていない。確保方策の条件に関わる"),
+    ("認知症対応型共同生活介護の計画作成担当者の配置要件の見直し",
+     "見込量に及ばない", "認知症対応型共同生活介護",
+     "事業所の運営に関わるものであり、量及び単価には織り込まない"),
+    ("通所リハビリテーションの退院時共同指導加算の拡大", "単価を上げる",
+     "通所リハビリテーション",
+     "加算であり基本報酬ではない。令和7年度の実績単価に含まれない"),
+)
+
+# ============================================================ 00 この表について
+ws = sheet("00_この表について",
+           "介護給付費分科会資料（原典）の受領点検",
+           "令和8年10月14日に受領した社会保障審議会介護給付費分科会の資料"
+           "%d件（全%d頁）を、当方の計画素案及びサービス見込量の算定と"
+           "突き合わせたものです。基準日 %s。"
+           % (len(GT.GENTYO), GT.pages(), KIJUNBI),
+           [3, 26, 60, 34])
+r = 4
+r = lead(ws, r, "1　受領した資料", 4)
+r = header(ws, r, ["", "区分", "内容", "当方の扱い"])
+for i, (ku, na, tou) in enumerate([
+    ("原典（分科会の資料）",
+     "第268回 資料1（基本的な視点（案）及び概要）、"
+     "第269回 資料1から資料4、第270回 資料1から資料5の%d件・全%d頁。"
+     "いずれも資料の表紙に回・資料番号・開催日の記載があります。"
+     % (len(GT.GENTYO), GT.pages()),
+     "確認事項No.182（原本のご提供）に当たるものです。"
+     "原典により論点を確かめ、本表に収めました。"),
+    ("社内の整理（原典の要約）",
+     "令和8年10月14日に受領した論点整理（%d論点）。"
+     "原本の代替ではない旨が記載されていました。" % len(KB.RONTEN),
+     "別冊「介護給付費分科会の論点整理の受領点検」によります。"
+     "本表はこれと対にして用いるものです。"),
+], start=1):
+    r = body(ws, r, [i, ku, na, tou], height=62)
+
+r += 1
+r = lead(ws, r, "2　原典により分かったこと", 4)
+_yz = [x for x in GT.KAKUNIN if x[2] == "要是正"]
+r = header(ws, r, ["", "区分", "件数", "内容"])
+for i, (ku, ken, na) in enumerate([
+    ("整理のとおりであったもの",
+     "%d件" % len([x for x in GT.KAKUNIN if x[2] == "一致"]),
+     "原典の記述と整理の記述が一致したもの。"),
+    ("原典の方が具体であったもの",
+     "%d件" % len([x for x in GT.KAKUNIN if x[2] == "詳細判明"]),
+     "整理では把握できなかった対応案の内容、"
+     "当区域に関わる記述（中山間地域・積雪期等）が原典にあったもの。"),
+    ("是正を要するもの", "%d件" % len(_yz),
+     "夜間対応型訪問介護の経過措置の期限。"
+     "原典の中に2通りの記載があり、当方は一方のみを採っていました"
+     "（%s）。" % shn("zesei")),
+    ("整理にない事項", "%d件" % len(GT.SHINJIKO),
+     "原典により新たに分かったもの。"
+     "うち1件は社会福祉法等の一部を改正する法律による改正事項であり、"
+     "当方の整理に入っていませんでした（%s）。" % shn("shin")),
+], start=1):
+    r = body(ws, r, [i, ku, ken, na], height=52,
+             fills={2: NG_O} if ku == "是正を要するもの" else None)
+
+r += 1
+r = lead(ws, r, "3　先に申し上げること", 4)
+for t in [
+    "①　検討されている事項はいずれも、サービス見込量及び保険料の算定を"
+    "止めるものではありません。量は令和7年度の実績により算定でき、"
+    "単価及び制度は現行の制度により算定したうえで、"
+    "告示及び公布の後に再算定します。",
+    "②　単位数、算定の要件及び施行の時期は原典においても示されていません。"
+    "計画素案には、検討されている事項があることまでを記載しています。",
+    "③　原典により確かめられた事項のうち、当区域の事情に直接関わるものは"
+    "積雪期の季節利用、中山間地域等における入浴、"
+    "区域外の事業所によるサービス提供の3件です。"
+    "いずれも当区域の実態に沿う向きの検討です。",
+    "④　確認事項No.182は一部解決です。"
+    "第256回から第267回までの資料、第270回 資料6及び議事録は"
+    "受領していません（%s）。" % shn("hani"),
+]:
+    c = ws.cell(row=r, column=2, value=t)
+    c.font = Font(name=FONT, size=9.5)
+    c.alignment = Alignment(wrap_text=True, vertical="top")
+    ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=4)
+    ws.row_dimensions[r].height = 42
+    r += 1
+
+r += 1
+r = note(ws, r,
+         "注）本表は、受領した資料のうち確認に要する箇所を読んで"
+         "作成したものです。資料の記述は要点を示したものであり、"
+         "原文そのままではありません。", 4, 36)
+
+# ============================================================ 01 受領した原典
+ws = sheet("01_受領した原典",
+           "受領した原典（%d件・全%d頁）" % (len(GT.GENTYO), GT.pages()),
+           "いずれも社会保障審議会介護給付費分科会の資料です。"
+           "公表番号は厚生労働省が資料のファイル名に付した番号です。",
+           [3, 11, 7, 7, 10, 38, 7, 20])
+r = 4
+r = header(ws, r, ["", "公表番号", "回", "資料番号", "開催日",
+                   "サービス・事項", "頁数", "構成"])
+for i, g in enumerate(GT.GENTYO, start=1):
+    r = body(ws, r, [i, g[0], "第%d回" % g[1], g[2], g[3], g[4], g[5], g[6]],
+             height=26, align={3: "center", 4: "center", 5: "center",
+                               7: "right"})
+r = body(ws, r, ["", "", "", "", "計", "%d件" % len(GT.GENTYO),
+                 GT.pages(), ""], fills={6: GRAY, 7: GRAY},
+         align={7: "right"}, bold=True)
+
+r += 1
+r = lead(ws, r, "会議の開催日との照合", 8)
+r = header(ws, r, ["", "回", "開催日（整理）", "開催日（原典）", "判定",
+                   "主な議題（整理による）", "", ""])
+for i, (kai, hi, gidai, _n) in enumerate(
+        [x for x in KB.KAIGI if x[0] >= 268], start=1):
+    _g = [x for x in GT.GENTYO if x[1] == kai]
+    _gh = _g[0][3] if _g else "―"
+    _y, _m, _d = hi.split("-")
+    _seiri = "R8.%d.%d" % (int(_m), int(_d))
+    ok = (_gh == _seiri)
+    r = body(ws, r, [i, "第%d回" % kai, _seiri, _gh,
+                     "一致" if ok else "不一致", gidai, "", ""],
+             height=26, fills={5: OK_G if ok else NG_O},
+             align={2: "center", 3: "center", 4: "center", 5: "center"})
+r = note(ws, r,
+         "注）原典の開催日は資料の表紙の記載によります。"
+         "第256回から第267回までの資料は受領していないため、"
+         "整理による開催日を原典で確かめていません。", 8, 36)
+
+# ============================================================ 02 原典による確認
+ws = sheet("02_原典による確認",
+           "原典による確認（%d件）" % len(GT.KAKUNIN),
+           "社内の整理の論点のうち、原典により確かめたものです。"
+           "判定は、一致（整理のとおり）、詳細判明（原典の方が具体）、"
+           "要是正（整理と原典が食い違う）の3つです。",
+           [3, 6, 20, 8, 56, 30])
+r = 4
+_RT = {x[0]: x for x in KB.RONTEN}
+r = header(ws, r, ["", "論点", "分野・論点名", "判定", "原典の記述の要点",
+                   "計画素案の反映先"])
+for i, k in enumerate(GT.KAKUNIN, start=1):
+    rid = k[0]
+    rt = _RT.get(rid)
+    nm = ("%s／%s" % (rt[1], rt[2])) if rt else "―"
+    saki = "―"
+    try:
+        import ast as _ast
+        with open(RP.ROOT + "/build_receipt_kyufuhi_bunkakai.py",
+                  encoding="utf-8") as f:
+            _tree = _ast.parse(f.read())
+        for _n in _tree.body:
+            if isinstance(_n, _ast.Assign) and any(
+                    getattr(t, "id", "") == "TOUHOU" for t in _n.targets):
+                _t = _ast.literal_eval(_n.value)
+                if rid in _t:
+                    saki = _t[rid][1]
+    except Exception:
+        pass
+    r = body(ws, r, [i, rid, nm, k[2], k[3], saki], height=108,
+             fills={4: _JUDGE.get(k[2], GRAY)}, align={4: "center"})
+r = note(ws, r,
+         "注）出所は%s欄に示した回及び資料番号によります。"
+         "原典の記述は要点を示したものであり、原文そのままではありません。"
+         % "原典の記述の要点", 6, 36)
+
+# ============================================================ 03 是正を要するもの
+ws = sheet("03_是正を要するもの",
+           "是正を要するもの（%d件）" % len(_yz),
+           "原典と当方の記述が食い違っていたものです。"
+           "いずれも計画素案を改めました。",
+           [3, 6, 24, 40, 40])
+r = 4
+r = header(ws, r, ["", "論点", "事項", "当方の従前の記述", "原典の記述"])
+r = body(ws, r,
+         [1, "I07", "夜間対応型訪問介護の経過措置の期限",
+          "「移行の猶予は令和11年3月とされています。"
+          "同月は本計画期間の最終年度に属します」"
+          "（計画素案 第1章第9節6及び第6章第2節 注2）。"
+          "原典の中の一方の記載のみを採っていました。",
+          "現状と課題（第257回 資料1の再掲）は"
+          "「令和8年度末（現在の第9期計画期間）をもって廃止し、"
+          "経過措置（令和11年度末まで（第10期計画期間中）は"
+          "経過措置として、従前どおりの実施が可能）を設ける」とし、"
+          "論点は「令和11年3月までの猶予期間における」とします。"],
+         height=96, fills={3: NG_O})
+r += 1
+r = lead(ws, r, "どちらであるか", 5)
+for t in [
+    "本計画の期間は令和9年度から令和11年度までです。"
+    "「令和11年度末まで（第10期計画期間中）は経過措置として、"
+    "従前どおりの実施が可能」という説明は、"
+    "経過措置が本計画の期間の全体に及ぶことを述べたものであり、"
+    "期間の末日と経過措置の期限が一致します。",
+    "これに対し「令和11年3月」は本計画の2年度目（令和10年度）の末日の"
+    "直前であり、本計画の期間中に経過措置が切れることになります。"
+    "第10期計画期間中は従前どおりの実施が可能であるとする説明と"
+    "沿いません。",
+    "したがって令和11年度末であると考えられますが、"
+    "原典の中に2通りの記載があるため確定していません。"
+    "計画素案には両方の記載があることを書き、［要確認］としました。",
+]:
+    c = ws.cell(row=r, column=2, value=t)
+    c.font = Font(name=FONT, size=9.5)
+    c.alignment = Alignment(wrap_text=True, vertical="top")
+    ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=5)
+    ws.row_dimensions[r].height = 46
+    r += 1
+r += 1
+r = note(ws, r,
+         "注）社会福祉法等の一部を改正する法律による統合の日"
+         "（令和9年4月1日）と、報酬上の経過措置の期限は別のものです。"
+         "統合の日は計画素案 第1章第9節2に掲げています。"
+         "区域内に夜間対応型訪問介護の事業所はなく給付の実績もないため、"
+         "いずれであっても本計画の見込量は動きません。", 5, 48)
+
+# ============================================================ 04 新たに分かったもの
+ws = sheet("04_新たに分かったもの",
+           "原典により新たに分かったもの（%d件）" % len(GT.SHINJIKO),
+           "社内の整理の論点に対応するものがない事項です。"
+           "出所はいずれも受領した原典です。",
+           [3, 5, 24, 13, 40, 36, 22])
+r = 4
+r = header(ws, r, ["", "番号", "事項", "出所", "原典の記述の要点",
+                   "当区域に関わること", "計画素案の反映先"])
+for i, s in enumerate(GT.SHINJIKO, start=1):
+    _saki = s[5]
+    _ok = all(x in SECT for x in re.findall(r"第\d+章第\d+節", _saki)) \
+        if re.search(r"第\d+章第\d+節", _saki) else True
+    r = body(ws, r, [i, s[0], s[1], s[2], s[3], s[4], _saki], height=104,
+             fills={7: None if _ok else NG_O})
+r = note(ws, r,
+         "注）反映先は計画素案に現にある章節によります。"
+         "第5章は節に分かれていないため基本目標により示します。"
+         "原典の記述は要点を示したものであり、原文そのままではありません。",
+         7, 36)
+
+# ============================================================ 05 効き
+ws = sheet("05_見込量・保険料への効き",
+           "サービス見込量及び保険料への効き（%d件）" % len(KIKI),
+           "原典により確かめた事項が、サービス見込量又は保険料の"
+           "いずれにどの向きで及ぶかを整理したものです。"
+           "いずれも本計画には織り込んでいません。",
+           [3, 34, 15, 30, 44])
+r = 4
+r = header(ws, r, ["", "事項", "向き", "及ぶ区分", "当方の扱い"])
+_MUKI = {"単価を下げる": MID_B, "単価を上げる": NG_O, "単価を維持する": OK_G}
+for i, k in enumerate(KIKI, start=1):
+    r = body(ws, r, [i, k[0], k[1], k[2], k[3]], height=44,
+             fills={3: _MUKI.get(k[1], GRAY)})
+r += 1
+r = lead(ws, r, "算定への影響", 5)
+for t in [
+    "単価は令和7年度の実績で固定しています（据え置きの区分C）。"
+    "改定率が告示された時点で再算定します。"
+    "本計画は改定率1％あたり月額61円の感度を掲げています"
+    "（計画素案 第6章第6節2）。",
+    "上表の向きは互いに打ち消し合うものを含みます。"
+    "単価を下げる向き（長期利用減算の強化等）と"
+    "上げる向き（入浴介助加算・送迎加算の単価、中山間地域の加算）が"
+    "同時に検討されており、改定率としてどちらが上回るかは示されていません。",
+    "量に及ぶもの（入浴に係る特例、定期巡回の配置基準）は、"
+    "いずれも区分の間の振替又は整備の条件であり、"
+    "総量を大きく動かすものではありません。",
+]:
+    c = ws.cell(row=r, column=2, value=t)
+    c.font = Font(name=FONT, size=9.5)
+    c.alignment = Alignment(wrap_text=True, vertical="top")
+    ws.merge_cells(start_row=r, start_column=2, end_row=r, end_column=5)
+    ws.row_dimensions[r].height = 46
+    r += 1
+
+# ============================================================ 06 素案への反映
+ws = sheet("06_計画素案への反映",
+           "計画素案への反映（%d件）" % len(HANEI),
+           "原典により計画素案を改めた箇所です。"
+           "新たな章又は節は起こしていません。",
+           [3, 16, 70, 30])
+r = 4
+r = header(ws, r, ["", "反映先", "改めた内容", "根拠（原典）"])
+for i, h in enumerate(HANEI, start=1):
+    _ok = all(x in SECT for x in re.findall(r"第\d+章第\d+節", h[0])) \
+        if re.search(r"第\d+章第\d+節", h[0]) else True
+    r = body(ws, r, [i, h[0], h[1], h[2]], height=76,
+             fills={2: None if _ok else NG_O})
+r = note(ws, r,
+         "注）反映先は計画素案に現にある章節によります。"
+         "単位数、算定の要件及び施行の時期は書いていません。"
+         "いずれも検討されている段階のものであるため"
+         "［要確認］又は［要協議］を付しています。", 4, 36)
+
+# ============================================================ 07 範囲
+ws = sheet("07_確認できた範囲と残る範囲",
+           "原典により確認できた範囲と残る範囲",
+           "確認事項No.182（介護給付費分科会の資料の原本のご提供）の"
+           "現在の状況です。",
+           [3, 30, 12, 56])
+r = 4
+r = lead(ws, r, "1　本文を確認できていなかった資料の状況", 4)
+r = header(ws, r, ["", "従前の記載", "判定", "内容"])
+for i, k in enumerate(GT.KAISHO, start=1):
+    r = body(ws, r, [i, k[0], k[1], k[2]], height=62,
+             fills={3: OK_G if k[1] == "解消" else NG_O},
+             align={3: "center"})
+r += 1
+r = lead(ws, r, "2　なお受領していない範囲", 4)
+r = header(ws, r, ["", "範囲", "状況", "本計画における扱い"])
+for i, m in enumerate(GT.MINIU, start=1):
+    r = body(ws, r, [i, m[0], m[1], m[2]], height=44, align={3: "center"})
+r += 1
+r = lead(ws, r, "3　確認事項No.182の扱い", 4)
+_c182 = [c for c in KS.CHECK if c[0] == 182]
+r = body(ws, r,
+         ["", "確認事項No.182",
+          "一部解決" if _c182 else "―",
+          "第268回から第270回までの資料11件を受領し、"
+          "本文を確認できていなかった資料のうち%d件が解消しました。"
+          "第256回から第267回までの資料、第270回 資料6及び議事録は"
+          "なお受領していません。"
+          "当方は外部に接続できないため、これらの原典を確かめることが"
+          "できません。"
+          % len([x for x in GT.KAISHO if x[1] == "解消"]),
+          ], height=76, fills={3: MID_B}, align={3: "center"})
+r += 1
+r = note(ws, r,
+         "注）本計画の記載は、検討されている事項があることまでに"
+         "とどめています。"
+         "したがって、受領していない範囲があることにより"
+         "計画素案の記載が誤りとなることはありません。"
+         "改定の内容は令和8年12月頃及び令和9年1月頃に示される予定であり、"
+         "その時点で給付費及び保険料を再算定します。", 4, 48)
+
+# ============================================================ 08 自己点検
+ws = sheet("08_自己点検", "自己点検",
+           "いずれも機械で確かめています。"
+           "1件でも不適合があれば本表の作成を止めます。",
+           [3, 34, 24, 26, 8])
+r = 4
+r = header(ws, r, ["", "確かめたこと", "方法", "結果", "判定"])
+_ng = []
+
+
+def chk(no, naiyo, hoho, kekka, ok):
+    global r
+    if not ok:
+        _ng.append(no)
+    r = body(ws, r, [no, naiyo, hoho, kekka, "適合" if ok else "不適合"],
+             height=30, fills={5: OK_G if ok else NG_O},
+             align={1: "center", 5: "center"})
+
+
+chk(1, "受領した原典の件数と頁数", "ファイルの実測",
+    "%d件・%d頁" % (len(GT.GENTYO), GT.pages()),
+    len(GT.GENTYO) == 11 and GT.pages() > 300)
+_kai = sorted({g[1] for g in GT.GENTYO})
+_seiri_kai = {k[0] for k in KB.KAIGI}
+chk(2, "原典の回がいずれも会議一覧にあること", "回の照合",
+    "第%s回" % "・第".join(str(x) for x in _kai),
+    all(k in _seiri_kai for k in _kai))
+_hi_ng = []
+for g in GT.GENTYO:
+    _k = [x for x in KB.KAIGI if x[0] == g[1]]
+    if _k:
+        _y, _m, _d = _k[0][1].split("-")
+        if g[3] != "R8.%d.%d" % (int(_m), int(_d)):
+            _hi_ng.append("第%d回" % g[1])
+chk(3, "原典の開催日が会議一覧と一致すること", "表紙の記載との照合",
+    "不一致 %d件" % len(set(_hi_ng)), not _hi_ng)
+_rid = {x[0] for x in KB.RONTEN}
+chk(4, "原典により確かめた論点IDがいずれも整理にあること", "IDの照合",
+    "%d件" % len(GT.KAKUNIN),
+    all(k[0] in _rid for k in GT.KAKUNIN))
+chk(5, "判定が3つの区分のいずれかであること", "区分の照合",
+    "／".join(sorted({k[2] for k in GT.KAKUNIN})),
+    all(k[2] in _JUDGE for k in GT.KAKUNIN))
+chk(6, "是正を要するものが1件以上あり、計画素案に反映されていること",
+    "素案の走査",
+    "要是正 %d件／素案に2通りの記載の説明 %s"
+    % (len(_yz), "あり" if in_draft("令和11年度末", "令和11年3月") else "なし"),
+    len(_yz) >= 1 and in_draft("令和11年度末", "令和11年3月"))
+chk(7, "従前の断定（移行の猶予は令和11年3月とされています）が"
+       "素案に残っていないこと", "素案の走査",
+    "%d件" % len(where("移行の猶予は令和11年3月")),
+    not where("移行の猶予は令和11年3月"))
+_sj_saki = []
+for s in GT.SHINJIKO:
+    for x in re.findall(r"第\d+章第\d+節", s[5]):
+        if x not in SECT:
+            _sj_saki.append(x)
+chk(8, "新たに分かったものの反映先が素案に現にある章節であること",
+    "素案の章節との照合",
+    "存在しない章節 %d件" % len(set(_sj_saki)), not _sj_saki)
+_h_saki = []
+for h in HANEI:
+    for x in re.findall(r"第\d+章第\d+節", h[0]):
+        if x not in SECT:
+            _h_saki.append(x)
+chk(9, "反映先が素案に現にある章節であること", "素案の章節との照合",
+    "存在しない章節 %d件" % len(set(_h_saki)), not _h_saki)
+chk(10, "生産性向上推進のための協議会が素案に入ったこと", "素案の走査",
+    "／".join(where("生産性向上推進")) or "現れない",
+    bool(where("生産性向上推進")))
+chk(11, "基本的な視点の5点が素案に入っていること", "素案の走査",
+    "／".join(where("制度の安定性・持続可能性の確保")) or "現れない",
+    in_draft("物価・賃金の上昇等への対応と処遇改善",
+             "制度の安定性・持続可能性の確保"))
+chk(12, "短期入所療養介護の長期利用減算が素案に入ったこと", "素案の走査",
+    "／".join(where("長期利用に係る減算")) or "現れない",
+    bool(where("長期利用に係る減算")))
+chk(13, "入浴介助を目的とするサービスの特例が素案に入ったこと", "素案の走査",
+    "／".join(where("入浴介助を目的とする")) or "現れない",
+    bool(where("入浴介助を目的とする")))
+chk(14, "認知症対応型通所介護の基本報酬の在り方が素案に入ったこと",
+    "素案の走査",
+    "／".join(where("基本報酬の在り方")) or "現れない",
+    bool(where("基本報酬の在り方")))
+#   「単位数」という語は、当方が「単位数は示されていない」と書くために
+#   用いている。確かめたいのは値を書いていないことであるから、
+#   数値を伴う「○○単位」を探す（CLAUDE.md §4）。
+_TANI = re.compile(r"[0-9０-９][0-9０-９,，]*\s*単位(?!数|：|:)")
+_tani_hit = [k for k, v in SECT.items() if _TANI.search(v)]
+chk(15, "計画素案に単位数の値を書いていないこと",
+    "数値を伴う「○○単位」の走査",
+    "、".join(_tani_hit) or "現れない", not _tani_hit)
+chk(16, "確認事項No.182が台帳にあり未決であること", "台帳の照合",
+    "台帳にあり・%s" % ("未決" if 182 in MIKETSU else "決着"),
+    182 in CHECK_NO and 182 in MIKETSU)
+chk(17, "本文未確認の解消の判定が整理の記載と対応すること", "件数の照合",
+    "整理 %d件／本表 %d件" % (len(KB.MIKAKUNIN), len(GT.KAISHO)),
+    len(KB.MIKAKUNIN) == len(GT.KAISHO))
+chk(18, "効きの向きがいずれも記されていること", "欄の走査",
+    "%d件" % len(KIKI), all(k[1] for k in KIKI))
+
+# 本表の文字を走査する
+_txt = []
+for _ws in wb.worksheets:
+    for _row in _ws.iter_rows():
+        for _c in _row:
+            if isinstance(_c.value, str):
+                _txt.append(_c.value)
+_txt = "\n".join(_txt)
+_NAI = ("runpy", "固定値", "実物から", "再実行", "リポジトリ", "書き写",
+        "build_", "data_", ".py", "終了コード0", "スクリプト")
+_nai_hit = [w for w in _NAI if w in _txt]
+chk(19, "当方の内部の仕組み・作業経過の語が現れないこと", "語の走査",
+    "、".join(_nai_hit) or "現れない", not _nai_hit)
+_KIN = ("に由来する", "と整合する", "1件も", "有意差がないため", "全国トップ級")
+_kin_hit = [w for w in _KIN if w in _txt]
+chk(20, "禁止表現が現れないこと", "語の走査",
+    "、".join(_kin_hit) or "現れない", not _kin_hit)
+chk(21, "個人情報の形（電話番号・メールアドレス）が現れないこと", "正規表現",
+    "%d件" % len(re.findall(r"0\d{1,4}-\d{1,4}-\d{3,4}|[\w.+-]+@[\w.-]+",
+                            _txt)),
+    not re.search(r"0\d{1,4}-\d{1,4}-\d{3,4}|[\w.+-]+@[\w.-]+", _txt))
+
+r = note(ws, r + 1,
+         "注）本表は、受領した資料のうち確認に要する箇所を読んで"
+         "作成したものです。", 5, 30)
+
+os.makedirs(ODIR, exist_ok=True)
+wb.save(OUT)
+print("保存", OUT)
+print("原典 %d件・全%d頁" % (len(GT.GENTYO), GT.pages()))
+print("原典による確認 %d件（一致%d・詳細判明%d・要是正%d）"
+      % (len(GT.KAKUNIN),
+         len([x for x in GT.KAKUNIN if x[2] == "一致"]),
+         len([x for x in GT.KAKUNIN if x[2] == "詳細判明"]),
+         len(_yz)))
+print("新たに分かったもの %d件／素案への反映 %d件" % (len(GT.SHINJIKO), len(HANEI)))
+print("自己点検 %d件　不適合 %d件" % (r - 6, len(_ng)))
+if _ng:
+    print("不適合:", _ng)
+    sys.exit(1)
