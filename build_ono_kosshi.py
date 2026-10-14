@@ -684,7 +684,15 @@ def soan_kosei():
     素案が無ければ止める（古い構成を黙って出さない）。
     """
     global SOAN_NAME
-    cands = sorted(SOAN_DIR.glob("*第10期介護保険事業計画_素案_*.docx"))
+    # **版の番号ではなく末尾の日付で並べる。** 名前で並べると
+    # 「第10版」が「第9版」より前に来るため（'1' < '9'）、
+    # 最後の要素を取ると古い版を拾う。
+    def _hiduke(p):
+        m = re.search(r"_(\d{8})\.docx$", p.name)
+        return (m.group(1) if m else "", p.name)
+
+    cands = sorted(SOAN_DIR.glob("*第10期介護保険事業計画_素案_*.docx"),
+                   key=_hiduke)
     if not cands:
         raise SystemExit(
             f"計画素案が見つかりません：{SOAN_DIR}\n"

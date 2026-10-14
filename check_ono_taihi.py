@@ -292,7 +292,15 @@ def soan_midashi():
     """素案の docx から章（15pt）と節（12.5pt）の見出しを読む。"""
     from docx import Document
 
-    cands = sorted(SOAN_DIR.glob("*第10期介護保険事業計画_素案_*.docx"))
+    # **版の番号ではなく末尾の日付で並べる。** 名前で並べると
+    # 「第10版」が「第9版」より前に来るため（'1' < '9'）、
+    # 最後の要素を取ると古い版を拾う。
+    def _hiduke(p):
+        m = re.search(r"_(\d{8})\.docx$", p.name)
+        return (m.group(1) if m else "", p.name)
+
+    cands = sorted(SOAN_DIR.glob("*第10期介護保険事業計画_素案_*.docx"),
+                   key=_hiduke)
     if not cands:
         return None, {}
     path = cands[-1]
