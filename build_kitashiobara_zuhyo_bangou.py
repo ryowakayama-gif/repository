@@ -281,7 +281,7 @@ HYO = [
          atama=_h("サービス種別", "単位"), moto=A_MURA),
     dict(sho=5, midashi="日中活動系サービスの見込量",
          atama=_h("サービス種別", "単位"), moto=""),
-    dict(sho=5, midashi="強度行動障害を有する方等の生活介護の利用の見込み",
+    dict(sho=5, midashi="強度行動障害を有する方等の重度障がい者の内数の見込み",
          atama=_h("区分", "現在の人数"), moto=""),
     dict(sho=5, midashi="居住系サービスの実績",
          atama=_h("サービス種別", "単位"), moto=A_MURA),

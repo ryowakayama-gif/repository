@@ -79,6 +79,7 @@ from build_kitashiobara_kanren_hourei import KH_EDITS  # noqa: E402
 from build_kitashiobara_taikei_hanei import (  # noqa: E402
     TK_EDITS, TK_KAKIKAE,
 )
+from build_kitashiobara_shogaiji_ronten import SJ_EDITS  # noqa: E402
 from build_kitashiobara_graph import GRAPHS, OUT_DIR as ZU_DIR  # noqa: E402
 from build_kitashiobara_zuhyo_bangou import ZU, HYO  # noqa: E402
 
@@ -1056,7 +1057,8 @@ def verify(doc, src_dims):
                 + list(CS_EDITS) + list(KT_EDITS)
                 + list(SS_EDITS) + list(RV_EDITS)
                 + list(HK_EDITS) + list(UR_EDITS)
-                + list(KH_EDITS) + list(TK_EDITS)):
+                + list(KH_EDITS) + list(TK_EDITS)
+                + list(SJ_EDITS)):
         for blk in rec["nakami"]:
             if blk[0] in ("h2", "h3", "p", "note"):
                 if _norm(blk[1]) not in out:
@@ -1158,7 +1160,8 @@ def verify(doc, src_dims):
                 + list(CS_EDITS) + list(KT_EDITS)
                 + list(SS_EDITS) + list(RV_EDITS)
                 + list(HK_EDITS) + list(UR_EDITS)
-                + list(KH_EDITS) + list(TK_EDITS)):
+                + list(KH_EDITS) + list(TK_EDITS)
+                + list(SJ_EDITS)):
         for blk in rec["nakami"]:
             if blk[0] in ("h2", "h3") and blk[1].startswith("（"):
                 want_sub.append(blk[1])
@@ -1238,6 +1241,7 @@ def verify(doc, src_dims):
           f"打合せ論点{len(UR_EDITS)}件・"
           f"関連法令{len(KH_EDITS)}件・"
           f"体系{len(TK_EDITS)}件・"
+          f"障がい児{len(SJ_EDITS)}件・"
           f"書き換え{len(KAKIKAE) + len(KG_KAKIKAE) + len(KO_KAKIKAE)}件・"
           f"体系の書き換え{len(TK_KAKIKAE)}件・"
           f"図{len(GRAPHS)}点が実在／"
@@ -1277,6 +1281,7 @@ def main():
     apply_juten(doc, UR_EDITS, label="打合せ論点")
     apply_juten(doc, KH_EDITS, label="関連法令")
     apply_juten(doc, TK_EDITS, label="体系")
+    apply_juten(doc, SJ_EDITS, label="障がい児")
     apply_kakikae(doc)
     apply_taikei_kakikae(doc)
     apply_graphs(doc)
