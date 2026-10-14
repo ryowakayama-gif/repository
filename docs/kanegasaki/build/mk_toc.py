@@ -20,7 +20,7 @@ import sys
 
 DOCX = sys.argv[1] if len(sys.argv) > 1 else 'out/計画素案_第10期.docx'
 BUILD = sys.argv[2] if len(sys.argv) > 2 else 'mkf_soan.py'
-PAGEMAP = 'out/_toc_pages.json'
+PAGEMAP = sys.argv[3] if len(sys.argv) > 3 else 'out/_toc_pages.json'
 
 
 def build():
