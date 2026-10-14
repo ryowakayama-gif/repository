@@ -55,17 +55,21 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Mm, Pt
 
 from build_kitashiobara_gaiyou import (
-    ACCENT, BAND, DARK, NOTE_FILL, LINES_PER_PAGE,
     _cell_margins, _cell_shade, _run, _tbl_width, _no_borders,
-    band, box, estimate_lines, note, page_break, para, setup_section,
+    band, box, estimate_lines, flow, note, para, setup_section,
     sub, table,
+)
+# 体裁は前回計画の概要版の実測から引く（3本で同じ体裁にする）。
+from kitashiobara_gaiyou_taisai import (
+    ACCENT, BAND, BODY_PT, DARK, LINES_PER_PAGE, NOTE_FILL, SMALL_PT,
+    TAISAI,
 )
 from build_kitashiobara_zenkai_hyouka import (
     KPI4, KPI7, KUBUN, MIKOMI, SHISAKU, SHISAKU_KUBUN,
 )
 from kitashiobara_common import OUT_DIR
 from kitashiobara_koutei import (
-    GAIYOU_HYO, PABU_KAISHI, PABU_NISSU, PABU_SHURYO, wareki,
+    PABU_KAISHI, PABU_NISSU, PABU_SHURYO, wareki,
 )
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -294,9 +298,7 @@ def _hyoushi(doc, lines):
     para(doc, "", size=4, space_after=0, line=5)
 
 
-def build_hyouka():
-    doc = docx.Document()
-    setup_section(doc)
+def hy_hyoushi(doc):
     _hyoushi(doc, [
         ("◆　前回計画の評価　概要版", 13),
         ("第７期北塩原村障がい福祉計画・第３期北塩原村障がい児福祉計画"
@@ -308,6 +310,7 @@ def build_hyouka():
             "編集　北塩原村保健福祉課　福祉係　（TEL）0241-23-3113",
          size=8.5)
 
+def hy_kono(doc):
     band(doc, "１", "この資料について")
     para(doc,
          "第８期北塩原村障がい福祉計画・第４期北塩原村障がい児福祉計画の"
@@ -330,8 +333,9 @@ def build_hyouka():
         "設置した数や配置した人数ではなく、"
         "相談の件数、緊急時に受け入れた件数、"
         "地域生活へ移った方の数で測ります。",
-    ], fill=NOTE_FILL, border=ACCENT, size=8.5, bold_first=True)
+    ], fill=NOTE_FILL, border=ACCENT, size=SMALL_PT, bold_first=True)
 
+def hy_seika(doc):
     band(doc, "２", "成果目標・指標の達成状況（第７期・最終評価）")
     hantei = hantei_hyou()
     atsukai = atsukai_hyou()
@@ -339,7 +343,7 @@ def build_hyouka():
          f"第７期計画の成果目標及び指標{len(KPI7)}項目について、"
          "計画値と実績を突き合わせました。"
          + "、".join(f"{k}が{n}項目" for k, n in hantei)
-         + "です。", size=8.5)
+         + "です。", size=SMALL_PT)
     table(doc,
           [["判定", "項目数", "第８期での扱い", "項目数"]]
           + [[hantei[i][0] if i < len(hantei) else "",
@@ -347,7 +351,7 @@ def build_hyouka():
               atsukai[i][0] if i < len(atsukai) else "",
               atsukai[i][1] if i < len(atsukai) else ""]
              for i in range(max(len(hantei), len(atsukai)))],
-          [2600, 2500, 2600, 2506], size=8.5,
+          [2600, 2500, 2600, 2506], size=SMALL_PT,
           aligns=[None, "center", None, "center"])
     para(doc,
          "「達成」としたものも、数値の達成と課題の解決は別です。"
@@ -356,14 +360,15 @@ def build_hyouka():
          "緊急時に実際に受け入れた件数は記録されていません。"
          "第８期では、設置や配置の数ではなく機能の実績で測ります。"
          "未達成となった精神科病院からの退院（計画１人・実績０人）は、"
-         "第８期では具体の方を定めて支援します。", size=8.5)
+         "第８期では具体の方を定めて支援します。", size=SMALL_PT)
 
+def hy_mikomi(doc):
     band(doc, "３", "サービス見込量の評価（第７期・最終評価）")
     mh = mikomi_hyou()
     para(doc,
          f"主なサービス{len(MIKOMI)}区分を六つの区分に分けました。"
          + "、".join(f"{k}が{n}件" for k, _imi, n in mh if n)
-         + "です。", size=8.5)
+         + "です。", size=SMALL_PT)
     table(doc,
           [["区分", "意味", "件数"]]
           + [[k, imi, n] for k, imi, n in mh],
@@ -377,10 +382,9 @@ def build_hyouka():
          "アンケート調査で外出・緊急時の受入れのニーズが"
          "確かめられています。"
          "実績が０であることをニーズが０と読まず、"
-         "第８期では利用がない理由まで確かめます。", size=8.5)
+         "第８期では利用がない理由まで確かめます。", size=SMALL_PT)
 
-    page_break(doc)
-
+def hy_shisaku(doc):
     band(doc, "４", "施策の評価（第７期・最終評価）")
     sh = shisaku_hyou()
     para(doc,
@@ -388,7 +392,7 @@ def build_hyouka():
          "本村で実施しているかどうかではなく、"
          "住民の必要が充たされているかどうかで評価しました。"
          "村内に事業所がないサービスは、"
-         "圏域で対応できていれば課題として扱いません。", size=8.5)
+         "圏域で対応できていれば課題として扱いません。", size=SMALL_PT)
     table(doc,
           [["区分", "意味", "件数"]]
           + [[k, imi, n] for k, imi, n in sh],
@@ -398,8 +402,9 @@ def build_hyouka():
          "移動は障がい福祉としての実績が０で、"
          "村の公共交通と家族の送迎で対応している状態です。"
          "第８期では新設・強化の扱いとし、"
-         "公共交通・送迎・家族の負担を含めて再評価します。", size=8.5)
+         "公共交通・送迎・家族の負担を含めて再評価します。", size=SMALL_PT)
 
+def hy_kpi4(doc):
     band(doc, "５", "第４次障がい者計画の指標（中間評価）")
     kc = kakunin_chu()
     para(doc,
@@ -408,7 +413,7 @@ def build_hyouka():
          "このため「未達成」とは評価せず、"
          "基準値から目標値までの進み具合として見ます。"
          f"{len(KPI4)}指標のうち{kc}指標は現在値を確認中です"
-         "（村への照会の回答をいただいたうえで確定します）。", size=8.5)
+         "（村への照会の回答をいただいたうえで確定します）。", size=SMALL_PT)
     table(doc, kpi4_hyou(), [1500, 3700, 1700, 1700, 1606], size=8,
           aligns=[None, None, "center", "center", "center"])
     note(doc,
@@ -421,6 +426,7 @@ def build_hyouka():
          "⑥個別避難計画は現状値１件に対し令和８年８月の村の確認が"
          "０件で食い違っており、どちらを現状値とするかを確認中です。")
 
+def hy_hanei(doc):
     band(doc, "６", "第８期計画への反映")
     box(doc, [
         "以上を踏まえ、第８期計画では次の三つを行います",
@@ -436,22 +442,35 @@ def build_hyouka():
         "設置した数や配置した人数ではなく、相談の件数、"
         "緊急時に受け入れた件数、地域生活へ移った方の数、"
         "調整が付かなかった件数で測ります。",
-    ], fill=NOTE_FILL, border=ACCENT, size=8.5, bold_first=True)
+    ], fill=NOTE_FILL, border=ACCENT, size=SMALL_PT, bold_first=True)
     para(doc,
          "この評価の詳細は、別冊「前回計画の評価」"
          "（北塩原村障がい者自立支援協議会 資料３）に掲載しています。",
-         size=8.5)
+         size=SMALL_PT)
 
+HYOUKA_BLOCKS = [
+    ("表紙", hy_hyoushi),
+    ("1 この資料について", hy_kono),
+    ("2 成果目標・指標の達成状況", hy_seika),
+    ("3 サービス見込量の評価", hy_mikomi),
+    ("4 施策の評価", hy_shisaku),
+    ("5 第4次障がい者計画の指標", hy_kpi4),
+    ("6 第8期計画への反映", hy_hanei),
+]
+
+
+def build_hyouka():
+    doc = docx.Document()
+    setup_section(doc)
+    pages, oki = flow(doc, HYOUKA_BLOCKS)
     doc.save(HYOUKA_FILE)
-    return doc
+    return doc, oki
 
 
 # ===========================================================================
 # 5. アンケート結果報告 概要版
 # ===========================================================================
-def build_anke():
-    doc = docx.Document()
-    setup_section(doc)
+def an_hyoushi(doc):
     _hyoushi(doc, [
         ("◆　障がい福祉に関するアンケート調査　結果報告　概要版", 12),
         ("第８期北塩原村障がい福祉計画・"
@@ -462,6 +481,7 @@ def build_anke():
             "編集　北塩原村保健福祉課　福祉係　（TEL）0241-23-3113",
          size=8.5)
 
+def an_gaiyou(doc):
     band(doc, "１", "調査の概要")
     table(doc,
           [["項目", "障がい者調査（18歳以上）", "障がい児調査（18歳未満）"],
@@ -475,7 +495,7 @@ def build_anke():
            ["調査期間", "令和８年８月31日（月）～９月25日（金）", "同左"],
            ["配布数", "172人", "６人"],
            ["有効回答数", "38人（22.1％）", "３人（50.0％）"]],
-          [1500, 4500, 4206], size=8.5, fill_first=BAND)
+          [1500, 4500, 4206], size=SMALL_PT, fill_first=BAND)
     note(doc,
          "【結果を読むときの注意】障がい者調査の有効回答率は22.1％で、"
          "回答者の65.8％が65歳以上、"
@@ -488,21 +508,34 @@ def build_anke():
          "回答の割合に対象となる方の人数を掛けて"
          "見込量を求めることはしません。")
 
+def _an_kekka(doc, recs):
+    for midashi, honbun, _tashika in recs:
+        p = para(doc, space_after=2, size=SMALL_PT)
+        _run(p, f"■　{midashi}　", size=SMALL_PT, bold=True, color=DARK)
+        _run(p, honbun, size=SMALL_PT)
+
+
+# 主な結果は9分野あり、まとめて1ブロックにすると頁に収まらない。
+# 前半・後半に割り、flow() が頁の割り方を決める。
+_AN_HAN = (len(ANKE) + 1) // 2
+
+
+def an_kekka(doc):
     band(doc, "２", "主な結果")
-    for midashi, honbun, _tashika in ANKE:
-        p = para(doc, space_after=2, size=8.5)
-        _run(p, f"■　{midashi}　", size=8.5, bold=True, color=DARK)
-        _run(p, honbun, size=8.5)
+    _an_kekka(doc, ANKE[:_AN_HAN])
 
-    page_break(doc)
 
+def an_kekka2(doc):
+    _an_kekka(doc, ANKE[_AN_HAN:])
+
+def an_betsu(doc):
     band(doc, "３", "障がい別にみた特徴")
     para(doc,
          "所持している手帳により、身体障がい（29人）、"
          "知的障がい（２人）、精神障がい（６人）に区分して集計しました"
          "（複数の手帳を所持している方は各区分に計上）。"
          "知的障がい及び精神障がいは回答者数が少ないため参考値です。",
-         size=8.5)
+         size=SMALL_PT)
     table(doc, SHOGAIBETSU, [3906, 1600, 1600, 1550, 1550], size=8,
           aligns=[None, "center", "center", "center", "center"])
     para(doc,
@@ -511,16 +544,18 @@ def build_anke():
          "身体障がいの方（それぞれ27.6％、55.2％）を"
          "大きく上回っています。"
          "全体の割合だけを見ていると、"
-         "この違いが見えなくなります。", size=8.5)
+         "この違いが見えなくなります。", size=SMALL_PT)
 
+def an_kadai(doc):
     band(doc, "４", "調査結果からみた課題と本計画での対応")
     para(doc,
          "調査の結果から、本計画で対応すべき主な課題を"
          f"{len(KADAI) - 1}つに整理し、"
          "成果目標、サービス見込量及びその確保のための方策に"
-         "反映しました。", size=8.5)
-    table(doc, KADAI, [4400, 5806], size=8.5)
+         "反映しました。", size=SMALL_PT)
+    table(doc, KADAI, [4400, 5806], size=SMALL_PT)
 
+def an_mochiikata(doc):
     band(doc, "５", "この調査の用い方")
     box(doc, [
         "実績の数字では見えないニーズを拾うために用います",
@@ -534,11 +569,13 @@ def build_anke():
         "・確かめる対象の層を絞るために用います。"
         "この調査は無記名で回答された方を特定できないため、"
         "どの層を村の記録で確かめるかの手がかりとして使います。",
-    ], fill=NOTE_FILL, border=ACCENT, size=8.5, bold_first=True)
+    ], fill=NOTE_FILL, border=ACCENT, size=SMALL_PT, bold_first=True)
 
+def an_iken(doc):
+    # 計画の工程表はここには置かない。
+    # 工程の全体は計画素案の概要版に載せており、
+    # この概要版で住民に必要なのはパブリックコメントの日付である。
     band(doc, "", "ご意見をお寄せください")
-    table(doc, [list(r) for r in GAIYOU_HYO[-5:]], [2400, 7806], size=8,
-          header=False)
     box(doc, [
         "パブリックコメント（村民意見公募）を実施します",
         f"{wareki(PABU_KAISHI)}から{wareki(PABU_SHURYO)}まで"
@@ -549,10 +586,26 @@ def build_anke():
         "掲載しています。",
         "【お問合せ・ご意見の提出先】北塩原村役場　保健福祉課　福祉係"
         "（TEL）0241-23-3113",
-    ], fill=NOTE_FILL, border=ACCENT, size=8.5, bold_first=True)
+    ], fill=NOTE_FILL, border=ACCENT, size=SMALL_PT, bold_first=True)
 
+ANKE_BLOCKS = [
+    ("表紙", an_hyoushi),
+    ("1 調査の概要", an_gaiyou),
+    ("2 主な結果（前半）", an_kekka),
+    ("2 主な結果（後半）", an_kekka2),
+    ("3 障がい別にみた特徴", an_betsu),
+    ("4 調査結果からみた課題", an_kadai),
+    ("5 この調査の用い方", an_mochiikata),
+    ("ご意見をお寄せください", an_iken),
+]
+
+
+def build_anke():
+    doc = docx.Document()
+    setup_section(doc)
+    pages, oki = flow(doc, ANKE_BLOCKS)
     doc.save(ANKE_FILE)
-    return doc
+    return doc, oki
 
 
 # ===========================================================================
@@ -583,8 +636,12 @@ def verify(pages_h, pages_a):
             if lines > LINES_PER_PAGE:
                 ng.append(f"{na}の概要版 p.{i} が1ページに収まらない"
                           f"（{lines:.0f}行／目安{LINES_PER_PAGE}行）")
-        if len(pages) != 2:
-            ng.append(f"{na}の概要版が2ページでない: {len(pages)}ページ")
+        #   頁数は flow() が計算した結果である。
+        #   収まりさえすればよいが、4頁を超えると配布の形が変わるため
+        #   そこだけを限りとする。
+        if len(pages) > 4:
+            ng.append(f"{na}の概要版が4ページを超えている: "
+                      f"{len(pages)}ページ")
 
     # ② 件数を数え上げた値が本文に出ていること（手で書いていない証明）
     for k, n in hantei_hyou():
@@ -689,22 +746,23 @@ def verify(pages_h, pages_a):
           f"本体の生成器から数え上げ／"
           f"アンケート 割合{kazu}点を正本 第2章7 の現物と照合／"
           f"工程を kitashiobara_koutei.py と照合／"
-          f"いずれも2ページに収まる")
+          f"前回計画の評価{len(pages_h)}ページ・"
+          f"アンケート{len(pages_a)}ページに収まる")
     return True
 
 
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
-    dh = build_hyouka()
-    da = build_anke()
+    dh, oh = build_hyouka()
+    da, oa = build_anke()
     ph = estimate_lines(dh)
     pa = estimate_lines(da)
-    print(f"作成: {HYOUKA_FILE}")
-    for i, lines in enumerate(ph, 1):
-        print(f"  p.{i}  推定 {lines:.0f} 行 / 目安 {LINES_PER_PAGE} 行")
-    print(f"作成: {ANKE_FILE}")
-    for i, lines in enumerate(pa, 1):
-        print(f"  p.{i}  推定 {lines:.0f} 行 / 目安 {LINES_PER_PAGE} 行")
+    for path, pages, oki in ((HYOUKA_FILE, ph, oh), (ANKE_FILE, pa, oa)):
+        print(f"作成: {path}")
+        for name, pg, nokori in oki:
+            print(f"    p.{pg}  {name}（置いた後 {nokori:.0f}行）")
+        for i, lines in enumerate(pages, 1):
+            print(f"  p.{i}  推定 {lines:.0f} 行 / 目安 {LINES_PER_PAGE} 行")
     return ph, pa
 
 

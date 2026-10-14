@@ -68,6 +68,11 @@ from docx.oxml.ns import qn
 from docx.shared import Mm, Pt, RGBColor
 
 from kitashiobara_common import OUT_DIR, SERVICES_ADULT, SERVICES_CHILD
+from kitashiobara_gaiyou_taisai import (
+    ACCENT, BAND, BODY_PT, BORDER_COLOR, BOX_FILL, CHARS_PER_LINE,
+    DARK, FONT, FONT_B, LINE_PT, LINES_PER_PAGE, NOTE_FILL, OBI,
+    PAGE_W, SMALL_PT, TBL_PT,
+)
 from kitashiobara_koutei import (
     GAIYOU_HYO, PABU_KAISHI, PABU_NISSU, PABU_SHURYO, wareki,
 )
@@ -82,19 +87,13 @@ SHUUSOKU = shuusoku()
 
 OUT_FILE = f"{OUT_DIR}/北塩原村_計画素案_概要版.docx"
 
-FONT = "BIZ UDPゴシック"
-DARK = "1F3864"        # 章見出しの帯（計画素案の表頭と同色）
-ACCENT = "FF7F0E"      # 障がい分野の識別色（build_excel.py の規約）
-BAND = "DDEBF7"        # 小見出しの帯
-NOTE_FILL = "FFF2CC"   # 【要更新】ボックス
-BOX_FILL = "F2F2F2"
-BORDER_COLOR = "AAAAAA"
-
-PAGE_W = 10206         # A4（210mm）－左右余白15mm ＝ 180mm（twips）
-
-# 1ページに収まる行数の目安（A4縦・上下余白15mm・9pt・行送り固定12pt）
-LINES_PER_PAGE = 57
-CHARS_PER_LINE = 54    # 9pt 全角で1行に入るおよその文字数
+# 体裁は前回計画の概要版（令和6年3月）を実測して決めている。
+# kitashiobara_gaiyou_taisai.py が生成のたびにＰＤＦを測り直し、
+# 書体・本文の大きさ・基調色が前回と合っていることを確かめる。
+# 行数と文字数も紙面と文字の大きさから計算しており、手で書かない。
+#   書体     ＵＤデジタル教科書体（前回と同じ）
+#   本文     10ポイント（前回は9〜10ポイントで10ポイントが主）
+#   基調色   緑（前回の見出しの文字の色の実測から作る）
 
 
 # ============================================================
@@ -118,9 +117,16 @@ def _cell_margins(cell, top=30, left=80, bottom=30, right=80):
     cell._tc.get_or_add_tcPr().append(mar)
 
 
-def _run(para, text, size=9, bold=False, color=None):
+def _run(para, text, size=BODY_PT, bold=False, color=None):
+    """文字を置く。
+
+    太字は書体を替える。ＵＤデジタル教科書体は太さごとに別の書体
+    （NK-R と NK-B）として登録されているため、レギュラーに太字を
+    かけるとＷｏｒｄが字形を合成し、前回の概要版と見え方が変わる。
+    """
     run = para.add_run(text)
-    run.font.name = FONT
+    fn = FONT_B if bold else FONT
+    run.font.name = fn
     run.font.size = Pt(size)
     run.bold = bold
     if color:
@@ -130,12 +136,14 @@ def _run(para, text, size=9, bold=False, color=None):
     if rf is None:
         rf = _el("rFonts")
         rpr.insert(0, rf)
-    rf.set(qn("w:eastAsia"), FONT)
+    rf.set(qn("w:eastAsia"), fn)
+    rf.set(qn("w:ascii"), fn)
+    rf.set(qn("w:hAnsi"), fn)
     return run
 
 
-def para(doc, text="", size=9, bold=False, align=None, space_after=2,
-         indent=0, color=None, line=12):
+def para(doc, text="", size=BODY_PT, bold=False, align=None, space_after=2,
+         indent=0, color=None, line=LINE_PT):
     p = doc.add_paragraph()
     pf = p.paragraph_format
     pf.space_before = Pt(0)
@@ -180,15 +188,15 @@ def sub(doc, text, fill=BAND):
     _cell_margins(cell, top=20, bottom=20, left=100)
     p = cell.paragraphs[0]
     p.paragraph_format.space_after = Pt(0)
-    p.paragraph_format.line_spacing = Pt(12)
-    _run(p, text, size=9.5, bold=True, color="1F3864")
+    p.paragraph_format.line_spacing = Pt(LINE_PT)
+    _run(p, text, size=SMALL_PT, bold=True, color=DARK)
     _tbl_width(t)
     _no_borders(t)
     para(doc, "", size=3, space_after=0, line=4)
     return t
 
 
-def bullets(doc, lines, size=9):
+def bullets(doc, lines, size=SMALL_PT):
     for line in lines:
         para(doc, f"・{line}", size=size, indent=9)
 
@@ -212,7 +220,8 @@ def _borders(t, color=BORDER_COLOR):
     t._tbl.tblPr.append(borders)
 
 
-def table(doc, rows, widths, header=True, size=8.5, aligns=None, fill_first=None):
+def table(doc, rows, widths, header=True, size=TBL_PT, aligns=None,
+          fill_first=None):
     """本文の表。widths は twips で合計 PAGE_W とする。"""
     t = doc.add_table(rows=len(rows), cols=len(rows[0]))
     t.autofit = False
@@ -223,7 +232,7 @@ def table(doc, rows, widths, header=True, size=8.5, aligns=None, fill_first=None
             _cell_margins(cell)
             p = cell.paragraphs[0]
             p.paragraph_format.space_after = Pt(0)
-            p.paragraph_format.line_spacing = Pt(11)
+            p.paragraph_format.line_spacing = Pt(TBL_PT * 1.35)
             if aligns and aligns[c] == "center":
                 p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             is_head = header and r == 0
@@ -245,7 +254,8 @@ def table(doc, rows, widths, header=True, size=8.5, aligns=None, fill_first=None
     return t
 
 
-def box(doc, lines, fill=BOX_FILL, border=BORDER_COLOR, size=9, bold_first=False):
+def box(doc, lines, fill=BOX_FILL, border=BORDER_COLOR, size=SMALL_PT,
+        bold_first=False):
     """囲み（強調・注記）。"""
     t = doc.add_table(rows=1, cols=1)
     t.autofit = False
@@ -257,7 +267,7 @@ def box(doc, lines, fill=BOX_FILL, border=BORDER_COLOR, size=9, bold_first=False
     for i, line in enumerate(lines):
         p = first if i == 0 else cell.add_paragraph()
         p.paragraph_format.space_after = Pt(0)
-        p.paragraph_format.line_spacing = Pt(12)
+        p.paragraph_format.line_spacing = Pt(LINE_PT)
         _run(p, line, size=size, bold=(bold_first and i == 0))
     _tbl_width(t)
     _borders(t, border)
@@ -269,11 +279,46 @@ def note(doc, text):
     return box(doc, [text], fill=NOTE_FILL, border="C9A03B", size=8)
 
 
-def page_break(doc):
+def _make_break(doc):
+    """改ページの段落を作って本文から切り離して返す。"""
     p = doc.add_paragraph()
     p.paragraph_format.space_after = Pt(0)
     p.paragraph_format.line_spacing = Pt(1)
     _run(p, "", size=1).add_break(WD_BREAK.PAGE)
+    el = p._p
+    el.getparent().remove(el)
+    return el
+
+
+def page_break(doc):
+    el = _make_break(doc)
+    doc.element.body.append(el)
+
+
+def flow(doc, blocks):
+    """ブロックを順に置き、1頁に収まらなくなる手前で改ページを入れる。
+
+    改ページの位置を手で置いていたときは、文章を1行足すたびに
+    どの頁が溢れるかを人が確かめ直すことになっていた。
+    前回計画の概要版に合わせて本文を9ポイントから10ポイントに
+    上げたところ2頁が溢れたため、頁の割り方を計算に任せる形に改めた。
+    各ブロックを置いた後に行数を数え、その頁が目安を超えたときは
+    そのブロックの手前へ改ページを入れて次の頁に送る。
+    """
+    body = doc.element.body
+    oki = []
+    for name, fn in blocks:
+        mae = len(list(body.iterchildren()))
+        fn(doc)
+        els = list(body.iterchildren())[mae:]
+        if not els:
+            continue
+        pages = estimate_lines(doc)
+        if mae > 0 and pages[-1] > LINES_PER_PAGE:
+            els[0].addprevious(_make_break(doc))
+            pages = estimate_lines(doc)
+        oki.append((name, len(pages), pages[-1]))
+    return estimate_lines(doc), oki
 
 
 def figure(doc, name, title, src, width_mm=168):
@@ -656,8 +701,10 @@ def estimate_lines(doc):
                 continue
             zu = child.findall(".//" + qn("wp:extent"))
             if zu:
-                # 1行＝12pt＝152,400EMU（行送りを固定しているため）
-                pages[-1] += sum(int(x.get("cy")) for x in zu) / 152400
+                # 1行＝LINE_PT（行送りを固定しているため）。
+                # 1ポイント＝12,700EMU
+                pages[-1] += (sum(int(x.get("cy")) for x in zu)
+                              / (LINE_PT * 12700))
                 continue
             pages[-1] += max(1, -(-len(text) // CHARS_PER_LINE)) if text else 0.4
         elif child.tag == qn("w:tbl"):
@@ -678,7 +725,7 @@ def estimate_lines(doc):
 # ============================================================
 # 各ページ
 # ============================================================
-def page1(doc):
+def blk_hyoushi(doc):
     # 表紙帯
     t = doc.add_table(rows=1, cols=1)
     t.autofit = False
@@ -704,6 +751,7 @@ def page1(doc):
     _run(p, "作成年月　令和８年10月　／　発行　北塩原村　／　"
             "編集　北塩原村保健福祉課　福祉係　（TEL）0241-23-3113", size=8.5)
 
+def blk_shushi(doc):
     band(doc, "１", "計画策定の背景・趣旨")
     para(doc,
          "本村では、令和６年３月に「第４次北塩原村障がい者計画・第７期北塩原村障がい福祉計画・"
@@ -722,22 +770,27 @@ def page1(doc):
     sub(doc, "「障害」と「障がい」の表記について")
     para(doc, HYOKI_TEXT, space_after=4)
 
+
+def blk_ichizuke(doc):
     band(doc, "２", "計画の位置づけ")
     para(doc, "本計画は、以下の法律に基づいて策定する法定計画です。")
     table(doc, ICHIZUKE, [1250, 2985, 2985, 2986], aligns=["center", None, None, None],
           fill_first=BAND)
 
+def blk_kikan(doc):
     band(doc, "３", "計画の期間")
     table(doc, KIKAN, [3000, 2700, 4506], fill_first=BAND)
 
+
+def blk_shishin(doc):
     band(doc, "４", "国の基本指針の見直しのポイント")
     para(doc,
          "第８期障害福祉計画及び第４期障害児福祉計画に係る国の基本指針は令和８年３月31日に"
          "告示され、主な見直し事項として次の点が示されています。")
-    bullets(doc, SHISHIN_POINTS, size=8.5)
+    bullets(doc, SHISHIN_POINTS, size=SMALL_PT)
 
 
-def page2(doc):
+def blk_genjou(doc):
     band(doc, "５", "本村の障がい者の現状")
     para(doc,
          "本村の人口（住民基本台帳）は令和８年４月１日現在2,316人で、"
@@ -769,6 +822,7 @@ def page2(doc):
               "身体障害者手帳の令和６年度・令和７年度の実数を村から受領して"
               "確定します。それまでは幅でお示しします。")
 
+def blk_rinen(doc):
     band(doc, "６", "計画の基本理念")
     box(doc, [RINEN], fill=NOTE_FILL, border=ACCENT, size=10.5, bold_first=True)
     para(doc,
@@ -778,6 +832,7 @@ def page2(doc):
          "価値観を認め合いながら、誰もが自分らしく生活できる地域社会の実現を基本理念とします。",
          space_after=4)
 
+def blk_mokuhyou(doc):
     band(doc, "７", "基本目標")
     para(doc, "基本理念を実現するため、次の３つの目標を設定し、各種施策を推進します。")
     for title, text in MOKUHYOU:
@@ -785,7 +840,7 @@ def page2(doc):
         para(doc, text, space_after=4)
 
 
-def page2b(doc):
+def blk_shinki(doc):
     """第８期計画で新たに加える施策の一覧。
 
     村の方針資料は「新規の追加施策」が一覧で見えることを求めている。
@@ -800,7 +855,7 @@ def page2b(doc):
          "及びアンケート調査で把握した課題に応えるため、"
          f"次の{len(SHINKI)}件を新たに加えます。"
          "詳しい内容は計画本文の第３章４（表３-３）及び"
-         "各章をご覧ください。", size=8.5, space_after=3)
+         "各章をご覧ください。", size=SMALL_PT, space_after=3)
     table(doc, SHINKI_HYO, [5100, 5106], size=8)
     box(doc, [
         "このうち本村にとって特に重いもの",
@@ -814,13 +869,14 @@ def page2b(doc):
         "・障がいのある児童とその家族への支援"
         "（医療的ケア児等への支援、家族の休息）",
         "・18歳・22歳・65歳の到達時の引継ぎ",
-    ], fill=NOTE_FILL, border=ACCENT, size=8.5, bold_first=True)
+    ], fill=NOTE_FILL, border=ACCENT, size=SMALL_PT, bold_first=True)
 
+def blk_taikei(doc):
     band(doc, "９", "継承する施策体系と第８期計画で加わる視点")
     para(doc,
          "基本理念及び基本目標のもとに、第４次北塩原村障がい者計画が定める７つの基本施策を"
          "継承します。第８期計画で新たに加わる視点は、次のとおり各施策に接続します。",
-         size=8.5)
+         size=SMALL_PT)
     table(doc, SHISAKU, [1500, 5706, 3000], size=8)
     note(doc, "【要確認】目標値は第４次北塩原村障がい者計画が令和11年度を目標年度として"
               "定めたものです。本計画の策定に係るアンケート調査の結果と突き合わせたところ、"
@@ -832,7 +888,7 @@ def page2b(doc):
               "⑥個別避難計画は現状値１件に対し令和８年８月の村の確認が０件で食い違います。")
 
 
-def page3(doc):
+def blk_seika(doc):
     band(doc, "10", "令和11年度に向けた成果目標")
     para(doc,
          "障がいのある人の自立支援の観点から、地域生活への移行や就労支援等の課題に対応するため、"
@@ -843,7 +899,7 @@ def page3(doc):
               "目標値は北塩原村障がい者自立支援協議会での審議を経て確定します。")
 
 
-def page4(doc):
+def blk_mikomi(doc):
     band(doc, "11", "障がい福祉サービス等の見込量")
     kyufu_per, kyufu_total = load_kyufu()
     bullets(doc, [
@@ -859,9 +915,9 @@ def page4(doc):
         "介護保険に相当するサービスがない共同生活援助等は、65歳到達後も利用できます。",
         f"第８期の３か年の給付費は約{_oku_man(kyufu_total)}"
         f"（各年度約{_oku_man(kyufu_per)}）の見込みです。",
-    ], size=8.5)
+    ], size=SMALL_PT)
     para(doc, "＜主なサービスの利用者数（令和８年度の前計画→令和11年度の見込み）＞",
-         size=8.5, bold=True)
+         size=SMALL_PT, bold=True)
     table(doc, mikomi_rows(), [3053, 2050, 3053, 2050], size=8,
           aligns=[None, "center", None, "center"])
     note(doc, "【第1次概算】令和９〜11年度の値は令和７年度の給付実績に基づく概算です。"
@@ -869,43 +925,44 @@ def page4(doc):
               "「―」は現行計画に計上がないサービスです。")
 
 
-def page4b(doc):
-    """p.5 の後半（12 方策）。見込量の直後に置く。"""
+def blk_housaku(doc):
+    """12 方策。見込量の直後に置く。"""
     band(doc, "12", "必要な見込量を確保するための方策")
     para(doc,
          "見込量を定めるだけではサービスは確保できません。"
          "村内の事業所が少ないという本村の事情を踏まえ、"
-         "次の方策を進めます。", size=8.5, space_after=3)
+         "次の方策を進めます。", size=SMALL_PT, space_after=3)
     for midashi, text in HOUSAKU:
-        p = para(doc, space_after=2, size=8.5)
-        _run(p, f"■　{midashi}　", size=8.5, bold=True, color=DARK)
-        _run(p, text, size=8.5)
+        p = para(doc, space_after=2, size=SMALL_PT)
+        _run(p, f"■　{midashi}　", size=SMALL_PT, bold=True, color=DARK)
+        _run(p, text, size=SMALL_PT)
     para(doc, "", size=4, space_after=0, line=5)
 
 
-def page5(doc):
+def blk_ikou(doc):
     band(doc, "13", "年齢到達に伴うサービスの移行")
-    para(doc, IKOU_LEAD, size=8.5, space_after=3)
+    para(doc, IKOU_LEAD, size=SMALL_PT, space_after=3)
     figure(doc, "11_ライフコース_概要版.png",
            "図　ライフコースと制度の移行",
            "資料：北塩原村（本計画第５章５及び第７章により作成）",
            width_mm=158)
-    para(doc, IKOU_NOTE, size=8.5, space_after=4)
+    para(doc, IKOU_NOTE, size=SMALL_PT, space_after=4)
 
+def blk_renkei(doc):
     band(doc, "14", "他計画との連携")
     para(doc,
          "本計画は、村の関連計画と整合を図り、連携して施策を推進します。",
-         size=8.5, space_after=3)
+         size=SMALL_PT, space_after=3)
     table(doc, RENKEI, [2800, 1900, 5506], size=8)
 
 
-def page6(doc):
+def blk_koken(doc):
     band(doc, "15", "成年後見制度の利用促進")
     para(doc,
          "本村では、認知症、知的障がい、その他の精神上の障がいがあることにより、"
          "日常生活を支える様々な行為や買い物、財産管理が難しい事例が見られます。"
          "高齢化の進展を踏まえると、成年後見制度の必要性は今後も高まっていくことが見込まれます。",
-         size=8.5)
+         size=SMALL_PT)
     para(doc,
          "令和４年７月より中核機関「会津権利擁護・成年後見センター」を会津圏域11市町村で設置し、"
          "制度の周知啓発、広報活動、相談対応を行っています。令和６年度からは市民後見人養成事業が"
@@ -916,13 +973,14 @@ def page6(doc):
          "施行の日は公布の日から２年６月を超えない範囲内において"
          "政令で定める日とされており、本計画の期間中に施行されます。"
          "施行の内容に応じて、中核機関を通じて村の運用を見直します。",
-         size=8.5, space_after=4)
+         size=SMALL_PT, space_after=4)
 
+def blk_suishin(doc):
     band(doc, "16", "計画の推進体制")
     para(doc,
          "計画に定める事項については、PDCAサイクルにより進行管理を行います。"
          "評価は保健福祉課が行い、北塩原村障がい者自立支援協議会に報告して意見を聴いたうえで、"
-         "結果を村ホームページ等で公表します。", size=8.5)
+         "結果を村ホームページ等で公表します。", size=SMALL_PT)
     table(doc, PDCA, [1800, 8406], size=8, fill_first=BAND)
 
     band(doc, "", "今後の予定")
@@ -938,7 +996,7 @@ def page6(doc):
         "ご覧いただけます。",
         "【お問合せ・ご意見の提出先】北塩原村役場　保健福祉課　福祉係"
         "（TEL）0241-23-3113",
-    ], fill=NOTE_FILL, border=ACCENT, size=8.5, bold_first=True)
+    ], fill=NOTE_FILL, border=ACCENT, size=SMALL_PT, bold_first=True)
 
 
 # ============================================================
@@ -953,7 +1011,7 @@ def setup_section(doc):
     # 既定スタイルを本文書体に合わせる
     style = doc.styles["Normal"]
     style.font.name = FONT
-    style.font.size = Pt(9)
+    style.font.size = Pt(BODY_PT)
     rpr = style.element.get_or_add_rPr()
     rf = rpr.find(qn("w:rFonts"))
     if rf is None:
@@ -964,29 +1022,41 @@ def setup_section(doc):
     rf.set(qn("w:hAnsi"), FONT)
 
 
+# ブロックの並び。改ページは flow() が計算して入れる。
+# 手で置いていた改ページを外したのは、文章を1行足すたびに
+# どの頁が溢れるかを人が確かめ直すことになっていたためである。
+BLOCKS = [
+    ("表紙", blk_hyoushi),
+    ("1 計画策定の背景・趣旨", blk_shushi),
+    ("2 計画の位置づけ", blk_ichizuke),
+    ("3 計画の期間", blk_kikan),
+    ("4 国の基本指針の見直しのポイント", blk_shishin),
+    ("5 本村の障がい者の現状", blk_genjou),
+    ("6 計画の基本理念", blk_rinen),
+    ("7 基本目標", blk_mokuhyou),
+    ("8 本計画で新たに加える施策", blk_shinki),
+    ("9 継承する施策体系", blk_taikei),
+    ("10 令和11年度に向けた成果目標", blk_seika),
+    ("11 障がい福祉サービス等の見込量", blk_mikomi),
+    ("12 必要な見込量を確保するための方策", blk_housaku),
+    ("13 年齢到達に伴うサービスの移行", blk_ikou),
+    ("14 他計画との連携", blk_renkei),
+    ("15 成年後見制度の利用促進", blk_koken),
+    ("16 計画の推進体制", blk_suishin),
+]
+
+
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
     doc = docx.Document()
     setup_section(doc)
-
-    page1(doc)
-    page_break(doc)
-    page2(doc)
-    page_break(doc)
-    page2b(doc)
-    page_break(doc)
-    page3(doc)
-    page_break(doc)
-    page4(doc)
-    page4b(doc)
-    page_break(doc)
-    page5(doc)
-    page_break(doc)
-    page6(doc)
-
+    pages, oki = flow(doc, BLOCKS)
     doc.save(OUT_FILE)
 
-    pages = estimate_lines(doc)
+    print("  ブロックの置き場所:")
+    for name, pg, nokori in oki:
+        print(f"    p.{pg}  {name}（置いた後 {nokori:.0f}行）")
+
     print(f"作成: {OUT_FILE}")
     print(f"  ページ数: {len(pages)}")
     over = []

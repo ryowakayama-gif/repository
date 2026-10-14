@@ -82,6 +82,10 @@ from kitashiobara_common import (
 from kitashiobara_koutei import (
     GYAKUSAN, PABU_KAISHI, PABU_NISSU, PABU_SHURYO, wareki,
 )
+# 概要版の体裁は前回計画の概要版の実測から決めている。
+from kitashiobara_gaiyou_taisai import (
+    BODY_PT, FONT, TAISAI, verify as taisai_verify,
+)
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
@@ -483,22 +487,31 @@ SHOUKAI = [
      "図表目次は当方の生成器で作っており、"
      "表は94点から95点になります。",
      "令和8年10月16日"),
-    ("Ｓ-34", "他メンバー", "概要版の体裁（低視力の方への配慮）",
-     "概要版を案Ｃの体系と案Ａの工程に合わせて作り直します。"
-     "その際の体裁について、次の3点を決めたいと考えています。"
-     "①色だけで区別しないこと。"
-     "　グラフと表の区分を、色のほかに模様（ハッチング）又は"
-     "　線の種類で分けます。"
-     "②グレースケールで印刷しても読めること。"
-     "　村の印刷はモノクロ（コピー）であるため、"
-     "　色の濃淡だけで分けると区別できなくなります。"
-     "③本文の字の大きさ。"
-     "　計画本文は10ポイントですが、"
-     "　概要版は住民に配るものであるため12ポイントを考えています。"
-     "いずれも当方で作れますが、"
-     "他の計画（高齢者福祉計画・こども計画）の概要版と"
-     "体裁をそろえる必要があるため、"
-     "そちらの体裁をご教示ください。",
+    ("Ｓ-34", "他メンバー", "概要版のグラフをモノクロ印刷で読めるようにする",
+     "概要版の体裁は、前回計画の概要版"
+     "（第４次障がい者計画等 概要版。令和６年３月・４頁）を"
+     "実測して揃えました。"
+     "書体はＵＤデジタル教科書体、本文は10ポイント、"
+     "基調色は緑です。"
+     "字の大きさについては、住民向けに12ポイントとする案も"
+     "考えていましたが、前回が９から10ポイント"
+     "（10ポイントが主）であったため10ポイントとしています。"
+     "残っているのはグラフです。"
+     "前回の概要版の２頁の棒グラフは、凡例を"
+     "橙・桃・紫・青の４色で分けています。"
+     "村の印刷はモノクロ（コピー）であるため、"
+     "この形ではモノクロ印刷したときに凡例の区別が付きません。"
+     "当方のグラフは、色のほかに模様（ハッチング）又は"
+     "線の種類で分ける形にしたいと考えています。"
+     "次の２点をご教示ください。"
+     "①他の計画（高齢者福祉計画・こども計画）の概要版で、"
+     "グラフをどのように分けておられるか。"
+     "②前回計画の概要版と同じ色の並び"
+     "（橙・桃・紫・青）を保ったうえで模様を重ねるか、"
+     "色の並びも変えるか。"
+     "あわせて、本文を10ポイントにしたことにより"
+     "計画素案の概要版が７頁から８頁になりました。"
+     "印刷の折り方と部数は村と再確認します。",
      "令和8年10月16日"),
 ]
 
@@ -723,11 +736,27 @@ def verify():
         if warui in zenbun + honbun:
             ng.append(f"他団体の案件の地名が入っている: {warui}")
 
+    # ⑪ 概要版の体裁が前回計画の実測と合っていること
+    taisai = taisai_verify()
+    if "UD デジタル 教科書体" not in FONT:
+        ng.append(f"概要版の書体が前回と違う: {FONT}")
+    for rec in TAISAI:
+        if len(rec) != 5:
+            ng.append(f"体裁の照合の列数が5でない: {rec[0]}")
+    naoshita = [x[0] for x in TAISAI if x[2] != x[3]]
+    for iru in ("書体", "本文の大きさ", "基調色"):
+        if iru not in naoshita:
+            ng.append(f"体裁の{iru}を直していない")
+    for kaenai in ("頁の寸法", "節の見出し", "編集"):
+        if kaenai in naoshita:
+            ng.append(f"体裁の{kaenai}を変えている（変えない項目である）")
+
     if ng:
         for x in ng:
             print(f"  × {x}")
         raise SystemExit("自己点検で止めました")
 
+    print(f"  概要版の体裁: {taisai}")
     print(f"  自己検証: 新たに加える施策{len(SHINKI)}件が正本の現物と"
           f"場所まで一致／追記{len(TK_EDITS)}件・"
           f"書き換え{len(TK_KAKIKAE)}件・"
@@ -1003,6 +1032,58 @@ def sheet_seikahin(wb):
     return ws
 
 
+def sheet_taisai(wb):
+    ws = add_sheet(
+        wb, "07_概要版の体裁", "概要版の体裁（前回計画の概要版の実測）",
+        "令和8年10月14日に「概要版については前回計画の添付ファイルを"
+        "確認願います」との指示を受け、"
+        "前回計画の概要版（source/現行計画/第4次障がい者計画等_概要版.pdf。"
+        "令和6年3月・4頁）を実測した。"
+        "当方が自分の判断で決めていた体裁のうち3点が食い違っていた"
+        "（書体・本文の大きさ・基調色）。"
+        "実測は kitashiobara_gaiyou_taisai.py が生成のたびに"
+        "ＰＤＦからやり直し、記録した値と合っていることを確かめる。",
+        [18, 46, 32, 32, 60])
+    style_header_row(ws, 5, ["項目", "前回計画（実測）", "当方の従前",
+                             "当方の今回", "根拠・考え方"])
+    r = 6
+    for i, rec in enumerate(TAISAI):
+        write_row(ws, r, list(rec), alt=(i % 2 == 1),
+                  aligns=["left", "left", "left", "left", "left"])
+        if rec[2] != rec[3]:
+            ws.cell(row=r, column=4).fill = PatternFill(
+                "solid", fgColor="ED7D31")
+            ws.cell(row=r, column=4).font = Font(
+                name="游ゴシック", size=10, bold=True, color="FFFFFF")
+        ws.row_dimensions[r].height = 62
+        r += 1
+    r += 1
+    ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=5)
+    style_note(ws.cell(row=r, column=1),
+               "橙は当方が直したものである。"
+               "書体は前回と同じＵＤデジタル教科書体に、"
+               f"本文は{BODY_PT:g}ポイントに、"
+               "基調色は前回の見出しの文字の色の実測から作った緑に揃えた。"
+               "住民向けに12ポイントとする案は、"
+               "前回（9から10ポイント）より大きくなるため採らない。"
+               "本文を1ポイント上げたことにより頁数が増えたため、"
+               "改ページの位置を手で置くのをやめ、"
+               "ブロックを順に置いて1頁に収まらなくなる手前で"
+               "改ページを入れる形に改めた。"
+               "計画素案の概要版は7頁から8頁になり、"
+               "前回計画の評価とアンケート結果報告の概要版は"
+               "それぞれ2頁である。"
+               "なお、前回の概要版は Ｐｏｗｅｒｐｏｉｎｔ で作られている。"
+               "当方は Ｗｏｒｄ で作る（計画本文と同じ形で編集できる"
+               "ようにするため）。"
+               "字の大きさは実寸であり換算は要らない。"
+               "前回の図の凡例（橙・桃・紫・青）はモノクロ印刷すると"
+               "区別が付かないため、当方のグラフは模様又は線の種類で"
+               "分ける必要がある（Ｓ-34）。")
+    ws.row_dimensions[r].height = 150
+    return ws
+
+
 def sheet_shoukai(wb):
     ws = add_sheet(
         wb, "06_照会", "他メンバーへの確認",
@@ -1031,6 +1112,7 @@ def main():
     sheet_jibun(wb)
     sheet_koutei(wb)
     sheet_seikahin(wb)
+    sheet_taisai(wb)
     sheet_shoukai(wb)
     wb.save(OUT_FILE)
     print(f"作成: {OUT_FILE}")
