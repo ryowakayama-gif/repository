@@ -900,6 +900,42 @@ def f_techo(nen, suii, kei):
     return _save(fig, "f61_techo")
 
 
+def f_nissu(rows):
+    """1人あたり日数　見込み と 実績（前回計画の第6期）。
+
+    **量（人日）がなぜ見込みを下回ったのかを1枚で示す。**
+    人数ではなく、1人あたりの日数が離れている。
+
+    rows [(サービス, 見込み, 実績)]  いずれも日／月。見込みがなければ None
+    """
+    rows = [r for r in rows if r[1] is not None and r[2] is not None]
+    rows = sorted(rows, key=lambda r: r[2] / r[1])      # 離れている順
+    y = list(range(len(rows)))
+    h = 0.34
+    fig, ax = plt.subplots(figsize=(7.7, 0.52 * len(rows) + 1.5))
+    ax.barh([i + h / 2 for i in y], [r[1] for r in rows], height=h,
+            color=PALE, label="第6期の見込み")
+    ax.barh([i - h / 2 for i in y], [r[2] for r in rows], height=h,
+            color=BLUE, label="第6期の実績")
+    top = max(r[1] for r in rows) * 1.26
+    for i, (_nm, mi, ji) in enumerate(rows):
+        _lab(ax, mi + top * 0.012, i + h / 2, "%.1f" % mi, NAVY, sz=8)
+        _lab(ax, ji + top * 0.012, i - h / 2, "%.1f" % ji, BLUE, sz=8)
+        _lab(ax, top * 0.88, i, "%.0f％" % (ji / mi * 100),
+             RED if ji / mi < 0.6 else NAVY, ha="right", sz=8.5)
+    ax.set_yticks(y)
+    ax.set_yticklabels([r[0] for r in rows], fontsize=9)
+    ax.invert_yaxis()
+    ax.set_xlim(0, top)
+    ax.set_xlabel("1人あたりの利用日数（日／月）", fontsize=9)
+    _lab(ax, top * 0.88, -0.75, "実績÷見込み", NAVY, ha="right", sz=8.5)
+    ax.legend(fontsize=8, loc="upper center", ncol=2,
+              bbox_to_anchor=(0.5, -0.16), frameon=False)
+    _xgrid(ax)
+    fig.tight_layout()
+    return _save(fig, "f62_shogai_nissu")
+
+
 def f_yokaigo(shihyo, nintei):
     """要介護度の維持・改善（交付金 目標Ⅳ 成果指標群）。
 
