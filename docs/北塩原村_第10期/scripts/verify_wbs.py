@@ -407,6 +407,7 @@ except Exception as e:
 #    尋ね忘れ（どの票にも出ない）か二度尋ね（2つの票に出る）が起きる。
 #    ・未解決の確認事項は、束1〜6のどれか1つにだけ現れること
 #    ・ただし束7（調査工程・他メンバー担当）と影響度0（社内）は出さない
+#    ・区分Ｂ（当方で進める）も票には出さず、末尾の「ご回答は不要です」に回す
 #    ・影響度1（停止）の件は第1部に置かれていること
 try:
     import irai_bundle as _IB20
@@ -422,19 +423,39 @@ try:
     if nido:
         bad20.append("2つ以上の票に出る %d件（%s）" % (len(nido), nido[0][:24]))
 
-    # 数の突合：未解決 ＝ 票に出る分 ＋ 束7 ＋ 影響度0
+    # 数の突合：未解決 ＝ 票に出る分 ＋ 束7 ＋ 影響度0 ＋ 区分Ｂ
+    import wbs_kubun as _KB20
     machi20 = [k for k in K if k[6] in _IB20.MACHI]
     n_b7 = sum(1 for k in machi20 if _IB20.assign(k) == "束7")
     n_lv0 = sum(1 for k in machi20
                 if _IB20.assign(k) != "束7"
                 and (IMPACT.get(k[1]) or (None,))[0] == 0)
+    jibun20 = {r[3] for r in _IB20.jibun()}
+    n_jb = sum(1 for k in machi20
+               if _IB20.assign(k) != "束7"
+               and (IMPACT.get(k[1]) or (None,))[0] != 0
+               and _KB20.kubun(k[1]) == "Ｂ")
     n_hyo = len(doko)
-    if n_hyo + n_b7 + n_lv0 != len(machi20):
-        bad20.append("票%d＋束7の%d＋社内の%d＝%d が未解決の%d件に合わない"
-                     % (n_hyo, n_b7, n_lv0, n_hyo + n_b7 + n_lv0, len(machi20)))
+    if n_hyo + n_b7 + n_lv0 + n_jb != len(machi20):
+        bad20.append("票%d＋束7の%d＋社内の%d＋当方で進める%d＝%d が未解決の%d件に合わない"
+                     % (n_hyo, n_b7, n_lv0, n_jb, n_hyo + n_b7 + n_lv0 + n_jb,
+                        len(machi20)))
+    # 区分Ｂは票に出ず、末尾の一覧に出ること（どこにも出ないのは尋ね忘れと同じ）
+    ochi20 = [k[1] for k in machi20
+              if _KB20.kubun(k[1]) == "Ｂ" and k[1] not in jibun20
+              and _IB20.assign(k) != "束7"
+              and (IMPACT.get(k[1]) or (None,))[0] != 0]
+    if ochi20:
+        bad20.append("区分Ｂなのに末尾の一覧にも出ない %d件（%s）"
+                     % (len(ochi20), ochi20[0][:24]))
+    deta20 = [k[1] for k in machi20 if _KB20.kubun(k[1]) == "Ｂ" and k[1] in doko]
+    if deta20:
+        bad20.append("区分Ｂなのに票に出ている %d件（%s）"
+                     % (len(deta20), deta20[0][:24]))
     nashi = [k[1] for k in machi20
              if _IB20.assign(k) != "束7"
              and (IMPACT.get(k[1]) or (None,))[0] != 0
+             and _KB20.kubun(k[1]) != "Ｂ"
              and k[1] not in doko]
     if nashi:
         bad20.append("どの票にも出ない %d件（%s）" % (len(nashi), nashi[0][:24]))
@@ -447,9 +468,13 @@ try:
 
     chk(20, "照会票が組み立てられること", not bad20,
         "／".join(bad20[:3]) if bad20
-        else "未解決%d件のうち、票に%d件（束1〜6）・束7が%d件・社内が%d件。"
+        else "未解決%d件のうち、票に%d件（束1〜6。Ｃ%d件・Ｄ%d件）・"
+             "当方で進める%d件・束7が%d件・社内が%d件。"
              "二度尋ねなし、尋ね忘れなし、影響度1は第1部"
-             % (len(machi20), n_hyo, n_b7, n_lv0))
+             % (len(machi20), n_hyo,
+                sum(1 for k in machi20 if k[1] in doko and _KB20.kubun(k[1]) == "Ｃ"),
+                sum(1 for k in machi20 if k[1] in doko and _KB20.kubun(k[1]) == "Ｄ"),
+                n_jb, n_b7, n_lv0))
 except Exception as e:
     chk(20, "照会票が組み立てられること", False, "照合できない（%s）" % e)
 
@@ -481,6 +506,41 @@ try:
              % (midashi21, "・".join("影響度%d=%d件" % (k, v) for k, v in sorted(jitsu21.items()))))
 except Exception as e:
     chk(21, "影響度の見出しに書いた件数が実際と合うこと", False, "照合できない（%s）" % e)
+
+
+# ── 22　確認事項の区分が台帳と合っていること ───────────────────
+#    区分は「村に尋ねるもの／当方で進めるもの／先行して縮小するもの」の3つ。
+#    台帳（wbs_kubun.KUBUN）は題を鍵に持つ。題を直すと鍵が外れて黙ってＤに落ちる。
+#    落ちると、当方で片をつけるはずのものを村に尋ねてしまう。これを防ぐ。
+try:
+    import wbs_kubun as _KB22
+    bad22 = []
+    dai22 = {k[1] for k in K}
+    mayoi22 = [d for d in _KB22.KUBUN if d not in dai22]
+    if mayoi22:
+        bad22.append("確認事項にない題が台帳にある %d件（%s）"
+                     % (len(mayoi22), mayoi22[0][:30]))
+    riyu22 = [d for d, v in _KB22.KUBUN.items() if not v[1].strip()]
+    if riyu22:
+        bad22.append("当方が先行して行うことが空 %d件（%s）"
+                     % (len(riyu22), riyu22[0][:30]))
+    waru22 = [d for d, v in _KB22.KUBUN.items() if v[0] not in ("Ｂ", "Ｃ")]
+    if waru22:
+        bad22.append("Ｂ・Ｃ以外が台帳にある %d件（%s）" % (len(waru22), waru22[0][:30]))
+    # 解決済みのものに区分は要らない（SOLVED と重なっていないこと）
+    kai22 = {k[1] for k in SOLVED} & set(_KB22.KUBUN)
+    if kai22:
+        bad22.append("解決済みなのに区分がある %d件（%s）"
+                     % (len(kai22), sorted(kai22)[0][:30]))
+    n22 = _KB22.tally()
+    chk(22, "確認事項の区分が台帳と合っていること", not bad22,
+        "／".join(bad22[:3]) if bad22
+        else "未解決%d件を3つに分けた（Ｂ 当方で進める%d件・Ｃ 先行して縮小%d件・"
+             "Ｄ 村のご回答%d件）。村に尋ねるのはＣ・Ｄの%d件"
+             % (sum(n22.values()), n22["Ｂ"], n22["Ｃ"], n22["Ｄ"],
+                n22["Ｃ"] + n22["Ｄ"]))
+except Exception as e:
+    chk(22, "確認事項の区分が台帳と合っていること", False, "照合できない（%s）" % e)
 
 
 print()

@@ -22,6 +22,7 @@ def wareki(ymd):
     return f"令和{y-2018}年{m}月{d}日"
 BD_JP = None
 from wbs_kakunin import K, SOLVED
+import wbs_kubun as KB
 from spec_data import S, SHIEN, GAIBU
 from wbs_pending import (LEVEL, IMPACT, BUNDLE, READY, HOLD_REASON,
                          NEXT_DATE)
@@ -135,28 +136,29 @@ ws.sheet_view.zoomScale = 90
 
 # ══════════════════ Sheet2: 村への確認事項 ══════════════════
 wk = wb.create_sheet("村への確認事項")
-KH = ["優先度","区分","確認事項","なぜ必要か／影響","関連WBS No.","出所","状況","回答内容・回答日"]
-KW = [8, 12, 46, 56, 14, 16, 10, 30]
-title_bar(wk, "A1:H1", f"北塩原村への確認事項　一覧（基準日：{BD_JP}）")
-sub_bar(wk, "A2:H2",
+KH = ["優先度","照会","区分","確認事項","なぜ必要か／影響","関連WBS No.","出所","状況","回答内容・回答日"]
+KW = [8, 7, 12, 46, 56, 14, 16, 10, 30]
+title_bar(wk, "A1:I1", f"北塩原村への確認事項　一覧（基準日：{BD_JP}）")
+sub_bar(wk, "A2:I2",
     "優先度S＝9月3日の調査票第1稿提出・9月9日の校了・9月18日の発送を守るために決着が必要（キックオフ議事録で未決着のもの）／"
     "A＝令和8年9月中に確定が必要／B＝第1回策定委員会（11月）まで／C＝第2回以降　"
+    "｜　照会 Ｂ＝当方で進める（村にはお尋ねしません）／Ｃ＝他の計画・公表資料で先行し不足分のみ照会／Ｄ＝村のご回答が必要　"
     "｜　出所の doc番号は docs/北塩原村_第10期/ 配下の分析資料に対応します")
 KHR = 4
 head_row(wk, KHR, KH, KW)
 kr = KHR + 1
 for kubun, item, why, wbsno, src, prio, sts in sorted(K, key=lambda x: ("SABC".index(x[5]), x[0])):
-    vals = [prio, kubun, item, why, wbsno, src, sts, ""]
+    vals = [prio, KB.kubun(item), kubun, item, why, wbsno, src, sts, ""]
     for i, v in enumerate(vals, 1):
         c = wk.cell(row=kr, column=i, value=v)
         c.font = Font(name=F, size=9)
         c.border = BD
-        c.alignment = Alignment(vertical="top", wrap_text=(i in (3,4,8)),
-                                horizontal="center" if i in (1,5,6,7) else "left")
+        c.alignment = Alignment(vertical="top", wrap_text=(i in (4,5,9)),
+                                horizontal="center" if i in (1,2,6,7,8) else "left")
     wk.cell(row=kr, column=1).fill = PatternFill("solid", fgColor=C["prio"+prio])
     wk.cell(row=kr, column=1).font = Font(name=F, size=10, bold=True)
     if prio in ("S", "A"):
-        for i in range(2, 9):
+        for i in range(3, 10):
             wk.cell(row=kr, column=i).fill = PatternFill("solid", fgColor=C["note"])
     wk.row_dimensions[kr].height = 34
     kr += 1
@@ -164,26 +166,26 @@ KLAST = kr - 1
 
 # 解決済みブロック
 kr += 1
-sub_bar(wk, f"A{kr}:H{kr}", "■ 解決済み（記録）", fill=C["sub"])
+sub_bar(wk, f"A{kr}:I{kr}", "■ 解決済み（記録）", fill=C["sub"])
 wk[f"A{kr}"].font = Font(name=F, size=10, bold=True, color=C["white"])
 kr += 1
 for kubun, item, why, wbsno, src, prio, sts in SOLVED:
-    for i, v in enumerate([prio, kubun, item, why, wbsno, src, sts, ""], 1):
+    for i, v in enumerate([prio, "Ａ", kubun, item, why, wbsno, src, sts, ""], 1):
         c = wk.cell(row=kr, column=i, value=v)
         c.font = Font(name=F, size=9)
         c.border = BD
         c.fill = PatternFill("solid", fgColor=C["solved"])
-        c.alignment = Alignment(vertical="top", wrap_text=(i in (3,4,8)),
-                                horizontal="center" if i in (1,5,6,7) else "left")
+        c.alignment = Alignment(vertical="top", wrap_text=(i in (4,5,9)),
+                                horizontal="center" if i in (1,2,6,7,8) else "left")
     wk.row_dimensions[kr].height = 34
     kr += 1
 
 dv3 = DataValidation(type="list", formula1='"未依頼,依頼済,回答待ち,回答済,解決済"', allow_blank=True)
 dv4 = DataValidation(type="list", formula1='"S,A,B,C"', allow_blank=True)
 wk.add_data_validation(dv4); dv4.add(f"A{KHR+1}:A{KLAST}")
-wk.add_data_validation(dv3); dv3.add(f"G{KHR+1}:G{KLAST}")
-wk.freeze_panes = "C5"
-wk.auto_filter.ref = f"A{KHR}:H{KLAST}"
+wk.add_data_validation(dv3); dv3.add(f"H{KHR+1}:H{KLAST}")
+wk.freeze_panes = "D5"
+wk.auto_filter.ref = f"A{KHR}:I{KLAST}"
 wk.sheet_view.zoomScale = 90
 
 # ══════════════════ Sheet3: 仕様書対照 ══════════════════
@@ -589,7 +591,16 @@ for lv in sorted(LEVEL):
 
 # ── 影響度別の件数 ──
 rw += 1
-sub_bar(wp_, f"A{rw}:H{rw}", "■ 未解決の確認事項 187件の内訳（影響度 × 優先度）", fill=C["sub"])
+# 件数はじか書きしない。確認事項を足すと見出しだけ古くなるためである
+#（令和8年10月15日、187件のまま209件になっていたのを機械で出す形に改めた）
+_KN = {"Ｂ": 0, "Ｃ": 0, "Ｄ": 0}
+for _k in K:
+    if _k[6] in KB.MACHI:
+        _KN[KB.kubun(_k[1])] += 1
+sub_bar(wp_, f"A{rw}:H{rw}",
+        "■ 確認事項 %d件の内訳（影響度 × 優先度）　"
+        "照会の区分は Ｂ 当方で進める%d件・Ｃ 先行して縮小%d件・Ｄ 村のご回答%d件"
+        % (len(K), _KN["Ｂ"], _KN["Ｃ"], _KN["Ｄ"]), fill=C["sub"])
 wp_[f"A{rw}"].font = Font(name=F, size=10, bold=True, color=C["white"])
 rw += 1
 head_row(wp_, rw, ["影響度", "呼び方", "優先度S", "優先度A", "優先度B", "優先度C",

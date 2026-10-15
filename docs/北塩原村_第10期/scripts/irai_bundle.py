@@ -9,6 +9,11 @@
      同数なら先の束に入れる。2つの束に同じことを書くと、村に二度尋ねることになる。
    ・影響度0（社内）は入れない。当方で確かめれば済むものである。
    ・束7（調査工程）は他メンバーの担当のため、この照会票では扱わない。
+   ・区分Ｂ（当方で進める）は入れない。国・県の原典と公表資料で当方が片をつける
+     ものであり、村に尋ねる筋のものではない（wbs_kubun.py）。票の末尾に
+     「ご回答は不要です」として一覧で掲げる。
+   ・区分Ｃ（先行して縮小）は入れる。ただし当方が先行して整理したうえで、
+     村固有の事実だけを尋ねる形にする。各行の区分の欄にＣと記す。
 """
 import os as _os_p
 import re
@@ -16,6 +21,7 @@ import sys as _sys_p
 _sys_p.path.insert(0, _os_p.path.dirname(_os_p.path.abspath(__file__)))
 import paths as _P                     # noqa: F401  （置き場所はここで決める）
 import wbs_kakunin as KK
+import wbs_kubun as KB
 import wbs_pending as PD
 
 MACHI = ("未依頼", "一部回答", "再提起")      # まだ答えをいただいていないもの
@@ -156,12 +162,14 @@ def items(bundle):
     """その束の確認事項を、部ごとに分けて返す。
 
     返り値： [(影響度, 部の表題, 前置き,
-                [(見出し, 当方の扱い, 時期, 優先度, 状況, 元の見出し), …]), …]
+                [(見出し, 当方の扱い, 時期, 優先度, 状況, 元の見出し, 区分), …]), …]
 
-    末尾の「元の見出し」は確認事項との突き合わせに使う鍵である。
+    「元の見出し」は確認事項との突き合わせに使う鍵である。
     村にお見せする見出しではなく、確認事項に書かれているそのものを持つ。
+    「区分」はＣまたはＤである。Ｂはこの票に入らない。
     """
-    mine = [k for k in KK.K if k[6] in MACHI and assign(k) == bundle]
+    mine = [k for k in KK.K if k[6] in MACHI and assign(k) == bundle
+            and KB.kubun(k[1]) != "Ｂ"]
     out = []
     for lv, title, lead in PARTS:
         rows = []
@@ -175,7 +183,7 @@ def items(bundle):
             rows.append((midashi(k[1]),
                          yasashiku(imp[2] if imp else k[2]),
                          yasashiku(imp[3] if imp else "―", 40).rstrip("。"),
-                         k[5], k[6], k[1]))
+                         k[5], k[6], k[1], KB.kubun(k[1])))
         rows.sort(key=lambda r: (YUSEN.get(r[3], 9), r[0]))
         if rows:
             out.append((lv, title, lead, rows))
@@ -184,6 +192,18 @@ def items(bundle):
 
 def count(bundle):
     return sum(len(r[3]) for r in items(bundle))
+
+
+def jibun():
+    """区分Ｂ（当方で進める）の一覧。票の末尾に「ご回答は不要です」として掲げる。
+
+    束に割り当てない。束は「どの担当にお尋ねするか」で分けたものであり、
+    尋ねないものに束はないためである。
+    """
+    out = [(midashi(k[1]), KB.riyu(k[1]), k[5], k[1])
+           for k in KK.K if k[6] in MACHI and KB.kubun(k[1]) == "Ｂ"]
+    out.sort(key=lambda r: (YUSEN.get(r[2], 9), r[0]))
+    return out
 
 
 if __name__ == "__main__":

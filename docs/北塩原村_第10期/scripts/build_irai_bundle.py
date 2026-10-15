@@ -13,10 +13,13 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import paths as P
 import irai_bundle as IB
+import wbs_kubun as KB
 
 
 def build():
-    out = {"meta": IB.META, "goannai": IB.GOANNAI, "bundles": []}
+    out = {"meta": IB.META, "goannai": IB.GOANNAI, "bundles": [],
+           # 区分の説明と、当方で進める事項（村にご回答をお願いしないもの）
+           "kijun": KB.KIJUN, "jibun": [list(r) for r in IB.jibun()]}
     for nm, ti, nerai in IB.bundles():
         b = {"no": nm, "title": ti, "nerai": nerai, "n": IB.count(nm), "parts": []}
         for lv, title, lead, rows in IB.items(nm):

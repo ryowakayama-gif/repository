@@ -70,6 +70,16 @@ function build(b) {
   kids.push(p('ご回答の方法', {size: 22, bold: true, font: FONTG, color: NAVY, after: 100, keepNext: true}));
   C.goannai.forEach((t, i) => kids.push(p(`${i + 1}　${t}`, {after: 100, indent: {left: 120}})));
   kids.push(p('', {after: 160}));
+  kids.push(p('確認事項の区分について', {size: 22, bold: true, font: FONTG, color: NAVY, after: 100, keepNext: true}));
+  kids.push(p('確認事項は3つに分けております。当方で確かめられることを村にお尋ねしないためです。'
+              + '本票に掲げるのはＣ・Ｄのみで、Ｂは末尾に「ご回答は不要です」として一覧で掲げております。',
+              {after: 140}));
+  kids.push(table(['区分', '扱い'],
+    [['Ｂ', '当方で進めます。国・県の原典と公表資料で片がつくものです。ご回答は不要です（末尾に一覧）'],
+     ['Ｃ', '他の計画・公表資料で当方が先行して整理し、村固有の事実だけをお尋ねします'],
+     ['Ｄ', '村の決算・実績・内部データ・ご判断でなければ分からない事項です']],
+    [10, 90], null));
+  kids.push(p('', {after: 200}));
   kids.push(table(['部', '内容', '件数'],
     b.parts.map(s => [s.title.split('　')[0],
                       s.title.split('　').slice(1).join('　'),
@@ -90,11 +100,29 @@ function build(b) {
       children: [new TextRun({text: s.lead, font: FONTG, size: 18, color: GREY})],
     }));
     const rows = s.rows.map((r, i) => [
-      String(i + 1), r[0], r[1], r[2], r[4] === '一部回答' ? '（一部ご回答済）' : '',
+      `${i + 1}\n${r[6] || 'Ｄ'}`, r[0], r[1], r[2], r[4] === '一部回答' ? '（一部ご回答済）' : '',
     ]);
-    kids.push(table(['#', 'ご確認・ご提供をお願いしたいこと', '当方の現在の扱い', 'ご回答が必要な時期', 'ご回答'],
-                    rows, [4, 34, 29, 13, 20], PARTFILL[s.lv]));
+    kids.push(table(['#\n区分', 'ご確認・ご提供をお願いしたいこと', '当方の現在の扱い', 'ご回答が必要な時期', 'ご回答'],
+                    rows, [5, 33, 29, 13, 20], PARTFILL[s.lv]));
   });
+
+  if (C.jibun && C.jibun.length) {
+    kids.push(new Paragraph({children: [new PageBreak()]}));
+    kids.push(new Paragraph({
+      heading: HeadingLevel.HEADING_1, spacing: {before: 0, after: 240},
+      shading: {type: ShadingType.CLEAR, fill: NAVY}, keepNext: true,
+      children: [new TextRun({text: `参考　当方で進める事項（${C.jibun.length}件）　―　ご回答は不要です`,
+                              font: FONTG, size: 26, bold: true, color: 'FFFFFF'})],
+    }));
+    kids.push(p('次の事項は、国・県の原典および公表資料で当方が確かめられるものです。'
+                + '当方で解消すべき計算上・資料解釈上の疑問を村にお尋ねするのは筋が通らないため、'
+                + '本票から外しております。確認の結果は成果品に反映し、'
+                + '公表資料では村固有の事実を置き換えられないことが分かった場合は、改めてご照会いたします。',
+                {after: 200}));
+    kids.push(table(['#', '事項', '当方で行うこと'],
+      C.jibun.map((r, i) => [String(i + 1), r[0], r[1]]), [4, 44, 52], null));
+    kids.push(p('', {after: 200}));
+  }
 
   kids.push(new Paragraph({children: [new PageBreak()]}));
   kids.push(p('お問い合わせ・ご返送先', {size: 24, bold: true, font: FONTG, color: NAVY, after: 200}));
