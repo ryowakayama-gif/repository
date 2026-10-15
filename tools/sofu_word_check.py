@@ -132,6 +132,12 @@ def scan(path):
             if i >= 0:
                 hits.append((where, w, why,
                              raw[max(0, i - 30):i + len(w) + 30]))
+        # xlsx は Markdown の強調記号を解釈しない。書くとそのまま出る
+        # （CLAUDE.md §4）。docx は _runs() で解釈するものがあるため除く。
+        if path.endswith(".xlsx") and "**" in raw:
+            i = raw.find("**")
+            hits.append((where, "**", "強調記号がそのまま出る",
+                         raw[max(0, i - 30):i + 32]))
     return hits
 
 
