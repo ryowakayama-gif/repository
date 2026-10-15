@@ -1008,8 +1008,13 @@ def build_kiroku():
 
 # ---------------------------------------------------------------- main
 
+# 配布した版が後の版に置き換わったもの（打合せ記録は当時の名で残す）
+KOUKEI = []
+
+
 def selfcheck():
     bad = []
+    KOUKEI.clear()
     if OUR_GETSU != 6048:
         bad.append(f"当方の算定 {OUR_GETSU}≠6048")
     if SYS_GETSU != 6533:
@@ -1032,10 +1037,31 @@ def selfcheck():
                     ("配布資料", [r[0] for r in HAIFU])):
         if seq != [str(i) for i in range(1, len(seq) + 1)]:
             bad.append(f"{nm}の番号の並び {seq}")
-    # 配布資料一覧に挙げたファイルが実在すること
+    # 配布資料一覧に挙げたファイルが実在すること。
+    # ただし、**配布した版が後の版に置き換わっている**ことがある
+    # （素案 第9版 → 第11版 など）。版と日付を落とした名が一致する
+    # ファイルがあれば「後継あり」とし、NGとしない。
+    # **打合せ記録は配布した当時の名で残す。** 後の名に書き替えると記録が変わる。
+    import re as _re
     have = {p.name for p in (ROOT / "小野町_引継ぎ_整理済").rglob("*") if p.is_file()}
+
+    def _stem(x):
+        """末尾の版と日付を落とす。"""
+        x = _re.sub(r"\.(docx|xlsx)$", "", x)
+        x = _re.sub(r"_\d{8}$", "", x)
+        return _re.sub(r"_第\d+版$", "", x)
+
+    stems = {}
+    for h in have:
+        if h.endswith((".docx", ".xlsx")):
+            stems.setdefault(_stem(h), []).append(h)
     for _no, nm, _d, _m in HAIFU:
-        if nm.endswith((".docx", ".xlsx")) and nm not in have:
+        if not nm.endswith((".docx", ".xlsx")) or nm in have:
+            continue
+        kokei = stems.get(_stem(nm))
+        if kokei:
+            KOUKEI.append((nm, sorted(kokei)[-1]))
+        else:
             bad.append(f"配布資料が見当たらない {nm}")
     fun = sum(int(c.replace("**", "").replace("分", "")) for _a, _b, c, _d in SHIDAI)
     if fun != 90:
