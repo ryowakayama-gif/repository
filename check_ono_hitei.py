@@ -163,6 +163,23 @@ def t_setten():
         T.SETTEN[:] = hon
 
 
+def t_shogai_techo():
+    """手帳の内訳を1人ずらすと、計と合わなくなって止まるか。"""
+    import build_ono_soan_shogai as G
+
+    hon = [(nm, list(v)) for nm, v in G.TECHO_SUII]
+    try:
+        nm, v = G.TECHO_SUII[0]
+        v2 = list(v)
+        v2[0] += 1                     # 令和元年の身体を1人増やす
+        G.TECHO_SUII[0] = (nm, v2)
+        ng = G.jiko(None)
+        return "；".join(ng[:2]) if ng else ""
+    finally:
+        G.TECHO_SUII[:] = [(nm, list(v)) for nm, v in hon]
+
+
+
 # ---------------------------------------------------------------- 4 法定記載
 def t_hotei():
     """素案から語が1つ欠けたことにすると、✕と判定するか。"""
@@ -265,6 +282,8 @@ SHIKEN = [
     ("障がい素案　自己点検", "第2章の施策を1節ぶん減らす", t_shogai_setsu),
     ("障がい素案　自己点検", "法定記載事項から第88条第3項第4号を落とす",
      t_shogai_hotei),
+    ("障がい素案　自己点検", "手帳の内訳（令和元年の身体）を1人増やす",
+     t_shogai_techo),
     ("法改正の仕分け　自己点検", "事項を「介護保険法関係」に丸める", t_houkaisei),
 ]
 

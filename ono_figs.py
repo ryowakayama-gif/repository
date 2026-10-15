@@ -830,6 +830,76 @@ def f_kayoi(ken, chosa):
     return _save(fig, "f48_kayoi")
 
 
+def f_techo(nen, suii, kei):
+    """障がい者手帳所持者数の推移（種類別の積上げ）。
+
+    **手帳の種類によって動きが逆である**ことを示すのが眼目。
+    身体は減り、精神は増える。合計だけを見ると「減っている」で終わる。
+
+    nen  ["令和元年", ...]
+    suii [(名称, [値 or None, ...])]  None は未受領（棒を描かない）
+    kei  [計 or None, ...]
+    """
+    x = list(range(len(nen)))
+    col = {"身体障害者手帳": BLUE, "療育手帳": PALE,
+           "精神障害者保健福祉手帳": RED}
+    fig, (ax1, ax2) = plt.subplots(
+        1, 2, figsize=(7.9, 3.3), gridspec_kw={"width_ratios": [1.35, 1.0]})
+
+    # ---- 左：積上げ棒（合計の動き）
+    base = [0] * len(nen)
+    for nm, vals in suii:
+        h = [0 if v is None else v for v in vals]
+        ax1.bar(x, h, width=0.6, bottom=base, color=col.get(nm, GREY),
+                label=nm, edgecolor="white", linewidth=0.6)
+        base = [a + b for a, b in zip(base, h)]
+    top = max([v for v in kei if v is not None]) * 1.22
+    for i, v in enumerate(kei):
+        if v is not None:
+            _lab(ax1, i, v + top * 0.03, "%d" % v, NAVY, ha="center", sz=8)
+        else:
+            _lab(ax1, i, top * 0.05, "未受領", GREY, ha="center", sz=7)
+    ax1.set_xticks(x)
+    ax1.set_xticklabels([n.replace("令和", "R").replace("年", "")
+                         for n in nen], fontsize=9)
+    ax1.set_ylim(0, top)
+    ax1.set_ylabel("所持者数（人）", fontsize=9)
+    ax1.legend(fontsize=7.5, loc="upper center", ncol=3,
+               bbox_to_anchor=(0.5, -0.12), frameon=False)
+    ax1.set_title("合計の推移（積上げ）", fontsize=9.5, color=NAVY)
+    ax1.yaxis.grid(True, color="#E6E6E6", lw=0.8)
+    ax1.set_axisbelow(True)
+
+    # ---- 右：令和元年を100とした指数（種類ごとの向き）
+    for nm, vals in suii:
+        ix = [None if v is None else v / vals[0] * 100 for v in vals]
+        xs = [i for i, v in enumerate(ix) if v is not None]
+        ys = [ix[i] for i in xs]
+        c = col.get(nm, GREY)
+        # 値のない年をまたぐところは破線にする。
+        # 実線でつなぐと、受領していない年を推計したように見える。
+        for a, b in zip(range(len(xs) - 1), range(1, len(xs))):
+            tobu = xs[b] - xs[a] > 1
+            ax2.plot([xs[a], xs[b]], [ys[a], ys[b]],
+                     ls=":" if tobu else "-", lw=2.2, color=c)
+        ax2.plot(xs, ys, "o", ms=5, color=c, label=nm)
+        _lab(ax2, xs[-1], ys[-1], " %.0f" % ys[-1], c, ha="left", sz=8)
+    ax2.axhline(100, color=GREY, lw=1.0, ls="--")
+    ax2.set_xticks(x)
+    ax2.set_xticklabels([n.replace("令和", "R").replace("年", "")
+                         for n in nen], fontsize=9)
+    ax2.set_ylabel("令和元年＝100", fontsize=9)
+    ax2.set_title("種類別の向き（指数）", fontsize=9.5, color=NAVY)
+    ax2.yaxis.grid(True, color="#E6E6E6", lw=0.8)
+    ax2.set_axisbelow(True)
+    ax2.set_xlim(-0.4, len(nen) + 0.1)
+    ax2.legend(fontsize=7.5, loc="upper center", ncol=1,
+               bbox_to_anchor=(0.5, -0.12), frameon=False)
+
+    fig.tight_layout()
+    return _save(fig, "f61_techo")
+
+
 def f_yokaigo(shihyo, nintei):
     """要介護度の維持・改善（交付金 目標Ⅳ 成果指標群）。
 
