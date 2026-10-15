@@ -180,6 +180,21 @@ def t_shogai_techo():
 
 
 
+def t_zenkai_pdf():
+    """前回計画の読み取りを1つずらすと、原本との照合が止まるか。"""
+    import ono_shogai_zenkai as Z
+
+    Z.load()
+    hon = list(Z.SERVICE["生活介護"]["人日"]["6期"])
+    try:
+        Z.SERVICE["生活介護"]["人日"]["6期"][1] += 1
+        ng = Z.jiko()
+        return "；".join(ng[:2]) if ng else ""
+    finally:
+        Z.SERVICE["生活介護"]["人日"]["6期"][:] = hon
+
+
+
 # ---------------------------------------------------------------- 4 法定記載
 def t_hotei():
     """素案から語が1つ欠けたことにすると、✕と判定するか。"""
@@ -284,6 +299,7 @@ SHIKEN = [
      t_shogai_hotei),
     ("障がい素案　自己点検", "手帳の内訳（令和元年の身体）を1人増やす",
      t_shogai_techo),
+    ("前回計画の読み取り", "生活介護の実績を1人日増やす", t_zenkai_pdf),
     ("法改正の仕分け　自己点検", "事項を「介護保険法関係」に丸める", t_houkaisei),
 ]
 
