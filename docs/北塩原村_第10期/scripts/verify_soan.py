@@ -1421,7 +1421,12 @@ def main():
                          f"村が許容する{KYOYO52}頁に{n_all - KYOYO52}頁収まらない")
         # 実測が古くなっていないこと（素案が変わると推定が動く）
         for k52, est0, now in ES.jissoku_furui():
-            bad52.append(f"実測が古い（{k52}：測ったときの推定{est0}頁→いま{now}頁）")
+            if k52.startswith("素案が"):
+                bad52.append(f"実測が古い（{k52}：測ったときの素案 {est0}"
+                             f"→いまの素案 {now}。測り直す）")
+            else:
+                bad52.append(f"実測が古い（{k52}：測ったときの推定{est0}頁"
+                             f"→いま{now}頁）")
         chk(52, "分量の削減案が成り立つこと", not bad52,
             "・".join(bad52[:3]) if bad52
             else f"{len(ES.AN)}案（うち小見出しを指すもの{len([a for a in ES.AN if a[2]])}案）。"
@@ -2929,6 +2934,49 @@ def main():
                  "（原典で確かめたもののみを素案に書く）")
     except Exception as e:
         chk(77, "受け取った整理の資料IDが素案に漏れていないこと", False,
+            f"照合できない（{e}）")
+
+    # ── 78　法が計画に定めることを求めている事項を、条文単位で押さえていること ──
+    #    これまでの網羅性の点検は、国の基本指針の別表（資6・点検39）と
+    #    量の空欄（5-12・点検72）の2つだった。条文単位では見ていなかった。
+    #    令和8年法律第51号は介護保険法第117条に記載事項を加えており、
+    #    原則の施行は令和9年4月1日で**第10期計画そのものに掛かる**。
+    #    その追加分は別表でも量の空欄でも拾えない（scripts/hotei_kisai.py）。
+    try:
+        import hotei_kisai as HK78
+        import soan_content as SC78
+        bad78 = []
+        secs78 = {sec["no"] for ch in SC78.CH for sec in ch["sections"]}
+        OK78 = {"反映済み", "要反映", "確認待ち"}
+        GIMU78 = {"義務", "努力義務", "勘案", "手続"}
+        for jo78, gi78, naka78, kai78, sek78, ats78, saki78, memo78 in HK78.H:
+            if ats78 not in OK78:
+                bad78.append(f"{jo78}の扱い「{ats78}」が区分にない")
+            if gi78 not in GIMU78:
+                bad78.append(f"{jo78}の区分「{gi78}」が義務の種別にない")
+            if not saki78:
+                bad78.append(f"{jo78}に該当箇所が書かれていない")
+            for x78 in saki78:
+                if x78 not in secs78:
+                    bad78.append(f"{jo78}の該当箇所「{x78}」が素案にない")
+            if not str(memo78).strip():
+                bad78.append(f"{jo78}に扱いの説明がない")
+            # 令和8年法律第51号による追加は、要綱の項番を持っていること
+            if "（新）" in jo78 and not kai78:
+                bad78.append(f"{jo78}に改正の出どころ（要綱の項番）がない")
+        # 義務のものが書かれていなければ、計画として成り立たない
+        gimu_nuke = [x[0] + "（" + x[3] + "）" for x in HK78.H
+                     if x[1] == "義務" and x[5] != "反映済み"]
+        if gimu_nuke:
+            bad78.append("義務の記載事項が書かれていない：" + "・".join(gimu_nuke[:3]))
+        k78 = HK78.kubun()
+        chk(78, "法が求める記載事項を条文単位で押さえていること", not bad78,
+            "・".join(bad78[:3]) if bad78
+            else f"条文{len(HK78.H)}件（"
+                 + "・".join(f"{a} {b}件" for a, b in sorted(k78.items()))
+                 + "）。該当箇所はすべて素案に実在し、義務のものはすべて書かれている")
+    except Exception as e:
+        chk(78, "法が求める記載事項を条文単位で押さえていること", False,
             f"照合できない（{e}）")
 
     # ── 出力 ─────────────────────────────
