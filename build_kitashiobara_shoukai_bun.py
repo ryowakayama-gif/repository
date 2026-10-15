@@ -101,6 +101,34 @@ from build_kitashiobara_anke_kaitei import (  # noqa: E402
 from build_kitashiobara_ken_iryo import (  # noqa: E402
     SHOUKAI as S_KI,
 )
+
+
+def _kubun():
+    """確認事項の区分（Ａ〜Ｄ）を読み込む。
+
+    Ａ（解決済み）とＢ（当方で確認）は相手にお尋ねしない。
+    文書に載せるのはＣとＤだけにし、ＡとＢは「当方で確認する分」として
+    末尾に一覧で掲げる（ご回答不要）。
+    割付そのものは build_kitashiobara_kakunin_kubun.py に置いてある。
+    """
+    import importlib
+    m = importlib.import_module("build_kitashiobara_kakunin_kubun")
+    return {r[0]: (r[1], r[2], r[3]) for r in m.KUBUN}, m.A, m.B
+
+
+KUBUN_MAP, KU_A, KU_B = _kubun()
+
+
+def tazuneru(nos):
+    """便・節の番号のうち、相手にお尋ねするもの（Ｃ・Ｄ）だけを返す。"""
+    return [no for no in nos
+            if KUBUN_MAP.get(no, ("", "", ""))[0] not in (KU_A, KU_B)]
+
+
+def jibun(nos):
+    """便・節の番号のうち、当方で確認するもの（Ａ・Ｂ）を返す。"""
+    return [no for no in nos
+            if KUBUN_MAP.get(no, ("", "", ""))[0] in (KU_A, KU_B)]
 # 図表の点数は番号一覧の定義から取る。数を直書きすると、
 # 図表が増減したときに照会文だけが古くなる（Ｓ-21で一度そうなった）。
 from build_kitashiobara_zuhyo_bangou import (  # noqa: E402
@@ -564,6 +592,28 @@ def verify(zenbu):
     for no in HOKA + KEN_KEIYU:
         if no not in zenbu and no not in hoka_moto:
             ng.append(f"他メンバーあてに実在しない番号: {no}")
+    # ⑦ 区分（Ａ〜Ｄ）がすべての番号に付いており、
+    #    文書に載るのがＣ・Ｄだけであること。
+    #    Ａ・Ｂを相手に尋ねたままにしない、Ｃ・Ｄを落とさない。
+    waritsuke = {no for b in BIN for no in b["nos"]}
+    waritsuke |= {no for b in MEMBER_SETSU for no in b["nos"]}
+    waritsuke |= set(DENWA)
+    nai = sorted(waritsuke - set(KUBUN_MAP))
+    if nai:
+        ng.append(f"区分が付いていない番号がある: {nai}")
+    for no in sorted(waritsuke & set(KUBUN_MAP)):
+        ku = KUBUN_MAP[no][0]
+        noru = no in tazuneru(sorted(waritsuke))
+        if ku in (KU_A, KU_B) and noru:
+            ng.append(f"Ａ・Ｂを相手に尋ねている: {no}（{ku}）")
+        if ku not in (KU_A, KU_B) and not noru:
+            ng.append(f"Ｃ・Ｄを落としている: {no}（{ku}）")
+    #    便・節のいずれにもＣ・Ｄが残っていること（空の文書にしない）
+    if not any(tazuneru(b["nos"]) for b in BIN):
+        ng.append("村の照会に尋ねるものが1件も残っていない")
+    if not any(tazuneru(b["nos"]) for b in MEMBER_SETSU):
+        ng.append("他メンバーへの確認に尋ねるものが1件も残っていない")
+
     # 原典の入手をお願いするものは、第2回レビューの確認事項（K_R2）と
     # 再レビューの照会（S_RV）の2か所に置いてある。
     genten_moto = dict(hoka_moto)
@@ -627,7 +677,12 @@ def verify(zenbu):
           f"便をまたぐ重複なし／村以外あて{len(HOKA)}件を含めていない／"
           f"期限が便の順／"
           f"他メンバーあて{len(HOKA)}件が"
-          f"{len(MEMBER_SETSU)}節{len(ireta_m)}件に収まる")
+          f"{len(MEMBER_SETSU)}節{len(ireta_m)}件に収まる／"
+          f"区分が{len(waritsuke)}件すべてに付き、"
+          f"文書に載るのはＣ・Ｄの"
+          f"{len(tazuneru(sorted(waritsuke)))}件"
+          f"（Ａ・Ｂの{len(jibun(sorted(waritsuke)))}件は"
+          f"当方で確認する分として掲げる）")
     return mura
 
 
@@ -675,29 +730,42 @@ def build(zenbu):
     note(doc,
          "【お電話でお願いしたいこと】"
          "計画策定方針（令和８年５月25日）の工程について、"
-         "第２回協議会の開催日、パブリックコメントの時期、"
-         "第３回協議会（４町村広域）の開催日、庁議と議会への説明の時期が"
+         "第２回策定委員会の開催日、パブリックコメントの時期、"
+         "４町村広域の協議会の開催日、庁議と議会への説明の時期が"
          "現在どうなっているかをお聞かせください。"
          "工程が決まらないと、このご照会の期限そのものを"
-         "決められないためです（Ｍ-40）。")
+         "決められないためです。"
+         "書面では第１便のＭ-125にまとめております"
+         "（従前はＭ-40・Ｍ-123として別に掲げておりましたが、"
+         "同じ事項であるため１件にまとめました）。")
 
     h2(doc, f"{_su(len(BIN))}通の構成")
-    rows = [["便", "内容", "件数", "回答の希望期限", "なぜその期限か"]]
+    rows = [["便", "内容", "ご回答をお願いする件数",
+             "回答の希望期限", "なぜその期限か"]]
     for b in BIN:
-        rows.append([f"第{b['no']}便", b["midashi"], f"{len(b['nos'])}件",
+        t = tazuneru(b["nos"])
+        j = jibun(b["nos"])
+        ken = f"{len(t)}件"
+        if j:
+            ken += f"（ほか{len(j)}件は当方で確認）"
+        rows.append([f"第{b['no']}便", b["midashi"], ken,
                      b["kigen"], b["riyu"][:60] + "…"])
-    table(doc, rows, widths=[1100, 4200, 900, 2400, 6800])
+    table(doc, rows, widths=[1100, 3800, 1900, 2200, 6400])
 
     for b in BIN:
-        midashi_bin(doc, b, len(b["nos"]))
+        t = tazuneru(b["nos"])
+        if not t:
+            continue
+        midashi_bin(doc, b, len(t))
         para(doc, b["riyu"])
-        rows = [["番号", "ご確認いただきたいこと", "内容",
+        rows = [["番号", "区分", "ご確認いただきたいこと", "内容",
                  "計画のどこに使うか"]]
-        for no in b["nos"]:
+        for no in t:
             v = zenbu[no]
-            rows.append([v["no"], v["kenmei"], v["naiyo"],
+            rows.append([v["no"], KUBUN_MAP[no][0].split()[0],
+                         v["kenmei"], v["naiyo"],
                          v["tsukaimichi"] or "―"])
-        table(doc, rows, widths=[900, 3200, 8200, 3100])
+        table(doc, rows, widths=[900, 700, 3000, 7500, 3100])
 
     h2(doc, "回答をいただいた後に当方が行うこと")
     table(doc, [
@@ -744,8 +812,45 @@ def build(zenbu):
          "お答えいただければ、それ自体を計画に書きます"
          "（記録がないことも、次の３年間で記録を始める根拠になります）。")
 
+    _jibun_setsu(doc, zenbu, {},
+                 [no for b in BIN for no in b["nos"]] + list(DENWA), "村")
+
     doc.save(OUT_FILE)
     return doc
+
+
+def _jibun_setsu(doc, zenbu, r2, nos_all, aite):
+    """当方で確認する分（Ａ・Ｂ）を末尾に掲げる。ご回答は不要である。
+
+    従前はこれらも一緒にお尋ねしていた。当方で解消すべき疑問を
+    相手の確認責任に転嫁しないため、当方の側に引き取ったものである。
+    何を引き取ったかが分からないと、相手は従前の照会との差が
+    追えないため、落としたのではなく当方で確認することを明記する。
+    """
+    #   番号の順に並べる。便・節の順のままでは引きにくい。
+    j = sorted((no for no in nos_all
+                if KUBUN_MAP.get(no, ("",))[0] in (KU_A, KU_B)),
+               key=lambda x: (0 if x.startswith("Ｍ") else 1,
+                              int(x.split("-")[1])))
+    if not j:
+        return
+    h2(doc, f"当方で確認する分（{len(j)}件・ご回答は不要です）")
+    para(doc,
+         "従前のご照会に掲げておりました事項のうち、次の"
+         f"{len(j)}件は当方で確認いたします。ご回答は不要です。"
+         "内訳は、ほかのご照会に１件としてまとめたもの、"
+         "既に決着したもの、及び受領済みの資料で当方が確かめられる"
+         "ものです。"
+         "当方で解消すべき計算上・資料解釈上の疑問を"
+         f"{aite}の確認責任に移さないという考え方によるものです。")
+    rows = [["番号", "区分", "ご確認いただきたいとしていたこと",
+             "当方での取扱い"]]
+    for no in j:
+        v = zenbu.get(no) or r2.get(no) or {}
+        ku, riyu, togo = KUBUN_MAP[no]
+        rows.append([no, ku.split()[0], v.get("kenmei", "―"),
+                     (f"{togo}にまとめました。" if togo else "") + riyu])
+    table(doc, rows, widths=[900, 700, 3600, 10000])
 
 
 def build_member(zenbu):
@@ -779,27 +884,34 @@ def build_member(zenbu):
          "（北塩原村_計画素案_修正履歴.docx）に"
          "どこをどう直したかを残しております。")
 
-    h2(doc, f"{_su(len(MEMBER_SETSU))}節の構成")
-    rows = [["節", "内容", "件数", "ご回答の希望期限"]]
-    for b in MEMBER_SETSU:
-        rows.append([_su(b["no"]), b["midashi"],
-                     f"{_su(len(b['nos']))}件", b["kigen"]])
-    table(doc, rows, widths=[800, 5200, 1000, 3000])
+    ikiru = [b for b in MEMBER_SETSU if tazuneru(b["nos"])]
+    h2(doc, f"{_su(len(ikiru))}節の構成")
+    rows = [["節", "内容", "ご確認をお願いする件数",
+             "ご回答の希望期限"]]
+    for b in ikiru:
+        t = tazuneru(b["nos"])
+        j = jibun(b["nos"])
+        ken = f"{_su(len(t))}件"
+        if j:
+            ken += f"（ほか{_su(len(j))}件は当方で確認）"
+        rows.append([_su(b["no"]), b["midashi"], ken, b["kigen"]])
+    table(doc, rows, widths=[800, 4400, 1800, 3000])
 
-    for b in MEMBER_SETSU:
+    for b in ikiru:
         pp = doc.add_paragraph()
         pp.paragraph_format.space_before = Pt(18)
         pp.paragraph_format.space_after = Pt(6)
         rr = pp.add_run(f"{_su(b['no'])}　{b['midashi']}"
-                        f"（{_su(len(b['nos']))}件）")
+                        f"（{_su(len(tazuneru(b['nos'])))}件）")
         rr.font.size = Pt(13)
         rr.font.bold = True
         para(doc, b["riyu"])
-        rows = [["番号", "ご確認いただきたいこと", "内容"]]
-        for no in b["nos"]:
+        rows = [["番号", "区分", "ご確認いただきたいこと", "内容"]]
+        for no in tazuneru(b["nos"]):
             v = zenbu.get(no) or r2[no]
-            rows.append([v["no"], v["kenmei"], v["naiyo"]])
-        table(doc, rows, widths=[900, 3600, 10900])
+            rows.append([v["no"], KUBUN_MAP[no][0].split()[0],
+                         v["kenmei"], v["naiyo"]])
+        table(doc, rows, widths=[900, 700, 3400, 10200])
 
     h2(doc, "ご回答をいただいた後に当方が行うこと")
     table(doc, [
@@ -837,6 +949,10 @@ def build_member(zenbu):
          "表記の統一については、どちらに揃えるかのご判断だけで結構です。"
          "置換の一覧は当方で作ります。")
 
+    _jibun_setsu(doc, zenbu, r2,
+                 [no for b in MEMBER_SETSU for no in b["nos"]],
+                 "ご担当者様")
+
     doc.save(OUT_MEMBER)
     return doc
 
@@ -848,18 +964,25 @@ def main():
     doc_m = build_member(zenbu)
     print(f"作成: {OUT_FILE}")
     print(f"  段落{len(doc.paragraphs)}・表{len(doc.tables)}")
-    print(f"  村あて{len(mura)}件＝{len(BIN)}通{sum(len(b['nos']) for b in BIN)}件"
-          f"＋電話{len(DENWA)}件")
+    bin_t = sum(len(tazuneru(b["nos"])) for b in BIN)
+    bin_j = sum(len(jibun(b["nos"])) for b in BIN) + len(jibun(DENWA))
+    print(f"  村あて{len(mura)}件のうち、ご回答をお願いするのは{bin_t}件"
+          f"（当方で確認{bin_j}件）")
     for b in BIN:
-        print(f"  第{b['no']}便 {b['midashi']}　{len(b['nos'])}件　"
-              f"{b['kigen']}")
+        t, j = tazuneru(b["nos"]), jibun(b["nos"])
+        print(f"  第{b['no']}便 {b['midashi']}　"
+              f"尋ねる{len(t)}件・当方{len(j)}件　{b['kigen']}")
     print(f"作成: {OUT_MEMBER}")
     print(f"  段落{len(doc_m.paragraphs)}・表{len(doc_m.tables)}")
-    print(f"  他メンバーあて{len(HOKA)}件＋県への取次ぎ"
-          f"{len(KEN_KEIYU)}件＋原典の入手{len(GENTEN_IRAI)}件")
+    m_t = sum(len(tazuneru(b["nos"])) for b in MEMBER_SETSU)
+    m_j = sum(len(jibun(b["nos"])) for b in MEMBER_SETSU)
+    print(f"  他メンバー・県あて{len(HOKA) + len(KEN_KEIYU)}件のうち、"
+          f"ご確認をお願いするのは{m_t}件（当方で確認{m_j}件）")
     for b in MEMBER_SETSU:
-        print(f"  {b['no']} {b['midashi']}　{len(b['nos'])}件　"
-              f"{b['kigen']}")
+        t, j = tazuneru(b["nos"]), jibun(b["nos"])
+        nokeru = "（節を落とす）" if not t else ""
+        print(f"  {b['no']} {b['midashi']}　"
+              f"尋ねる{len(t)}件・当方{len(j)}件{nokeru}　{b['kigen']}")
 
 
 if __name__ == "__main__":
