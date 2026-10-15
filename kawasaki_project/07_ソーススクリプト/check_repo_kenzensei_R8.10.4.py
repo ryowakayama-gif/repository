@@ -20,6 +20,12 @@
   検査7　未追跡・未コミットの変更が残っていないか
   検査8　アップロード領域の受領資料が、リポジトリに退避されているか
          （中身の MD5 で突合する。ファイル名は変えてよい）
+  検査9　成果品の docx・xlsx が、ふつうの読み方で開けるか
+         ⚠ 令和8年10月15日、第1回策定委員会資料の docx が
+           python-docx で開けない状態にあることが分かった。
+           画像が .undefined という名で入っており、
+           [Content_Types].xml がその拡張子を宣言していなかった。
+           Word は寛容に開くため気づきにくい。点検の網から漏れていた。
 
   python3 07_ソーススクリプト/check_repo_kenzensei_R8.10.4.py
 
@@ -263,6 +269,38 @@ def main():
                   "セッションが作り直された後は確かめられない）"
         note.append(up_note)
 
+    # ══════════════════════════ 検査9　成果品が開けるか
+    #
+    # ⚠ 作れば終わりではない。**ふつうの読み方で開けること**まで見る。
+    #   Word・Excel は壊れかけた包みでも寛容に開くため、
+    #   目で見ているだけでは気づけない。
+    akanai = []
+    n_doc = 0
+    for d in SEIKA_DIRS:
+        for dirpath, _, files in os.walk(d):
+            for f in files:
+                if f.startswith("~$"):
+                    continue
+                p = os.path.join(dirpath, f)
+                if f.endswith(".docx"):
+                    n_doc += 1
+                    try:
+                        import docx as _docx
+                        _docx.Document(p)
+                    except Exception as e:
+                        akanai.append((p, f"{type(e).__name__}: {e}"[:90]))
+                elif f.endswith(".xlsx"):
+                    n_doc += 1
+                    try:
+                        import openpyxl as _op
+                        _op.load_workbook(p, read_only=True).close()
+                    except Exception as e:
+                        akanai.append((p, f"{type(e).__name__}: {e}"[:90]))
+    if akanai:
+        ng.append(f"検査9　ふつうの読み方で開けない成果品 {len(akanai)}件")
+        for p, e in akanai[:5]:
+            ng.append(f"　　{p}　{e}")
+
     # ══════════════════════════ 出力
     print("リポジトリの健全性の点検")
     print(f"  成果品 {seika}件／スクリプト {scripts}件"
@@ -280,6 +318,8 @@ def main():
     print("   ○ 成果品・スクリプト・図の正本・版の連なりは"
           "すべてリポジトリに追跡されている")
     print("   ○ スクラップパッドにしかない入力はない")
+    print(f"   ○ 成果品 {n_doc}件（docx・xlsx）は"
+          "ふつうの読み方で開ける")
     if up_total and not up_miss:
         print(f"   ○ 受領資料 {up_total}件はすべてリポジトリに"
               "退避されている（MD5で突合）")
