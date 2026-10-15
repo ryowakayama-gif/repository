@@ -1699,8 +1699,11 @@ ws = sheet("11_地域支援事業", "地域支援事業の量と費用の見込�
            "見込みの基礎は令和6年度の利用者実人数のままとします。",
            [4, 34, 10, 13, 13, 13, 13, 16, 24], freeze="A6")
 
-_HIHO_NOBI = {y: HIHO[y] / HIHO[BASE_Y] for y in Y3}
-_NIN_NOBI = {y: NOBI_ITTEI[y] for y in Y3}
+#   社会福祉法等の一部を改正する法律案要綱 第2の14（1）イにより、
+#   地域支援事業の量に関する中長期的な推計が介護保険法第117条第2項第3号の
+#   基本的記載事項となる。延ばす係数を中長期の年次まで持つ。
+_HIHO_NOBI = {y: HIHO[y] / HIHO[BASE_Y] for y in Y3 + YLONG}
+_NIN_NOBI = {y: NOBI_ITTEI[y] for y in Y3 + YLONG}
 
 r = 4
 r = lead(ws, r, "1　介護予防・日常生活支援総合事業の量の見込み", span=9)
@@ -1844,6 +1847,47 @@ r = note(ws, r,
          "控除する方法に改める場合はBを款4の全体183,384,259円に戻します。\n"
          "注3）令和7年度の事業ごとの利用者実人数の提供を受けた時点で"
          "置き直します（資料提供依頼No.13）。", span=9, height=68)
+r += 1
+
+# 社会福祉法等の一部を改正する法律案要綱 第2の14（1）イ（第117条第2項第3号）
+# により、地域支援事業の量に関する中長期的な推計が基本的記載事項となる。
+r = lead(ws, r, "5　地域支援事業の量の中長期的な推計"
+                "（法第117条第2項第3号）", span=9)
+r = header(ws, r, ["", "事業", "単位", "R6実績\n（3町計）", "令和11年度",
+                   "令和17年度", "令和22年度", "延ばし方", "備考"])
+CHIIKI_LONG = []            # (事業, 単位, 基準値, {年度: 値}, 延ばし方)
+_LY2 = ["2029"] + list(YLONG_HON)
+for nm, key, u, nb in SOGO_RYO:
+    b = sg3(key)
+    if b is None:
+        continue
+    f = _NIN_NOBI if nb == "認定者数" else _HIHO_NOBI
+    CHIIKI_LONG.append((nm, u, b, {y: b * f[y] for y in _LY2}, nb))
+for nm, key, u, nb in KAYOI_RYO:
+    b = sum(x for x in SG.KAYOI[key][0] if x is not None)
+    if nb == "据え置き":
+        CHIIKI_LONG.append((nm, u, b, {y: b for y in _LY2}, "据え置き"))
+    else:
+        f = _HIHO_NOBI
+        CHIIKI_LONG.append((nm, u, b, {y: b * f[y] for y in _LY2}, nb))
+for i, (nm, u, b, vs, nb) in enumerate(CHIIKI_LONG, start=1):
+    r = body(ws, r, [i, nm, u, b] + [round(vs[y], 1) for y in _LY2]
+             + ["据え置き" if nb == "据え置き" else nb + "の伸び",
+                "令和6年度実績を据え置いて延ばす"], height=22,
+             fmt={5: "0.0", 6: "0.0", 7: "0.0"})
+r = note(ws, r,
+         "注1）延ばし方は1及び2の表と同じです。"
+         "認定者数は令和22年度にかけて増えるため"
+         "サービス事業の量も増え、"
+         "第1号被保険者数はおおむね横ばいであるため"
+         "一般介護予防事業の量は横ばいとなります。\n"
+         "注2）事業費の中長期的な推計は、"
+         "令和7年度の事業ごとの実績及び"
+         "特定地域居宅サービス等事業その他の令和9年度に創設される事業の"
+         "費用の額が定まった時点で算定します［要協議］。\n"
+         "注3）通いの場の箇所数は3町の事業計画によるため据え置いています。"
+         "中長期の目標値は3町と協議のうえ定めます［要協議］。",
+         span=9, height=56)
 
 # ============================================================ 09
 _LY = ["2029"] + YLONG                      # 令和11年度＋中長期5年次
