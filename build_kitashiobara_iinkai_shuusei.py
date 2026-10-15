@@ -24,8 +24,14 @@
   に分け、①については差し替える文そのものを載せる形にした。
   このまま貼り付けられる。
 
-11月18日の委員会に間に合わせるために
-  工程（案Ａ）では策定委員会（第2回）が令和8年11月18日である。
+11月の委員会に間に合わせるために
+  工程（案Ａ）では策定委員会（第2回）が令和8年11月である。
+  日はうかがっていない（村の方針資料は「10月 第２回会議開催」と月のみ、
+  村の策定委員会資料のスケジュール表には策定委員会の行がない）。
+  当初この資料は「令和8年11月18日の予定とうかがっています」と
+  書いていたが、11月18日は当方が置いた日であって村から
+  うかがった日ではなかった。令和8年10月15日に改め、
+  日を村に照会する形にした（Ｍ-125）。
   資料の確定には庁内の確認を要するため、
   差し替えは早いほうがよい。
   ①の4件はいずれも当方の判断で確定しており、すぐに直せる。
@@ -58,14 +64,31 @@ from build_kitashiobara_kaigi import (  # noqa: E402
 from build_kitashiobara_review3_taiou import shuusoku  # noqa: E402
 from build_kitashiobara_taikei_hanei import SHINKI  # noqa: E402
 from kitashiobara_koutei import (  # noqa: E402
-    GAIYOU_HYO, PABU_KAISHI, PABU_NISSU, PABU_SHURYO, wareki,
+    GAIYOU_HYO, KARIOKI, PABU_KAISHI, PABU_NISSU, PABU_SHURYO,
+    taigai, wareki,
 )
 
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT_FILE = f"{REPO_ROOT}/output/北塩原村_策定委員会資料_修正指示.docx"
 HONPON = f"{REPO_ROOT}/output/北塩原村_計画素案_正本_移植後.docx"
 HI = "令和８年10月14日"
-IINKAI = "令和８年11月18日"
+# 策定委員会（第2回）の開催時期。村の方針資料・策定委員会資料・案Ａの
+# いずれも月までしか置いていないため、日を書かない。
+# 日を書くには村の回答（Ｍ-125）が要る。
+IINKAI = taigai("2026-11-18")
+
+# 前書きの注記。検査（②b）で見るため定数にしている。
+MAEGAKI_CHU = (
+    f"策定委員会（第２回）は{IINKAI}の開催と承知しておりますが、"
+    "開催日はまだうかがっておりません。"
+    "日が定まりましたらご教示ください（Ｍ-125）。"
+    "資料の確定には庁内のご確認を要しますので、"
+    "確定の４件は早めに差し替えていただけますと幸いです。"
+    "村の回答を待つもの（保留・４件）のうち、"
+    "手帳所持者数の出所と令和11年度の人口の見通しは"
+    "資料の数値に直に関わりますので、"
+    "村へのご照会の第１便（期限 令和８年10月24日）に"
+    "含めております。")
 
 # 手帳所持者数の令和11年度の推計（推計した生成器から引く）
 _SK = shuusoku()
@@ -344,6 +367,25 @@ def verify():
         if furui in g:
             ng.append(f"工程の表に従前の日付が残っている: {furui}")
 
+    # ②b 仮置きの日が、村へ渡す文書に1か所も現れていないこと。
+    #     策定委員会（第2回）・4町村広域・自立支援協議会・議会全員協議会は
+    #     出所が月又は旬までしかない。当方が置いた日を村の文書に
+    #     書かせてはならない（令和8年10月15日に見つけた誤り）。
+    zenbun = g + MAEGAKI_CHU + "\n".join(
+        r["basho"] + r["mae"] + r["ato"] + r["riyu"] for r in KAKUTEI)
+    for h, kou, tsuki in KARIOKI:
+        if wareki(h) in zenbun:
+            ng.append(f"仮置きの日が村へ渡す文書に入っている: "
+                      f"{kou} {wareki(h)}。{tsuki}と書く")
+    #     開催日をうかがったように書いていないこと。
+    #     うかがっていないものを「うかがっています」と書けない。
+    if "の予定とうかがっています" in MAEGAKI_CHU:
+        ng.append("うかがっていない開催日をうかがったように書いている")
+    if "開催日はまだうかがっておりません" not in MAEGAKI_CHU:
+        ng.append("開催日をうかがっていないことを書いていない")
+    if "Ｍ-125" not in MAEGAKI_CHU:
+        ng.append("開催日を照会する番号を書いていない")
+
     # ③ 直した後の文が工程・体系の単一出所と食い違わないこと
     ato = "\n".join(r["ato"] + r["riyu"] for r in KAKUTEI)
     for iru in (wareki(PABU_KAISHI), wareki(PABU_SHURYO),
@@ -464,15 +506,7 @@ def build():
          "村の回答を待たずに差し替えられるもの（確定・４件）については、"
          "差し替える文そのものを載せています。"
          "このまま貼り付けていただけます。")
-    note(doc,
-         f"策定委員会（第２回）は{IINKAI}の予定とうかがっています。"
-         "資料の確定には庁内のご確認を要しますので、"
-         "確定の４件は早めに差し替えていただけますと幸いです。"
-         "村の回答を待つもの（保留・４件）のうち、"
-         "手帳所持者数の出所と令和11年度の人口の見通しは"
-         "資料の数値に直に関わりますので、"
-         "村へのご照会の第１便（期限 令和８年10月24日）に"
-         "含めております。")
+    note(doc, MAEGAKI_CHU)
 
     h2(doc, "１　いま直せるもの（確定・４件）")
     for rec in KAKUTEI:

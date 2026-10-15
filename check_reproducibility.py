@@ -21,6 +21,10 @@
                                    別の場所に展開すると出力先が狂う
   C-5  外部資料に入手先の記録がある
                                    容量の都合で格納しない資料は入手先が要る
+  C-7  仮置きの日が成果物に出ていない
+                                   出所が月・旬までしかない他者の日程について、
+                                   当方が営業日を数えるために置いた日を
+                                   成果物に書いていないことを横断で見る
 
 点検項目（--regenerate を付けたとき）
   C-6  全生成器を実行し、HEAD と内容署名が一致する
@@ -589,6 +593,61 @@ def c5_external(rep, tracked):
                      "／".join(f"{k}：{v['why']}" for k, v in EXTERNAL_INPUT.items()))
 
 
+def c7_karioki(rep, tracked):
+    """仮置きの日が成果物に1点も出ていないこと。
+
+    出所が月又は旬までしかない他者の日程（策定委員会・4町村広域・
+    自立支援協議会・議会全員協議会）について、当方は営業日を数えるために
+    日を仮に置いている。この日が成果物に出てはならない。
+
+    令和8年10月15日、策定委員会（第2回）を令和8年11月18日として
+    村へ渡す文書にまで書いていた（村からうかがった日ではなかった）。
+    生成器ごとの検査では、新しい生成器が同じ誤りを繰り返しうる。
+    成果物の側を横断で見るのはそのためである。
+    """
+    sys.path.insert(0, REPO_ROOT)
+    from kitashiobara_koutei import KARIOKI, wareki
+    sys.path.pop(0)
+
+    def _hankaku(s):
+        for z, h in zip("０１２３４５６７８９", "0123456789"):
+            s = s.replace(z, h)
+        return s
+
+    sagasu = []
+    for h, kou, tsuki in KARIOKI:
+        hi = wareki(h)
+        sagasu.append((hi, kou, tsuki))
+        sagasu.append((_hankaku(hi), kou, tsuki))
+
+    bad = []
+    for path in sorted(tracked):
+        if not path.startswith("output/"):
+            continue
+        if not path.lower().endswith((".docx", ".xlsx")):
+            continue
+        full = os.path.join(REPO_ROOT, path)
+        if not os.path.exists(full):
+            continue
+        try:
+            z = zipfile.ZipFile(full)
+        except zipfile.BadZipFile:
+            continue
+        honbun = []
+        for name in z.namelist():
+            if name.endswith(".xml"):
+                honbun.append(z.read(name).decode("utf-8", "ignore"))
+        moji = "".join(honbun)
+        for hi, kou, tsuki in sagasu:
+            if hi in moji:
+                bad.append(f"{path} に仮置きの日がある: "
+                           f"{kou} {hi}（{tsuki}と書く）")
+    return rep.check(
+        "C-7", "仮置きの日が成果物に出ていない", bad,
+        f"仮置き{len(KARIOKI)}件を成果物の全文から探した"
+        f"（{'・'.join(k for _h, k, _t in KARIOKI)}）")
+
+
 def c6_regenerate(rep, tracked):
     """全生成器を実行し、HEAD と内容署名を照合する。"""
     print()
@@ -643,6 +702,7 @@ def main():
     c3_pairs(rep, tracked)
     c4_abs_paths(rep)
     c5_external(rep, tracked)
+    c7_karioki(rep, tracked)
     if regen:
         c6_regenerate(rep, tracked)
     else:

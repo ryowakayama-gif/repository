@@ -1198,11 +1198,12 @@ def sheet_koutei(wb):
                 "当方の納期からの逆算（9工程。変えていない）",
                 fill=COLORS["subhead"], size=11)
     r += 1
-    style_header_row(ws, r, ["工程", "日", "所要日数の出所", "―"])
+    style_header_row(ws, r, ["工程", "日", "所要日数の出所", "精度"])
     r += 1
     for i, rec in enumerate(GYAKUSAN):
-        write_row(ws, r, [rec[2], rec[1], rec[5], ""], alt=(i % 2 == 1),
-                  aligns=["left", "center", "left", "left"])
+        write_row(ws, r, [rec[2], rec[1], rec[5], rec[6]],
+                  alt=(i % 2 == 1),
+                  aligns=["left", "center", "left", "center"])
         ws.row_dimensions[r].height = 26
         r += 1
     return ws

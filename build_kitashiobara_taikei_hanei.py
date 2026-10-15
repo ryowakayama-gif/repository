@@ -951,16 +951,19 @@ def sheet_koutei(wb):
         wb, "04_工程（案Ａ）", "採用された工程（案Ａ）",
         "日付は kitashiobara_koutei.py に一本化している。"
         "所要日数は手で書かず、期限の間の営業日数を数えている。"
-        "「―（並行）」は納品までの道筋の上に乗らない工程である。",
-        [6, 14, 48, 14, 24, 42])
+        "「―（並行）」は納品までの道筋の上に乗らない工程である。"
+        "精度「仮」の4件は出所が月又は旬までしかなく、"
+        "日は営業日を数えるための仮置きである（Ｍ-125で照会）。",
+        [6, 14, 48, 14, 24, 42, 6])
     style_header_row(ws, 5, ["順", "期限", "工程", "所要日数", "誰が",
-                             "出所"])
+                             "出所", "精度"])
     r = 6
     for i, rec in enumerate(GYAKUSAN):
         write_row(ws, r, list(rec), alt=(i % 2 == 1),
                   aligns=["center", "center", "left", "center", "center",
-                          "left"],
-                  numfmts=[None, "yyyy/mm/dd", None, None, None, None])
+                          "left", "center"],
+                  numfmts=[None, "yyyy/mm/dd", None, None, None, None,
+                           None])
         if "原典あり" in rec[5]:
             ws.cell(row=r, column=6).fill = PatternFill(
                 "solid", fgColor=COLORS["calc"])

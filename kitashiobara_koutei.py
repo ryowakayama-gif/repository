@@ -88,43 +88,104 @@ def eigyoubi(kara, made):
 #    納期から遡る順に並べる。
 #    heiretsu=True は、納品までの道筋（クリティカルパス）の上に
 #    乗らない工程である。所要日数を数える相手にしない。
-#    (期限, 工程, 誰が, 出所, heiretsu)
+#    (期限, 工程, 誰が, 出所, heiretsu, 精度)
+#
+#    精度は2つしかない。
+#      "確" 日まで出所がある工程である。
+#           原典（仕様書）に日が書いてある、案Ａに日が書いてあって
+#           村が採用した、又は当社の手の内で日を決められる工程。
+#      "仮" 他者の日程であって、当社が営業日を数えるために
+#           置いた日である。出所は月又は旬までしかない。
+#           対外の文書には月又は旬で書く。日を書いてはならない。
+#
+#    「仮」を設けた理由（令和8年10月15日）
+#      当初、策定委員会（第2回）を令和8年11月18日として、
+#      その出所を「案Ａ」と書いていた。しかし案Ａは「11月 策定委員会」
+#      であって日を置いていない。村の方針資料（令和8年5月25日）も
+#      「10月 第２回会議開催」と月のみ、村の策定委員会資料の
+#      スケジュール表には策定委員会の行そのものがない。
+#      つまり11月18日には出所がなく、当社が日を創作したうえで
+#      出所欄に案Ａと書いていた。同じ誤りが4件あった
+#      （策定委員会・4町村広域・自立支援協議会・議会全員協議会）。
+#      精度の欄と下記⑩⑪⑫の検査でこの種の誤りを止める。
 # ===========================================================================
 _GENTEN = "仕様書5（原典あり）"
 _SOUTEI = "当方の想定（Ｍ-112で確認）"
 _SOUTEI2 = "当方の想定"
 _ANA = "案Ａ（令和8年10月14日採用）"
 _ANA_MURA = "案Ａ（令和8年10月14日採用）。村に確認（Ｍ-125）"
+# 他者の日程で、出所が月又は旬までしかないもの。日は営業日を数えるための
+# 仮置きであり、対外の文書には書かない。
+_KARI_TSUKI = ("案Ａ（令和8年10月14日採用）は月まで。"
+               "日は当方の仮置き（Ｍ-125で村に照会）")
+_KARI_JUN = ("案Ａ（令和8年10月14日採用）は旬まで。"
+             "日は当方の仮置き（Ｍ-125で村に照会）")
+
+_KAKU = "確"
+_KARI = "仮"
 
 _KOUTEI = [
     ("2027-03-31", "成果品の納品（計画書30部・調査報告書10部・"
-                   "電子媒体一式）", "当社", _GENTEN, False),
+                   "電子媒体一式）", "当社", _GENTEN, False, _KAKU),
     ("2027-03-26", "製本（計画書はくるみ製本、報告書はホチキス製本）",
-     "印刷業者又は当社", _SOUTEI, False),
+     "印刷業者又は当社", _SOUTEI, False, _KAKU),
     ("2027-03-19", "印刷（Ａ４判両面・モノクロ・コピー）",
-     "印刷業者又は当社", _SOUTEI, False),
-    ("2027-03-17", "入稿（印刷用データの引渡し）", "当社", _SOUTEI2, False),
-    ("2027-03-12", "校了（村の最終確認の完了）", "北塩原村", _SOUTEI, False),
-    ("2027-03-05", "再校（村の指摘の反映と再提出）", "当社", _SOUTEI2, False),
+     "印刷業者又は当社", _SOUTEI, False, _KAKU),
+    ("2027-03-17", "入稿（印刷用データの引渡し）", "当社", _SOUTEI2,
+     False, _KAKU),
+    ("2027-03-12", "校了（村の最終確認の完了）", "北塩原村", _SOUTEI,
+     False, _KAKU),
+    ("2027-03-05", "再校（村の指摘の反映と再提出）", "当社", _SOUTEI2,
+     False, _KAKU),
     ("2027-02-26", "初校（村へ提出し確認を受ける）",
-     "当社・北塩原村", _SOUTEI2, False),
+     "当社・北塩原村", _SOUTEI2, False, _KAKU),
     ("2027-02-25", "目次と頁数の確定（Ｗｏｒｄの目次の更新）",
-     "当社又は北塩原村", _SOUTEI2, False),
+     "当社又は北塩原村", _SOUTEI2, False, _KAKU),
     ("2027-02-24", "議会全員協議会（令和9年度主要事業の説明）",
-     "北塩原村", _ANA_MURA, True),
-    ("2027-02-19", "庁議（計画の決定）", "北塩原村", _ANA_MURA, False),
+     "北塩原村", _KARI_JUN, True, _KARI),
+    ("2027-02-19", "庁議（計画の決定）", "北塩原村", _ANA_MURA,
+     False, _KAKU),
     ("2027-02-16", "パブリックコメントの結果の整理と計画案の修正",
-     "当社・北塩原村", _ANA, False),
-    ("2027-02-09", "パブリックコメントの終了", "北塩原村", _ANA_MURA, False),
+     "当社・北塩原村", _ANA, False, _KAKU),
+    ("2027-02-09", "パブリックコメントの終了", "北塩原村", _ANA_MURA,
+     False, _KAKU),
     ("2027-01-26", "パブリックコメントの開始（15日間）",
-     "北塩原村", _ANA_MURA, False),
+     "北塩原村", _ANA_MURA, False, _KAKU),
     ("2027-01-15", "北塩原村障がい者自立支援協議会（計画案の審議）",
-     "北塩原村・当社", _ANA, False),
+     "北塩原村・当社", _KARI_JUN, False, _KARI),
     ("2026-12-16", "４町村広域の障がい者自立支援協議会（協議）",
-     "北塩原村・当社", _ANA, True),
+     "北塩原村・当社", _KARI_TSUKI, True, _KARI),
     ("2026-11-18", "策定委員会（第2回。計画素案・前回計画の評価・"
-                   "アンケート結果）", "北塩原村・当社", _ANA, False),
+                   "アンケート結果）", "北塩原村・当社", _KARI_TSUKI,
+     False, _KARI),
 ]
+
+# 案Ａ（docs/北塩原村_体系と工程の組みなおし.md の案Ａの行）が
+# 日まで置いた期限。ここに無い日を案Ａの出所で書いてはならない。
+ANA_HI = frozenset({
+    "2027-01-26",   # パブリックコメントの開始
+    "2027-02-09",   # パブリックコメントの終了
+    "2027-02-16",   # 結果の整理と計画案の修正
+    "2027-02-19",   # 庁議（計画の決定）
+    "2027-02-26",   # 初校
+    "2027-03-05",   # 再校
+    "2027-03-12",   # 校了
+    "2027-03-17",   # 入稿
+    "2027-03-19",   # 印刷
+    "2027-03-26",   # 製本
+    "2027-03-31",   # 納品
+})
+
+# 仮置きの日。対外の文書に現れてはならない。
+# (期限, 工程, 対外の文書に書く時期)
+KARIOKI = tuple(
+    (hi, kou, taigai) for (hi, kou, taigai) in (
+        ("2026-11-18", "策定委員会（第2回）", "令和８年11月"),
+        ("2026-12-16", "４町村広域の障がい者自立支援協議会", "令和８年12月"),
+        ("2027-01-15", "北塩原村障がい者自立支援協議会", "令和９年１月中旬"),
+        ("2027-02-24", "議会全員協議会", "令和９年２月下旬"),
+    )
+)
 
 # パブリックコメントの期間（暦日）。本文に書く日付はここから引く。
 PABU_KAISHI = "2027-01-26"
@@ -161,7 +222,7 @@ def _kumitate():
     out = []
     mae = None                                # 直前の（より後の）非並行の期限
     zen = None                                # 直前の期限（並行を含む）
-    for i, (hi, kou, dare, moto, heiretsu) in enumerate(_KOUTEI):
+    for i, (hi, kou, dare, moto, heiretsu, seido) in enumerate(_KOUTEI):
         if zen is not None and hi >= zen:
             raise SystemExit(
                 f"工程の期限が遡っていません: {kou}（{hi}）は"
@@ -176,8 +237,19 @@ def _kumitate():
             nissu = f"{eigyoubi(hi, mae)}営業日"
         if not heiretsu:
             mae = hi
-        out.append((i + 1, hi, kou, nissu, dare, moto))
+        out.append((i + 1, hi, kou, nissu, dare, moto, seido))
     return out
+
+
+def taigai(iso):
+    """対外の文書に書く時期。仮置きの日は月又は旬に戻して返す。
+
+    成果品に日付を書く生成器は、日を直に書かずにこれを通す。
+    """
+    for hi, _kou, tsuki in KARIOKI:
+        if hi == iso:
+            return tsuki
+    return _wareki(iso)
 
 
 GYAKUSAN = _kumitate()
@@ -261,7 +333,7 @@ def verify():
     #    手で書いた日数と突き合わせるのではなく、
     #    数え直して同じになることを見る。
     mae = None
-    for _no, h, kou, nissu, _dare, _moto in GYAKUSAN:
+    for _no, h, kou, nissu, _dare, _moto, _seido in GYAKUSAN:
         heiretsu = [x for x in _KOUTEI if x[0] == h and x[1] == kou][0][4]
         if heiretsu:
             if nissu != "―（並行）":
@@ -338,12 +410,50 @@ def verify():
         if _wareki(iso) != machi:
             ng.append(f"和暦の変換が合わない: {iso} → {_wareki(iso)}")
 
+    # ⑩ 案Ａを出所とする工程の日が、案Ａに実在する日であること。
+    #    令和8年10月15日に見つけた誤りはこれで止まる。
+    #    「案Ａ」と書きながら案Ａに無い日（11月18日など）を置けない。
+    for _no, h, kou, _nissu, _dare, moto, seido in GYAKUSAN:
+        ana = moto.startswith("案Ａ") and "仮置き" not in moto
+        if ana and h not in ANA_HI:
+            ng.append(f"案Ａを出所としているが案Ａに日が無い: {kou}（{h}）。"
+                      "案Ａが月又は旬までであれば精度を「仮」にし、"
+                      "出所に仮置きであることを書く")
+        if ana and seido != _KAKU:
+            ng.append(f"案Ａに日がある工程の精度が「確」でない: {kou}")
+        if seido == _KARI and "仮置き" not in moto:
+            ng.append(f"精度が「仮」であるのに出所に仮置きと書いていない: {kou}")
+        if seido == _KARI and "Ｍ-125" not in moto:
+            ng.append(f"仮置きの日を照会していない: {kou}。"
+                      "日を確かめる照会番号を出所に書く")
+        if seido not in (_KAKU, _KARI):
+            ng.append(f"精度が「確」「仮」のいずれでもない: {kou}（{seido}）")
+
+    # ⑪ 仮置きの一覧と精度が「仮」の工程が一致すること
+    kari_k = sorted(r[1] for r in GYAKUSAN if r[6] == _KARI)
+    kari_l = sorted(h for h, _k, _t in KARIOKI)
+    if kari_k != kari_l:
+        ng.append(f"仮置きの一覧と精度「仮」の工程が合わない: "
+                  f"{kari_k} ≠ {kari_l}")
+
+    # ⑫ 仮置きの日が、対外の文書に載せる表（GAIYOU_HYO）に
+    #    日として現れていないこと。月又は旬で書かれていること。
+    for h, kou, tsuki in KARIOKI:
+        if _wareki(h) in g:
+            ng.append(f"仮置きの日が概要版の表に載っている: "
+                      f"{kou} {_wareki(h)}。{tsuki}と書く")
+        if tsuki not in g:
+            ng.append(f"概要版の表に{kou}の時期（{tsuki}）がない")
+        if taigai(h) != tsuki:
+            ng.append(f"taigai() が月・旬を返さない: {h} → {taigai(h)}")
+
     if ng:
         for x in ng:
             print(f"  × {x}")
         raise SystemExit("工程の自己点検で止めました")
 
-    return (f"工程{len(GYAKUSAN)}件（うち並行2件）・"
+    return (f"工程{len(GYAKUSAN)}件（うち並行2件・日が仮置き"
+            f"{len(KARIOKI)}件）・"
             f"工程表{len(KIKAN)}期間・"
             f"パブリックコメント{PABU_NISSU}日間・"
             f"入稿 {_wareki(nyu[0][1])}・納品 {_wareki(GYAKUSAN[0][1])}")
@@ -352,7 +462,11 @@ def verify():
 if __name__ == "__main__":
     print(verify())
     print()
-    for no, h, kou, nissu, dare, moto in GYAKUSAN:
-        print(f"  {no:2d} {h} {nissu:12s} {kou[:40]:42s} {dare}")
+    for no, h, kou, nissu, dare, moto, seido in GYAKUSAN:
+        print(f"  {no:2d} {h} {seido} {nissu:12s} {kou[:40]:42s} {dare}")
+    print()
+    print("  日が仮置きの工程（対外の文書には月・旬で書く）")
+    for h, kou, tsuki in KARIOKI:
+        print(f"    {h} → {tsuki}　{kou}")
 else:
     verify()
