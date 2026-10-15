@@ -81,6 +81,9 @@ from build_kitashiobara_taikei_hanei import (  # noqa: E402
 )
 from build_kitashiobara_shogaiji_ronten import SJ_EDITS  # noqa: E402
 from build_kitashiobara_anke_kaitei import AK_EDITS  # noqa: E402
+from build_kitashiobara_ken_iryo import (  # noqa: E402
+    KI_EDITS, KI_GYOU,
+)
 from build_kitashiobara_graph import GRAPHS, OUT_DIR as ZU_DIR  # noqa: E402
 from build_kitashiobara_zuhyo_bangou import ZU, HYO  # noqa: E402
 
@@ -876,14 +879,20 @@ def apply_kakikae(doc):
 
 
 def apply_gyou(doc):
-    """他メンバー版の表に行を足す（AK_EDITS）。
+    """既にある表に行を足す（AK_EDITS・KI_GYOU）。
 
     表そのものは置き換えない。表頭で表を一つに絞り、
     直前の行の書式を写して行を足す。
+    AK_EDITS は他メンバー版の表、KI_GYOU は当方が作った表に足す。
+    KI_GYOU は kata を持たないため、型の検査は AK_EDITS のみに当てる。
     """
     for rec in AK_EDITS:
         if rec["kata"] != "表に行を足す":
             raise LookupError(f"型が未定義: {rec['no']} {rec['kata']}")
+        tbl = find_table(doc, rec["atama"])._tbl
+        add_rows(tbl, -1, rec["gyou"])
+        changes.append(f"表に行を足す{rec['no']}：{rec['saki']}")
+    for rec in KI_GYOU:
         tbl = find_table(doc, rec["atama"])._tbl
         add_rows(tbl, -1, rec["gyou"])
         changes.append(f"表に行を足す{rec['no']}：{rec['saki']}")
@@ -1298,6 +1307,7 @@ def main():
     apply_juten(doc, KH_EDITS, label="関連法令")
     apply_juten(doc, TK_EDITS, label="体系")
     apply_juten(doc, SJ_EDITS, label="障がい児")
+    apply_juten(doc, KI_EDITS, label="県医療計画")
     apply_gyou(doc)
     apply_kakikae(doc)
     apply_taikei_kakikae(doc)
