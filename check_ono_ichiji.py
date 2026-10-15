@@ -154,12 +154,17 @@ def check_keiri(wbs):
     """地域支援事業費・基金・繰越金（年報 様式4）。"""
     import build_ono_tanka as T
     for lab, d in T.CHIIKI_JISSEKI.items():
+        if lab == "令和7年度":
+            # 令和7年度の年報 様式4 は未入力である（下で0件であることを確かめる）。
+            # 一次資料は地域支援事業交付金（国庫）実績報告書 R７実績 とする。
+            continue
         ws = wbs[lab]["様式４"]
         for nm, key in (("介護予防・生活支援サービス事業費",
                          "介護予防・生活支援サービス事業"),
                         ("一般介護予防事業費", "一般介護予防事業"),
                         ("包括的支援事業・任意事業", "包括的支援事業・任意事業")):
             chk("年報 様式4", f"{lab} {nm}", d[key], _y4(ws, nm))
+    check_kofukin()
     ws6 = wbs["令和6年度"]["様式４"]
     chk("年報 様式4", "令和6年度 歳入歳出差引残額", 144205672,
         _y4_row(ws6, "歳入歳出差引残額"))
@@ -185,6 +190,65 @@ def check_keiri(wbs):
              if isinstance(ws7.cell(r, c).value, (int, float))
              and ws7.cell(r, c).value)
     chk("年報 様式4", "令和7年度 様式4 の非ゼロの数値", 0, nz)
+
+
+
+def _kofu(ws, code):
+    """地域支援事業交付金実績報告書の A欄（保険者の実績額）を符号で拾う。"""
+    for r in range(1, ws.max_row + 1):
+        for c in range(1, 7):
+            v = ws.cell(r, c).value
+            if isinstance(v, str) and v.strip() == code:
+                return ws.cell(r, 7).value
+    return None
+
+
+def check_kofukin():
+    """令和7年度の地域支援事業費（地域支援事業交付金（国庫）実績報告書）。
+
+    年報 様式4 が未入力のため、令和7年度はこちらを一次資料とする。
+    符号の意味は同報告書のとおり。
+      A1000 総合事業費の計（第1号事業＋審査支払手数料＋一般介護予防事業）
+      A1500 審査支払手数料／A1700 一般介護予防事業
+      A2000・A4000 包括的支援事業・任意事業
+      A5000 地域支援事業費の計
+    """
+    import warnings as _w
+
+    import openpyxl
+
+    import build_ono_tanka as T
+    p = (SRC / "18_年報・国保連データ" / "原本_決算・交付金"
+         / "04決算書、地域支援事業交付金実績報告"
+         / "地域支援事業交付金（国庫）実績報告書.xlsx")
+    if not p.exists():
+        chk("交付金実績報告 R7", "実績報告書の現物", "あり", None)
+        return
+    with _w.catch_warnings():
+        _w.simplefilter("ignore")
+        ws = openpyxl.load_workbook(p, data_only=True)["R７実績"]
+    g = {k: _kofu(ws, k) for k in
+         ("A1000", "A1500", "A1700", "A2000", "A4000", "A5000")}
+    d = T.CHIIKI_JISSEKI["令和7年度"]
+    chk("交付金実績報告 R7", "令和7年度 介護予防・生活支援サービス事業費",
+        d["介護予防・生活支援サービス事業"],
+        _sub(g["A1000"], g["A1500"], g["A1700"]))
+    chk("交付金実績報告 R7", "令和7年度 一般介護予防事業費",
+        d["一般介護予防事業"], g["A1700"])
+    chk("交付金実績報告 R7", "令和7年度 包括的支援事業・任意事業",
+        d["包括的支援事業・任意事業"], _add(g["A2000"], g["A4000"]))
+    chk("交付金実績報告 R7", "令和7年度 地域支援事業費の計（手数料を含む）",
+        sum(d.values()) + (g["A1500"] or 0), g["A5000"])
+
+
+def _sub(a, *rest):
+    if a is None or any(x is None for x in rest):
+        return None
+    return a - sum(rest)
+
+
+def _add(*xs):
+    return None if any(x is None for x in xs) else sum(xs)
 
 
 def check_shuno(wbs):
