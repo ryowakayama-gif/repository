@@ -23,6 +23,8 @@
   号の番号は要綱の「（第百十七条第二項第三号、第四号関係）」の記載による。
   改正後の条文で号がどう並ぶか（既存の号が繰り下がるか）は新旧対照条文で
   確かめる。確かめるまで、本計画の本文に号の番号を書かない。
+  新旧対照条文の所在は令和8年10月15日に特定した（GENTEN["shinkyu"]）。
+  当方の通信の経路では取得できなかったため、村または別の環境で入手する。
 
 【扱いの区分】
   反映済み   本計画の節に現に書かれている（saki の節が素案に実在すること）
@@ -42,6 +44,10 @@ GENTEN = {
  "oya": "https://www.mhlw.go.jp/stf/topics/bukyoku/soumu/houritu/221.html",
  "tedoto": "data/原典_法令/社会福祉法等の一部を改正する法律案要綱_令和8年法律第51号.pdf",
  "hash": "198b433d69edc407",
+ # 号の並びを確かめる資料。令和8年10月15日に所在を特定した（未入手）
+ "shinkyu": "https://www.mhlw.go.jp/content/001685803.pdf",
+ "gaiyou": "https://www.mhlw.go.jp/content/001685800.pdf",
+ "seiritsu": "https://www.mhlw.go.jp/content/001717214.pdf",
 }
 
 # ══════════════════════════════════════════════════════════════
@@ -196,7 +202,8 @@ def main():
     if not only:
         print(f"■ 原典　{GENTEN['youkou']}")
         print(f"    {GENTEN['url']}")
-        print(f"    手元 {GENTEN['tedoto']}（{GENTEN['hash']}）\n")
+        print(f"    手元 {GENTEN['tedoto']}（{GENTEN['hash']}）")
+        print(f"    新旧対照条文（号の並びを確かめる。未入手）{GENTEN['shinkyu']}\n")
         print(f"■ 法が計画に定めることを求めている事項　{len(H)}件")
         print("    " + "／".join(f"{a} {b}件" for a, b in sorted(kubun().items())) + "\n")
         for jo, gi, naka, kai, sek, ats, saki, memo in H:
