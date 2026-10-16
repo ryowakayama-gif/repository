@@ -195,6 +195,21 @@ def t_zenkai_pdf():
 
 
 
+def t_zenkai_shisaku():
+    """前回計画の施策の章を1つ消すと、9章そろっているかの点検が止まるか。"""
+    import ono_shogai_zenkai as Z
+
+    Z.load()
+    hon = list(Z.SHISAKU)
+    try:
+        Z.SHISAKU[:] = [x for x in Z.SHISAKU if not x[1].startswith("第10章")]
+        ng = Z.jiko()
+        return "；".join(ng[:2]) if ng else ""
+    finally:
+        Z.SHISAKU[:] = hon
+
+
+
 # ---------------------------------------------------------------- 4 法定記載
 def t_hotei():
     """素案から語が1つ欠けたことにすると、✕と判定するか。"""
@@ -300,6 +315,8 @@ SHIKEN = [
     ("障がい素案　自己点検", "手帳の内訳（令和元年の身体）を1人増やす",
      t_shogai_techo),
     ("前回計画の読み取り", "生活介護の実績を1人日増やす", t_zenkai_pdf),
+    ("前回計画の読み取り", "第2部の施策から第10章を落とす",
+     t_zenkai_shisaku),
     ("法改正の仕分け　自己点検", "事項を「介護保険法関係」に丸める", t_houkaisei),
 ]
 

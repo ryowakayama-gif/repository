@@ -186,7 +186,71 @@ def load():
     if not _PAGES:
         _PAGES.extend(_text())
         _parse()
+        _shisaku()
     return SERVICE
+
+
+# ------------------------------------------------- 第2部の施策（9分野）
+MARU = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮"
+SHISAKU = []        # (頁, 章, 項目名, 取組の数)
+
+
+def _shisaku():
+    """第2部（障がい者計画）の「施策の方向」の項目を取り出す。
+
+    各章は「施策の方向」の見出しのあと、①②③… の項目が並び、
+    それぞれに ○ で始まる取組が付く。
+    **「施策の方向」より前は見ない。** そこは現状・課題と
+    アンケートの選択肢（①居宅介護…）であり、施策ではない。
+    """
+    SHISAKU.clear()
+    sho = ""
+    for pno, t in _PAGES:
+        if "第 2 部 障がい者計画" not in t:
+            continue
+        m = re.search(r"第\s*(\d+)\s*章\s+(\S.{0,40})", t)
+        if m:
+            sho = "第%s章　%s" % (m.group(1), m.group(2).strip())
+        lines = [x.strip() for x in t.split("\n")]
+        for h, ln in enumerate(lines):
+            if "施策の方向" in ln:
+                lines = lines[h + 1:]
+                break
+        else:
+            continue
+        j = 0
+        while j < len(lines):
+            cur = lines[j]
+            if cur and cur[0] in MARU:
+                name, k = cur, j + 1
+                while (k < len(lines) and lines[k]
+                       and lines[k][0] not in MARU + "○"
+                       and len(name) < 34 and k - j < 3):
+                    name += lines[k]
+                    k += 1
+                # **○ は項目名と同じ行に始まることがある。**
+                # 「①意思疎通支援事業の充実 ○手話通訳者及び…」
+                # 名を切る前に、塊の全体で ○ を数える。
+                k2 = k
+                while k2 < len(lines) and not (lines[k2]
+                                               and lines[k2][0] in MARU):
+                    k2 += 1
+                n = "".join(lines[j:k2]).count("○")
+                name = re.sub(r"\s+", "", name).split("○")[0]
+                SHISAKU.append((pno, sho, name, n))
+                j = k
+                continue
+            j += 1
+
+
+# 前回計画そのものの誤記。**直さず、見つけたものとして残す。**
+GOKI = [
+    ("第10章のページヘッダ", "文化芸術活動・スポーツ活動等の**進行**",
+     "目次と本文の見出しは「**振興**」。ヘッダだけが誤り"),
+    ("第10章の節の名", "１ **総合的な就労支援**",
+     "**第9章第1節の名がそのまま入っている。**"
+     "章は文化芸術活動・スポーツ活動等の振興"),
+]
 
 
 # ---------------------------------------------------------------- 自己点検
@@ -223,7 +287,13 @@ def jiko():
         by = SERVICE.get(nm, {})
         if not any(k in d for d in by.values()):
             ng.append("%s %s が読めていない（AYASHII に挙げたもの）" % (nm, k))
-    # 5 何も読めていない、ということがない
+    # 5 第2部の施策が9章ぶん読めている
+    n_sho = len({x[1] for x in SHISAKU})
+    if n_sho != 9:
+        ng.append("第2部の施策の章が%d件（9件のはず）" % n_sho)
+    if len(SHISAKU) < 40:
+        ng.append("第2部の施策の項目が%d件しかない" % len(SHISAKU))
+    # 6 何も読めていない、ということがない
     if len(SERVICE) < 15:
         ng.append("読み取れたサービスが%d件しかない" % len(SERVICE))
     return ng
@@ -260,7 +330,24 @@ if __name__ == "__main__":
         if len(FUTOU) > 24:
             print("   ほか%d件" % (len(FUTOU) - 24))
     print()
+    print()
+    print("■ 第2部の施策（9分野）")
+    last = None
+    for pno, sho, nm, n in SHISAKU:
+        if sho != last:
+            print("   ── %s" % sho)
+            last = sho
+        print("      p%-4d %-32s 取組%d" % (pno, nm, n))
+    print("   章%d／項目%d／取組%d"
+          % (len({x[1] for x in SHISAKU}), len(SHISAKU),
+             sum(x[3] for x in SHISAKU)))
+    print()
+    print("■ 前回計画そのものの誤記（直していない）")
+    for a, b, c in GOKI:
+        print("   %-18s %s" % (a, b.replace("**", "")))
+        print("      %s" % c.replace("**", ""))
     ng = jiko()
+    print()
     print("■ 自己点検")
     if ng:
         for x in ng[:20]:
