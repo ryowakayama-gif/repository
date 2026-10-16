@@ -56,10 +56,13 @@ def main(pdf, docx):
     split, unknown, cur = [], [], 1
     for n, t in enumerate(doc.tables, 1):
         # 表の先頭を探す手掛かり。表題があればそれを使う。
+        # 1行1列の枠（囲み）も表である。先頭の行だけで探す
+        # （従前は2行以上の表しか手掛かりを作らず、枠が必ず
+        #  「位置を定められなかった表」として挙がっていた）。
         head = capmap.get(n) or (
             "".join(c.text for c in t.rows[0].cells)
-            + "".join(c.text for c in t.rows[1].cells)
-            if len(t.rows) > 1 else "")
+            + ("".join(c.text for c in t.rows[1].cells)
+               if len(t.rows) > 1 else ""))
         lastfull = "".join(c.text for c in t.rows[-1].cells)
         # 表題と表の並び順が一致しない文書では、直前の表のページから探すと
         # 見つからない。見つからなければ先頭のページから探し直す。
