@@ -35,7 +35,7 @@ sys.path.insert(0, "07_ソーススクリプト")
 from data_zuhyo import KOFU, KOUHO, WAKU, ZU  # noqa: E402
 
 OUT = "05_試算・管理シート/川崎町_図表データ管理台帳_R8.9.30.xlsx"
-SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.10_制度改正補完版.docx"
+SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.16_内容整備版.docx"
 SOAN_ALT = "01_第10期_最新版成果品/川崎町_計画書素案_v2.9_事業内容版.docx"
 FIGDIR = "08_図表"
 
@@ -119,7 +119,9 @@ def read_soan():
             continue
         # 本文からの参照（キャプションそのものは除く）
         for mr in re.finditer(r"図\d+-\d+", t):
-            refs.append((mr.group(0), sec, t[:60]))
+            # ⚠ 段落の全文を持つ。**60字で切ると、段落の後ろで
+            #   節を名指ししている参照（「（3-3・図3-2）」）を見落とす。**
+            refs.append((mr.group(0), sec, t))
     shiryo7 = []
     for t in d.tables:
         h = [c.text.strip() for c in t.rows[0].cells]
@@ -373,7 +375,12 @@ def main():
         if no not in secs:
             bad_ref.append(f"{no}（素案にない図・{sec}）")
         elif sec is not None and sec != secs[no] and not sec.startswith("1-"):
-            # 第1章は計画の全体を述べる章であり、他章の図を指すことがある
+            # 第1章は計画の全体を述べる章であり、他章の図を指すことがある。
+            # ⚠ **同じ段落がその図のある節を名指ししている場合**
+            #   （「（3-3・図3-2）」のように書いている場合）は、
+            #   読む側が図の場所を辿れるので正しい参照である。
+            if txt is not None and secs[no] in txt:
+                continue
             bad_ref.append(f"{no}を{sec}の本文が参照（図は{secs[no]}）")
     add("本文の図の参照が、その図のある節と合っていること",
         "本文の段落の「図N-M」の節 == data_zuhyo.py の sec"
