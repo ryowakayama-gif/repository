@@ -33,7 +33,7 @@ import sys
 import docx
 from docx.oxml.ns import qn
 
-SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.13_供給体制整理版.docx"
+SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.14_見込量補完版.docx"
 
 # （軸, 事項, 探す語, あるべき節のいずれか）
 ITEMS = [
