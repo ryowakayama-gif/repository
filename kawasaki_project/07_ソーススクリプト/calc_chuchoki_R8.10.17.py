@@ -297,6 +297,68 @@ NYUSHO = [
 ]
 
 
+def sokatsu_hikaku():
+    """見える化システムの総括表が持つサービス別の中長期の値と見くらべる
+
+    ⚠ **総括表の「2_サービス別給付費」には、サービス別の令和17・22年度の
+      給付費が別に入っている。本計画ではこれを用いていない。** 理由は2つ。
+      ①令和7年度に給付実績のあるサービスを令和9年度以降0と置いている
+      ②令和11年度から令和27年度まで同じ値が並び、認定者数が伸びても
+        給付費が動かない
+      いずれも、見える化システムの入力値が令和8年5月時点のまま固定され
+      解除できない状態にあることによる（project_mikomi_R8.9.15.py の
+      【4】(3) に記したとおり）。
+    ⚠ **本計画は令和9〜11年度についても総括表のサービス別の値を
+      用いていない。** 全年度を通じて年報の実績に認定者数の伸びを乗じる
+      方法で一貫して算定している。
+    ⚠ 本関数は、その差を数で示して記録に残すためのものである。
+      **総括表の値に合わせに行くためのものではない。**
+
+    戻り　{"総括表計": {年度: 千円}, "ゼロ": [サービス名], "一定": [サービス名]}
+    """
+    if not os.path.exists(SOKATSU):
+        return None
+    sb = openpyxl.load_workbook(SOKATSU, data_only=True)
+    ws = sb["2_サービス別給付費"]
+    RETSU2 = {"令和7年度": 5, "令和9年度": 7, "令和11年度": 9,
+              "令和17年度": 13, "令和22年度": 15, "令和27年度": 17}
+    # 合計行（1列目が「合計」で、3列目が給付費のもの）
+    goukei = {}
+    for r in range(11, ws.max_row + 1):
+        if str(ws.cell(r, 1).value or "").strip() != "合計":
+            continue
+        if "給付費" not in str(ws.cell(r, 3).value or ""):
+            continue
+        v = {y: ws.cell(r, c).value for y, c in RETSU2.items()}
+        if isinstance(v.get("令和17年度"), (int, float)) and \
+                v["令和17年度"] > 500_000:
+            goukei = {y: float(x) for y, x in v.items()
+                      if isinstance(x, (int, float))}
+    # 令和7年度に実績があるのに令和9年度以降0のもの／令和11年度以降一定のもの
+    zero, ittei = [], []
+    cur = ""
+    for r in range(11, ws.max_row + 1):
+        nm = ws.cell(r, 2).value
+        if nm and str(nm).strip() != "未使用":
+            cur = str(nm).strip()
+        if "給付費" not in str(ws.cell(r, 3).value or ""):
+            continue
+        v = {y: ws.cell(r, c).value for y, c in RETSU2.items()}
+        if not isinstance(v.get("令和7年度"), (int, float)):
+            continue
+        if v["令和7年度"] <= 0:
+            continue
+        ato = [v.get(y) for y in ("令和9年度", "令和11年度", "令和17年度",
+                                  "令和22年度")]
+        if all(isinstance(x, (int, float)) and x == 0 for x in ato):
+            zero.append(cur)
+        elif all(isinstance(x, (int, float)) for x in ato) and \
+                len({round(float(x), 3) for x in ato[1:]}) == 1 and ato[1]:
+            ittei.append(cur)
+    sb.close()
+    return {"総括表計": goukei, "ゼロ": zero, "一定": ittei}
+
+
 def nyusho_kyojukei():
     """入所・居住系の令和7年度給付費（円）を年報から足す
 
@@ -353,7 +415,7 @@ def yomu_soan_kyufu(path):
 
 def main():
     SOAN = os.path.join(
-        BASE, "01_第10期_最新版成果品/川崎町_計画書素案_v2.17_中長期補完版.docx")
+        BASE, "01_第10期_最新版成果品/川崎町_計画書素案_v2.18_範囲明記版.docx")
     kekka = santei()
     soan, kuwashiku = (yomu_soan_kyufu(SOAN) if os.path.exists(SOAN)
                        else ({}, {}))

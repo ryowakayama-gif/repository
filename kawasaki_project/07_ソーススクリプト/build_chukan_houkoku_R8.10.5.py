@@ -37,7 +37,7 @@ from docx.oxml.ns import qn
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from fix_soan_v111 import clone_table, set_el   # noqa: E402
 
-SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.17_中長期補完版.docx"
+SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.18_範囲明記版.docx"
 WBS = "川崎町_業務工程管理表.xlsx"
 GYOTEI = "05_試算・管理シート/川崎町_策定委員会_逆算工程表_R8.10.1.xlsx"
 OUT = "01_第10期_最新版成果品/川崎町_中間報告書_第1回_R8.10.docx"

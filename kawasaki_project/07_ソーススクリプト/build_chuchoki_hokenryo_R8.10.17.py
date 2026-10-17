@@ -51,7 +51,7 @@ import openpyxl
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.17_中長期補完版.docx"
+SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.18_範囲明記版.docx"
 TANA = "05_試算・管理シート/川崎町_素案の根拠の棚卸し_R8.10.7.xlsx"
 OUT = ("05_試算・管理シート/"
        "川崎町_第10期_計画見込量_中長期・保険料内訳_R8.10.17.xlsx")
@@ -430,6 +430,66 @@ def main():
     GY.put(ws, rows05,
            [GY.OKF if r[-1].endswith("○") else GY.NGF for r in rows05])
 
+    # ══════════════════ 06b　見える化システムの総括表との差
+    #   ⚠ **総括表のサービス別の値に合わせに行くための表ではない。**
+    #     用いていない理由（確認事項No.76・79・80）と、差の大きさを
+    #     記録に残すための表である。県への事前協議で問われうる。
+    hik = CC.sokatsu_hikaku()
+    ws = GY.sheet(
+        wb, "06b_見える化システムとの差",
+        "見える化システムの総括表のサービス別の値との差",
+        "⚠ **総括表の「2_サービス別給付費」には、サービス別の"
+        "令和17・22年度の給付費が別に入っています。"
+        "本計画ではこれを用いていません。** 理由は2つです。\n"
+        f"　①令和7年度に給付実績のあるサービスを令和9年度以降0と"
+        f"置いている（{len(hik['ゼロ']) if hik else 0}件。確認事項No.76）\n"
+        f"　②令和11年度から令和27年度まで同じ値が並び、認定者数が"
+        f"伸びても給付費が動かない（{len(hik['一定']) if hik else 0}件。"
+        f"確認事項No.80の、令和8年5月時点の値が解除できない"
+        f"状態によるもの）\n"
+        "⚠ **本計画は令和9〜11年度についても総括表のサービス別の値を"
+        "用いておらず、全年度を通じて年報の実績に認定者数の伸びを乗じる"
+        "方法で一貫して算定しています。**\n"
+        "⚠ **県への事前協議で、本計画の数値と見える化システムの出力の"
+        "違いを問われる可能性があります。** 差を下表に示します。",
+        ["年度", "見える化システムの総括表", "本計画（素案 9-2）",
+         "差", "差の割合", "備考"],
+        [14, 22, 20, 16, 12, 56])
+    rows06b = []
+    if hik and hik["総括表計"]:
+        for y in ("令和7年度", "令和9年度", "令和11年度", "令和17年度",
+                  "令和22年度"):
+            so = hik["総括表計"].get(y)
+            ho = kyufu.get("総給付費", {}).get(y)
+            if so is None or ho is None:
+                continue
+            sa = float(so) - float(ho)
+            biko = ("実績。差は丸めによるもの" if y == "令和7年度" else
+                    ("⚠ **計画期間の中にあり、保険料に効く**"
+                     if y in ("令和9年度", "令和11年度") else
+                     "長期の見通し。保険料には効かない"))
+            rows06b.append([y, float(so), float(ho), sa,
+                            f"{sa / float(ho) * 100:+.2f}％", biko])
+    GY.put(ws, rows06b,
+           [GY.OKF if abs(r[3]) <= 3 else
+            (GY.NGF if "保険料に効く" in r[5] else GY.WARN)
+            for r in rows06b])
+    r0 = 5 + len(rows06b) + 1
+    ws.cell(r0, 1).value = ("令和7年度に給付実績があるのに"
+                            "令和9年度以降0とされているサービス"
+                            "（確認事項No.76）")
+    ws.cell(r0, 1).font = openpyxl.styles.Font(name="游ゴシック", size=9,
+                                               bold=True)
+    GY.put(ws, [[x, "", "", "", "", ""] for x in (hik["ゼロ"] if hik else [])],
+           [GY.NGF] * len(hik["ゼロ"] if hik else []), r0=r0 + 1)
+    r0 = r0 + 2 + len(hik["ゼロ"] if hik else [])
+    ws.cell(r0, 1).value = ("令和11年度から令和27年度まで値が一定の"
+                            "サービス（確認事項No.80）")
+    ws.cell(r0, 1).font = openpyxl.styles.Font(name="游ゴシック", size=9,
+                                               bold=True)
+    GY.put(ws, [[x, "", "", "", "", ""] for x in (hik["一定"] if hik else [])],
+           [GY.WARN] * len(hik["一定"] if hik else []), r0=r0 + 1)
+
     # ══════════════════ 06　棚卸し70件の対応
     tana = yomu_tanaoroshi()
     # 本表に書き出した値の集合（文字として突合する）
@@ -621,7 +681,7 @@ def main():
 
     # 検査6　入所・居住系
     body = "\n".join(p.text for p in doc.paragraphs)
-    m = re.search(r"入所・居住系（施設・地域密着型・特定施設）が"
+    m = re.search(r"入所・居住系（[^）]*(?:（[^）]*）)?[^）]*）が"
                   r"([\d,]+)千円", body)
     if m:
         soan_v = Decimal(m.group(1).replace(",", ""))
