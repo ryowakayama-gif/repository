@@ -127,10 +127,12 @@ chk('⑧区分文書の見出し・小見出しの件数が行数と合う', not
     '・'.join('%s%d' % (k, len(v)) for k, v in SR.items())
     + ' と小見出し%d つが一致' % len(hs2) if not e2 else '／'.join(e2))
 
+# 件数はじか書きしない。《要確定》を増やすと点検だけ古くなるためである
+YH = re.search(r"H2\('《要確定》　町のご判断をいただく事項（(\d+)件）'\)", soan)
+YN = int(YH.group(1)) if YH else 0
 YK = [int(m) for m in re.findall(
-    r"\['\*\*(\d+)\*\*', ", seg(soan, "H2('《要確定》　町のご判断をいただく事項（15件）')",
-                                "H2('《要回答》"))]
-chk('⑨《要確定》が1〜15で欠番・重複なく順に並ぶ', YK == list(range(1, 16)),
+    r"\['\*\*(\d+)\*\*', ", seg(soan, YH.group(0) if YH else '', "H2('《要回答》"))]
+chk('⑨《要確定》が1〜%d で欠番・重複なく順に並ぶ' % YN, YN and YK == list(range(1, YN + 1)),
     '%d件／%s' % (len(YK), '順に並んでいる' if YK == sorted(YK) else '並びが崩れている'))
 
 # ── 素案0-1の記号の件数 ──
@@ -154,7 +156,7 @@ chk('⑪Ａ（照会を取り下げた）が本文に《要回答》として残
     'Ａ%s件とも残っていない' % len(SR['Ａ']) if not nokori
     else '／'.join('№%d が%dか所' % (n, c) for n, c in sorted(nokori.items())))
 
-print('\n%s：確認事項70件（Ａ%d・Ｂ%d・Ｃ%d・Ｄ%d）／《要確定》15件'
+print('\n%s：確認事項70件（Ａ%d・Ｂ%d・Ｃ%d・Ｄ%d）／《要確定》%d件'
       % ('適合' if not bad else '不適合 %d件' % len(bad),
-         len(SR['Ａ']), len(SR['Ｂ']), len(SR['Ｃ']), len(SR['Ｄ'])))
+         len(SR['Ａ']), len(SR['Ｂ']), len(SR['Ｃ']), len(SR['Ｄ']), YN))
 sys.exit(1 if bad else 0)
