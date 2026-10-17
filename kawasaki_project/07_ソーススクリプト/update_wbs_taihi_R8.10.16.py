@@ -205,7 +205,7 @@ def main():
     for x in range(5, ws.max_row + 1):
         if str(ws.cell(x, 2).value or "").strip() == "計画書":
             ws.cell(x, 3).value = (
-                "川崎町_計画書素案_v2.16_内容整備版.docx／"
+                "川崎町_計画書素案_v2.17_中長期補完版.docx／"
                 "同_v2.16c_圧縮案_R8.10.16.docx（本文109頁）／"
                 "川崎町_計画書_別冊_詳細分析_R8.10.16.docx（9頁）")
             ws.cell(x, 8).value = (

@@ -38,7 +38,7 @@ import openpyxl
 from docx.oxml.ns import qn
 
 DAICHO = "05_試算・管理シート/川崎町_事業所・住まい_突合台帳_R8.10.15.xlsx"
-SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.16_内容整備版.docx"
+SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.17_中長期補完版.docx"
 
 SH_JIGYO = "03_事業所一覧（記入様式）"
 SH_SUMAI = "04_高齢者向け住まい一覧（記入様式）"

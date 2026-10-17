@@ -51,7 +51,7 @@ import openpyxl
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.16_内容整備版.docx"
+SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.17_中長期補完版.docx"
 TANA = "05_試算・管理シート/川崎町_素案の根拠の棚卸し_R8.10.7.xlsx"
 OUT = ("05_試算・管理シート/"
        "川崎町_第10期_計画見込量_中長期・保険料内訳_R8.10.17.xlsx")
@@ -70,6 +70,7 @@ def load(name, fname):
 
 
 GY = load("gyotei_chu", "build_iinkai_gyotei_R8.10.1.py")
+CC = load("calc_chuchoki", "calc_chuchoki_R8.10.17.py")
 
 
 def seiri(s):
@@ -300,17 +301,22 @@ def main():
     GY.put(ws, rows01,
            [GY.HI if r[2] == "給付費" else None for r in rows01])
 
-    # 介護予防の「─」を未実施として明記
-    yobo = sorted({x[1] for x in mikomi
-                   if x[0] == "介護予防サービス" and x[2] == "給付費"})
-    r0 = 5 + len(rows01)
-    GY.put(ws, [["介護予防サービス",
-                 "／".join(yobo), "給付費", "千円／年", None, None, None, None,
-                 "─", "─",
-                 f"⚠ **未実施。** 介護予防給付の{len(yobo)}サービスは、"
-                 "サービスごとの長期推計を行っていないため素案でも「─」"
-                 "としている。推測で置かない"]],
-           [GY.WARN], r0=r0)
+    # ── Ver.2.17 で素案 9-1 に入れた15サービスを、算定の出所つきで示す
+    #   ⚠ **値は素案（正本）から読んでいる。** ここでは「どの15サービスが
+    #     Ver.2.17 で補われたか」を印すだけで、値を別に持たない。
+    hokan = CC.santei()
+    CC.kensho(hokan, *CC.yomu_soan_kyufu(SOAN))     # 行の引当を確かめる
+    hokan_na = {k for k in hokan if not k.startswith("__")}
+    hokan17 = CC.gokei(hokan, "令和17年度")
+    hokan22 = CC.gokei(hokan, "令和22年度")
+    # 算定式の列に、補完したものである旨を書き足す
+    for i, r in enumerate(rows01):
+        if r[1] in hokan_na:
+            ws.cell(5 + i, 11).value = (
+                "⚠ **Ver.2.17 で補った欄。** 素案 9-1 では「─」のままで、"
+                "9-2 の総給付費にだけ入っていた（表の間の範囲の食い違い）。"
+                "式は上と同じ。算定は calc_chuchoki_R8.10.17.py にある")
+            ws.cell(5 + i, 11).fill = GY.WARN
 
     # ── 02　総給付費の中長期
     ws = GY.sheet(
@@ -460,14 +466,10 @@ def main():
     #   看護小規模多機能型居宅介護は在宅のサービスであり入所・居住系ではない。
     #   一方、介護予防の認知症対応型共同生活介護は入所・居住系である。
     #   区分は第1回策定委員会資料の「居住形態別の再構成」の表による。
-    NYUSHO = ["介護老人福祉施設", "介護老人保健施設", "介護医療院",
-              "認知症対応型共同生活介護", "介護予防認知症対応型共同生活介護",
-              "地域密着型介護老人福祉施設入所者生活介護",
-              "特定施設入居者生活介護"]
-    nyusho_uchi = [(x[1], x[4]) for x in mikomi
-                   if x[2] == "給付費" and x[4] is not None
-                   and x[1] in NYUSHO]
-    nyusho = sum(v for _, v in nyusho_uchi)
+    #   ⚠ **円で足して最後に一度だけ千円に四捨五入する。**
+    #     千円に丸めた値を足すと1千円ずれる。算定は calc_chuchoki に置く。
+    nyusho_uchi_en, nyusho_en, nyusho = CC.nyusho_kyojukei()
+    nyusho_uchi = [(n, v / 1000) for n, v in nyusho_uchi_en]
     tsumu(nyusho)
     # 2-4 の居宅サービス計の要支援計は、2-4 の表そのものが正本である
     t14_saki = hyo(doc, ["サービス区分", "要支援計"])
@@ -491,9 +493,10 @@ def main():
                 "年報（令和7年度）の要介護度別明細による。"
                 "⚠ 区分別の内訳は素案 2-4 の表が正本であり、本表では持たない"),
         "5-5": ("入所・居住系の給付費（千円）",
-                f"施設3＋認知症対応型共同生活介護（介護給付・介護予防）＋"
-                f"地域密着型介護老人福祉施設＋特定施設の和"
-                f"＝{nyusho:,.0f}千円。検査6で確認。"
+                f"施設3＋地域密着型介護老人福祉施設＋"
+                f"認知症対応型共同生活介護（介護給付・介護予防）＋"
+                f"地域密着型特定施設＋特定施設を**円で足して**"
+                f"一度だけ千円に丸めると{nyusho:,.0f}千円。検査6で確認。"
                 f"⚠ 定期巡回・地域密着型通所介護・看護小規模多機能型は"
                 f"在宅のサービスであり含めない"),
     }
@@ -506,8 +509,8 @@ def main():
         "91,560": ("第9期計画の値（当方の算定ではない）",
                    "第9期計画の地域支援事業費。出所＝川崎町第9期計画書"),
         "680,226": ("入所・居住系の給付費（千円）",
-                    f"内訳の和{nyusho:,.0f}千円で再現した（検査6）。"
-                    f"⚠ 千円未満の丸めにより1千円の差が出る"),
+                    f"内訳を円で足して一度だけ千円に丸めると"
+                    f"{nyusho:,.0f}千円で、差0で再現した（検査6）"),
     }
     ws = GY.sheet(
         wb, "06_棚卸し70件の対応", "棚卸しで出所が示せていなかった70件の対応",
@@ -551,18 +554,24 @@ def main():
         mijisshi.append("検査1　棚卸しの表が読めなかったため未実施")
 
     # 検査2　中長期の給付費の合計が 9-2 の総給付費に合う
-    for y, key in (("令和17年度", "令和17年度"), ("令和22年度", "令和22年度")):
+    #   ⚠ 素案 9-1 に載っている分（記載分）＋本表で補った15サービス分。
+    #     千円未満の丸めにより数千円の差が出るため ±3千円を許す。
+    for y, hok in (("令和17年度", hokan17), ("令和22年度", hokan22)):
         wa = sum(x[8] if y == "令和17年度" else x[9]
                  for x in mikomi if x[2] == "給付費"
                  and (x[8] if y == "令和17年度" else x[9]) is not None)
-        soan = kyufu.get("総給付費", {}).get(key)
+        soan = kyufu.get("総給付費", {}).get(y)
         if soan is None:
             mijisshi.append(f"検査2　9-2 に{y}の総給付費がなく未実施")
-        elif abs(wa - soan) <= 2:
-            ok.append(f"検査2　{y}　サービス別の和{wa:,.0f}千円"
-                      f"＝9-2 の総給付費{soan:,.0f}千円（差{wa - soan:+,.0f}）")
+        elif abs(wa - soan) <= 3:
+            ok.append(f"検査2　{y}　素案 9-1 のサービス別の和{wa:,.0f}千円"
+                      f"＝9-2 の総給付費{soan:,.0f}千円"
+                      f"（差{wa - soan:+,.0f}千円・千円未満の丸めによる）。"
+                      f"⚠ **Ver.2.17 で15サービス（{hok:,.0f}千円）を"
+                      f"補ったことにより一致した**（Ver.2.16 までは"
+                      f"この分だけ合わなかった）")
         else:
-            ng.append(f"検査2　{y}　サービス別の和{wa:,.0f}千円と"
+            ng.append(f"検査2　{y}　素案 9-1 の和{wa:,.0f}千円と"
                       f"9-2 の総給付費{soan:,.0f}千円が合わない"
                       f"（差{wa - soan:+,.0f}千円）")
 
@@ -616,11 +625,15 @@ def main():
                   r"([\d,]+)千円", body)
     if m:
         soan_v = Decimal(m.group(1).replace(",", ""))
-        uchi = "＋".join(f"{n}{v:,.0f}" for n, v in nyusho_uchi)
+        uchi = "＋".join(f"{n}{v:,.0f}円" for n, v in nyusho_uchi_en
+                         if v)
         if abs(nyusho - soan_v) <= 1:
-            ok.append(f"検査6　入所・居住系の給付費　内訳の和"
-                      f"{nyusho:,.0f}千円＝5-5 の記載{soan_v:,.0f}千円"
-                      f"（{uchi}）")
+            ok.append(f"検査6　入所・居住系の給付費　内訳を円で足して"
+                      f"一度だけ千円に丸めると{nyusho_en:,.0f}円"
+                      f"→{nyusho:,.0f}千円で、5-5 の記載"
+                      f"{soan_v:,.0f}千円と一致する（{uchi}。"
+                      f"⚠ 定期巡回・地域密着型通所介護・看護小規模多機能型は"
+                      f"在宅のサービスであり含めない）")
         else:
             ng.append(f"検査6　入所・居住系　内訳の和{nyusho:,.0f}千円と"
                       f"5-5 の記載{soan_v:,.0f}千円が合わない"
