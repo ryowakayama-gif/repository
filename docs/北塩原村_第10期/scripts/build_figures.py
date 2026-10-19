@@ -32,6 +32,11 @@ def V(name, series):
             return list(v)
     raise KeyError("%s に系列 %s がない" % (name, series))
 
+
+def C(name):
+    """図の年度（横軸）の並び。正本（data_zuhyo）から引く"""
+    return list(_Z[name]["cats"])
+
 plt.rcParams.update({
     "font.family": "IPAGothic",
     "font.size": 10,
@@ -319,7 +324,9 @@ def fig_2_8():
 
 # ══════════ 図2-9 1人1月あたり費用額（村・県・全国）══════════
 def fig_2_9():
-    lab = ["平成29", "平成30", "令和元", "令和2", "令和3", "令和4", "令和5", "令和6", "令和7"]
+    # 年度の並びは正本（data_zuhyo の cats）から引く。じか書きすると、
+    # 正本から年度を落としたときに本数が合わなくなる（令和8年10月19日）。
+    lab = [c.replace("年度", "") for c in C("fig2-9_1人あたり費用額")]
     x = list(range(len(lab)))
     mura = V("fig2-9_1人あたり費用額", "北塩原村")
     ken = V("fig2-9_1人あたり費用額", "福島県")
@@ -328,13 +335,14 @@ def fig_2_9():
     ax.plot(x, mura, label="北塩原村", **S_MURA)
     ax.plot(x, ken,  label="福島県",   **S_KEN)
     ax.plot(x, zen,  label="全国",     **S_ZEN)
-    ax.axvline(2, color=K["m"], lw=0.9)
-    ax.annotate("令和元年度に\n県・全国を下回る", (2, 28300), ha="center", va="top",
+    _r1 = lab.index("令和元")
+    ax.axvline(_r1, color=K["m"], lw=0.9)
+    ax.annotate("令和元年度に\n県・全国を下回る", (_r1, 28300), ha="center", va="top",
                 fontsize=8.5, color=K["d"], fontweight="bold")
     label_last(ax, x, mura, "24,696円")
     label_last(ax, x, ken,  "26,848円", dy=-9, color=K["m"])
     label_last(ax, x, zen,  "27,815円", dy=8, color="#808080")
-    ax.set_xlim(-0.4, 9.6); ax.set_ylim(19000, 29500)
+    ax.set_xlim(-0.4, len(lab) + 0.6); ax.set_ylim(19000, 29500)
     ax.set_xticks(x); ax.set_xticklabels([f"{l}\n年度" for l in lab], fontsize=8.5)
     ax.yaxis.set_major_formatter(FuncFormatter(lambda v, p: f"{int(v):,}"))
     style_ax(ax, ylab="1人1月あたり費用額（円）")

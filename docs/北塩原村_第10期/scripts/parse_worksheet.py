@@ -441,6 +441,51 @@ def jinko():
     return out
 
 
+def keisu_zenkoku():
+    """後期高齢者加入割合補正係数（Ｆ）の算出に使う全国値。
+
+       「(参考)保険料の推計に要する係数」シートの、年齢3区分ごとの
+       加入割合（年度別）と1人あたり給付費（年度によらず一定）である。
+       Ｆ ＝ 全国の加重平均1人あたり給付費 ÷ 当該保険者の加重平均1人あたり給付費。
+       加重平均は Σ（区分の加入割合 × 全国の区分別1人あたり給付費）で求める。
+
+       返り値 {"加入割合": [[前期…], [75-84…], [85-…]], "1人あたり給付費": [3つ]}
+       加入割合の並びは令和9・10・11・12・17・22・27年度である。
+    """
+    sk = _ws()["(参考)保険料の推計に要する係数"]
+    rows = [[c.value for c in r] for r in sk.iter_rows()]
+
+    def hiro(lab):
+        for r in rows:
+            for j, c in enumerate(r):
+                if c is not None and str(c).strip() == lab:
+                    return [v for v in r[j + 1:] if isinstance(v, (int, float))]
+        raise KeyError(lab)
+    return {
+        "加入割合": [hiro("前期高齢者加入割合"),
+                     hiro("85歳未満後期高齢者加入割合"),
+                     hiro("85歳以上後期高齢者加入割合")],
+        "1人あたり給付費": [hiro("前期高齢者の1人あたり給付費")[0],
+                            hiro("85歳未満後期高齢者の1人あたり給付費")[0],
+                            hiro("85歳以上後期高齢者の1人あたり給付費")[0]],
+    }
+
+
+def hosei_kuni():
+    """国の様式が持つ後期高齢者加入割合補正係数（6年度分）。
+
+       keisu() は計画期間の3年度しか返さない。Ｆの復元の照合には
+       令和12・17・22年度も要るため、6つとも返す。
+    """
+    s5 = _ws()["5_保険料推計"]
+    for r in s5.iter_rows():
+        v = [c.value for c in r]
+        for c in v[:6]:
+            if c is not None and str(c).strip() == "後期高齢者加入割合補正係数":
+                return [x for x in v[6:] if isinstance(x, (int, float))]
+    raise KeyError("後期高齢者加入割合補正係数")
+
+
 def keisu():
     """保険料に効く係数。国が与えるものと保険者が入れるものが混ざっている"""
     wb = _ws()
