@@ -468,16 +468,28 @@ def head_blob(path):
 # 内容署名（ZIP の生成時刻に左右されない形で中身を要約する）
 # ============================================================
 def sig_docx(data):
-    """(段落数, 表数, 本文テキストのSHA-256先頭12桁)"""
+    """(段落数, 表数, 本文テキストのSHA先頭12桁, 図のSHA先頭12桁)
+
+    図（word/media の埋込画像）も署名に入れる。
+    本文テキストだけを見ていたため、図が入れ替わっても一致と
+    判定していた（令和8年10月19日、matplotlib の版が変わって
+    図11点が描き直されたときに、正本は「一致」と出ていた）。
+    """
     import io
     import re
     with zipfile.ZipFile(io.BytesIO(data)) as z:
         xml = z.read("word/document.xml").decode("utf-8")
+        media = sorted(n for n in z.namelist()
+                       if n.startswith("word/media/"))
+        mh = hashlib.sha256()
+        for n in media:
+            mh.update(n.encode("utf-8"))
+            mh.update(z.read(n))
     paras = re.findall(r"<w:p[ >].*?</w:p>|<w:p/>", xml, re.S)
     tables = len(re.findall(r"<w:tbl>", xml))
     texts = re.findall(r"<w:t[^>]*>(.*?)</w:t>", xml, re.S)
     h = hashlib.sha256("".join(texts).encode("utf-8")).hexdigest()[:12]
-    return (len(paras), tables, h)
+    return (len(paras), tables, h, mh.hexdigest()[:12])
 
 
 def sig_xlsx(data):
