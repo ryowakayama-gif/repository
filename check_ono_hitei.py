@@ -238,6 +238,26 @@ def t_kiriwake_yokei():
 
 
 
+def t_jobun():
+    """条文番号をわざと1つずらすと、原典との照合が止まるか。"""
+    import check_ono_jobun as J
+
+    hon = list(J.JOBUN)
+    nokori = list(J.RESULT)
+    try:
+        # 調和の規定を第7項から第5項に戻す（かつての誤り）
+        J.JOBUN[:] = [("障害者総合支援法", "88", "5", None,
+                       ["市町村地域福祉計画", "調和"], "否定試験")]
+        J.RESULT.clear()
+        ng = J.main()
+        return "NG %d件（%s）" % (len(ng), ng[0][4]) if ng else ""
+    finally:
+        J.JOBUN[:] = hon
+        J.RESULT.clear()
+        J.RESULT.extend(nokori)
+
+
+
 # ---------------------------------------------------------------- 4 法定記載
 def t_hotei():
     """素案から語が1つ欠けたことにすると、✕と判定するか。"""
@@ -345,6 +365,7 @@ SHIKEN = [
     ("前回計画の読み取り", "生活介護の実績を1人日増やす", t_zenkai_pdf),
     ("前回計画の読み取り", "第2部の施策から第10章を落とす",
      t_zenkai_shisaku),
+    ("条文番号の原典確認", "調和の規定を第7項から第5項に戻す", t_jobun),
     ("町データ待ちの切り分け", "切り分けから№32を落とす", t_kiriwake),
     ("町データ待ちの切り分け", "確認事項に無い№を切り分けに入れる",
      t_kiriwake_yokei),
