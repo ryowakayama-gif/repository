@@ -19,7 +19,9 @@ import openpyxl
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
-OUT = "05_試算・管理シート/川崎町_大雪広域_素案対比表_R8.9.30.xlsx"
+OUT = "10_内部資料_非成果品/川崎町_大雪広域_素案対比表_R8.9.30.xlsx"
+#   ⚠ 令和8年10月19日　成果品の置き場から内部資料の置き場へ移した。
+#     他団体（比較材料として読んだ団体）の固有名称を含むため（CLAUDE.md 3）。
 
 THIN = Side(style="thin", color="BFBFBF")
 BOX = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)

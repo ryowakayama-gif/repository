@@ -155,4 +155,4 @@ const doc=new Document({
     children:ch,
   }],
 });
-Packer.toBuffer(doc).then(buf=>{fs.writeFileSync("川崎町・金ケ崎町_給付費・保険料算定の精査レポート.docx",buf);console.log("written",buf.length,"bytes");});
+Packer.toBuffer(doc).then(buf=>{fs.writeFileSync("10_内部資料_非成果品/川崎町・金ケ崎町_給付費・保険料算定の精査レポート.docx",buf);console.log("written",buf.length,"bytes");});
