@@ -2,10 +2,19 @@
 """納品する電子媒体の中身を組み立てる（仕様書5③／WBS Ⅳ-91）
 
 nohin_data.N に「収録する」と定めたファイルだけを、媒体での置き場所ごとに
-並べる。**収録しないと定めたファイルが1件でも入ったら止まる。**
+並べる。収録しないと定めたファイルが1件でも入ったら止まる。
 
   python3 scripts/build_nohin.py            何が入るかを一覧で示すだけ（組み立てない）
   python3 scripts/build_nohin.py --write    実際に組み立てる
+  python3 scripts/build_nohin.py --write --pdf
+                                            docx を PDF にも変換して並べる
+
+PDFについて（仕様書5③-a「Word・Excel・PowerPoint・PDF形式等」）
+  docx と同じ場所に同じ名前の PDF を置く。変換は LibreOffice による。
+  当方の環境には游ゴシックがない。IPAゴシックに置き換わるため、
+  できた PDF は Word で開いた紙面と行の折り返しも頁の区切りも違う。
+  そのまま納品してはならない。置換が起きたときは 00_媒体の構成.txt の
+  「納品の前に行うこと」に、游ゴシックの入った環境で作り直す旨を書き出す。
 
 組み立て先は output/_納品媒体/ である。版管理には入れない（.gitignore）。
 中身は元のファイルの写しであり、ここを直しても元には戻らない。
@@ -19,6 +28,7 @@ sys.dont_write_bytecode = True
 import hashlib
 import os
 import shutil
+import subprocess
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from nohin_data import N, MIKAN, MOUSHIOKURI, FOLDER_SETSUMEI
@@ -76,8 +86,12 @@ def _oriakeru(t, n):
     return [t[i:i + n] for i in range(0, len(t), n)] or [""]
 
 
-def kousei_txt(rows):
-    """媒体に入れる「00_媒体の構成.txt」の中身"""
+def kousei_txt(rows, chikan=None):
+    """媒体に入れる「00_媒体の構成.txt」の中身
+
+       chikan は make_pdf が返したフォントの置換の一覧。
+       置換があるときは「納品の前に行うこと」として書き出す。
+    """
     out = ["第10期北塩原村高齢者福祉計画・第10期北塩原村介護保険事業計画",
            "電子媒体の構成", "", "【この媒体に入っているもの】", ""]
     for loc in FOLDERS:
@@ -102,7 +116,61 @@ def kousei_txt(rows):
         out += ["", "【納品の時点で作るもの】", ""]
         for nm, _k, loc, why in MIKAN:
             out.append(f"・{nm}（{loc}）　{why}")
+    if chikan:
+        out += ["", "【納品の前に行うこと　―　PDFの作り直し】", "",
+                f"この媒体のPDFは、{HONMON_FONT}の入っていない環境で変換したものです。",
+                "次のファイルは本文のフォントが置き換わっており、Wordで開いた紙面とは",
+                "行の折り返しも頁の区切りも違います。このまま納品しないでください。",
+                f"{HONMON_FONT}の入った環境でWordからPDFに書き出し、置き換えてください。", ""]
+        for nm, fonts in chikan:
+            out.append(f"・{nm}")
+            out.append(f"      埋め込まれているフォント：{'・'.join(fonts)}")
+        out.append("")
+        out.append("  （docx そのものは正しく" + HONMON_FONT + "を指定しています。"
+                   "差し替えが要るのはPDFだけです）")
     return "\n".join(out) + "\n"
+
+
+# PDFに変換する対象（媒体での置き場所が次のもので、拡張子が .docx のもの）
+PDF_FOLDERS = ["01_計画書", "02_調査報告書", "03_委員会資料"]
+
+# 計画書の本文に用いるフォント（build_soan_docx.js の指定と合わせる）
+HONMON_FONT = "游ゴシック"
+
+
+def _pdf_fonts(pdf):
+    """PDFに埋め込まれたフォント名の集合を返す。pdffonts が無ければ空集合"""
+    r = subprocess.run(["pdffonts", pdf], capture_output=True, text=True)
+    if r.returncode != 0:
+        return set()
+    out = set()
+    for line in r.stdout.splitlines()[2:]:
+        nm = line.split()[0] if line.split() else ""
+        # サブセットの接頭辞（ABCDEF+）を落とす
+        out.add(nm.split("+", 1)[-1])
+    return {x for x in out if x}
+
+
+def make_pdf(rows):
+    """docx を PDF に変換して媒体に並べ、(作った数, 置換の申し送り) を返す。
+
+    置換の有無は、できた PDF に埋め込まれたフォント名で見る。
+    游ゴシック（YuGothic）が1つも入っていなければ、置き換わっている。
+    """
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import render_check as RC
+    tsukutta, chikan = [], []
+    for loc, _rel, dst, _s in sorted(rows, key=lambda x: x[2]):
+        if loc not in PDF_FOLDERS or not dst.endswith(".docx"):
+            continue
+        src = os.path.join(DEST, dst)
+        pdf = RC.convert(src, os.path.dirname(src))
+        fonts = _pdf_fonts(pdf)
+        yu = [f for f in fonts if "YuGothic" in f or "游" in f]
+        tsukutta.append(os.path.basename(pdf))
+        if fonts and not yu:
+            chikan.append((os.path.basename(pdf), sorted(fonts)[:4]))
+    return tsukutta, chikan
 
 
 def main():
@@ -136,8 +204,11 @@ def main():
             shutil.copytree(p, q)
         else:
             shutil.copy2(p, q)
+    tsukutta, chikan = ([], [])
+    if "--pdf" in sys.argv:
+        tsukutta, chikan = make_pdf(rows)
     with open(os.path.join(DEST, "00_媒体の構成.txt"), "w", encoding="utf-8") as f:
-        f.write(kousei_txt(rows))
+        f.write(kousei_txt(rows, chikan))
     # 組み立てたものに、収録しないと定めたファイルが紛れていないことを確かめる
     noroku_nm = {os.path.basename(x[0].rstrip("/")) for x in N
                  if x[1] == "収録しない"}
@@ -152,6 +223,21 @@ def main():
     n_file = sum(len(fs) for _, _, fs in os.walk(DEST))
     print(f"\n  組み立てた: {DEST}（{n_file}ファイル）")
     print("  00_媒体の構成.txt に、入れていないものと申し送る事項を書いている")
+    if "--pdf" in sys.argv:
+        print(f"\n  PDFに変換した {len(tsukutta)}件")
+        for nm in tsukutta:
+            print("    ", nm)
+        if chikan:
+            print(f"\n  ✕ フォントが置き換わっている {len(chikan)}件"
+                  f"（{HONMON_FONT}が埋め込まれていない）")
+            for nm, fonts in chikan:
+                print(f"     {nm}　←　{'・'.join(fonts)}")
+            print(f"  → 00_媒体の構成.txt の「納品の前に行うこと」に書き出した。"
+                  f"{HONMON_FONT}の入った環境で作り直すこと")
+        else:
+            print(f"  ○ {HONMON_FONT}が埋め込まれている（置換なし）")
+    else:
+        print("  ※ PDFは作っていない。作るには --pdf を付ける（仕様書5③-a）")
     return 0
 
 

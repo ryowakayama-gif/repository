@@ -146,6 +146,16 @@ def _scan_lines(name, lines):
                     hits.append((i, '%r が %d件 / %r が %d件' % (a, na, b, nb),
                                  repr(minor), ln.strip()[:60]))
     out.append(('f 半角・全角のゆれ', hits))
+
+    # (h) 内部の印（★）が計画書に残っていないこと
+    #   ★は確認事項・照会票・委員会資料で「決まらないと後続が止まる」印として
+    #   凡例つきで用いている。計画書は読み手が村民・委員であり凡例がないため、
+    #   内部の印が残っていると意味の取れない記号になる。
+    #   令和8年10月19日、見出し2か所に残っているのを見つけて落とした。
+    if name == '素案':
+        hits = [(i, '内部の印', '★', ln.strip()[:70])
+                for i, ln in enumerate(lines, 1) if '★' in ln]
+        out.append(('h 内部の印（★）が計画書に残っていないこと', hits))
     return out
 
 
