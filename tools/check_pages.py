@@ -27,7 +27,11 @@ from docx import Document
 # PDF の文字の取り出しでは、丸数字や矢印が読み順から外れて置かれることが
 # ある（「表6　調査①の要介護度分布」が「表6①調査の要介護度分布」になる）。
 # 突き合わせの前に、その種の文字を両方から落としてそろえる。
-_DROP = re.compile(r"[\s　①-⑳⓵-⓾→←↑↓⇒]")
+# かっこ付きの数字（⑴⑵）も同じく読み順から外れる
+# （「市町村内の一部地域において⑴」が「市町村内の一部地域に⑴おいて」になる）。
+# ローマ数字（Ⅰ〜Ⅻ）は落とさない。「支援Ⅰ」「支援Ⅲ」のように
+# これだけが違う行があり、落とすと別の行に当たってしまう。
+_DROP = re.compile(r"[\s　①-⑳⓵-⓾⑴-⒇⒈-⒛→←↑↓⇒]")
 
 
 def norm(s):
@@ -59,19 +63,30 @@ def main(pdf, docx):
         # 1行1列の枠（囲み）も表である。先頭の行だけで探す
         # （従前は2行以上の表しか手掛かりを作らず、枠が必ず
         #  「位置を定められなかった表」として挙がっていた）。
-        head = capmap.get(n) or (
-            "".join(c.text for c in t.rows[0].cells)
-            + ("".join(c.text for c in t.rows[1].cells)
-               if len(t.rows) > 1 else ""))
+        r0 = "".join(c.text for c in t.rows[0].cells)
+        r1 = ("".join(c.text for c in t.rows[1].cells)
+              if len(t.rows) > 1 else "")
+        # 見出しの行の文字は紙面で折り返されると取り出しの順が変わるため、
+        # 行をつないだものだけでは見つからないことがある
+        # （表題を「表N　」の形で持たない文書で実際に起きた）。
+        # 2行目（表の中身の最初の行）・見出しの行を別の手掛かりとしても探す。
+        # 2行目を先に試すのは、見出しの行は他の表と同じ文字であることがあり、
+        # 直前の表のページに当たってしまうためである。
+        heads = [h for h in (capmap.get(n), r0 + r1, r1, r0) if h]
+        head = heads[0]
         lastfull = "".join(c.text for c in t.rows[-1].cells)
         # 表題と表の並び順が一致しない文書では、直前の表のページから探すと
         # 見つからない。見つからなければ先頭のページから探し直す。
-        pa = pageof(head, cur) or pageof(head, 1)
-        if pa is None:
-            for _k in (40, 28, 18):
-                pa = pageof(head[:_k], 1)
-                if pa:
-                    break
+        pa = None
+        for _h in heads:
+            pa = pageof(_h, cur) or pageof(_h, 1)
+            if pa is None:
+                for _k in (40, 28, 18):
+                    pa = pageof(_h[:_k], 1)
+                    if pa:
+                        break
+            if pa:
+                break
         # PDF の文字の取り出しでは矢印などが読み順から外れることがあるため、
         # 長さを段々短くして探す（60字で見つからないことが実際にあった）。
         last, pb = lastfull[:60], None
