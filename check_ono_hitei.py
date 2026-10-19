@@ -354,6 +354,23 @@ def _null_note(*a, **k):
     pass
 
 
+def t_tsuika_genpon():
+    """**他素案へ入れる前回計画の目標値を1つ変えると、原本照合が止まるか。**
+
+    対応表の第7期の目標値は書き写さず、前回計画の該当頁にあるかを毎回見る。
+    """
+    import build_ono_shogai_tsuika_taiou as T
+
+    hon = list(T.ZENKAI_MOKUHYO)
+    try:
+        g, k, v, pg, _w = hon[5]
+        T.ZENKAI_MOKUHYO[5] = (g, k, v, pg, ["159件"])   # 原本は158件
+        ng = T.genpon_ng()
+        return "NG %d件（%s）" % (len(ng), ng[0]) if ng else ""
+    finally:
+        T.ZENKAI_MOKUHYO[:] = hon
+
+
 def t_mijotei_shirushi():
     """**未確定の印でない【　】を本文に書くと止まるか。**
 
@@ -523,6 +540,8 @@ SHIKEN = [
      "未確定の印でない【　】を本文に書く", t_mijotei_shirushi),
     ("保険料の標準乗率と政令の突合",
      "第6段階の標準割合を1.200から1.250にする", t_joritsu),
+    ("他素案への追加候補　前回計画の目標値",
+     "相談支援の指導・助言の目標を158件から159件にする", t_tsuika_genpon),
     ("両計画の接点　確かめることの数",
      "「確かめること」を1件足す（表の組み方が黙って落とさないか）",
      t_setten_kakunin_kazu),
