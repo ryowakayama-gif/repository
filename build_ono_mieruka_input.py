@@ -460,8 +460,15 @@ def build_xlsx(F):
     ws = wb.create_sheet("03_所得段階別加入割合")
     ws.append(["ワークシートの行", "段階", "被保険者数（人）", "加入割合",
                "参考：小野町の乗率", "参考：国の標準乗率"])
-    kuni = [0.455, 0.685, 0.690, 0.900, 1.000, 1.200, 1.300, 1.500, 1.700,
-            1.900, 2.100, 2.300, 2.400]
+    # **乗率を書き写さない。** build_ono_tanka.SHOTOKU_R7 の標準割合から引く。
+    #   同じ数字を2か所に書くと、片方だけ直したときに食い違う。
+    #   SHOTOKU_R7 の13件は介護保険法施行令第38条第1項と突き合わせてある
+    #   （check_ono_jobun.joritsu）。
+    import build_ono_tanka as _T
+    kuni = [x[1] for x in _T.SHOTOKU_R7]
+    if len(kuni) != len(DI):
+        raise ValueError("所得段階 %d件に対し標準乗率 %d件（数を合わせる）"
+                         % (len(DI), len(kuni)))
     for (r, nm, n, w, rate), ku in zip(DI, kuni):
         ws.append([r, nm, n, w, rate, ku])
     tot = sum(n for _r, _nm, n, _w, _rt in DI)

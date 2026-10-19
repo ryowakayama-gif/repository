@@ -246,15 +246,164 @@ def t_jobun():
     nokori = list(J.RESULT)
     try:
         # 調和の規定を第7項から第5項に戻す（かつての誤り）
-        J.JOBUN[:] = [("障害者総合支援法", "88", "5", None,
+        J.JOBUN[:] = [("障害者総合支援法", J.GEN, "88", "5", None,
                        ["市町村地域福祉計画", "調和"], "否定試験")]
         J.RESULT.clear()
         ng = J.main()
-        return "NG %d件（%s）" % (len(ng), ng[0][4]) if ng else ""
+        return "NG %d件（%s）" % (len(ng), ng[0][5]) if ng else ""
     finally:
         J.JOBUN[:] = hon
         J.RESULT.clear()
         J.RESULT.extend(nokori)
+
+
+def t_jobun_jiten():
+    """**時点を取り違えると止まるか。**
+
+    改正後にしかない条項（介護保険法第117条第5項の勘案義務）を
+    「現行」として引くと、見当たらないと判定されなければならない。
+    時点を見ないつくりに戻すと、この試験が素通りする。
+    """
+    import check_ono_jobun as J
+
+    hon = list(J.JOBUN)
+    nokori = list(J.RESULT)
+    try:
+        J.JOBUN[:] = [("介護保険法", J.GEN, "117", "5", "1",
+                       ["有料老人ホーム及び登録住宅のそれぞれの入居定員総数"],
+                       "否定試験（改正後の条項を現行として引く）")]
+        J.RESULT.clear()
+        ng = J.main()
+        return "NG %d件（%s）" % (len(ng), ng[0][5]) if ng else ""
+    finally:
+        J.JOBUN[:] = hon
+        J.RESULT.clear()
+        J.RESULT.extend(nokori)
+
+
+def t_joritsu():
+    """**保険料の標準乗率を1段階だけ動かすと、政令との照合が止まるか。**
+
+    13段階の乗率は介護保険法施行令第38条第1項が漢数字で定めている。
+    従前は見える化システムの画面で確かめていただけで、
+    **政令の現物とは突き合わせていなかった。**
+    """
+    import build_ono_tanka as T
+    import check_ono_jobun as J
+
+    hon = list(T.SHOTOKU_R7)
+    try:
+        nm, hyojun, fuka, n = T.SHOTOKU_R7[5]      # 第6段階 1.200
+        T.SHOTOKU_R7[5] = (nm, 1.250, fuka, n)
+        ng = [x for x in J.joritsu() if x[0] == "**NG**"]
+        return "NG %d件（%s）" % (len(ng), ng[0][5]) if ng else ""
+    finally:
+        T.SHOTOKU_R7[:] = hon
+
+
+def t_setten_kakunin_kazu():
+    """**接点の「確かめること」を1件足したとき、黙って落ちないか。**
+
+    以前は `zip(KAKUNIN, 効くもの)` で表を組んでいたため、
+    KAKUNIN に1件足すと**短い方で止まり、7件目が出力されなかった。**
+    表は6行のまま、どの点検も通ってしまう（接点の照合だけが
+    「確認事項7がない」で捕まえた）。いまは数が合わなければ止まる。
+    """
+    import ono_setten as SET
+
+    hon = list(SET.KAKUNIN)
+    try:
+        SET.KAKUNIN.append("否定試験のために足した確かめること")
+        try:
+            SET.render(_NullDoc(), _null_tbl, _null_body, _null_note, "―")
+        except ValueError as e:
+            return "数が合わないとして止まった（%s）" % str(e)[:40]
+        return ""
+    finally:
+        SET.KAKUNIN[:] = hon
+
+
+class _NullDoc:
+    """render に渡すだけの受け皿。何も書かない。"""
+
+    def p(self, *a, **k):
+        pass
+
+    def spacer(self, *a, **k):
+        pass
+
+    def h2(self, *a, **k):
+        pass
+
+    def h3(self, *a, **k):
+        pass
+
+    def src(self, *a, **k):
+        pass
+
+
+def _null_tbl(*a, **k):
+    pass
+
+
+def _null_body(*a, **k):
+    pass
+
+
+def _null_note(*a, **k):
+    pass
+
+
+def t_mijotei_shirushi():
+    """**未確定の印でない【　】を本文に書くと止まるか。**
+
+    以前は「数えないもの」の一覧で除いていたため、本文に
+    【令和9年4月1日新設】のような強調を書くと、**未確定箇所の数に
+    紛れ込んだ**（166箇所が170箇所と出た）。
+    いまは5種類だけを数え、知らない【　】があれば例外を投げる。
+    """
+    import build_ono_soan_elderly as E
+
+    class _P:
+        def __init__(self, t):
+            self.text = t
+
+    class _Doc:
+        def __init__(self, texts):
+            self.paragraphs = [_P(t) for t in texts]
+            self.tables = []
+
+    # 定義した印だけ → 数えられる
+    ok = E.count_markers(_Doc([E.TBD, E.TGT, "【図3】", "【現状と課題】"]))
+    if sum(ok.values()) != 2:
+        return ""
+    # 知らない印 → 例外
+    try:
+        E.count_markers(_Doc(["本文です。【令和9年4月1日新設】の規定です。"]))
+    except ValueError:
+        return "定義していない【　】で例外を投げた"
+    return ""
+
+
+def t_kakunin_no():
+    """**本文から番号を引く `_no` が、当たらないときに黙らないか。**
+
+    以前、本文に番号を直書きしていたため、通し番号を振り直したとき
+    本文だけが古い番号のまま残っていた（基金残高を№25と書いていたが
+    実際は№27）。`_no` は当たるものが1件でなければ例外を投げる。
+    """
+    import build_ono_kakunin_ichiran as K
+
+    for kotoba in ("この文字列はどの事項にも当たらない", "の"):
+        try:
+            K._no(kotoba)
+        except ValueError:
+            continue
+        return ""   # 例外を投げなかった＝素通り
+    # 正しく引けることも併せて確かめる
+    if not K._no("介護給付費準備基金の残高").startswith("№"):
+        return ""
+    return "当たらない語・多く当たる語のいずれでも例外を投げた"
 
 
 
@@ -366,6 +515,17 @@ SHIKEN = [
     ("前回計画の読み取り", "第2部の施策から第10章を落とす",
      t_zenkai_shisaku),
     ("条文番号の原典確認", "調和の規定を第7項から第5項に戻す", t_jobun),
+    ("条文番号の原典確認（時点）",
+     "改正後にしかない条項を「現行」として引く", t_jobun_jiten),
+    ("確認事項の一覧　本文の番号",
+     "当たらない語・多く当たる語で番号を引く", t_kakunin_no),
+    ("未確定箇所の数え方",
+     "未確定の印でない【　】を本文に書く", t_mijotei_shirushi),
+    ("保険料の標準乗率と政令の突合",
+     "第6段階の標準割合を1.200から1.250にする", t_joritsu),
+    ("両計画の接点　確かめることの数",
+     "「確かめること」を1件足す（表の組み方が黙って落とさないか）",
+     t_setten_kakunin_kazu),
     ("町データ待ちの切り分け", "切り分けから№32を落とす", t_kiriwake),
     ("町データ待ちの切り分け", "確認事項に無い№を切り分けに入れる",
      t_kiriwake_yokei),
