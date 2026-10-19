@@ -41,6 +41,7 @@
 
 import hashlib
 import os
+import re
 import subprocess
 import sys
 import zipfile
@@ -309,6 +310,18 @@ BUILDERS = [
      "正本に入れる行（ＡＫ）は本書から正本へ、"
      "照会（Ｍ-128・Ｓ-37）は照会文へ読み込まれる。"
      "移植後の正本を作った後に実行する"),
+    ("build_kitashiobara_taiou_rireki.py",
+     ["output/北塩原村_他メンバー版への対応履歴.xlsx"],
+     "他メンバー作成版の素案（令和8年10月8日受領）に当方が行った"
+     "対応の全件（34系統・139件）を、各系統の単一出所から読み込んで"
+     "履歴にする。件数・箇所・根拠を書き写さないため、"
+     "素案が直れば履歴も直る。"
+     "受領日・作成日は git の記録（生成器が最初に入った日）と"
+     "突き合わせ、食い違えば止まる。"
+     "根拠のエビデンスは生成器が実際に開いているファイルを機械で"
+     "集めるため、使っていない資料を根拠として挙げられない。"
+     "正本と他メンバー版の現物を読むため、移植後の正本を作った後に"
+     "実行する"),
     ("build_kitashiobara_kakunin_kubun.py",
      ["output/北塩原村_確認事項の区分.xlsx"],
      "確認事項112件を4区分（Ａ解決済み・Ｂ当方で確認・"
@@ -404,8 +417,19 @@ REQUIRED_LIBS = [
     ("PIL", "Pillow"),
     ("pypdf", "pypdf"),
     ("pdfplumber", "pdfplumber"),
+    ("matplotlib", "matplotlib"),
+    ("lxml", "lxml"),
 ]
 REQUIREMENTS = "requirements.txt"
+
+# import 名と requirements.txt での名が違うもの。
+# ここに無いものは import 名がそのまま書かれているものとして扱う。
+IMPORT_TO_PKG = {
+    "docx": "python-docx",
+    "PIL": "Pillow",
+    "dateutil": "python-dateutil",
+    "yaml": "PyYAML",
+}
 
 
 # ============================================================
@@ -520,8 +544,43 @@ def c0_libs(rep, tracked):
                        f"pip install -r {REQUIREMENTS} を実行する")
         if pkg.lower() not in req.lower():
             bad.append(f"{pkg} が {REQUIREMENTS} に書かれていない")
+    #   手書きの一覧だけでは、生成器が新しく使い始めたライブラリを
+    #   見逃す。令和8年10月19日、matplotlib が requirements.txt にも
+    #   この一覧にも無く、環境を作り直したときに正本の生成器が
+    #   落ちた。生成器の import から導いて照合する。
+    tsukau = imported_third_party()
+    for mod in sorted(tsukau):
+        pkg = IMPORT_TO_PKG.get(mod, mod)
+        if pkg.lower() not in req.lower():
+            bad.append(f"生成器が import している {mod}（{pkg}）が "
+                       f"{REQUIREMENTS} に書かれていない")
+        if importlib.util.find_spec(mod) is None:
+            bad.append(f"生成器が import している {mod} が入っていない")
     return rep.check("C-0", "必要なライブラリが入っている", bad,
-                     "／".join(p for _, p in REQUIRED_LIBS))
+                     "／".join(p for _, p in REQUIRED_LIBS)
+                     + f"（生成器の import から{len(tsukau)}件を照合）")
+
+
+def imported_third_party():
+    """生成器が import している外部ライブラリの import 名を集める。
+
+    標準ライブラリ（sys.stdlib_module_names）と、このリポジトリ自身の
+    モジュール（同じ階層の .py）は外す。
+    """
+    jibun = {f[:-3] for f in os.listdir(REPO_ROOT) if f.endswith(".py")}
+    out = set()
+    pat = re.compile(r"^\s*(?:import|from)\s+([A-Za-z_][A-Za-z0-9_]*)",
+                     re.M)
+    for f in sorted(os.listdir(REPO_ROOT)):
+        if not f.endswith(".py"):
+            continue
+        src = open(os.path.join(REPO_ROOT, f), encoding="utf-8").read()
+        for m in pat.finditer(src):
+            mod = m.group(1)
+            if mod in sys.stdlib_module_names or mod in jibun:
+                continue
+            out.add(mod)
+    return out
 
 
 def c1_untracked(rep):
