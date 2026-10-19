@@ -353,6 +353,20 @@ def _by(k):
     return [x for x in KAKUNIN if x[2] == k]
 
 
+
+def _kiri(no):
+    """切り分け（Ⅰ〜Ⅳ）を引く。県宛てなど対象外は「―」。
+
+    `build_ono_machidata_kiriwake` は本モジュールを読み込むため、
+    ここでは関数の中で読み込む（互いに読み合うのを避ける）。
+    """
+    import build_ono_machidata_kiriwake as M
+    for x in M.KIRIWAKE:
+        if x[0] == no:
+            return "**%s**　%s" % (x[1], M.KUBUN[x[1]][0])
+    return "―（県宛て）"
+
+
 def doc_build():
     r = S.Report("小野町　確認事項の一覧")
     r.cover(["小野町高齢者保健福祉計画・第10期介護保険事業計画",
@@ -402,10 +416,25 @@ def doc_build():
                 % (sum(1 for x in items if x[3].startswith("町")),
                    sum(1 for x in items if "判断" in x[3]),
                    sum(1 for x in items if x[3] == "県")))
-        r.tbl([["№", "事項", "分野", "従前", "何に効くか／どう確かめたか", "期限"]]
-              + [[str(x[0]), x[1], x[4], x[5], x[6], x[7]] for x in items],
-              widths=[1.0, 4.4, 1.4, 1.8, 6.4, 2.2],
-              caption="区分%s　%s" % (k, nm))
+        if k in ("Ｃ", "Ｄ"):
+            # 切り分け（Ⅰ受領済み／Ⅱ見える化／Ⅲ公表資料／Ⅳ町の内部）を
+            # 併せて示す。**2つの書面で食い違わないよう、同じ元を引く。**
+            r.tbl([["№", "事項", "分野", "**切り分け**",
+                    "何に効くか／どう確かめたか", "期限"]]
+                  + [[str(x[0]), x[1], x[4], _kiri(x[0]), x[6], x[7]]
+                     for x in items],
+                  widths=[1.0, 4.4, 1.4, 2.2, 6.0, 2.2],
+                  caption="区分%s　%s" % (k, nm))
+            r.src("**切り分けは『小野町_町データ待ちの切り分け』"
+                  "（令和8年10月19日）による。**"
+                  "Ⅰ＝受領済み／Ⅱ＝見える化／Ⅲ＝公表資料／Ⅳ＝町の内部データ。"
+                  "**ⅠからⅢは当方で進みます。**")
+        else:
+            r.tbl([["№", "事項", "分野", "従前",
+                    "何に効くか／どう確かめたか", "期限"]]
+                  + [[str(x[0]), x[1], x[4], x[5], x[6], x[7]] for x in items],
+                  widths=[1.0, 4.4, 1.4, 1.8, 6.4, 2.2],
+                  caption="区分%s　%s" % (k, nm))
 
     # 6
     r.h1("6　とくに急ぐもの")
@@ -514,7 +543,13 @@ def jiko():
     # 9 区分の基準に原則を書いている
     if "委ねない" not in GENSOKU:
         ng.append("区分の基準に原則を書いていない")
-    # 10 xlsxの見出しと列幅の数が合う
+    # 10 Ｃ・Ｄ（町宛）のすべてに切り分けがある
+    import build_ono_machidata_kiriwake as M
+    kiri = {x[0] for x in M.KIRIWAKE}
+    for x in _by("Ｃ") + _by("Ｄ"):
+        if x[3] != "県" and x[0] not in kiri:
+            ng.append("切り分けがない：№%d" % x[0])
+    # 11 xlsxの見出しと列幅の数が合う
     if len(HEAD) != len(W):
         ng.append("xlsxの見出しと列幅の数が合わない")
     return ng
@@ -534,7 +569,7 @@ def main():
           % (sum(1 for x in KAKUNIN if x[3].startswith("町")),
              sum(1 for x in KAKUNIN if x[3] == "県"),
              sum(1 for x in KAKUNIN if x[3] == "―")))
-    print("\n■ 自己点検 10項目")
+    print("\n■ 自己点検 11項目")
     if ng:
         for x in ng:
             print("   NG  %s" % x)

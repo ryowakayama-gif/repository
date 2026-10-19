@@ -32,9 +32,9 @@ from openpyxl.worksheet.datavalidation import DataValidation
 
 ROOT = pathlib.Path(__file__).parent
 OUT = ROOT / "小野町_引継ぎ_整理済" / "17_業務進捗管理"
-ASOF = "20261016"
-ASOF_JP = "令和8年10月16日"
-ASOF_ISO = "2026-10-16"
+ASOF = "20261019"
+ASOF_JP = "令和8年10月19日"
+ASOF_ISO = "2026-10-19"
 
 HEAD = PatternFill("solid", fgColor="1F3864")
 SUB = PatternFill("solid", fgColor="DDEBF7")

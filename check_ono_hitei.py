@@ -210,6 +210,34 @@ def t_zenkai_shisaku():
 
 
 
+def t_kiriwake():
+    """切り分けから1件落とすと、確認事項の自己点検が止まるか。"""
+    import build_ono_kakunin_ichiran as K
+    import build_ono_machidata_kiriwake as M
+
+    hon = list(M.KIRIWAKE)
+    try:
+        M.KIRIWAKE[:] = [x for x in M.KIRIWAKE if x[0] != 32]
+        ng = K.jiko()
+        return "；".join(ng[:2]) if ng else ""
+    finally:
+        M.KIRIWAKE[:] = hon
+
+
+def t_kiriwake_yokei():
+    """確認事項に無い№を切り分けに入れると、止まるか。"""
+    import build_ono_machidata_kiriwake as M
+
+    hon = list(M.KIRIWAKE)
+    try:
+        M.KIRIWAKE.append((999, "Ⅳ", "ないもの", "ないもの"))
+        ng = M.jiko()
+        return "；".join(ng[:2]) if ng else ""
+    finally:
+        M.KIRIWAKE[:] = hon
+
+
+
 # ---------------------------------------------------------------- 4 法定記載
 def t_hotei():
     """素案から語が1つ欠けたことにすると、✕と判定するか。"""
@@ -317,6 +345,9 @@ SHIKEN = [
     ("前回計画の読み取り", "生活介護の実績を1人日増やす", t_zenkai_pdf),
     ("前回計画の読み取り", "第2部の施策から第10章を落とす",
      t_zenkai_shisaku),
+    ("町データ待ちの切り分け", "切り分けから№32を落とす", t_kiriwake),
+    ("町データ待ちの切り分け", "確認事項に無い№を切り分けに入れる",
+     t_kiriwake_yokei),
     ("法改正の仕分け　自己点検", "事項を「介護保険法関係」に丸める", t_houkaisei),
 ]
 
