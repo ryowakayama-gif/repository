@@ -69,3 +69,6 @@ python3 mk_toc.py "out/計画素案_第10期_公表用.docx" mkf_kohyo.py "out/_
 
 - **`chk_taisai.py`**　docx の体裁の実測値を一覧にする（用紙・余白・Normal・本文と表の書体／サイズ／太字／色の分布・ヘッダ・フッタ・ページ番号）。
   前回計画書との対照表の「本計画」欄を機械で埋めるために使う。`python3 -I chk_taisai.py <docx...>`
+
+- **`chk_taisai_pdf.py`**　ＰＤＦの体裁の実測値を一覧にする（用紙・文字の占める範囲・フォント／サイズ／色の分布）。
+  前回計画書（第9期・ＰＤＦ）の体裁を測り、対照表の右欄を埋めるために使う。`python3 -I chk_taisai_pdf.py <pdf>`（要 PyMuPDF）
