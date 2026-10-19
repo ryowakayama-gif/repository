@@ -102,12 +102,15 @@ chk(13, "問7の枝番が集計仕様書と一致すること",
     not old13 and "問7(11)" in md24 and len(q7) == 11,
     f"旧番号が残っている {old13}" if old13 else "村独自3問は問7(9)(10)(11)・全11枝")
 
-# 14 リスク判定の領域数が一致していること（R01〜R10＋R99）
-rcode = [d[0] for d in DERIVED if d[0].startswith("R") and d[0] != "R99"]
-miss14 = [c for c in rcode if c not in md24]
-chk(14, "リスク判定が10領域＋R99で一致すること",
+# 14 リスク判定の領域数が一致していること（R01〜R10＋R04S＋R99）
+#    R04S（低栄養状態）は手引きQ36の2段目であり、R99の該当領域数には数えない。
+#    リスクの領域は R01〜R10 の10のままであることを見る（令和8年10月19日）。
+rcode = [d[0] for d in DERIVED if d[0].startswith("R") and d[0] not in ("R99", "R04S")]
+miss14 = [c for c in rcode + ["R04S"] if c not in md24]
+chk(14, "リスク判定が10領域＋R04S＋R99で一致すること",
     len(rcode) == 10 and not miss14 and "R99" in md24 and "R01〜R11" not in md24,
-    f"doc24にない {miss14}" if miss14 else "R01〜R10・R99が両文書で一致")
+    f"doc24にない {miss14}" if miss14
+    else "R01〜R10・R04S・R99が両文書で一致（R04SはR99に数えない）")
 
 # 15 集計軸Iの区分が2区分に揃っていること（凡例・md・doc24）
 axI = [a for a in AXES if a[0] == "I"][0]
