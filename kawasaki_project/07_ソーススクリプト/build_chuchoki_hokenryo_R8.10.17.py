@@ -51,7 +51,7 @@ import openpyxl
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.18_範囲明記版.docx"
+SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.19_認知症推計版.docx"
 TANA = "05_試算・管理シート/川崎町_素案の根拠の棚卸し_R8.10.7.xlsx"
 OUT = ("05_試算・管理シート/"
        "川崎町_第10期_計画見込量_中長期・保険料内訳_R8.10.17.xlsx")

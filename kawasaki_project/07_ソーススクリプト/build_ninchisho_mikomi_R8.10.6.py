@@ -59,7 +59,7 @@ def load(name, fname):
 
 GY = load("gyotei4", "build_iinkai_gyotei_R8.10.1.py")
 
-SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.18_範囲明記版.docx"
+SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.19_認知症推計版.docx"
 MIKOMI = "05_試算・管理シート/川崎町_第10期_計画見込量_R8.9.15.xlsx"
 OUT = "05_試算・管理シート/川崎町_認知症施策_位置づけと見込量_R8.10.6.xlsx"
 

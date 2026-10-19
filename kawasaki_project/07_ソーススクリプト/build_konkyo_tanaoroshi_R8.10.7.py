@@ -65,7 +65,7 @@ GY = load("gyotei8", "build_iinkai_gyotei_R8.10.1.py")
 #   出所の候補はその後17件に増えており、当時の件数を再現しない。
 #   日付つきの台帳は記録であり、上書きしない。
 SOAN = (sys.argv[1] if len(sys.argv) > 2 else
-        "01_第10期_最新版成果品/川崎町_計画書素案_v2.18_範囲明記版.docx")
+        "01_第10期_最新版成果品/川崎町_計画書素案_v2.19_認知症推計版.docx")
 OUT = (sys.argv[2] if len(sys.argv) > 2 else
        "05_試算・管理シート/川崎町_素案の根拠の棚卸し_R8.10.19.xlsx")
 

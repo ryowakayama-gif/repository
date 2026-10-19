@@ -415,7 +415,7 @@ def yomu_soan_kyufu(path):
 
 def main():
     SOAN = os.path.join(
-        BASE, "01_第10期_最新版成果品/川崎町_計画書素案_v2.18_範囲明記版.docx")
+        BASE, "01_第10期_最新版成果品/川崎町_計画書素案_v2.19_認知症推計版.docx")
     kekka = santei()
     soan, kuwashiku = (yomu_soan_kyufu(SOAN) if os.path.exists(SOAN)
                        else ({}, {}))
