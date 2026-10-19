@@ -184,6 +184,8 @@ _run = KS.run_script
 CHECK, LACK, KITEI = KS.CHECK, KS.LACK, KS.KITEI
 KUBUN, HANEI, SUEOKI = KS.KUBUN, KS.HANEI, KS.SUEOKI
 KANRYO, MACHI, LACK_MACHI = KS.KANRYO, KS.MACHI, KS.LACK_MACHI
+# 国の政令・省令・告示の公布後に再算定するもの（No. -> 何を待つか）。
+SAISANTEI_RIYU = KS.literal("build_process_control.py", "SAISANTEI")
 _S = KS.SANTEI
 
 _kigen_m = KS.kigen_m
@@ -515,6 +517,18 @@ for pt, uchi, x in SCORED:
                  "点%d。%s" % (pt, "／".join(
                      "%s %s" % (u[0], u[1]) for u in uchi)),
                  "確認事項No.%d" % x[0]))
+# 確認事項の催促で枠が埋まらないときは資料提供依頼から埋める。
+# **確認事項が全件決着しても、資料のご提供をお待ちしているものは残る**
+# （令和8年10月19日のご了承により確認事項が0件になったときに、
+#  翌日の作業が空になって初めて分かった。CLAUDE.md §4）。
+for x in sorted(LACK_MACHI,
+                key=lambda y: (_PRI_N.get(y[7], 9),
+                               _kigen_m(y[6]) or 9999, y[0])):
+    if sum(1 for j in JUNI if j[0] == "催促・照会") >= N_SAISOKU:
+        break
+    JUNI.append(("催促・照会", "%s（%s）" % (x[2], x[5]),
+                 "優先度%s・希望時期%s。%s" % (x[7], x[6], x[4]),
+                 "資料提供依頼No.%d" % x[0]))
 r = header(ws, r, ["順", "種別", "作業", "なぜ翌日か", "出どころ"])
 for i, (k, a, b, src) in enumerate(JUNI, start=1):
     r = body(ws, r, [i, k, a, b, src],
@@ -528,8 +542,24 @@ r = note(ws, r,
          "催促・照会は優先以上の上位5件までを掲げています。"
          "残りは02・04シートを見ます。\n"
          "注3）**この並びは機械が付けたものです。** 会議の日程・相手のご都合・"
-         "作業の段取りは入っていません。並べ替えたときは理由を進捗の理由に残します。",
-         span=5, height=62)
+         "作業の段取りは入っていません。並べ替えたときは理由を進捗の理由に残します。\n"
+         "注4）催促・照会は確認事項から埋め、枠が余るときは資料提供依頼から"
+         "埋めています。**確認事項が全件決着しても、"
+         "資料のご提供をお待ちしているものは残ります。**",
+         span=5, height=76)
+
+r += 1
+r = lead(ws, r, "2　国の公布を待つもの　%d件" % len(KS.SAISANTEI), span=5)
+r = note(ws, r,
+         "%sのご了承により受託者案で確定しましたが、"
+         "**保険料に関わる国の政令・省令・告示の公布後に再算定する**ものです。"
+         "催促できないため翌日の作業には挙げていません。"
+         "公布を確かめた時点で算定をやり直します。"
+         % KS.RYOSHO_BI, span=5, height=32, fill=MID_B)
+r = header(ws, r, ["", "No.", "確認事項", "何を待つか", ""])
+for i, x in enumerate(sorted(KS.SAISANTEI, key=lambda y: y[0]), start=1):
+    r = body(ws, r, [i, x[0], x[3], SAISANTEI_RIYU.get(x[0], "―"), ""],
+             height=32, align={1: "center", 2: "center"})
 
 # ============================================================ 06 自己点検
 _no_set = sorted(x[0] for x in CHECK)

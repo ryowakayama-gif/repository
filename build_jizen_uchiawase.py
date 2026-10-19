@@ -96,7 +96,11 @@ KIJUNBI = KS.wareki(datetime.date.today())
 UBI = KS.wareki(UCHIAWASE)
 NOW_M = KS.yyyymm(UCHIAWASE)
 
-SC = KS.sorted_check(NOW_M)                   # (点, 内訳, 行) の降順
+# **本資料は令和8年10月8日の打合せのものである。**
+# 令和8年10月19日のご了承（受託者案により作成を進める）により未決は0件に
+# なったが、ご了承より前の時点の資料であるため**その時点の状態で読む**
+# （CLAUDE.md §4「過去の時点を記す資料に現時点の値を読ませない」）。
+SC = KS.sorted_check(NOW_M, KS.machi_at(UCHIAWASE))   # (点, 内訳, 行) の降順
 KITEI = KS.KITEI
 S = KS.SANTEI
 G = S["G_DO"]
@@ -410,6 +414,22 @@ r = note(ws, r,
             shn("machi"), len(MACHI_KO),
             len(MACHI_BETSU), len(MACHI_KYO), len(SC)),
          span=4, height=180, fill=IN_Y)
+
+r += 1
+r = lead(ws, r, "3　本資料の時点", span=4)
+r = note(ws, r,
+         "・**本資料は事前打合せ（%s）の時点の状況によるものです。**"
+         "確認事項の件数・状態・影響度の点はいずれもその時点のものです。\n"
+         "・**%s、ほぼ全ての確認事項について受託者案により作成を進めることを"
+         "ご了承いただきました。** これにより本資料に掲げた%d件は"
+         "いずれも受託者案で確定したものとして扱っています"
+         "（確認事項として挙げた経緯は業務工程管理表に残しています）。"
+         "A群・B群としてこの場でお決めいただきたいとしていた事項も、"
+         "受託者案のとおり進めます。\n"
+         "・**残るのは、保険料に関わる国の政令・省令・告示の公布後に"
+         "再算定する%d件です。**"
+         % (UBI, KS.RYOSHO_BI, len(SC), len(KS.SAISANTEI)),
+         span=4, height=118, fill=OK_G)
 
 # ============================================================ 01 最低限
 ws = sheet(SH["agenda"] + "_最低限の確認事項と時間配分",

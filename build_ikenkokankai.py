@@ -173,10 +173,20 @@ LACK = _literal(_PC_SRC, "LACK")
 BY = {c[0]: c for c in CHECK}
 # 列：No./業務内容/工程/確認事項/確認をお願いする内容/止めている成果物/
 #     確認先/状態/回答期限/回答・対応
-SUMI = ("完了", "了承済", "了承済（保管せず廃棄）", "代替により解消", "解決")
+# 決着とみる状態は台帳の定めから読む（固定値を書き写さない）。
+SUMI = _literal(_PC_SRC, "KETCHAKU_ST")
 KITEI = DK.all_kitei()
 
-MIKETSU = [c for c in CHECK if c[7] not in SUMI]
+# **本資料は令和8年10月1日の時点のものである。**
+# 令和8年10月19日のご了承により未決173件が「受託者案で確定」になったが、
+# ご了承より前の時点の資料であるため**その時点の状態で読む**
+# （CLAUDE.md §4「過去の時点を記す資料に現時点の値を読ませない」）。
+RYOSHO_MAE = {no for _st, nos in _literal(_PC_SRC, "RYOSHO_MAE_G").items()
+              for no in nos}
+RYOSHO_BI = _literal(_PC_SRC, "RYOSHO_BI")
+SAISANTEI_N = len(_literal(_PC_SRC, "SAISANTEI"))
+
+MIKETSU = [c for c in CHECK if c[0] in RYOSHO_MAE or c[7] not in SUMI]
 MACHI = [c for c in MIKETSU if "町" in c[6]]
 KYOTSU = [c for c in MACHI if not any(t in c[6] for t in TOWNS)]
 KOBETSU = {t: [c for c in MACHI if t in c[6]] for t in TOWNS}
@@ -1299,6 +1309,13 @@ TBL(["区分", "件数", "内容"],
       "／".join("%s%d件" % (t, len(KOBETSU[t])) for t in TOWNS)
       + "（%s）" % scn("kobetsu")]],
     [5.0, 2.0, 10.2], center={1}, first_bold=True, bold={1})
+P("※　本表は本意見交換会の時点（%s）の件数です。"
+  "本意見交換会の後の%sに、ほぼ全ての確認事項について"
+  "受託者案により作成を進めること、及び10月までの各工程を完了とすることについて"
+  "ご了承をいただきました。"
+  "これにより%d件が受託者案で確定し、"
+  "うち%d件は保険料に関わる国の政令・省令・告示が示された後に再算定します。"
+  % (KIJUNBI, RYOSHO_BI, len(RYOSHO_MAE), SAISANTEI_N), size=9)
 
 H2("3　決定がない場合の進め方")
 P("算定の前提のうち、資料の追加のご提供や決定を待っているものを"
@@ -1782,9 +1799,10 @@ chk(6.9, "制度の動向に調整交付金の減額と介護情報基盤が含�
 chk(6.95, "調整交付金が5％減少した場合の月額が算定の値によること",
     "月額%s（E %s円）" % (_sa(_CHOSEI5), _yen(G3["E"])),
     50 < _CHOSEI5 < 300 and _sa(_CHOSEI5) in _ALL)
-chk(6.96, "介護情報基盤の確認事項（No.175）が台帳にあり未決であること",
+chk(6.96, "介護情報基盤の確認事項（No.175）が台帳にあり"
+          "本資料の時点で未決であったこと",
     "No.175 %s" % (BY[175][7] if 175 in BY else "台帳にない"),
-    175 in BY and BY[175][7] not in SUMI)
+    175 in BY and 175 in {c[0] for c in MIKETSU})
 
 # 節の番号が SEC 辞書の順に並んでいること（節を増やしたときの歯止め）
 _sec_ng = [k for k, no, i in _SECORDER if no != i]
@@ -1843,8 +1861,11 @@ chk(18, "No.105の扱い（施策反映を行わない）が"
         "計画素案に反映されていること",
     "第6章第2節の注に施策の効果は反映していない旨",
     "施策の効果は反映していません" in _DRAFT)
+# 本資料の時点（令和8年10月1日）で未決であったことを見る。
+# ご了承の後の状態で見ると全件が「決着している」として不適合になる。
+_MIK_NO = {c[0] for c in MIKETSU}
 _SS_NG = [no for no, _s, _n2 in SUSUMETA
-          if no not in BY or BY[no][7] in SUMI or not KITEI.get(no)]
+          if no not in _MIK_NO or not KITEI.get(no)]
 chk(18.2, "No.137の扱い（単価を令和7年度で固定）が"
           "計画素案に反映されていること",
     "第6章第6節2に単価の実績の趨勢の幅",

@@ -113,8 +113,14 @@ KUBUN = _literal("build_mikomi_juryo_nashi.py", "KUBUN")
 CHECK = _literal("build_process_control.py", "CHECK")
 LACK = _literal("build_process_control.py", "LACK")
 SUSUMETA = _literal("build_ikenkokankai.py", "SUSUMETA")
-KANRYO = ("完了", "了承済", "了承済（保管せず廃棄）", "代替により解消", "解決")
-MACHI = [c for c in CHECK if c[7] not in KANRYO]
+# 決着とみる状態は台帳の定めから読む（固定値を書き写さない）。
+KANRYO = _literal("build_process_control.py", "KETCHAKU_ST")
+# **令和8年10月19日のご了承により、ご決定をお待ちしていた事項は
+#   すべて受託者案で確定した。** 第2次概算（令和8年10月30日）は
+# ご了承の後の工程であるため、現時点の状態で読む。
+RYOSHO_BI = _literal("build_process_control.py", "RYOSHO_BI")
+MACHI = [c for c in CHECK if str(c[7]).startswith("受託者案で確定")]
+SAISANTEI = [c for c in CHECK if c[7] == "受託者案で確定（告示後に再算定）"]
 KITEI = data_kitei.all_kitei()
 
 KYUFU3 = sum(KYUFU_Y[y] for y in Y3)
@@ -858,26 +864,27 @@ r = note(ws, r,
          span=6, height=86)
 
 # ============================================================ 10
-ws = sheet("10_残る未決と既定値",
-           "残る未決と既定値（決着しない場合の扱い）",
+ws = sheet("10_受託者案で確定した事項",
+           "受託者案で確定した事項（ご了承による）",
            "確認事項は業務工程管理表 03_確認事項一覧で一元管理しています。"
-           "未決%d件のすべてに「決着しない場合の受託者の扱い（既定値）」を"
-           "置いており、ご決定をお待ちしている間も算定は止まりません。"
-           "既定値は受託者の仮置きであり、決定ではありません。"
-           "令和8年10月上旬の3町合同意見交換会で内容をお諮りします。"
-           % len(MACHI),
+           "%sのご了承により、ご決定をお待ちしていた%d件は"
+           "いずれも受託者案で確定しました。"
+           "本概算はその内容によっています。"
+           "うち%d件は、保険料に関わる国の政令・省令・告示が示された後に"
+           "再算定します。"
+           % (RYOSHO_BI, len(MACHI), len(SAISANTEI)),
            [3, 7, 40, 52, 12, 12, 16], freeze="A6")
 r = 4
-r = lead(ws, r, "1　仮置きにより計画素案へ反映した事項", span=7)
+r = lead(ws, r, "1　受託者案により計画素案へ反映した事項", span=7)
 r = header(ws, r, ["", "確認事項", "反映先", "加えた内容", "", "", ""])
 _CM = {c[0]: c for c in CHECK}
 for i, (no, saki, naiyo) in enumerate(SUSUMETA, start=1):
     r = body(ws, r, [i, "No.%d" % no, saki, naiyo, "", "", ""], height=40,
              align={2: "center"})
 r += 1
-r = lead(ws, r, "2　第2次概算に効く未決の事項"
+r = lead(ws, r, "2　第2次概算に効く事項"
          "（期限が令和8年10月までのもの）", span=7)
-r = header(ws, r, ["", "No.", "件名", "決着しない場合の受託者の扱い",
+r = header(ws, r, ["", "No.", "件名", "ご了承いただいた受託者案",
                    "宛先", "期限", "状態"])
 
 
@@ -897,14 +904,14 @@ for i, c in enumerate(_MADE, start=1):
              fills={4: (NG_O if not KITEI.get(c[0]) else None)})
 r += 1
 r = note(ws, r,
-         "注1）仮置きにより計画素案へ反映した事項は%d件です。"
-         "作業として終えたことと、ご決定をお待ちしていることは別です。"
-         "ご決定の内容が異なる場合は、その内容により置き直します。\n"
-         "注2）2の表は、未決の事項のうち影響先に"
+         "注1）受託者案により計画素案へ反映した事項は%d件です。"
+         "ご了承の内容と異なるご判断をいただいた場合は、"
+         "その内容により置き直します。\n"
+         "注2）2の表は、受託者案で確定した事項のうち影響先に"
          "サービス見込量・給付費・保険料・計画素案 第6章を含み、"
-         "期限が令和8年10月までのもの%d件です。"
-         "いずれにも決着しない場合の扱いを置いています。\n"
-         "注3）未決%d件の全体と優先順位は"
+         "期限が令和8年10月までのもの%d件です。\n"
+         "注3）受託者案で確定した%d件の全体と、"
+         "確認事項として挙げた経緯は"
          "業務工程管理表 03_確認事項一覧によります。"
          % (len(SUSUMETA), len(_MADE), len(MACHI)),
          span=7, height=48)
@@ -1172,8 +1179,9 @@ print("差 総給付費 %s円／月額 %s"
          sa(GETSU - G1.getsu_sei(), 2)))
 print("据え置き %d件（Z%d・A%d・B%d・C%d）／月額を動かす前提 %d件"
       % (len(SUEOKI), _kb["Z"], _kb["A"], _kb["B"], _kb["C"], len(_SU_BC)))
-print("仮置きにより反映 %d件／第2次概算に効く未決 %d件／未決 %d件"
-      % (len(SUSUMETA), len(_MADE), len(MACHI)))
+print("受託者案により反映 %d件／第2次概算に効く事項 %d件／"
+      "受託者案で確定 %d件（うち告示後に再算定 %d件）"
+      % (len(SUSUMETA), len(_MADE), len(MACHI), len(SAISANTEI)))
 print("自己点検 %d件：適合%d件・不適合%d件"
       % (len(CHECKS), len(CHECKS) - len(_ng), len(_ng)))
 if _ng:

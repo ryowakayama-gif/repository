@@ -23,9 +23,15 @@
     import kakunin_score as KS
     sc = KS.make_score(KS.yyyymm(基準日))     # 期限の採点に基準日を要する
     pt, uchi = sc(x)
+
+令和8年10月19日のご了承（受託者案により作成を進める）により、
+未決であった173件の状態は「受託者案で確定」に改まった。
+**ご了承より前の時点を記す資料は `machi_at(その日)` で読む**
+（CLAUDE.md §4「過去の時点を記す資料に現時点の値を読ませない」）。
 """
 
 import ast
+import datetime
 import io
 import os
 import re
@@ -88,9 +94,49 @@ SANTEI = run_script("build_mikomiryo_santei.py")
 # 据え置き。(0)区分 (1)項目 (2)理由 (3)当方の扱い (4)関係する確認事項 (5)効き
 SUEOKI = SANTEI["SUEOKI"]
 
-KANRYO = ("完了", "了承済", "了承済（保管せず廃棄）", "代替により解消", "解決")
+# 決着とみる状態は台帳の定めから読む（固定値を書き写さない）。
+# 令和8年10月19日のご了承による「受託者案で確定」
+# 「受託者案で確定（告示後に再算定）」を含む。
+KANRYO = literal("build_process_control.py", "KETCHAKU_ST")
 MACHI = [x for x in CHECK if x[7] not in KANRYO]
+# 受託者案で確定したが、国の政令・省令・告示の公布後に再算定を要するもの
+SAISANTEI = [x for x in CHECK if x[7] == "受託者案で確定（告示後に再算定）"]
 LACK_MACHI = [x for x in LACK if x[8] not in ("受領済", "完了", "解消")]
+
+# ---- ご了承（令和8年10月19日）より前の時点で読む
+# **過去の時点を記す資料に現時点の値を読ませない**（CLAUDE.md §4）。
+# ご了承により未決173件が「受託者案で確定」になったため、
+# ご了承より前の打合せの資料をいまの状態で読むと未決0件になって崩れる。
+# `RYOSHO_MAE`（No. -> 従前の状態）はご了承で状態を改めたものの一覧であり、
+# その時点では未決であったことを表す。
+RYOSHO_BI = literal("build_process_control.py", "RYOSHO_BI")
+RYOSHO_MAE = {no: st for st, nos
+              in literal("build_process_control.py", "RYOSHO_MAE_G").items()
+              for no in nos}
+
+
+def _ryosho_date():
+    """ご了承の日（和暦の文字列）を date にする。"""
+    m = re.match(r"令和(\d+)年(\d+)月(\d+)日", RYOSHO_BI)
+    if not m:
+        raise RuntimeError("ご了承の日を読めない：%s" % RYOSHO_BI)
+    y, mo, d = (int(g) for g in m.groups())
+    return datetime.date(y + 2018, mo, d)
+
+
+RYOSHO_D = _ryosho_date()
+
+
+def machi_at(d=None):
+    """その時点で未決であった確認事項を返す。
+
+    `d`（date）がご了承の日より前であれば、ご了承で状態を改めたものを
+    未決として併せて返す。`d` を与えなければ現時点の未決（`MACHI`）。
+    """
+    if d is not None and d < RYOSHO_D:
+        return [x for x in CHECK
+                if x[0] in RYOSHO_MAE or x[7] not in KANRYO]
+    return MACHI
 
 
 # ============================================================ 期限を読む
