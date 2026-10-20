@@ -386,6 +386,19 @@ def t_ronten_genten():
         R.RONTEN[:] = hon
 
 
+def t_hanei_genpon():
+    """**他素案へ入れる第7期の目標値の数字を1つ変えると、反映の前に止まるか。**"""
+    import build_ono_shogai_taso_hanei as H
+
+    hon = list(H.HYOU13)
+    try:
+        H.HYOU13[5] = H.HYOU13[5].replace("158件", "159件")
+        ng = H.genpon_hyou()
+        return "NG %d件（%s）" % (len(ng), ng[0]) if ng else ""
+    finally:
+        H.HYOU13[:] = hon
+
+
 def t_mijotei_shirushi():
     """**未確定の印でない【　】を本文に書くと止まるか。**
 
@@ -559,6 +572,8 @@ SHIKEN = [
      "相談支援の指導・助言の目標を158件から159件にする", t_tsuika_genpon),
     ("論点漏れの点検　原典照合",
      "継続入所者の控除の文言を「ものとしない」に変える", t_ronten_genten),
+    ("他素案への反映　第7期の目標値",
+     "達成状況の表に入れる指導・助言の件数を158件から159件にする", t_hanei_genpon),
     ("両計画の接点　確かめることの数",
      "「確かめること」を1件足す（表の組み方が黙って落とさないか）",
      t_setten_kakunin_kazu),

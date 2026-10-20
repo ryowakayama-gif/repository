@@ -595,8 +595,12 @@ def xlsx_build():
         c.font, c.fill = hd, PatternFill("solid", fgColor="1F3864")
         c.alignment = Alignment(horizontal="center", vertical="center")
     fill = {"追加": "E2EFDA", "置換": "F8CBAD", "補記": "D9E1F2", "不要": "EDEDED"}
+    # 他素案への反映（build_ono_shogai_taso_hanei.py）が済んでいれば、その旨を記す
+    hanei = (OUT / "他メンバー素案" /
+             "★小野町_障がい者計画等（素案）_当方反映_変更履歴付き_20261020.docx")
     for x in TAIOU:
-        ws.append([x[0], x[1], x[3], _p(x[4]), x[5], _p(x[6]), x[7], x[8], "", ""])
+        zumi = "済（変更履歴付き）" if hanei.exists() and x[0] in TAKA else ""
+        ws.append([x[0], x[1], x[3], _p(x[4]), x[5], _p(x[6]), x[7], x[8], zumi, ""])
         ws.cell(ws.max_row, 5).fill = PatternFill("solid", fgColor=fill[x[5]])
     for i, w in enumerate(W, 1):
         ws.column_dimensions[get_column_letter(i)].width = w
