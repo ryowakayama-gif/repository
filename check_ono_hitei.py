@@ -371,6 +371,21 @@ def t_tsuika_genpon():
         T.ZENKAI_MOKUHYO[:] = hon
 
 
+def t_ronten_genten():
+    """**論点漏れの点検の根拠の文言を1字変えると、原典照合が止まるか。**"""
+    import build_ono_shogai_ronten_more as R
+
+    hon = list(R.RONTEN)
+    try:
+        x = list(R.RONTEN[0])
+        x[4] = ["の数を除いて設定するものとしない"]     # 原典は「ものとする」
+        R.RONTEN[0] = tuple(x)
+        ng = R.genten_ng()
+        return "NG %d件（%s）" % (len(ng), ng[0]) if ng else ""
+    finally:
+        R.RONTEN[:] = hon
+
+
 def t_mijotei_shirushi():
     """**未確定の印でない【　】を本文に書くと止まるか。**
 
@@ -542,6 +557,8 @@ SHIKEN = [
      "第6段階の標準割合を1.200から1.250にする", t_joritsu),
     ("他素案への追加候補　前回計画の目標値",
      "相談支援の指導・助言の目標を158件から159件にする", t_tsuika_genpon),
+    ("論点漏れの点検　原典照合",
+     "継続入所者の控除の文言を「ものとしない」に変える", t_ronten_genten),
     ("両計画の接点　確かめることの数",
      "「確かめること」を1件足す（表の組み方が黙って落とさないか）",
      t_setten_kakunin_kazu),
