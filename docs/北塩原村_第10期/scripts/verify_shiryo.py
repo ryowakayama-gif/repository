@@ -178,20 +178,39 @@ else:
     chk(9, "資料1 の次第・議論事項・配付資料一覧", not bad9,
         "・".join(bad9[:3]) if bad9 else "次第120分・議論9点・全8資料を掲載")
 
-# 10 資料1 の別冊（計画素案）の頁数が積算と大きくずれていないこと
+# 10 資料1 の別冊（素案）の頁数が実測と合っていること
+#   【なぜ積算をやめたか】節ごとの頁を切り上げて足す積算は、素案の実測より
+#   10頁以上大きく出る。令和8年10月10日（doc83）以降は組んで数えられるため、
+#   委員にお示しする頁数は実測を用いる。
+#   【混ぜてはいけないもの】estimate_sakugen.JISSOKU は --keikaku を付けて
+#   組んだ**計画書**の頁数（5-12 と編集注記を落としたもの）であり、
+#   委員に事前送付する別冊は**素案**である。別冊の頁数は JISSOKU_SOAN を用いる。
 try:
-    import estimate_pages as EP
-    rows, _tot, _nt, _nf = EP.run()
-    est = sum(__import__("math").ceil(r[5]) for r in rows) + sum(n for _, n in EP.FRONT)
+    import estimate_sakugen as ES10
+    soan = ES10.JISSOKU_SOAN + ES10.MAE_PG            # 素案（別冊）
+    keikaku = ES10.JISSOKU[""][1] + ES10.MAE_PG       # 成果品としての計画書
     t15 = [b for b in [x for x in SH.CH if x["no"] == "資料1"][0]["sections"][4]["blocks"]
            if b["t"] == "table"][0]
     bess = [r[2] for r in t15["rows"] if r[0] == "別冊"]
     got = int(str(bess[0]).replace("約", "")) if bess else None
-    chk(10, "資料1 の別冊の頁数と積算の整合", got is not None and abs(got - est) <= 3,
-        f"資料1は{got}頁・積算は{est}頁" if got is None or abs(got - est) > 3
-        else f"資料1 約{got}頁／積算{est}頁")
+    # 注記に書いた計画書の頁数も合っていること
+    note = " ".join(str(b.get("v", "")) for sec in
+                    [x for x in SH.CH if x["no"] == "資料1"][0]["sections"]
+                    for b in sec["blocks"])
+    bad10 = []
+    if got is None:
+        bad10.append("資料1に別冊の頁数がない")
+    elif got != soan:
+        bad10.append(f"別冊 資料1は{got}頁・素案の実測は{soan}頁")
+    if f"{keikaku}頁である" not in note:
+        bad10.append(f"注記に計画書の実測{keikaku}頁がない")
+    if f"{soan}頁のうち" not in note:
+        bad10.append(f"注記に別冊の実測{soan}頁がない")
+    chk(10, "資料1 の別冊・計画書の頁数が実測と合うこと", not bad10,
+        "・".join(bad10) if bad10
+        else f"別冊（素案）{soan}頁／成果品としての計画書{keikaku}頁。いずれも実測")
 except Exception as e:
-    chk(10, "資料1 の別冊の頁数と積算の整合", False, f"照合できない（{e}）")
+    chk(10, "資料1 の別冊・計画書の頁数が実測と合うこと", False, f"照合できない（{e}）")
 
 # ── ここから分母の方針の反映の点検（doc26 §19）────────────
 S3 = [x for x in SH.CH if x["no"] == "資料3"][0]["sections"]

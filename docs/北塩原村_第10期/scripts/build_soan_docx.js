@@ -53,6 +53,13 @@ const TBLW = 9360;   // 表の幅（DXA）。本文幅（9638）ではない。
 // 分量が村の許容（110頁）に収まるかを実紙面で確かめるために使う。既定の
 // 保存先は一時の場所であり、納品物の 06_…計画素案.docx は上書きしない。
 const KEIKAKU = process.argv.includes('--keikaku');
+// --out は素案（5-12 と編集注記を含むもの）を指定の場所に書く。
+// 納品物の 06_…計画素案.docx を上書きせずに素案の紙面を測るために使う。
+const SOANOUT = (() => {
+  const i = process.argv.indexOf('--out');
+  const v = i >= 0 ? process.argv[i + 1] : null;
+  return v && !v.startsWith('--') ? v : null;
+})();
 const ARGOUT = (() => {
   const i = process.argv.indexOf('--keikaku');
   const v = i >= 0 ? process.argv[i + 1] : null;
@@ -297,7 +304,7 @@ const doc = new Document({
 Packer.toBuffer(doc).then(buf => {
   const out = KEIKAKU
     ? (ARGOUT || path.join(require('os').tmpdir(), '06_計画書_試作.docx'))
-    : path.join(OUTDIR, '06_北塩原村第10期_計画素案.docx');
+    : (SOANOUT || path.join(OUTDIR, '06_北塩原村第10期_計画素案.docx'));
   fs.writeFileSync(out, buf);
   console.log('保存:', out, (buf.length / 1024).toFixed(0) + ' KB');
 });

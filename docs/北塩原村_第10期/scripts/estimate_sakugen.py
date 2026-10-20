@@ -147,6 +147,12 @@ JISSOKU = {
 # 素案を直したら測り直し、この値も書き替える（jissoku_furui が見ている）。
 JISSOKU_HAN = "b9cff88e9f686677"
 
+# 素案そのもの（5-12 据え置いている項目の一覧と編集注記を含む）の実測本文頁。
+#   JISSOKU は --keikaku を付けて組んだ**計画書**の頁数であり、素案ではない。
+#   委員に事前送付する別冊は素案であるため、頁数が19頁違う。
+#   測り直すには scripts/estimate_sakugen.py --jissoku-soan を走らせる。
+JISSOKU_SOAN = 145          # 令和8年10月19日。前付4頁を加えて149頁
+
 MAE_PG = 4          # 前付（表紙・本書の見方・目次）
 KYOYO = 115         # 村が許容する頁数（令和8年10月15日のご判断。
                     # 令和8年法律第51号による法定記載事項の追加を受け、
@@ -340,7 +346,7 @@ def an_targets(keys):
     return tg, (YOUGO_NAI if "G" in ks else ()), (FIG_UTSUSU if "H" in ks else ())
 
 
-def build_docx(keys, out):
+def build_docx(keys, out, soan=False):
     """案を適用した計画書の docx を組む（実紙面を測るため）。
 
     推定は送りによる空白を小さく見るため下限にとどまる。どの組み合わせが
@@ -366,9 +372,16 @@ def build_docx(keys, out):
         fd, js = tempfile.mkstemp(suffix=".json", prefix="sakugen_")
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False)
-    r = subprocess.run(["node", os.path.join(here, "build_soan_docx.js"),
-                        "--keikaku", out, "--in", js],
-                       capture_output=True, text=True, timeout=900)
+    # --keikaku は「成果品としての計画書」を組む指定である
+    #   （5-12 据え置いている項目の一覧と編集注記を落とす）。
+    #   soan=True を渡すと、素案そのもの（5-12 と注記を含む）を組む。
+    #   委員に事前送付する別冊は素案であるため、その頁数は別に測る。
+    cmd = ["node", os.path.join(here, "build_soan_docx.js")]
+    if soan:
+        cmd += ["--out", out, "--in", js]
+    else:
+        cmd += ["--keikaku", out, "--in", js]
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
     os.unlink(js)
     if r.returncode != 0 or not os.path.exists(out):
         raise SystemExit((r.stdout + r.stderr)[-2000:])
@@ -495,6 +508,33 @@ def main():
     return 0
 
 
+def jissoku_soan():
+    """素案そのもの（5-12 と編集注記を含む）の本文頁を測る。
+
+       JISSOKU_SOAN に貼る値を出す。素案を直したら測り直す。
+    """
+    import tempfile
+    import render_check as RC
+    import pymupdf
+    d = tempfile.mkdtemp(prefix="soan_")
+    dx = os.path.join(d, "素案.docx")
+    build_docx("", dx, soan=True)
+    pdf = RC.convert(dx, d)
+    n = pymupdf.open(pdf).page_count - 3
+    print("■ 素案の実測（5-12 と編集注記を含む）\n")
+    print("    JISSOKU_SOAN = %d          # 前付%d頁を加えて%d頁"
+          % (n, MAE_PG, n + MAE_PG))
+    if n != JISSOKU_SOAN:
+        print("\n  前は %d頁。上の行を estimate_sakugen.py の JISSOKU_SOAN に貼る"
+              % JISSOKU_SOAN)
+    else:
+        print("\n  前と同じ")
+    print("  計画書（5-12 と注記を落としたもの）は本文%d頁＝%d頁"
+          % (JISSOKU[""][1], JISSOKU[""][1] + MAE_PG))
+    print("  組んだ docx と PDF： %s" % d)
+    return 0
+
+
 def jissoku_measure(kumi):
     """組み合わせごとに docx を組んで PDF に変換し、本文の頁数を数える。
 
@@ -530,6 +570,8 @@ if __name__ == "__main__":
         out = sys.argv[j + 1] if j >= 0 else os.path.join(
             __import__("tempfile").gettempdir(), f"06_計画書_{keys or 'なし'}.docx")
         print("組んだ:", build_docx(keys.replace("なし", ""), out))
+    elif "--jissoku-soan" in sys.argv:
+        sys.exit(jissoku_soan())
     elif "--jissoku" in sys.argv:
         i = sys.argv.index("--jissoku")
         jissoku_measure([a.replace("なし", "") for a in sys.argv[i + 1:]]
