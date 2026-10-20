@@ -167,17 +167,78 @@ def build_tanjun(wb, book, data, hyos, sheet_name):
     return ws
 
 
+# ══════════════════════════════════════════════════════════════
+# 該当数が少ないます目の秘匿（個人情報取扱管理ルール doc16 §6）
+#
+#   「回答者が少数となるクロス集計は、区分を統合するか非表示とする
+#     （目安：該当数10未満）」
+#
+#   本村は総人口2,315人・高齢者1,015人である。通常の匿名化の目安でも
+#   個人が推定され得るため、クロス集計のます目は該当数10未満を伏せる。
+#
+#   【伏せるもの】クロス集計（軸別集計・分析クロス）のます目。
+#   【伏せないもの】単純集計（軸で割っていないもの）。
+#     全体の分布は個人の特定につながらず、伏せると報告書が成り立たない。
+#   【軸の人数そのもの】n=10未満の区分は見出しに人数を出さず「n<10」と記す。
+#     その区分の列はます目をすべて伏せる。
+#
+#   伏せたます目には SHIHITSU を入れる。％も伏せる（人数が割り戻せるため）。
+SHIHITSU_MIN = 10          # この数に満たない該当数は伏せる
+SHIHITSU = "－"            # 伏せたます目に入れる記号（全角ハイフンマイナス）
+
+
+def kakusu(n):
+    """該当数 n のます目を伏せるか"""
+    try:
+        return 0 < int(n) < SHIHITSU_MIN
+    except (TypeError, ValueError):
+        return False
+
+
+def shihitsu_cell(n, v):
+    """該当数 n に応じて値 v を返す。伏せるときは SHIHITSU"""
+    return SHIHITSU if kakusu(n) else v
+
+
+def hosoku(counts, kyosei=()):
+    """伏せるます目の位置を返す（補完秘匿）。
+
+       【なぜ必要か】1つのます目だけを伏せても、
+       行の計や「全体」から引けばその数が出てしまう。
+       伏せたます目が行に1つしかないときは、
+       残りのうち最も小さいものをもう1つ伏せる。
+       これで、伏せた2つの**和**は分かっても、
+       それぞれの数は分からなくなる。
+
+       counts  その行の該当数の並び
+       kyosei  強制的に伏せる位置（区分そのものが10人未満の列など）
+       返り値  伏せる位置の集合
+    """
+    kakusu_i = {i for i, n in enumerate(counts) if kakusu(n)} | set(kyosei)
+    if len(kakusu_i) == 1:
+        nokori = [(n, i) for i, n in enumerate(counts) if i not in kakusu_i]
+        if nokori:
+            kakusu_i.add(min(nokori)[1])
+    return kakusu_i
+
+
 def build_axis(wb, book, data, hyos, sheet_name, axis_codes):
     """設問×集計軸のクロス（％表）"""
     ws = wb.create_sheet(sheet_name)
     sheet_header(ws, f"軸別集計　{sheet_name}",
-                 "各セルは当該区分の回答者数を分母とした％。複数回答は合計が100％を超える")
+                 f"各セルは当該区分の回答者数を分母とした％。複数回答は合計が100％を超える。"
+                 f"該当数{SHIHITSU_MIN}未満のます目は「{SHIHITSU}」として伏せている"
+                 f"（個人情報取扱管理ルール6）。「全体」の列は軸で割っていないため伏せない")
     for code in axis_codes:
         name, getter, order = AXES[code]
         if not order:
             continue
         groups = {k: [r for r in data if getter(r) == k] for k in order}
-        ws.append([f"■ 軸{code}　{name}　" + "／".join(f"{k} n={len(v)}" for k, v in groups.items())])
+        # 区分そのものが10人未満なら、人数を出さず列をすべて伏せる（doc16 §6）
+        chiisai = {k for k, v in groups.items() if kakusu(len(v))}
+        ws.append([f"■ 軸{code}　{name}　"
+                   + "／".join(f"{k} n<{SHIHITSU_MIN}" if k in chiisai else f"{k} n={len(v)}"
+                               for k, v in groups.items())])
         ws.cell(ws.max_row, 1).font = F_T
         for q in book:
             if q["票"] not in hyos or not q["列"] or q["形式"] in ("自由", "数値", "マトリクス"):
@@ -193,10 +254,14 @@ def build_axis(wb, book, data, hyos, sheet_name, axis_codes):
                 per[k] = (tally_multi(g, q["変数"], q["選択肢"]) if q["形式"].startswith("複数")
                           else tally_single(g, q["列"][0], q["選択肢"]))
             for i, (lab, c) in enumerate(base[0]):
+                # 全体（軸で割っていない）は伏せない。軸別のます目のみ伏せる
                 row = [lab, pct(c, base[1])]
-                for k in order:
+                cnt = [per[k][0][i][1] for k in order]
+                kyosei = [j for j, k in enumerate(order) if k in chiisai]
+                fusu = hosoku(cnt, kyosei)
+                for j, k in enumerate(order):
                     o, v = per[k]
-                    row.append(pct(o[i][1], v))
+                    row.append(SHIHITSU if j in fusu else pct(o[i][1], v))
                 rows.append(row)
             ws.append([f"{q['番号']}　{q['設問文'][:50]}"])
             ws.cell(ws.max_row, 1).font = Font(name="Meiryo UI", size=9, bold=True)
@@ -216,7 +281,10 @@ def crosstab(rows, get_r, ord_r, get_c, ord_c):
 def build_cross(wb, needs, zai):
     """分析編のクロス表（doc25 CROSS）のうち、軸が確定しているものを出力する"""
     ws = wb.create_sheet("分析クロス")
-    sheet_header(ws, "分析編クロス表", "件数と行％。網掛けは分析編の中核となる表")
+    sheet_header(ws, "分析編クロス表",
+                 f"件数と行％。網掛けは分析編の中核となる表。"
+                 f"該当数{SHIHITSU_MIN}未満のます目は「{SHIHITSU}」として伏せている"
+                 f"（個人情報取扱管理ルール6。本村の規模では個人が推定され得るため）")
 
     D01 = (lambda r: r.get("D01_3") or None, ["0疾病", "1〜2疾病", "3疾病以上"])
     R99 = (lambda r: r.get("R99_3") or None, ["0領域", "1〜2領域", "3領域以上"])
@@ -262,8 +330,17 @@ def build_cross(wb, needs, zai):
         body = []
         for a in ord_r:
             tot = sum(tbl[a].values())
-            body.append([a] + [tbl[a][b] for b in ord_c] + [tot])
-            body.append([f"　{a}（％）"] + [pct(tbl[a][b], tot) for b in ord_c] + [100.0 if tot else 0.0])
+            # 行の計が10未満なら行をまるごと伏せる。
+            # 計を残すと、伏せたます目の合計から逆算できる
+            gyo_kakusu = kakusu(tot)
+            cnt = [tbl[a][b] for b in ord_c]
+            fusu = set(range(len(ord_c))) if gyo_kakusu else hosoku(cnt)
+            body.append([a] + [SHIHITSU if j in fusu else cnt[j] for j in range(len(ord_c))]
+                        + [SHIHITSU if gyo_kakusu else tot])
+            body.append([f"　{a}（％）"]
+                        + [SHIHITSU if j in fusu else pct(cnt[j], tot)
+                           for j in range(len(ord_c))]
+                        + [SHIHITSU if gyo_kakusu else (100.0 if tot else 0.0)])
         write_table(ws, head, body, [30] + [13] * (len(ord_c) + 1))
     return ws
 

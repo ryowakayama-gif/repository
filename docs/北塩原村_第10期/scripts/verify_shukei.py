@@ -289,6 +289,60 @@ chk(35, "ダミーデータの件数が集計プログラムの文書と合う�
     f"読み込み {DM.N_NEEDS + tasu}／{DM.N_ZAITAKU + tasu}・"
     f"集計 {DM.N_NEEDS + tasu - 6}／{DM.N_ZAITAKU + tasu - 6}")
 
+# 36 該当数10未満のます目が伏せてあること（個人情報取扱管理ルール doc16 §6）
+#   【なぜ置くか】doc16 §6 は「回答者が少数となるクロス集計は、区分を統合するか
+#   非表示とする（目安：該当数10未満）」と定めている。令和8年10月20日まで、
+#   この定めは集計仕様書に書いてあるだけで、集計プログラムに入っていなかった。
+#   ダミーデータでも n=2〜9 のます目がそのまま xlsx に出ていた。
+#   【補完秘匿】1つだけ伏せても、行の計や「全体」から引けば出てしまう。
+#   伏せたます目が行に1つしかない状態を作らない。
+try:
+    import shukei_run as SR36
+    bad36 = []
+    out36 = _P.out("10_集計結果.xlsx")
+    if not os.path.exists(out36):
+        bad36.append("集計結果がない（先に shukei_run.py を走らせる）")
+    else:
+        import openpyxl as _ox36
+        wb36 = _ox36.load_workbook(out36, data_only=True)
+        F36 = SR36.SHIHITSU
+        if SR36.SHIHITSU_MIN != 10:
+            bad36.append("目安が%dになっている（doc16 §6 は10）" % SR36.SHIHITSU_MIN)
+        # 分析クロスは件数を出すため、1〜9の数が残っていてはならない
+        ws36 = wb36["分析クロス"]
+        rows36 = [[c for c in r] for r in ws36.iter_rows(values_only=True)]
+        nokori = sum(1 for r in rows36 for c in r
+                     if isinstance(c, int) and 1 <= c <= 9)
+        if nokori:
+            bad36.append("分析クロスに1〜9の数が%d個残っている" % nokori)
+        # 伏せたます目が行に1つしかない（＝引けば出る）行がないこと
+        hitotsu = []
+        for i, r in enumerate(rows36):
+            cells = [c for c in r[1:] if c is not None]
+            if not cells or F36 not in cells or "（％）" in str(r[0] or ""):
+                continue
+            if cells.count(F36) == 1 and cells[-1] != F36:
+                hitotsu.append("分析クロス 行%d" % (i + 1))
+        for sn36 in ("ニーズ軸別集計", "在宅軸別集計"):
+            rows36b = [[c for c in r] for r in wb36[sn36].iter_rows(values_only=True)]
+            for i, r in enumerate(rows36b):
+                cells = [c for c in r[2:] if c is not None]   # 全体の列を除く
+                if cells and cells.count(F36) == 1:
+                    hitotsu.append("%s 行%d" % (sn36, i + 1))
+        if hitotsu:
+            bad36.append("伏せが1つだけで引けば出る行 %d件（%s ほか）"
+                         % (len(hitotsu), hitotsu[0]))
+        fuseta = sum(1 for sn36 in ("ニーズ軸別集計", "在宅軸別集計", "分析クロス")
+                     for r in wb36[sn36].iter_rows(values_only=True) for c in r
+                     if c == F36)
+    chk(36, "該当数10未満のます目が伏せてあること", not bad36,
+        "／".join(bad36[:2]) if bad36 else
+        "クロスの%dます目を伏せた（目安%d未満）。"
+        "単純集計は軸で割っていないため伏せない。"
+        "伏せが1つだけの行はなく、引いても出ない" % (fuseta, SR36.SHIHITSU_MIN))
+except Exception as e:
+    chk(36, "該当数10未満のます目が伏せてあること", False, f"確かめられない（{e}）")
+
 w = max(len(n) for _, n, _, _ in R)
 print("■ 集計仕様書の自己点検")
 ng = 0
