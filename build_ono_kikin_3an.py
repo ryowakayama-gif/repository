@@ -1,0 +1,181 @@
+"""介護給付費準備基金の取崩しの3案（0・中・大）の試算。協議会の保険料の回で用いる。
+
+なぜ作るか
+  不足事項の洗い出し（内部検討/小野町_不足事項の洗い出しと許可URL）の#7。
+  素案は「取崩なし」と「保有額12,000千円の取崩」の2つを示しているが、
+  保有額の出所（年報 様式4）と決算の積立の記録が合わない。
+  基金残高を決算から推計し直し、取崩しの3案で保険料基準額を試算する。
+
+原典
+  決算状況（歳入・歳出）令和2〜8年度（18_年報・国保連データ/原本_決算・交付金）
+    歳出 款6 基金積立金「介護給付費準備基金積立金」の支出済額
+    歳入 款7 繰入金「介護給付費準備基金繰入金」の収入済額
+  年報 様式4「介護給付費準備基金保有額」（2021〜2024年度。2025年度のファイルは読めない）
+  保険料基準額の算定は素案と同じ式（build_ono_soan_elderly.hoken ＝ build_ono_tanka.premium）。
+
+出力
+  04_算定・見込量/小野町_第10期_介護給付費準備基金の取崩し3案の試算_YYYYMMDD.docx
+"""
+
+import pathlib
+import sys
+import warnings
+
+import openpyxl
+
+import ono_style as S
+
+warnings.filterwarnings("ignore")
+
+HERE = pathlib.Path(__file__).parent
+ROOT = HERE / "小野町_引継ぎ_整理済"
+OUT = ROOT / "04_算定・見込量"
+KESSAN = ROOT / "18_年報・国保連データ" / "原本_決算・交付金" / "04決算書、地域支援事業交付金実績報告"
+NENPO = ROOT / "18_年報・国保連データ" / "原本_年報"
+ASOF = "20261020"
+ASOF_JP = "令和8年10月20日"
+NEN = ["R2", "R3", "R4", "R5", "R6", "R7", "R8"]
+WAREKI = {"R2": "令和2年度", "R3": "令和3年度", "R4": "令和4年度", "R5": "令和5年度",
+          "R6": "令和6年度", "R7": "令和7年度", "R8": "令和8年度"}
+
+
+def _sheet_year(title):
+    t = title.translate(str.maketrans("０１２３４５６７８９", "0123456789"))
+    for y in NEN:
+        if t.startswith(y):
+            return y
+    return None
+
+
+def kessan():
+    """積立（歳出）と取崩（歳入の繰入金）を年度ごとに千円で返す。"""
+    tsumi, tori, kuri = {}, {}, {}
+    for f, col_nm, col_v, key, store in (
+            ("決算状況（歳出）.xlsx", 5, 14, "介護給付費準備基金積立金", tsumi),
+            ("決算状況（歳入）.xlsx", 4, 6, "介護給付費準備基金繰入金", tori),
+            ("決算状況（歳入）.xlsx", 4, 6, "繰越金", kuri)):
+        wb = openpyxl.load_workbook(KESSAN / f, read_only=True, data_only=True)
+        for ws in wb.worksheets:
+            y = _sheet_year(ws.title)
+            if not y:
+                continue
+            for r in ws.iter_rows(min_row=2, values_only=True):
+                if len(r) > col_v and r[col_nm] == key:
+                    store[y] = float(r[col_v]) / 1000
+    return tsumi, tori, kuri
+
+
+def nenpo():
+    d = {}
+    for yr in (2021, 2022, 2023, 2024):
+        wb = openpyxl.load_workbook(NENPO / ("年報データ_%d_小野町.xlsx" % yr), read_only=True, data_only=True)
+        for r in wb["様式４"].iter_rows(values_only=True):
+            s = [c for c in r if c is not None]
+            if s and str(s[0]) == "介護給付費準備基金保有額":
+                d["R%d" % (yr - 2018)] = float(s[1]) / 1000
+    return d
+
+
+def zandaka(tsumi, tori, nen):
+    """R8年度末の残高の推計を2通り示す（年報の保有額をどこで信じるかによる）。"""
+    flow = {y: tsumi.get(y, 0) - tori.get(y, 0) for y in NEN}
+    # 読み方1：年報のR4年度末120,000千円を正とする
+    a = nen["R4"] + sum(flow[y] for y in ("R5", "R6", "R7", "R8"))
+    # 読み方2：年報のR5・R6年度末12,000千円は桁落ちで、120,000千円を正とする
+    b = 120000 + sum(flow[y] for y in ("R7", "R8"))
+    return flow, a, b
+
+
+def main():
+    import build_ono_soan_elderly as E
+    tsumi, tori, kuri = kessan()
+    nen = nenpo()
+    flow, a, b = zandaka(tsumi, tori, nen)
+    lo = min(a, b)
+    cases = [("A　取り崩さない", 0), ("B　推計残高の下限の半分", round(lo / 2, -3)),
+             ("C　推計残高の下限の全額", round(lo, -3))]
+    res = []
+    for nm, k in cases:
+        h = E.hoken(kikin=k)
+        res.append((nm, k, h["月額"], E._ceil100(h["月額"]), lo - k))
+    ref = E.hoken(kikin=35000)
+
+    ng = []
+    if any(tori.get(y, 0) for y in NEN):
+        ng.append("取崩の実績がある（前提と違う）")
+    if not (tsumi.get("R2") == 30000 and tsumi.get("R6") == 0):
+        ng.append("積立の読み取りが想定と違う")
+    if set(nen) != {"R3", "R4", "R5", "R6"}:
+        ng.append("年報の保有額が4年度分読めない")
+    if not (res[0][2] > res[1][2] > res[2][2]):
+        ng.append("取崩しを増やしても保険料が下がらない（式の誤り）")
+
+    r = S.Report("小野町　介護給付費準備基金の取崩し3案")
+    r.cover(["小野町高齢者保健福祉計画・第10期介護保険事業計画"],
+            ["介護給付費準備基金の取崩し3案の試算", ASOF_JP, "ビズアップ公共コンサルティング株式会社"])
+    r.toc_here()
+    r.body_here()
+
+    r.h1("1　結論")
+    r.p("**基金残高は、決算の積立の記録から令和8年度末に%s〜%s千円と推計されます。** "
+        "素案が用いてきた「保有額12,000千円」（年報 様式4）は、決算の積立の記録と合いません。"
+        % (f"{lo:,.0f}", f"{max(a, b):,.0f}"))
+    r.p("**取崩しの3案で、保険料基準額（月額、100円未満切上げ）は次のとおりです。**")
+    r.tbl([["案", "取崩額（3年計）", "算定値（月額）", "基準額（月額）", "第10期末の残高（推計の下限から）"]]
+          + [[nm, f"{k:,.0f}千円", f"{m:,.0f}円", f"**{c:,.0f}円**", f"{z:,.0f}千円"] for nm, k, m, c, z in res],
+          widths=[4.6, 2.9, 2.7, 2.7, 4.3], right=(1, 2, 3, 4), caption="取崩しの3案")
+    r.src("算定は素案（第14版）の標準ケースと同じ式による。参考：第9期と同じ35,000千円を取り崩すと、"
+          f"算定値{ref['月額']:,.0f}円・基準額{E._ceil100(ref['月額']):,.0f}円。"
+          f"第9期の基準額は{E.T.DAI9_KIJUN:,}円。")
+    r.p("**取り崩した分は保険料を下げますが、第10期の給付が見込みを上回ったときの備えが減ります。** "
+        "第10期中に財政安定化基金から借り入れると、第11期の保険料で返すことになります。"
+        "**案Bを中心に、町の財政部局と協議会で決めていただくことを提案します。**")
+
+    r.h1("2　基金残高の推計")
+    r.p("**3つの資料で基金の状況が食い違っています。**")
+    r.tbl([["年度", "決算：積立（千円）", "決算：取崩（千円）", "年報 様式4：保有額（千円）"]]
+          + [[WAREKI[y], f"{tsumi.get(y, 0):,.0f}", f"{tori.get(y, 0):,.0f}",
+              f"{nen[y]:,.0f}" if y in nen else "―"] for y in NEN],
+          widths=[3.4, 4.4, 4.4, 5.0], right=(1, 2, 3), caption="基金の積立・取崩と保有額")
+    r.src("決算状況（歳入・歳出）の支出済額・収入済額による。令和8年度は年度途中の値。"
+          "年報の令和7年度（2025年度）のファイルは書式の破損で読めない。")
+    r.p("**決算では、令和2年度から毎年30,000千円を積み立て（令和6年度のみ0円）、取崩しは一度もありません。** "
+        "一方、年報の保有額は令和3年度末0千円→令和4年度末120,000千円→令和5・6年度末12,000千円と動いており、"
+        "**取崩しがないのに10分の1に減っています。** 年報の入力の誤り（桁の取り違え）とみられます。")
+    r.tbl([["読み方", "前提", "令和8年度末の推計残高"],
+           ["1", "年報の令和4年度末120,000千円を正とし、以後の決算の積立を足す", f"{a:,.0f}千円"],
+           ["2", "年報の令和5・6年度末12,000千円は120,000千円の桁落ちとし、以後の積立を足す", f"{b:,.0f}千円"]],
+          widths=[1.6, 10.4, 5.2], caption="令和8年度末の基金残高の推計")
+    r.p("**3案は、低い方の推計（%s千円）を基に置きました。** 利息は含めていません。"
+        "**町の基金台帳の残高（令和7年度末）を確かめれば、推計は不要になります。**" % f"{lo:,.0f}")
+
+    r.h1("3　繰越金")
+    r.p("**介護保険特別会計の繰越金は、令和8年度に%s千円が繰り越されています。** "
+        "繰越金のうち国・県への返還金等を除いた分は、基金への積立か第10期の財源に充てられます。"
+        "**基金の取崩しとあわせて、繰越金の扱いも町に確かめます。**" % f"{kuri.get('R8', 0):,.0f}")
+
+    r.h1("4　町に確かめること")
+    r.tbl([["№", "事項"],
+           ["1", "介護給付費準備基金の台帳上の残高（令和7年度末・令和8年度末見込み）"],
+           ["2", "年報 様式4の保有額（令和4〜6年度）の入力の誤りの有無"],
+           ["3", "繰越金のうち、基金への積立・第10期の財源に充てる予定の額"],
+           ["4", "第10期の取崩しの方針（取崩しの上限、残しておく額の考え方）"]],
+          widths=[0.8, 16.4], caption="町に確かめること")
+
+    p = OUT / ("小野町_第10期_介護給付費準備基金の取崩し3案の試算_%s.docx" % ASOF)
+    r.build_toc()
+    r.save(p)
+    print("■ 介護給付費準備基金の取崩し3案")
+    print("   ", p.relative_to(HERE))
+    for nm, k, m, c, z in res:
+        print("   %s 取崩%s千円 → 算定%.0f円 基準%d円 残%s千円" % (nm, f"{k:,.0f}", m, c, f"{z:,.0f}"))
+    print("   推計残高 読み方1 %s／読み方2 %s 千円" % (f"{a:,.0f}", f"{b:,.0f}"))
+    print("\n■ 自己点検")
+    for x in ng:
+        print("   NG", x)
+    print("   すべて適合" if not ng else "   **%d件**" % len(ng))
+    return 1 if ng else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
