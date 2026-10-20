@@ -1193,13 +1193,30 @@ def main():
                       encoding="utf-8") as f48:
                 if "TableLayoutType.FIXED" not in f48.read():
                     bad48.append(f"{js} の表の列幅が固定になっていない")
-        # (b) 1頁に収まらない要素が表だけであること（図は分割できない）
+        def _kind48(items, name):
+            """割付の要素の並びから、その名前の要素の種類を返す"""
+            for it in items:
+                if len(it) > 1 and it[1] == name:
+                    return it[0]
+            return "―"
+
+        # (b) 1頁に収まらない要素が、分割できるものだけであること
+        #   図は1つの画像であり頁をまたげない。表は行の境目で割れる。
+        #   段落・注記・箇条書きは、組立ての側でそれぞれが別の段落になるため割れる
+        #   （build_soan_docx.js は bullets の各項目を Paragraph として出している）。
+        #   【直した経緯】以前は要素の「名前」に「表（」が含まれるかで見ていた。
+        #   頁を超えるのが表だけだった間はこれで通っていたが、
+        #   令和8年10月20日に施策4-6の箇条書きが1頁を超えたとき、
+        #   割れる要素なのに不適合になった。見るべきは名前ではなく割れるかどうかである。
+        WARERU48 = ("表", "p", "note", "bullets", "key")
         for items, ph, nm48 in ((EL.soan_items(), EL.BODY_H, "素案"),
                                 (EL.shiryo_items(), EL.SH_H, "委員会資料")):
             _, out48 = EL.flow(items, ph)
-            over = [o for o in out48 if o[0] == "頁超" and "表（" not in o[2]]
+            over = [o for o in out48 if o[0] == "頁超"
+                    and not o[2].startswith("　")
+                    and _kind48(items, o[2]) not in WARERU48]
             if over:
-                bad48.append(f"{nm48}：1頁に収まらない図がある（"
+                bad48.append(f"{nm48}：1頁に収まらない、割れない要素がある（"
                              + "・".join(o[2][:30] for o in over[:2]) + "）")
             # (c) 送りで生じる空白が頁の7割を超えないこと（紙面が破れている徴候）
             huge = [o for o in out48 if o[0] in ("送り", "見出しの送り")
