@@ -72,3 +72,13 @@ python3 mk_toc.py "out/計画素案_第10期_公表用.docx" mkf_kohyo.py "out/_
 
 - **`chk_taisai_pdf.py`**　ＰＤＦの体裁の実測値を一覧にする（用紙・文字の占める範囲・フォント／サイズ／色の分布）。
   前回計画書（第9期・ＰＤＦ）の体裁を測り、対照表の右欄を埋めるために使う。`python3 -I chk_taisai_pdf.py <pdf>`（要 PyMuPDF）
+
+## 公表用の計画書のビルド
+
+**公表用（`ch_kohyo.py`）だけは体裁が違う。**前回（第9期）計画書の実測値に合わせるため、体裁プロファイル `../style/style_kohyo.py` を先に連結する。
+
+```
+{ cat style_kohyo.py; cat fmt.py; echo; cat ch_kohyo.py; } > mkf_kohyo.py && python3 mkf_kohyo.py
+```
+
+**他の文書は従前どおり `{ cat fmt.py; echo; cat ch_XXX.py; }` でよい**（体裁は `fmt.py` の既定値）。

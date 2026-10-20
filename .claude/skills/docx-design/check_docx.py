@@ -23,7 +23,8 @@ from docx.oxml.ns import qn
 from docx.table import Table
 from docx.text.paragraph import Paragraph
 
-BODY_W = 17.0                       # 本文幅（cm）A4縦・左右余白2.0cm
+BODY_W = 17.0                       # 本文幅（cm）の既定。実際は文書の余白から求める
+TBL_FILLS = {'1F3864', '595959'}    # 表の見出し行の塗り（協議用／公表用の2つの体裁）
 PALETTE = {'#C00000', '#2E75B6', '#BDD7EE', '#ED7D31', '#A6A6A6', '#1F3864',
            '#F2F2F2', '#D9D9D9', '#E6E6E6', '#E8E8E8', '#9DC3E6', '#1F4E79',
            '#BFBFBF', '#808080', 'white'}
@@ -40,8 +41,17 @@ def _text(doc):
     return '\n'.join(out)
 
 
+_BODY_PT = [10.5]                   # 文書の本文のサイズ。文書ごとに読み替える
+
+
 def _is_src(p):
-    return any(r.font.size is not None and r.font.size.pt <= 8.5 for r in p.runs)
+    """出典行かどうか。本文より1pt以上小さい文字を含む段落を出典とみなす。
+
+    　体裁のプロファイルにより出典のサイズが変わる（協議用8.5pt・公表用9.0pt）ため、
+    　固定値ではなく本文のサイズからの差で判定する。
+    """
+    lim = _BODY_PT[0] - 1.0
+    return any(r.font.size is not None and r.font.size.pt <= lim for r in p.runs)
 
 
 def check_figs(doc, name, ng):
@@ -113,6 +123,9 @@ def check_fig_table(doc, name, ng):
 
 
 def check_tables(doc, name, ng):
+    s0 = doc.sections[0]
+    bw = (s0.page_width - s0.left_margin - s0.right_margin) / 360000.0   # EMU → cm
+    fills = []
     for ti, t in enumerate(doc.tables, 1):
         ncol = {len(r.cells) for r in t.rows}
         if len(ncol) > 1:
@@ -120,9 +133,9 @@ def check_tables(doc, name, ng):
             continue
         w = [c.width.cm for c in t.rows[0].cells if c.width is not None]
         if len(w) == len(t.rows[0].cells):
-            if sum(w) > BODY_W + 0.05:
+            if sum(w) > bw + 0.05:
                 ng.append('%s 表%d　列幅の合計が%.2fcmで本文幅%.1fcmを超える'
-                          % (name, ti, sum(w), BODY_W))
+                          % (name, ti, sum(w), bw))
             grid = t._tbl.find(qn('w:tblGrid'))
             gc = [int(g.get(qn('w:w'))) for g in grid.findall(qn('w:gridCol'))] \
                 if grid is not None else []
@@ -133,8 +146,16 @@ def check_tables(doc, name, ng):
         else:
             ng.append('%s 表%d　列幅が指定されていない' % (name, ti))
         sh = t.rows[0].cells[0]._tc.find('.//' + qn('w:shd'))
-        if sh is None or (sh.get(qn('w:fill')) or '').upper() != '1F3864':
-            ng.append('%s 表%d　見出し行の塗りが規定色（1F3864）でない' % (name, ti))
+        fills.append((ti, (sh.get(qn('w:fill')) or '').upper() if sh is not None else None))
+    used = {f for _t, f in fills}
+    if used - TBL_FILLS:
+        for ti, f in fills:
+            if f not in TBL_FILLS:
+                ng.append('%s 表%d　見出し行の塗りが規定色（%s）でない'
+                          % (name, ti, '・'.join(sorted(TBL_FILLS))))
+    elif len(used) > 1:
+        ng.append('%s 表の見出し行の塗りが文書内で揃っていない　%s'
+                  % (name, '・'.join(sorted(used))))
 
 
 def check_marks(doc, name, ng):
@@ -256,6 +277,8 @@ def main(argv):
     for path in docs:
         d = docx.Document(path)
         name = path.split('/')[-1].replace('.docx', '')
+        sz = d.styles['Normal'].font.size
+        _BODY_PT[0] = sz.pt if sz is not None else 10.5   # 出典行の判定に用いる
         caps = check_figs(d, name, ng)
         check_tables(d, name, ng)
         check_fig_table(d, name, ng)

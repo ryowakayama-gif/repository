@@ -48,8 +48,34 @@ def norm(s):
     return re.sub(r'\s+', '', s)
 
 
+FOOT_BAND = 48            # ページの下端からこの範囲（pt）をフッタとみなす
+FOOT_RE = re.compile(r'^-?\s*(\d{1,3})\s*-?$')
+
+
+def footer_pageno(p):
+    """ページのフッタに出ている番号を読む。
+
+    　体裁のプロファイルによりフッタの形が変わる（協議用「- n -」・公表用「n」）ため、
+    　文字の形ではなく位置で拾う。本文の下端（余白2.0cmでも56pt）より下だけを見る。
+    """
+    h = p.rect.height
+    got = []
+    for b in p.get_text('dict')['blocks']:
+        if b['type'] != 0:
+            continue
+        for ln in b['lines']:
+            for sp in ln['spans']:
+                t = sp['text'].strip()
+                if not t or sp['bbox'][3] < h - FOOT_BAND:
+                    continue
+                m = FOOT_RE.match(t)
+                if m:
+                    got.append(int(m.group(1)))
+    return got[-1] if got else None
+
+
 def pages_of(pdf, heads):
-    """各見出しのページ番号を、PDFのフッタ「- n -」から読み取る。
+    """各見出しのページ番号を、PDFのフッタのページ番号から読み取る。
 
     　表紙・目次にはフッタの番号を出していないため、番号のあるページが本文である。
     　目次のページにも見出しの文字列が並ぶので、本文の範囲だけを探す。
@@ -58,10 +84,8 @@ def pages_of(pdf, heads):
     d = fitz.open(pdf)
     txt, shown = [], []
     for p in d:
-        raw = p.get_text()
-        txt.append(norm(raw))
-        m = [x for x in re.findall(r'(?m)^\s*-\s*(\d+)\s*-\s*$', raw)]
-        shown.append(int(m[-1]) if m else None)
+        txt.append(norm(p.get_text()))
+        shown.append(footer_pageno(p))
     base = next((i for i, v in enumerate(shown) if v is not None), 0)
     out = {}
     at = base
