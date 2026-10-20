@@ -202,10 +202,15 @@ try:
         bad10.append("資料1に別冊の頁数がない")
     elif got != soan:
         bad10.append(f"別冊 資料1は{got}頁・素案の実測は{soan}頁")
-    if f"{keikaku}頁である" not in note:
+    # 令和8年10月20日の方針修正で注記の書き方が変わったため、言い回しではなく
+    # 「別冊の頁数」と「計画書の頁数」の2つの数が注記にあることを見る
+    # （古い数が残っていれば落ちる。これが点検の目的である）。
+    if f"{keikaku}頁" not in note:
         bad10.append(f"注記に計画書の実測{keikaku}頁がない")
-    if f"{soan}頁のうち" not in note:
+    if f"{soan}頁" not in note:
         bad10.append(f"注記に別冊の実測{soan}頁がない")
+    if "別冊" not in note:
+        bad10.append("注記が別冊に触れていない")
     chk(10, "資料1 の別冊・計画書の頁数が実測と合うこと", not bad10,
         "・".join(bad10) if bad10
         else f"別冊（素案）{soan}頁／成果品としての計画書{keikaku}頁。いずれも実測")

@@ -543,6 +543,25 @@ except Exception as e:
     chk(22, "確認事項の区分が台帳と合っていること", False, "照合できない（%s）" % e)
 
 
+# ── 23　協議用と公表用の振り分けが成り立つこと ─────────────────
+#    素案に節を足し引きすると、公表用のどこに置くかが決まらないまま残る。
+#    kouhyou_map.check() は、第9期の全項目に埋める先があること、
+#    協議用素案の全節が1度だけ振り分けられていること、
+#    追加の全項目に根拠があることを見る。
+try:
+    import kouhyou_map as _KH23
+    bad23 = _KH23.check()
+    _n9 = sum(len(x[2]) for x in _KH23.K9)
+    chk(23, "協議用と公表用の振り分けが成り立つこと", not bad23,
+        "／".join(bad23[:3]) if bad23
+        else "第9期の%d項目すべてに埋める先があり、協議用素案の%d節すべてが"
+             "1度だけ振り分けられている（公表用に加える%d項目は根拠つき・"
+             "協議用のみ%d節）"
+             % (_n9, len(_KH23.soan_setsu()), len(_KH23.TSUIKA), len(_KH23.KYOGI)))
+except Exception as e:
+    chk(23, "協議用と公表用の振り分けが成り立つこと", False, "照合できない（%s）" % e)
+
+
 print()
 if NG:
     print(f"不適合 {len(NG)}件")
