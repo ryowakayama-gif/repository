@@ -1789,12 +1789,19 @@ def main():
         for _k57 in _ES57.JISSOKU:
             _n57v, _ = _ES57.jissoku_of(_k57)
             MACHI57.add("本文%d頁＋前付4頁＝%d頁" % (_n57v, _n57v + 4))
-        # 公表用素案の推定も許す（令和8年10月20日の方針修正・doc108）。
-        # 振り分けを直すと推定が動くため、文に書いた数も直さないと落ちる。
+        # 公表用の推定と実測も許す（令和8年10月20日の方針修正・doc108/doc109）。
+        # 振り分けを直すと数が動くため、文に書いた数も直さないと落ちる。
         try:
             import kouhyou_map as _KH57
-            _n57k = _KH57.kouhyou_pages()[3]
-            MACHI57.add("本文%d頁＋前付4頁＝%d頁" % (_n57k, _n57k + 4))
+            MACHI57.add("本文%d頁＋前付4頁＝%d頁"
+                        % (_KH57.kouhyou_pages()[3], _KH57.kouhyou_pages()[3] + 4))
+        except Exception:
+            pass
+        try:
+            import kouhyou_build as _KB57
+            for _v57 in list(_KB57.JISSOKU_KEIKAKU.values()) + \
+                        list(_KB57.JISSOKU_KOUHYOU.values()):
+                MACHI57.add("本文%d頁＋前付4頁＝%d頁" % (_v57, _v57 + _KB57.MAE_PG))
         except Exception:
             pass
         # 見る先は確認事項だけでなく、WBSの「着手しない理由」と「翌営業日の作業」も

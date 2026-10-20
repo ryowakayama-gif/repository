@@ -562,6 +562,58 @@ except Exception as e:
     chk(23, "協議用と公表用の振り分けが成り立つこと", False, "照合できない（%s）" % e)
 
 
+# ── 24　公表用素案の相互参照が解決すること ─────────────────
+#    節の番号を付け替えるため、本文の「5-4(1)」「施策4-6」が
+#    公表用に実在しない番号を指したままになりやすい。
+#    kouhyou_build が組んだ中身を走査し、解決しない参照がないことを見る。
+try:
+    import re as _re24
+    import kouhyou_build as _KB24
+    _KB24.NOKORI[:] = []
+    _ch24, _fg24 = _KB24.build()
+    ari24 = set()
+    for c in _ch24:
+        cn = c["no"].replace("第", "").replace("章", "")
+        for sec in c["sections"]:
+            no = sec["no"]
+            if no.startswith("基本目標"):
+                continue
+            if c["no"] == "資料編":
+                ari24.add("資料編" + no)
+            elif c["no"] == "第4章":
+                ari24.add(("施策" + no) if _re24.match(r"^\d+-\d+$", no)
+                          else ("第4章" + no))
+            else:
+                ari24.add(cn + "-" + no)
+    t24 = []
+
+    def _w24(o, key=None):
+        if isinstance(o, str):
+            if key not in ("no", "title", "file", "caption", "source"):
+                t24.append(o)
+        elif isinstance(o, dict):
+            for k, v in o.items():
+                _w24(v, k)
+        elif isinstance(o, (list, tuple)):
+            for v in o:
+                _w24(v, key)
+    _w24(_ch24)
+    all24 = "\n".join(t24)
+    TOK24 = _re24.compile(r"(施策\d+-\d+|第4章\d+|資料編○\d+|資\d+"
+                          r"|(?<![0-9０-９\-－第])\d-\d{1,2}(?![0-9]))")
+    bad24 = sorted({m.group(1) for m in TOK24.finditer(all24)} - ari24)
+    nok24 = [x for x in _KB24.NOKORI if x[2] != "括弧ごと落とした"]
+    if nok24:
+        bad24.append("手当てが要る参照%d件" % len(nok24))
+    chk(24, "公表用素案の相互参照が解決すること", not bad24,
+        "／".join(bad24[:4]) if bad24
+        else "公表用の%d項目に対し、本文の参照はすべて実在する項目を指す"
+             "（協議用のみの節への参照は、括弧ごと落とした%d件・別の節へ振り替え・"
+             "文の書き替えで処理）" % (len(ari24), len(_KB24.NOKORI) - len(nok24)))
+except Exception as e:
+    chk(24, "公表用素案の相互参照が解決すること", False, "照合できない（%s）" % e)
+
+
 print()
 if NG:
     print(f"不適合 {len(NG)}件")
