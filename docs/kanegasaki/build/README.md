@@ -89,6 +89,8 @@ python3 mk_toc.py "out/計画素案_第10期_公表用.docx" mkf_kohyo.py "out/_
 
 - **`ch_kikin3.py`**　介護給付費準備基金の取崩額3案（0円・7,200万円・9,000万円）の試算。算式は第9期計画書 p77。`{ cat fmt.py; echo; cat ch_kikin3.py; } > mkf_kikin3.py && python3 mkf_kikin3.py`
 
+- **`navii.py`**　医療情報ネット（医療機能情報提供制度）を診療科目・所在地で検索する。画面はスクリプトで動くが、`S2300/initialize`→`S2300/iryoSearch`（検索IDが返る）→`S2400/initialize?id=` の3つで取れる。`python3 -I navii.py <診療科目> <所在地>`。**診療科名は法令の表記で引く**（「耳鼻いんこう科」。「耳鼻咽喉科」では0件）。要ネットワーク `www.iryou.teikyouseido.mhlw.go.jp`。
+
 - **`get_jigyosho.py`**　町内介護サービス提供事業所一覧を、介護サービス情報公表システムのオープンデータ（厚生労働省がＣＳＶで公表。全国一括・サービス種類別35ファイル）から組む。`python3 -I get_jigyosho.py out/町内介護サービス提供事業所一覧.csv [時点のスタンプ]`。要ネットワーク `www.mhlw.go.jp`。
 
 - **`ch_sabun.py`**　令和8年10月20日にご提供いただいた「計画素案の完成に向けた資料提供・確認依頼一覧」（Excel・6シート）と、当方の照会文書・計画素案の未確定箇所との突合。記録は `../資料提供依頼一覧との差分.md`。
