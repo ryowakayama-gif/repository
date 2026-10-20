@@ -2,7 +2,7 @@
 """金ケ崎町　確認事項70件が3つの成果品で食い違っていないかを突き合わせる。
 
   ① 計画素案の附《要回答》（ch_soan.py）  … 正本。70件
-  ② 確認事項照会_第10期（ch_shokai.py）   … 第3＝Ｃ・Ｄ／第4＝Ａ・Ｂ
+  ② 確認事項照会_第10期（ch_shokai.py）   … 第2＝《要確定》／第3＝Ｃ・Ｄ／第4＝Ａ・Ｂ
   ③ 確認事項の区分（ch_shiryo.py）        … 第2 Ａ／第3 Ｂ／第4 Ｃ／第5 Ｄ
 
   使い方　python3 -I chk_kakunin.py          （スクラップパッドで）
@@ -155,6 +155,19 @@ nokori = {n: c for n, c in nokori.items() if c}
 chk('⑪Ａ（照会を取り下げた）が本文に《要回答》として残っていない', not nokori,
     'Ａ%s件とも残っていない' % len(SR['Ａ']) if not nokori
     else '／'.join('№%d が%dか所' % (n, c) for n, c in sorted(nokori.items())))
+
+# ── 《要確定》と照会文書 第2の対応 ──
+#    素案の附《要確定》と照会文書の第2「ご判断をいただきたい事項」は同じ番号で
+#    同じ事項を扱う。片方だけに増やすと、町は判断を求められていない事項を
+#    素案で「町のご判断」と読むことになる（令和8年10月20日、№14〜17の欠落で起きた）。
+DH = re.search(r"H1\('第２　ご判断をいただきたい事項（(\d+)件）'\)", shokai)
+DN = int(DH.group(1)) if DH else 0
+DK = [int(m) for m in re.findall(
+    r"\['\*\*(\d+)\*\*', ", seg(shokai, DH.group(0) if DH else '', "H1('第３　"))] if DH else []
+chk('⑫照会文書 第2が素案の《要確定》と同じ番号の組である', DH and DK == YK and DN == YN,
+    '第2 %d件（見出し%d件）・《要確定》%d件 が一致' % (len(DK), DN, YN) if DH and DK == YK and DN == YN
+    else '第2 %d件（見出し%d件）／《要確定》%d件／第2にない№ %s／附にない№ %s' % (
+        len(DK), DN, YN, sorted(set(YK) - set(DK)) or 'なし', sorted(set(DK) - set(YK)) or 'なし'))
 
 print('\n%s：確認事項70件（Ａ%d・Ｂ%d・Ｃ%d・Ｄ%d）／《要確定》%d件'
       % ('適合' if not bad else '不適合 %d件' % len(bad),
