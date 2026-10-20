@@ -6236,6 +6236,30 @@ No.68、No.73〜No.85。うち期限が近いもの：
 
 ## 4 陥りやすい誤り（過去に実際に起きたもの）
 
+- **「接続できない」をドメインの単位で覚えない。許可はホスト名の完全一致である。**
+  §5 は「mhlw.go.jp・e-stat.go.jp・kaigokensaku.mhlw.go.jp に接続できない」と
+  **ドメインの単位で**記していたが、令和8年10月20日に実測したところ
+  **`www.` を付けた形（`www.mhlw.go.jp`・`www.e-stat.go.jp`・
+  `www.kaigokensaku.mhlw.go.jp`）はいずれも通った。**
+  `www.` の有無・サブドメインは別物として扱われる。
+  その結果、**条文を原典（e-Gov法令検索）で確かめられる状態に既にあったのに、
+  「条文を受領していないため項番号は書かない」として
+  ［要確認］を置き続けていた**（確認事項No.149・No.181ほか）。
+  → **ホストの単位で測る。`www.` のあり／なしを両方試す。**
+  **見分け方**：`curl -I https://<ホスト>/` を1回だけ試す。
+  遮断は CONNECT に 403 が返る。
+  **止まっている理由が外部接続であるものは、定期に測り直す**
+  （環境の設定は当方の作業と関わりなく改まることがある）。
+- **WebFetch の失敗を「URLが誤っている」と読まない。**
+  遮断されたホストは WebFetch では `getaddrinfo ENOTFOUND` として現れ、
+  **名前の誤りと区別がつかない**（令和8年10月20日）。
+  逆に、**到達できるホストで path を誤ると素直に 404 が返る**ため、
+  404 が返ったことは「そのホストには通っている」ことの証しになる。
+  → 遮断かどうかは curl で確かめる。
+- **遮断されているホストの名の正誤は当方では判別できない。**
+  存在しないホスト名も、遮断されたホストと同じ403になる（令和8年10月20日）。
+  → 許可をお願いする際に名称を挙げるときは、
+  **受領資料に記載のあるものと、当方が推測したものを書き分ける。**
 - **紙面の点検は、変換に用いる書体がそろっていないとページ数が変わる。**
   計画素案は游ゴシック指定であるが、この環境に同書体がないため
   **中国語の書体（WenQuanYi Zen Hei）に置き換わり、全132ページと出た**
@@ -8189,10 +8213,57 @@ No.68、No.73〜No.85。うち期限が近いもの：
 
 ## 5 外部接続
 
-mhlw.go.jp・e-stat.go.jp・pref.hokkaido.lg.jp・mieruka.mhlw.go.jp・
-kaigokensaku.mhlw.go.jp はいずれも接続できない。
-URLは受領資料に記載のあるものだけを引用し、
-確認できていないものはその旨を明記する。
+**令和8年10月20日に実測して改めた。従前の「mhlw.go.jp・e-stat.go.jp・
+pref.hokkaido.lg.jp・mieruka.mhlw.go.jp・kaigokensaku.mhlw.go.jp は
+いずれも接続できない」は、`www.` なしの形で測ったものであり、
+国の府省については当たらない。**
+
+**許可はホスト名の完全一致である。** `www.` の有無・サブドメインは別物として
+扱われる（`www.mhlw.go.jp` は通るが `mhlw.go.jp` は遮断される）。
+
+### 通るもの（令和8年10月20日 実測）
+
+| ホスト | 何に使うか |
+|---|---|
+| `www.mhlw.go.jp` | 厚生労働省。基本指針・課長会議資料・介護保険最新情報・年報・部会資料・分科会資料 |
+| `laws.e-gov.go.jp` | **e-Gov法令検索。API（`/api/1/lawdata/<法令ID>`）で現行条文の全文が取れる**（介護保険法 409AC0000000123・老人福祉法 338AC0000000133・認知症基本法 505AC1000000065・成年後見制度の利用の促進に関する法律 428AC1000000029・水防法 324AC0000000193・土砂災害防止法 412AC0000000057・地方自治法 322AC0000000067・社会福祉法 326AC0000000045）。**未施行の改正法（令和8年法律第51号）は収録されていない** |
+| `www.e-stat.go.jp`／`dashboard.e-stat.go.jp` | e-Stat。国勢調査・人口動態・介護保険事業状況報告の統計表 |
+| `www.ipss.go.jp` | 国立社会保障・人口問題研究所。日本の地域別将来推計人口 |
+| `www.stat.go.jp`／`www.soumu.go.jp` | 総務省統計局・総務省。住民基本台帳人口・地域手当 |
+| `www.kaigokensaku.mhlw.go.jp` | 介護サービス情報公表システム |
+| `www.wam.go.jp` | ＷＡＭ ＮＥＴ。介護保険最新情報のバックナンバー |
+| `www.satsuki-jutaku.jp` | サービス付き高齢者向け住宅情報提供システム |
+| `www.iryou.teikyouseido.mhlw.go.jp` | 医療情報ネット |
+| `www.mlit.go.jp`／`www.cao.go.jp`／`www.murc.jp` | 国土交通省・内閣府・老人保健健康増進等事業の報告書 |
+
+### 遮断されているもの（当方に効く順）
+
+`www.pref.hokkaido.lg.jp`／`pref.hokkaido.lg.jp`（北海道）・
+3町（`www.town.higashikawa.hokkaido.jp` ほか。**名の正誤は当方では確かめられない**）・
+`mieruka.mhlw.go.jp`（見える化システム。アカウントを要するため効果は限られる）・
+`www.kaigojoho-hokkaido.jp`・`www.harp.lg.jp`・`www.city.asahikawa.hokkaido.jp`・
+`www.sangiin.go.jp`／`www.shugiin.go.jp`（新旧対照条文・法律案要綱）・
+`www8.cao.go.jp`（高齢社会白書）・`www.mof.go.jp`（財政制度等審議会）・
+`www.hokkaido-kokuho.or.jp`／`www.kokuho.or.jp`・`kaigo-kiban-portal.jp`・
+`www.nenkin.go.jp`・`opendata.mhlw.go.jp`。
+
+### 見分け方・測り方
+
+- 判定は `curl -I https://<ホスト>/` による。**遮断は egress proxy が
+  CONNECT に 403 を返す形で現れる**（`curl: (56) CONNECT tunnel failed, response 403`）
+- **WebFetch では遮断が `getaddrinfo ENOTFOUND` として現れ、
+  URLの誤りと見分けがつかない。** 遮断かどうかは curl で確かめる
+- **存在しないホスト名も同じ403になるため、名の正誤は当方では判別できない。**
+  遮断されているホストの正式な名称は、受領資料又は発注者への照会による
+- 許可を加える場所は、セッションのタイトルバーのクラウド環境のメニュー →
+  Edit → Network access → Allowed domains（1行に1ホスト）。
+  **「Allow package managers」は外さない**（Python・フォントの取得に要る）。
+  手順は `https://code.claude.com/docs/en/cloud-environments#network-access`
+- **政策による遮断は繰り返さない。**遮断されたホストは報告し、
+  資料のご提供をお願いするか、同じ中身が通るホストで公表されていないかを探す
+
+URLは受領資料に記載のあるもの又は自ら到達して確かめたものだけを引用し、
+確認できていないものはその旨を明記する。**推測でURLを書かない。**
 
 ## 6 主なファイル
 
