@@ -1476,6 +1476,11 @@ def main():
                     for b in sec["blocks"]:
                         if b["t"] == "table":
                             sisaku |= {str(r[0]).split(" ", 1)[0] for r in b["rows"]}
+        # 4-6 の冒頭に置いた「老人福祉法上の区分」の表は、量の目標そのものではなく
+        # 13区分（第5条の2第1項の6事業・第5条の3の7施設）の目標がどこにあるかを
+        # 示すものである。この表には確保の方策の欄がない代わりに、
+        # 指している所在が実在することを見る。
+        setsu53 = {sec["no"] for c in SC.CH for sec in c["sections"]}
         bad53, n53 = [], 0
         for c in SC.CH:
             for sec in c["sections"]:
@@ -1483,6 +1488,15 @@ def main():
                     continue
                 for b in sec["blocks"]:
                     if b["t"] != "table":
+                        continue
+                    if b["head"][0] == "老人福祉法上の区分":
+                        for r in b["rows"]:
+                            n53 += 1
+                            for m in _re53.findall(r"[0-9]+-[0-9]+", str(r[-1])):
+                                if m not in setsu53:
+                                    bad53.append(f"{r[0]}：所在の{m}が素案にない")
+                            if not _re53.search(r"[0-9]+-[0-9]+|\([12]\)", str(r[-1])):
+                                bad53.append(f"{r[0]}：量の目標の所在が書かれていない")
                         continue
                     col = b["head"][-1]
                     if "方策" not in col:
