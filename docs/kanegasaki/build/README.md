@@ -15,6 +15,7 @@
 | `ch_shokai.py` | 確認事項照会_第10期.docx |
 | `ch_shiryo.py` | 確認事項の区分.docx |
 | `ch_sabun.py` | 資料提供依頼一覧との差分.docx |
+| `ch_kikin3.py` | 介護給付費準備基金の取崩額_3案の試算.docx |
 | `mk_toc.py` | 計画素案の目次 |
 | `chk_*.py` | 照合用（表の合計行・文書間の突合せ・図のデータ・記載事項） |
 
@@ -85,6 +86,8 @@ python3 mk_toc.py "out/計画素案_第10期_公表用.docx" mkf_kohyo.py "out/_
 **他の文書は従前どおり `{ cat fmt.py; echo; cat ch_XXX.py; }` でよい**（体裁は `fmt.py` の既定値）。
 
 - **`ch_bp5.py`**　別表5「所得段階別第1号被保険者数と基準額に対する割合」の本文。`output/所得段階別第1号被保険者数_登録用.csv` と標準段階区分から機械で組んだ（3か年計14,252人・補正後13,920.56人が計画素案 第8章5⑦と一致する）。
+
+- **`ch_kikin3.py`**　介護給付費準備基金の取崩額3案（0円・7,200万円・9,000万円）の試算。算式は第9期計画書 p77。`{ cat fmt.py; echo; cat ch_kikin3.py; } > mkf_kikin3.py && python3 mkf_kikin3.py`
 
 - **`get_jigyosho.py`**　町内介護サービス提供事業所一覧を、介護サービス情報公表システムのオープンデータ（厚生労働省がＣＳＶで公表。全国一括・サービス種類別35ファイル）から組む。`python3 -I get_jigyosho.py out/町内介護サービス提供事業所一覧.csv [時点のスタンプ]`。要ネットワーク `www.mhlw.go.jp`。
 
