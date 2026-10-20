@@ -52,6 +52,11 @@ NG = [
     ("他団体（別の案件）", r"(金ケ崎町|金ヶ崎町)", "団体"),
     ("他社（他の計画の受託者・前期の策定業者）",
      r"(ジャパン" r"総研|福祉工房|東京コンサルティング)", "他社"),
+    # ⚠ **「川崎市と取り違えない」という注意書き自体を不適合にしない。**
+    #   成果品には取り違えを戒める注記を意図して置いており、
+    #   それを不適合にすると注記を消すことになって本末転倒である。
+    #   注意の文脈（取り違え・混同・別団体・ではない）の近くに
+    #   現れるものは数えない。
     ("川崎市との混同", r"川崎市", "団体"),
 ]
 
@@ -75,6 +80,15 @@ def honbun(p):
     except Exception:
         return ""
     return ""
+
+
+CHUI = re.compile(r"(取り違え|取違え|混同|別団体|別の団体|ではありません|"
+                  r"ではない|と区別|と間違|混じ|紛れ|誤認)")
+
+
+def chui(t, pos, haba=60):
+    """その出現が「取り違えないように」という注意の文脈かどうか。"""
+    return bool(CHUI.search(t[max(0, pos - haba):pos + haba]))
 
 
 def kyuhan_ka(name):
@@ -109,8 +123,12 @@ def main():
                     continue
                 atari = []
                 for mi, pat, ku in NG:
-                    go = sorted(set(m.group(0)
-                                    for m in re.finditer(pat, t)))
+                    go = []
+                    for m in re.finditer(pat, t):
+                        if mi == "川崎市との混同" and chui(t, m.start()):
+                            continue
+                        go.append(m.group(0))
+                    go = sorted(set(go))
                     if go:
                         atari.append((mi, "／".join(go), ku))
                 if not atari:

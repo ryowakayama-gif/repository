@@ -39,7 +39,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from fix_soan_v111 import clone_table, set_el            # noqa: E402
 
-SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.19_認知症推計版.docx"
+SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.20_事業所確定版.docx"
 GYOTEI = "05_試算・管理シート/川崎町_策定委員会_逆算工程表_R8.10.1.xlsx"
 OUT = "03_委員会・説明資料/川崎町_第3回・第4回策定委員会_骨子案_R8.10.5.docx"
 

@@ -42,7 +42,7 @@ C = importlib.util.module_from_spec(spec)
 sys.modules["calc_ninchisho"] = C
 spec.loader.exec_module(C)
 
-SOAN = "川崎町_計画書素案_v2.19_認知症推計版.docx"
+SOAN = "川崎町_計画書素案_v2.20_事業所確定版.docx"
 SHEET = "川崎町_認知症の人の数の推計_R8.10.19.xlsx"
 
 
@@ -137,7 +137,7 @@ def main():
         elif no == "4" and "v2.18_範囲明記版" in na:
             ws.cell(x, 3).value = na.replace(
                 "川崎町_計画書素案_v2.18_範囲明記版.docx",
-                "川崎町_計画書素案_v2.19_認知症推計版.docx")
+                "川崎町_計画書素案_v2.20_事業所確定版.docx")
             ws.cell(x, 8).value = (
                 f"{HIZUKE}素案を Ver.2.19 に上げた"
                 f"（第6章6-1 に認知症の人の数の推計を新設。全114頁）。"
