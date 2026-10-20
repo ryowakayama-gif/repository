@@ -17,7 +17,7 @@
 import re
 from docx import Document
 from docx.shared import Pt, Cm, RGBColor
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
@@ -74,9 +74,18 @@ _MT, _MB, _ML, _MR = _ST['MARGIN']
 
 
 def _ls(pf):
-    """行間を入れる。3以下は倍率、3を超える値は固定値（pt）として扱う。"""
+    """行間を入れる。3以下は倍率、3を超える値は「最小値」（pt）として扱う。
+
+    　「固定値」にすると、行の高さより大きい文字が入ったときに上下が切れる。
+    　本文より大きい表紙の題・章見出しがそれに当たるため、「最小値」を用いる。
+    　本文（10.5pt）の行送りは指定した値のとおりになる。
+    """
     v = _ST['LINE']
-    pf.line_spacing = v if v <= 3 else Pt(v)
+    if v <= 3:
+        pf.line_spacing = v
+    else:
+        pf.line_spacing = Pt(v)
+        pf.line_spacing_rule = WD_LINE_SPACING.AT_LEAST
 
 
 def _margins(s):
