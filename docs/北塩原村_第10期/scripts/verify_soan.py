@@ -1561,13 +1561,13 @@ def main():
         MINUS = _re54.compile(r"[−–—]\s*[0-9]")      # U+2212 ほかのダッシュ
         bad54 = []
         for nm54, mod54 in (("素案", SC), ("第2回資料", _SH54), ("第3回骨子", _S354)):
-            for sec_no, t in _cells54(mod54):
-                if HANKAKU_P.search(t):
-                    bad54.append(f"{nm54} {sec_no}：半角の＋（{t[:22]}）")
-                if HANKAKU_M.search(t):
-                    bad54.append(f"{nm54} {sec_no}：半角のハイフンを負号に（{t[:22]}）")
-                if MINUS.search(t):
-                    bad54.append(f"{nm54} {sec_no}：▲以外の負号（{t[:22]}）")
+            for sec_no, t54 in _cells54(mod54):
+                if HANKAKU_P.search(t54):
+                    bad54.append(f"{nm54} {sec_no}：半角の＋（{t54[:22]}）")
+                if HANKAKU_M.search(t54):
+                    bad54.append(f"{nm54} {sec_no}：半角のハイフンを負号に（{t54[:22]}）")
+                if MINUS.search(t54):
+                    bad54.append(f"{nm54} {sec_no}：▲以外の負号（{t54[:22]}）")
         chk(54, "正負の記号が成果品の間で揃っていること", not bad54,
             "・".join(bad54[:3]) if bad54
             else "素案・第2回資料・第3回骨子のいずれも、正は全角の＋、負は▲で揃っている")
@@ -1655,8 +1655,8 @@ def main():
             if not f:
                 return 0
             n, pre, cur = 1, f[0], f[1]
-            for t in h3[1:]:
-                g = _no56(t)
+            for t56 in h3[1:]:
+                g = _no56(t56)
                 if not g or g[0] != pre or g[1] != cur + 1:
                     break
                 n, cur = n + 1, g[1]
@@ -1707,11 +1707,11 @@ def main():
                 for i, v in enumerate(o):
                     yield from _walk56(v, "%s[%d]" % (path, i))
         for nm56, obj56 in (("確認事項", _KK56.K), ("解決済", _KK56.SOLVED)):
-            for path, t in _walk56(obj56, nm56):
-                m = _KAZU56.search(t)
+            for path, t56 in _walk56(obj56, nm56):
+                m = _KAZU56.search(t56)
                 if not m:
                     continue
-                maru = sum(1 for ch in t if ch in _MARU56)
+                maru = sum(1 for ch in t56 if ch in _MARU56)
                 if not maru:
                     continue
                 n56 += 1
@@ -1833,8 +1833,8 @@ def main():
                      for w, t in _PD57.HOLD_REASON.items()]
                   + [("翌営業日の作業 順位%d（%s）" % (r[0], r[1]),
                       str(r[2]) + str(r[3])) for r in _PD57.READY])
-        for doko, t in MITO57:
-            for m in _re57.finditer(r"本文[0-9]+頁＋前付[0-9]+頁＝[0-9]+頁", t):
+        for doko, t57 in MITO57:
+            for m in _re57.finditer(r"本文[0-9]+頁＋前付[0-9]+頁＝[0-9]+頁", t57):
                 n57 += 1
                 if m.group() not in MACHI57:
                     bad57.append("%s：%s（推定は %s）"
@@ -1844,7 +1844,7 @@ def main():
             for _k57 in _ES57.JISSOKU:
                 _n57v, _ = _ES57.jissoku_of(_k57)
                 koeru57.add(_n57v + 4 - 100)
-            for m in _re57.finditer(r"目安100頁を([0-9]+)頁上回る", t):
+            for m in _re57.finditer(r"目安100頁を([0-9]+)頁上回る", t57):
                 n57 += 1
                 if int(m.group(1)) not in koeru57:
                     bad57.append("%s：目安100頁を%s頁上回る（推定は%s頁）"
@@ -1853,20 +1853,20 @@ def main():
             # 「目安100頁に対し+N頁」は、今の分量を言うときと
             # 削減案をすべて行った到達点を言うときの両方に使う言い方であるため、
             # どちらかに合っていればよいとする。
-            for m in _re57.finditer(r"目安100頁に対し\+([0-9]+)頁", t):
+            for m in _re57.finditer(r"目安100頁に対し\+([0-9]+)頁", t57):
                 n57 += 1
                 if int(m.group(1)) not in (n_kei57 + 4 - 100, n_all57 + 4 - 100):
                     bad57.append("%s：目安100頁に対し+%s頁"
                                  "（今の分量は+%d頁・削減案をすべて行うと+%d頁）"
                                  % (doko, m.group(1), n_kei57 + 4 - 100,
                                     n_all57 + 4 - 100))
-            for m in _re57.finditer(r"到達できる最小は([0-9]+)頁", t):
+            for m in _re57.finditer(r"到達できる最小は([0-9]+)頁", t57):
                 n57 += 1
                 if int(m.group(1)) != n_all57 + 4:
                     bad57.append("%s：到達できる最小は%s頁（試算は%d頁）"
                                  % (doko, m.group(1), n_all57 + 4))
             # 照会票に載せた件数（束1〜6の合計）
-            for m in _re57.finditer(r"束1〜6の6通に組んだ（([0-9]+)件）", t):
+            for m in _re57.finditer(r"束1〜6の6通に組んだ（([0-9]+)件）", t57):
                 n57 += 1
                 if int(m.group(1)) != n_irai57:
                     bad57.append("%s：照会票%s件（実際は%d件）"
@@ -1900,11 +1900,11 @@ def main():
                         tt = [str(x) for r in b["rows"] for x in r]
                     elif b["t"] == "bullets":
                         tt = [str(x) for x in b["v"]]
-                    for t in tt:
+                    for t57 in tt:
                         for nm, kazu in SHISETSU57.items():
                             for m in _re57.finditer(
                                     "%s(?:の)?([0-9]+)(?:施設|か所|事業所)"
-                                    % _re57.escape(nm), t):
+                                    % _re57.escape(nm), t57):
                                 n57 += 1
                                 if int(m.group(1)) != kazu:
                                     bad57.append(
@@ -1942,10 +1942,10 @@ def main():
                         txt = [str(b["v"])]
                     elif b["t"] == "bullets":
                         txt = [str(x) for x in b["v"]]
-                    for t in txt:
+                    for t57 in txt:
                         for m in _re57.finditer(
                                 r"村内(?:で提供され[^。]{0,8}|に提供事業所が|の事業所は)"
-                                r"[^。]{0,70}?([0-9]+)種類", t):
+                                r"[^。]{0,70}?([0-9]+)種類", t57):
                             n57 += 1
                             if int(m.group(1)) != n_mura:
                                 bad57.append("%s：村内のサービス%s種類（表では%d種類）"
@@ -1990,8 +1990,8 @@ def main():
                         txt = [str(x) for x in b["v"]]
                     elif b["t"] in ("table", "kpi"):
                         txt = [str(x) for r in b["rows"] for x in r]
-                    for t in txt:
-                        for m in PAT58.finditer(t):
+                    for t58 in txt:
+                        for m in PAT58.finditer(t58):
                             hyo = m.group(1).replace("Ａ", "A").replace("Ｂ", "B")
                             q = m.group(2).replace("－", "-")
                             n58 += 1
@@ -2014,7 +2014,7 @@ def main():
                                     ("介護離職", ("仕事を辞めた",)),
                                     ("世帯", ("世帯",)))
                             # 括弧がすぐ前にあると最後の断片は空になる。空でない最後を採る
-                            _dan = [x for x in _re58.split(r"[、。・（）\(\)]", t[:m.start()]) if x]
+                            _dan = [x for x in _re58.split(r"[、。・（）\(\)]", t58[:m.start()]) if x]
                             mae = _dan[-1] if _dan else ""
                             bun = zai58[(hyo, q)]
                             # 断片の末尾に最も近い語を1つだけ採る
