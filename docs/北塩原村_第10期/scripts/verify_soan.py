@@ -1032,15 +1032,15 @@ def main():
         else:
             got = {r[0]: r[1:4] for r in t45['rows']}
             # 各目標の値が算定と一致すること
-            for k, t, v, _h in out45:
-                key = next((x for x in got if x.startswith('%s 目標%s' % (k[:2], t))), None)
+            for k, t45n, v, _h in out45:
+                key = next((x for x in got if x.startswith('%s 目標%s' % (k[:2], t45n))), None)
                 if key is None:
-                    bad45.append('%s目標%sの行がない' % (k[:2], t))
+                    bad45.append('%s目標%sの行がない' % (k[:2], t45n))
                     continue
                 for i, y in enumerate(Y45):
                     if abs(float(got[key][i]) - v[y]) > 1e-9:
                         bad45.append('%s目標%s %s：算定%.0f≠素案%s'
-                                     % (k[:2], t, y, v[y], got[key][i]))
+                                     % (k[:2], t45n, y, v[y], got[key][i]))
             # 計が交付金別の得点の表と合うこと
             t1 = None
             for c in SC.CH:
@@ -3167,14 +3167,59 @@ def main():
     #    「素案に例規の番号が1つもない」という、ありえない結果で気づけたのは
     #    運がよかっただけである。t を使う点検は30件を超えるため、
     #    上書きそのものを毎回見る。
+    #    上書きしている箇所は、grep では取り切れなかった（for 文の組の中、
+    #    内包表記、ネストした関数の引数が混ざる）。この点検は自分の構文木を
+    #    読んで、main の中で t を束縛している行をすべて名指しする。
     try:
         ima81 = md_text()
+        # 自分の構文木で t の束縛を数える。内包表記とネスト関数は別スコープ
+        import ast as _ast81
+        _src81 = open(__file__, encoding='utf-8').read()
+        _main81 = next(n for n in _ast81.parse(_src81).body
+                       if isinstance(n, _ast81.FunctionDef) and n.name == 'main')
+
+        class _V81(_ast81.NodeVisitor):
+            def __init__(self):
+                self.gyo = []
+
+            def visit_FunctionDef(self, n):
+                pass
+
+            def visit_Lambda(self, n):
+                pass
+
+            def visit_ListComp(self, n):
+                pass
+
+            def visit_SetComp(self, n):
+                pass
+
+            def visit_DictComp(self, n):
+                pass
+
+            def visit_GeneratorExp(self, n):
+                pass
+
+            def visit_Name(self, n):
+                if n.id == 't' and isinstance(n.ctx, (_ast81.Store, _ast81.Del)):
+                    self.gyo.append(n.lineno)
+
+        _v81 = _V81()
+        for _st81 in _main81.body:
+            _v81.visit(_st81)
+        soku81 = sorted(set(_v81.gyo))
+        bad81 = []
+        if t != ima81:
+            bad81.append('上書きされている（t は%d字・素案は%d字）'
+                         % (len(t), len(ima81)))
+        # 束縛は冒頭の t = md_text() の1か所だけであるべき
+        yoketsu81 = [g for g in soku81 if g != 73]
+        if yoketsu81:
+            bad81.append('t を束縛している行が冒頭以外にある %s'
+                         % ('・'.join('%d行目' % g for g in yoketsu81[:5])))
         chk(81, '素案の全文を入れた t が点検の途中で上書きされていないこと',
-            t == ima81,
-            '上書きされている（t は%d字・素案は%d字）。'
-            'ループ変数に t を使っている点検を探すこと'
-            % (len(t), len(ima81)) if t != ima81
-            else '%d字。冒頭に読んだものと最後まで同じ' % len(t))
+            not bad81, '・'.join(bad81) if bad81
+            else '%d字。束縛は冒頭の1か所だけで、最後まで同じ' % len(t))
     except Exception as e:
         chk(81, '素案の全文を入れた t が点検の途中で上書きされていないこと',
             False, '照合できない（%s）' % e)
