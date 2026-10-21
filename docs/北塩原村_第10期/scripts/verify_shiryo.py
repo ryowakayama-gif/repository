@@ -67,7 +67,7 @@ else:
     chk(2, "資料2-4 の目標別表と交付金の算定の一致", not bad2,
         "・".join(bad2[:4]) if bad2 else "8目標×5項目すべて一致")
 
-# 3 資料7-3c の取得をめざす評価指標が11項目・61点で、素案6-3と一致すること
+# 3 資料7-3c の取得をめざす評価指標が12項目・67点で、素案6-3と一致すること
 t3 = tbl("7-3c", "交付金・指標")
 so63 = None
 for sec in {c["no"]: c for c in SO.CH}["第6章"]["sections"]:
@@ -80,11 +80,11 @@ if t3 is None or so63 is None:
 else:
     rows, last = t3["rows"][:-1], t3["rows"][-1]
     tot = sum(int(r[1]) for r in rows)
-    n_ok = len(rows) == len(so63["rows"]) - 1 == 11
+    n_ok = len(rows) == len(so63["rows"]) - 1 == 12
     pt_ok = all(int(a[1]) == int(b[1].replace("点", "")) for a, b in zip(rows, so63["rows"][:-1]))
-    chk(3, "資料7-3c と素案6-3 の一致", tot == 61 and last[1] == "61" and n_ok and pt_ok,
-        f"合計{tot}点／表記{last[1]}／項目{len(rows)}" if not (tot == 61 and n_ok and pt_ok)
-        else "11項目・61点、素案6-3と配点が一致")
+    chk(3, "資料7-3c と素案6-3 の一致", tot == 67 and last[1] == "67" and n_ok and pt_ok,
+        f"合計{tot}点／表記{last[1]}／項目{len(rows)}" if not (tot == 67 and n_ok and pt_ok)
+        else "12項目・67点、素案6-3と配点が一致")
 
 # 4 資料に貼る図のファイルが実在すること
 figs = [b for c in SH.CH for s in c["sections"] for b in s["blocks"] if b["t"] == "fig"]

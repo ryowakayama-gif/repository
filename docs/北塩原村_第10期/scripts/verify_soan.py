@@ -252,7 +252,7 @@ def main():
         chk(18, '2-8 目標別の内訳と交付金の算定の一致', not bad,
             '・'.join(bad[:4]) if bad else f'8目標×5項目すべて一致')
 
-    # ── 19　6-3 の取得をめざす評価指標の表が61点で、対応先が実在すること ──
+    # ── 19　6-3 の取得をめざす評価指標の表が67点で、対応先が実在すること ──
     t63 = None
     for sec in ch['第6章']['sections']:
         if sec['no'] == '6-3':
@@ -271,9 +271,9 @@ def main():
                 nos.add(sec['no'])
         miss = sorted({x.strip() for r in rows for x in r[4].split('・')} - nos)
         chk(19, '6-3 取得をめざす評価指標の表',
-            tot == 61 and last[1] == '61点' and not miss,
+            tot == 67 and last[1] == '67点' and not miss,
             f'合計{tot}点／表記{last[1]}' + (f'・対応先が不明 {miss}' if miss else '')
-            if (tot != 61 or last[1] != '61点' or miss) else f'{len(rows)}項目・61点、対応先すべて実在')
+            if (tot != 67 or last[1] != '67点' or miss) else f'{len(rows)}項目・67点、対応先すべて実在')
 
     # ── 20　交付金の11項目が第4章・第5章に書かれていること ────────────
     md = t
@@ -707,8 +707,9 @@ def main():
         chk(36, '計画の積算が仕様書の約100頁に収まること', False, f'照合できない（{e}）')
 
     # ── 37　交付金の要改善項目の件数・点数が再計算と一致すること ─────────
-    #    素案2-8・6-3 の「32項目・122点」「11項目・61点」を、
+    #    素案2-8・6-3 の「32項目・122点」「11項目・62点」を、
     #    3か年の項目別データから作り直して突き合わせる。
+    #    一覧の点だけでなく、本文の前置き・内訳・6-4⑥の数も同じ再計算で見る。
     try:
         import analyze_kofukin as AK
         rows_k, K_k = AK.load()
@@ -719,7 +720,7 @@ def main():
         bad37 = []
         if f'{n32}項目・{p122:.0f}点' not in t:
             bad37.append(f'素案に「{n32}項目・{p122:.0f}点」の記載がない')
-        # 6-3 の一覧（11項目61点）は 可（記載）56点＋認知症施策推進計画5点
+        # 6-3 の一覧（12項目67点）は 可（記載）62点＋認知症施策推進計画5点
         t63 = None
         for sec in SC.CH[5]['sections']:
             if sec['no'] == '6-3':
@@ -731,13 +732,21 @@ def main():
         else:
             body = t63['rows'][:-1]
             tot = sum(float(str(r[1]).replace('点', '')) for r in body)
-            if len(body) != 11 or abs(tot - 61) > 0.5:
+            if len(body) != 12 or abs(tot - 67) > 0.5:
                 bad37.append(f'6-3の一覧が{len(body)}項目{tot:.0f}点')
             if abs(tot - (p56 + 5)) > 0.5:
-                bad37.append(f'6-3の61点が 可（記載）{p56:.0f}点＋認知症計画5点と合わない')
+                bad37.append(f'6-3の67点が 可（記載）{p56:.0f}点＋認知症計画5点と合わない')
+        # 一覧の点を動かすと、本文の前置き・内訳・6-4⑥の数だけが取り残される。
+        # 現に 56→62・61→67 に改めたとき、3か所が古い数のまま残っていた。
+        for ii in (f'{len(kisai)}項目・{p56:.0f}点',
+                   f'{len(kisai) + 1}項目・{p56 + 5:.0f}点',
+                   f'計画への記載で取得できる{p56:.0f}点',
+                   f'残る{p122 - p56:.0f}点'):
+            if ii not in t:
+                bad37.append(f'本文に「{ii}」がない')
         chk(37, '交付金の要改善項目の件数・点数が再計算と一致すること', not bad37,
             '・'.join(bad37[:3]) if bad37
-            else f'{n32}項目{p122:.0f}点／6-3は11項目61点（可（記載）{p56:.0f}点＋5点）')
+            else f'{n32}項目{p122:.0f}点／6-3は12項目67点（可（記載）{p56:.0f}点＋5点）')
     except Exception as e:
         chk(37, '交付金の要改善項目の件数・点数が再計算と一致すること', False, f'照合できない（{e}）')
 
@@ -1436,9 +1445,15 @@ def main():
         zenbu = ES.seiki("".join(a[0] for a in ES.AN))
         n_all, doko52 = ES.jissoku_of(zenbu)
         n_all += ES.MAE_PG
-        if n_all > KYOYO52:
-            bad52.append(f"すべて行っても{n_all}頁（{doko52}）で、"
-                         f"村が許容する{KYOYO52}頁に{n_all - KYOYO52}頁収まらない")
+        # 令和8年10月20日の方針修正により、分量の制約は**公表用**に移った。
+        # 協議用（ES.JISSOKU が測っているもの）は論点をすべて含むため制約がない。
+        # 許容に収まるかどうかは、公表用の実測（kouhyou_build.JISSOKU_KEIKAKU）で見る。
+        import kouhyou_build as KB52
+        k_min = min(KB52.JISSOKU_KEIKAKU.values()) + KB52.MAE_PG
+        k_max = KB52.JISSOKU_KEIKAKU[""] + KB52.MAE_PG
+        if k_min > KYOYO52:
+            bad52.append(f"公表用は案をすべて行っても{k_min}頁で、"
+                         f"村が許容する{KYOYO52}頁に{k_min - KYOYO52}頁収まらない")
         # 実測が古くなっていないこと（素案が変わると推定が動く）
         for k52, est0, now in ES.jissoku_furui():
             if k52.startswith("素案が"):
@@ -1451,9 +1466,10 @@ def main():
             "・".join(bad52[:3]) if bad52
             else f"{len(ES.AN)}案（うち小見出しを指すもの{len([a for a in ES.AN if a[2]])}案）。"
                  f"G 用語の絞り込みは{base52 - n_g}頁、H 図2点を資料編へは{base52 - n_h}頁。"
-                 f"すべて行えば本文{n_all - ES.MAE_PG}頁＋前付{ES.MAE_PG}頁＝{n_all}頁"
-                 f"（{doko52}。目安100頁に対し{n_all - 100:+d}頁。"
-                 f"村が許容する{KYOYO52}頁に{KYOYO52 - n_all}頁の余裕）"
+                 f"協議用はすべて行えば本文{n_all - ES.MAE_PG}頁＋前付{ES.MAE_PG}頁＝{n_all}頁"
+                 f"（{doko52}。協議用に分量の制約はない）。"
+                 f"公表用は案なし{k_max}頁・すべて行って{k_min}頁で、"
+                 f"村が許容する{KYOYO52}頁に{KYOYO52 - k_min}頁の余裕"
                  + (f"。単独では頁が減らない案{'・'.join(tanto0)}"
                     f"（中身は減る。他の案と重ねたときに効く）" if tanto0 else ""))
     except Exception as e:
@@ -3084,6 +3100,61 @@ def main():
                  % len(tb79[0]["rows"]))
     except Exception as e:
         chk(79, "素案の介護ＳＣＲが原典と一致すること", False, "照合できない（%s）" % e)
+
+    # ── 80　素案が引く例規の番号が例規集と一致すること ───────────────
+    #    村単独事業・措置の根拠を条項で示すようになったため、例規の番号が素案に
+    #    26種ある。10/21 に例規集の本文に当たったところ、総合事業の多様なサービス
+    #    の基準2件を「平成29年要綱第6号・第7号」と書いていたが、原典は訓令である。
+    #    節の名（第4節 老人福祉）から号の種別を推し測って書いたための誤りだった。
+    #    data/原典_例規 に本文から書き写した表を置き、素案の引き方と突き合わせる。
+    try:
+        fp80 = _P.data('原典_例規', '北塩原村例規集_素案が引く例規.tsv')
+        gen = {}
+        with open(fp80, encoding='utf-8') as f:
+            for ln in f:
+                if ln.startswith('#') or not ln.strip():
+                    continue
+                _id, _ti, kou = ln.rstrip('\n').split('\t')
+                # 「平成29年3月31日訓令第6号」→「平成29年訓令第6号」
+                mm = re.match(r'(令和|平成|昭和)(\d+)年(?:\d+月\d+日)?'
+                              r'(条例|規則|訓令|告示|要綱|要領|規程)第(\d+)号', kou)
+                if mm:
+                    gen.setdefault('%s%s年%s第%s号'
+                                   % (mm.group(1), mm.group(2), mm.group(3),
+                                      mm.group(4)), []).append((kou, _ti))
+        pat80 = re.compile(r'(令和|平成|昭和)(\d+)年(?:\d+月\d+日)?'
+                           r'(条例|規則|訓令|告示|要綱|要領|規程)第(\d+)号')
+        hiku, bad80 = set(), []
+        for mm in pat80.finditer(t):
+            hiku.add('%s%s年%s第%s号' % (mm.group(1), mm.group(2),
+                                        mm.group(3), mm.group(4)))
+        for k in sorted(hiku):
+            if k not in gen:
+                # 種別だけが違うものは、取り違えとして名指しで報せる
+                mm = pat80.match(k)
+                nige = [v for kk, vv in gen.items() for _k, v in vv
+                        if kk.startswith('%s%s年' % (mm.group(1), mm.group(2)))
+                        and kk.endswith('第%s号' % mm.group(4))]
+                bad80.append('素案の「%s」が例規集にない%s'
+                             % (k, ('（同年同番号は %s）' % nige[0]) if nige else ''))
+        if not hiku:
+            bad80.append('素案に例規の番号が1つもない（引き方が変わった）')
+        # 素案4-6の注記が「全70分野・569件を当たったが根拠がない」と書いている。
+        # 当たった件数は題名の一覧の行数で裏打ちする。10/21 に458件と書いていたが、
+        # 体系目次の12類と五十音目次の35頁を数え直すとどちらも569件だった。
+        ichi = [ln for ln in open(_P.data('原典_例規',
+                                          '北塩原村例規集_題名一覧.tsv'),
+                                  encoding='utf-8')
+                if ln.strip() and not ln.startswith('#')]
+        if ('全70分野・%d件' % len(ichi)) not in t:
+            bad80.append('素案の注記の件数が題名の一覧（%d件）と合わない' % len(ichi))
+        chk(80, '素案が引く例規の番号が例規集と一致すること', not bad80,
+            '・'.join(bad80[:3]) if bad80
+            else '素案が引く例規%d種すべてが例規集（内容現在 令和8年6月26日）の'
+                 '本文と一致し、注記の件数も題名の一覧%d件と合う' % (len(hiku), len(ichi)))
+    except Exception as e:
+        chk(80, '素案が引く例規の番号が例規集と一致すること', False,
+            '照合できない（%s）' % e)
 
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
