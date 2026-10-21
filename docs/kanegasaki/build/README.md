@@ -97,3 +97,20 @@ python3 mk_toc.py "out/計画素案_第10期_公表用.docx" mkf_kohyo.py "out/_
 - **`ch_sabun.py`**　令和8年10月20日にご提供いただいた「計画素案の完成に向けた資料提供・確認依頼一覧」（Excel・6シート）と、当方の照会文書・計画素案の未確定箇所との突合。記録は `../資料提供依頼一覧との差分.md`。
 
 - **`gen_irai.py`**　提供依頼資料（9件＋資-01）に対象期間・定義・用途・当方で確認済みの範囲・提出希望時期と町の記入欄を補ったエクセルを組む（openpyxl）。`python3 -I gen_irai.py` で `out/提供依頼資料_対象期間と定義を補った版.xlsx`。記録は `../提供依頼資料の補足版と当方で直した箇所.md`。
+
+## 第1回策定委員会資料の様式（第2回以降の委員会資料・次第・想定問答集）
+
+町が作成した第1回策定委員会資料の様式（緑の帯の節見出し・■の小見出し・囲み）で組む。体裁は `../style/style_iinkai1.py`（STYLE）と `../style/fmt_iinkai1.py`（COVER・SEC・SQ・BL・BOX）にある。
+
+```
+{ cat style_iinkai1.py; cat fmt.py; echo; cat fmt_iinkai1.py; echo; cat ch_iinkai2.py; } > mkf_iinkai2.py && python3 mkf_iinkai2.py
+```
+
+| ファイル | 成果品 |
+|---|---|
+| `ch_iinkai2.py` | 第2回策定委員会資料.docx（資料1） |
+| `ch_shidai2.py` | 第2回策定委員会_次第.docx |
+| `ch_qa2.py` | 第2回策定委員会_想定問答集.docx（事務局用。構成は川崎町の想定問答集にならう） |
+
+資料2は計画素案（公表用 `ch_kohyo.py`）を送付する。委員会資料の章・節の参照は資料2の番号による。
+

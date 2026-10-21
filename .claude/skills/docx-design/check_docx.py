@@ -24,7 +24,7 @@ from docx.table import Table
 from docx.text.paragraph import Paragraph
 
 BODY_W = 17.0                       # 本文幅（cm）の既定。実際は文書の余白から求める
-TBL_FILLS = {'1F3864', '595959'}    # 表の見出し行の塗り（協議用／公表用の2つの体裁）
+TBL_FILLS = {'1F3864', '595959', '2C6E52'}    # 表の見出し行の塗り（協議用／公表用／第1回策定委員会資料の様式）
 PALETTE = {'#C00000', '#2E75B6', '#BDD7EE', '#ED7D31', '#A6A6A6', '#1F3864',
            '#F2F2F2', '#D9D9D9', '#E6E6E6', '#E8E8E8', '#9DC3E6', '#1F4E79',
            '#BFBFBF', '#808080', 'white'}
