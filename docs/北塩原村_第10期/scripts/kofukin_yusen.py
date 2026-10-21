@@ -240,6 +240,63 @@ def mokuhyo(det, mura, ken):
     return out
 
 
+# 集計表の団体ごとの属性の列（0起点）
+KIBO = 10               # 区分　1…3千人未満／2…3千〜1万／3…1万〜5万／4…5万〜10万／5…10万以上
+KASO = 11               # 過疎地域該当（一部過疎を含む・令和5年4月1日）
+NINZU = 9               # 第1号被保険者数
+KIBO_NA = {"1": "3千人未満", "2": "3千〜1万人未満", "3": "1万〜5万人未満",
+           "4": "5万〜10万人未満", "5": "10万人以上"}
+
+
+def _kubun(v):
+    return str(v).strip().rstrip("0").rstrip(".") or str(v).strip()
+
+
+def nakama(mura, body):
+    """本村と条件の近い団体の平均を出す。
+
+    【なぜ必要か】
+      得点は団体の規模と強く相関する（区分1は平均407.6点、区分5は527.8点）。
+      本村は第1号被保険者1,011人で区分1、かつ過疎地域に該当する。
+      全国平均455.1点と比べると8.1点下回るが、同規模の団体の平均と比べると
+      40点上回る。全国平均だけを示すと、本村の位置を実際より低く見せる。
+      川崎町の整理が規模区分別・過疎地域該当別の平均を置いていたことによる。
+
+    【団体名と個別の数値は示さない】
+      用いるのは「何団体の平均が何点か」という集計値だけである。
+    """
+    def val(r):
+        v = r[TOT[("支援", "目標Ⅳ")] - 333 + 335] if False else r[335]
+        return v if isinstance(v, (int, float)) else None
+    H = [r for r in body if val(r) is not None]
+    mine = val(mura)
+    kaso = [r for r in H if str(r[KASO]).strip() in ("○", "有", "1", "1.0")]
+    mk = _kubun(mura[KIBO])
+    doki = [r for r in H if _kubun(r[KIBO]) == mk]
+    dk = [r for r in doki if r in kaso]
+    out = []
+
+    def add(na, g):
+        if g:
+            a = sum(val(r) for r in g) / len(g)
+            out.append({"相手": na, "団体数": len(g), "平均": round(a, 1),
+                        "差": round(mine - a, 1)})
+    add("全国", H)
+    add("過疎地域に該当する団体", kaso)
+    add("同規模（%s）" % KIBO_NA.get(mk, mk), doki)
+    add("同規模かつ過疎地域", dk)
+    kibo = []
+    for k in "12345":
+        g = [r for r in H if _kubun(r[KIBO]) == k]
+        if g:
+            kibo.append({"区分": k, "区分名": KIBO_NA[k], "団体数": len(g),
+                         "平均": round(sum(val(r) for r in g) / len(g), 1)})
+    return {"本村": mine, "第1号被保険者数": mura[NINZU],
+            "区分": mk, "区分名": KIBO_NA.get(mk, mk),
+            "過疎": str(mura[KASO]).strip() in ("○", "有", "1", "1.0"),
+            "比較": out, "規模別": kibo}
+
+
 def nobishiro(rows, mk):
     """見かけの未取得と、実際に伸ばせる点を段ごとに分ける。
 
@@ -536,6 +593,7 @@ def main():
                     "期待": round(x["期待得点"], 1)}
                    for x in nob2],
             "伸びしろ": nobi_kei2,
+            "仲間": nakama(mura, body),
             "配点の総和": sum(r["配点計"] for r in mk),
             "超過": [{"交付金": r["交付金"], "目標": r["目標"],
                       "配点計": r["配点計"], "超過": r["配点計"] - r["満点"]}
