@@ -37,6 +37,7 @@ from docx.shared import Pt
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
 import build_ono_tanka as T
+import ono_kikin as KK
 from build_ono_mieruka_shotoku import SYS_POP, nyuryoku
 
 ROOT = pathlib.Path(__file__).parent
@@ -188,9 +189,9 @@ DAN = [
         ("予定保険料収納率", "**99.35％**（年報 様式3 の令和7年度現年度分）"),
         ("準備基金取崩額",
          "**町との協議が要ります。**当面は0で構いません。"
-         "年報 様式4 の保有額は12,000千円ですが、"
-         "令和4年度末の120,000千円から1桁減っており、"
-         "**基金運用状況調書での確認をお願いしています**"),
+         f"残高は令和5年度末{KK.ZAN_R5:,}千円（町の財務書類）、"
+         f"令和8年度末見込{KK.ZAN_R8:,}千円です。"
+         "**令和7年度末の残高（財産に関する調書）の確認をお願いしています**"),
         ("調整交付金見込交付割合",
          "**入力欄ではありません。**所得段階別を入れると自動で出ます。"
          "**当方の値（令和9年度6.107％・令和10年度5.548％・"

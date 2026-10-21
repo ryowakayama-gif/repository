@@ -48,6 +48,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 import build_ono_tanka as T
+import ono_kikin as KK
 import ono_shizentai as SZ
 from build_ono_kaisu import (chiiki_plan, chiiki_ryo, sogo_jisseki,
                              plan_rows as riyoritsu_rows)
@@ -227,9 +228,9 @@ def hoken_input():
          "令和7年度実績＝収納264,162,900円÷調定265,881,800円＝99.35％"
          "（年報 様式3）"),
         (14, "準備基金の残高（前年度末の見込額）", [None] * 3, "町の資料",
-         "**年報 様式4 の保有額は令和5・6年度末とも12,000千円。"
-         "一方で令和4年度末は120,000千円、繰入金は全年度0円で系列に矛盾がある。"
-         "基金運用状況調書で確認する**"),
+         f"**令和5年度末{KK.ZAN_R5:,}千円（町の財務書類）、令和8年度末見込{KK.ZAN_R8:,}千円。"
+         "年報 様式4 の保有額は財務書類と合わないため用いない。"
+         "令和7年度末の残高は財産に関する調書で確認する**"),
         (15, "準備基金取崩額", [None] * 3, "町の資料",
          "**政策判断。第9期は35,000千円を見込んだ**"),
     ]

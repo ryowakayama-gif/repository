@@ -32,6 +32,7 @@ import re
 
 import build_ono_kotei2 as K
 import build_ono_tanka as T
+import ono_kikin as KK
 import ono_style as S
 from build_ono_mikomi_kakutei import (A, BASE, CHI3, POP3, SOGO3, STD3,
                                       TANKA_GAP, TANKA_YR, hoken)
@@ -336,9 +337,10 @@ def main():
            ["**第1号被保険者負担割合**", "23％／24％",
             "24％になると月額＋約260円",
             "国の基本指針による。未確定"],
-           ["**準備基金の取崩額**", "0円／12,000千円／35,000千円",
-            "35,000千円を取り崩すと月額▲約345円",
-            f"**残高が{TBD}**"],
+           ["**準備基金の取崩額**", f"0円／{KK.HALF:,}千円／{KK.ZAN_R8:,}千円",
+            f"{KK.HALF:,}千円を取り崩すと月額"
+            f"{T.premium(STD3, CHI3, SOGO3, POP3, kikin=KK.HALF)['月額'] - T.premium(STD3, CHI3, SOGO3, POP3)['月額']:+,.0f}円",
+            f"**残高は令和8年度末見込{KK.ZAN_R8:,}千円（令和7年度末は{TBD}）**"],
            ["施設の整備", "整備なし／あり", "整備があれば段差で増える",
             "**町の方針決定**"]],
           widths=[3.2, 3.6, 4.6, 5.8],
