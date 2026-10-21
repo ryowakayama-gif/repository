@@ -240,6 +240,64 @@ def mokuhyo(det, mura, ken):
     return out
 
 
+def nobishiro(rows, mk):
+    """見かけの未取得と、実際に伸ばせる点を段ごとに分ける。
+
+    【なぜ分ける必要があるか】
+      明細の配点を足し上げると929点になるが、制度の満点は800点である。
+      差129点は、択一の枝（成果指標群のア／イは「より上位となった方で得点」）を
+      二重に数えたぶんである。目標ごとに見ると
+      推進目標Ⅳ 160点／支援目標Ⅳ 160点／支援目標Ⅰ 109点 が満点100点を超えており、
+      超過は 60＋60＋9＝129点でちょうど説明がつく。
+      したがって「未取得の配点の合計」は見かけの数であり、
+      447点の団体が実際に伸ばせるのは 800−447＝353点が上限である。
+
+    【段への割り振りの規則】
+      超過が生じている3目標の未取得が、どの段にあるかで決める。
+        推進目標Ⅳ・支援目標Ⅳ　未取得はすべてＤ段 → 超過120点はＤ段から引く
+        支援目標Ⅰ　　　　　　未取得はＢ・Ｃ・Ｅ段に散るが、Ａ〜Ｃを積み上げても
+                              80点で満点100点に届かない（頭打ちの確かめ）。
+                              超過9点が効くのはＥ段まで取ったときであるため
+                              Ｅ段から引く。
+      Ａ・Ｂ・Ｃは見かけと実際が一致する。村にお示しする取得目標はこの3段である。
+    """
+    man = {(r["交付金"], r["目標"]): r["満点"] for r in mk}
+    mine = {(r["交付金"], r["目標"]): r["本村"] for r in mk}
+    # 目標ごとの超過（見かけの配点計 − 満点）
+    chouka = {(r["交付金"], r["目標"]): max(0, r["配点計"] - r["満点"]) for r in mk}
+    # 超過のある目標の未取得が集まっている段
+    hiku = collections.Counter()
+    for key, ch in chouka.items():
+        if not ch:
+            continue
+        g = collections.Counter()
+        for r in rows:
+            if (r["交付金"], r["目標"]) == key and r["未取得"] > 0:
+                g[r["段"]] += r["未取得"]
+        # Ｄ段に全部あるならＤ段、散っているなら最も後ろの段（Ｅ）から引く
+        dan = "Ｄ" if set(g) == {"Ｄ"} else max(g, key=lambda d: "ＡＢＣＤＥ".index(d))
+        hiku[dan] += ch
+    # 目標Ⅳ（成果指標群）は推進・支援で同一の指標であり、集計表に2度現れる。
+    # 点は両交付金で別に支払われるため足して正しいが、項目数は二重になる。
+    # 支援側を重複として数え、重複を除いた項目数も併せて返す。
+    sui_na = {r["指標"] for r in rows if r["交付金"] == "推進"}
+
+    def _dup(r):
+        return r["交付金"] == "支援" and r["指標"] in sui_na
+
+    out = []
+    for d in "ＡＢＣＤＥ":
+        g = [r for r in rows if r["段"] == d and r["未取得"] > 0]
+        if not g:
+            continue
+        mi = sum(r["未取得"] for r in g)
+        out.append({"段": d, "内容": DAN_NA[d], "項目": len(g),
+                    "重複を除く": len([r for r in g if not _dup(r)]),
+                    "見かけ": mi, "実際": mi - hiku[d],
+                    "期待得点": sum(r["期待得点"] for r in g)})
+    return out, sum(man.values()) - sum(mine.values())
+
+
 def suii():
     """3か年（令和6〜8年度）の項目別の推移。
 
@@ -250,6 +308,7 @@ def suii():
     keys = {(d[1], d[2], d[4]): d for d in det}
     KN = {"推進交付金": "推進", "支援交付金": "支援"}
     by = {}
+    hai_of = {}          # (鍵, 年度) → その年度の配点
     for r in csv.DictReader(io.open(os.path.join(P.DATA, "交付金評価指標_3か年.csv"),
                                     encoding="utf-8-sig")):
         k = (KN.get(r["交付金"], r["交付金"]), r["目標"], r["指標"])
@@ -260,6 +319,10 @@ def suii():
         except (TypeError, ValueError):
             continue
         by.setdefault(k, {})[r["年度"]] = v
+        try:
+            hai_of[(k, r["年度"])] = float(r["配点"])
+        except (TypeError, ValueError, KeyError):
+            pass
     Y = ("令和6年度", "令和7年度", "令和8年度")
     kubun = collections.Counter()
     ten = collections.Counter()
@@ -269,14 +332,24 @@ def suii():
             continue
         a, b, c = (v[y] for y in Y)
         hai = keys[k][5]
-        if c > a:
+        # 素点ではなく得点率（得点÷その年度の配点）で比べる。
+        #   国の配点は年度ごとに変わる。素点で比べると、配点が2点から1点に
+        #   下がって満点を取り続けている項目が「悪化」に入る。現に支援の
+        #   目標Ⅰの3項目（通いの場参加者の健康状態の把握・分析 ウ／
+        #   介護予防・生活支援の体制整備 イ・ウ）がそれで、成果品15が
+        #   「悪化26項目」、素案が「悪化23項目」と村に別の数を示していた。
+        #   analyze_kofukin.suii() と同じ規則に揃える。
+        pa, pc = hai_of.get((k, Y[0])), hai_of.get((k, Y[2]), hai)
+        ra = a / pa if pa else 0
+        rc = c / pc if pc else 0
+        if rc > ra + 1e-9:
             g = "改善"
-        elif c < a:
+        elif rc < ra - 1e-9:
             g = "悪化"
-        elif c >= hai > 0:
-            g = "満点で維持"
         elif c == 0:
             g = "3年連続0点"
+        elif pc and c >= pc:
+            g = "満点で維持"
         else:
             g = "途中で据え置き"
         kubun[g] += 1
@@ -320,28 +393,47 @@ def main():
     print("\n  ※ 目標Ⅳ（成果指標群）は推進・支援で同一の指標であり、得点も同じである。")
     print("  ※ 県の値は59市町村の集計である。団体名と個別の数値は示さない。")
 
-    print("\n  目標ごとの項目の配点の合計は、いずれも満点の%d点に等しい"
-          % MANTEN)
-    print("  （%s）。項目の配点はそのまま得点になる。"
+    koe = [r for r in mk if r["配点計"] > r["満点"]]
+    print("\n  項目の配点はそのまま得点になる（明細の合計は目標の合計列に等しい）。")
+    print("  （%s）"
           % "／".join("%s%s %.0f点" % (r["交付金"][0], r["目標"], r["配点計"])
                       for r in mk))
+    if koe:
+        print("  ただし%sは配点計が満点%d点を超える。"
+              % ("・".join("%s%s %.0f点" % (r["交付金"][0], r["目標"], r["配点計"])
+                           for r in koe), MANTEN))
+        print("  成果指標群のア／イなどが択一（より上位となった方で得点）であり、")
+        print("  両方を足すと二重に数えることによる。配点の総和%.0f点に対し制度の満点は%d点で、"
+              % (sum(r["配点計"] for r in mk), MANTEN * len(mk)))
+        print("  差%.0f点は超過（%s）でちょうど説明がつく。"
+              % (sum(r["配点計"] for r in mk) - MANTEN * len(mk),
+                 "＋".join("%.0f" % (r["配点計"] - r["満点"]) for r in koe)))
 
     print("\n■ 未取得の点　取得の見込みの段ごと\n")
-    print("  %-2s %-18s %4s %9s %9s %9s"
-          % ("段", "内容", "項目", "未取得", "期待得点", "県内満点率"))
-    print("  " + "─" * 70)
-    for d in "ＡＢＣＤＥ":
-        g = [r for r in rows if r["段"] == d and r["未取得"] > 0]
-        if not g:
-            continue
-        print("  %-2s %-18s %4d %9.0f %9.1f %9.1f"
-              % (d, DAN_NA[d], len(g), sum(x["未取得"] for x in g),
-                 sum(x["未取得"] for x in g), sum(x["期待得点"] for x in g)))
-    nz = [r for r in rows if r["未取得"] > 0]
-    print("  " + "─" * 70)
-    print("  %-2s %-18s %4d %9.0f %9.1f %9.1f"
-          % ("計", "", len(nz), sum(r["未取得"] for r in nz),
-             sum(r["未取得"] for r in nz), sum(r["期待得点"] for r in nz)))
+    nob, nobi_kei = nobishiro(rows, mk)
+    print("  %-2s %-18s %4s %8s %9s %11s %9s"
+          % ("段", "内容", "項目", "重複を除く", "見かけ", "実際に伸ばせる", "期待得点"))
+    print("  " + "─" * 82)
+    for x in nob:
+        shirushi = "" if x["見かけ"] == x["実際"] else " ←"
+        print("  %-2s %-18s %4d %8d %9.0f %11.0f %9.1f%s"
+              % (x["段"], x["内容"], x["項目"], x["重複を除く"],
+                 x["見かけ"], x["実際"], x["期待得点"], shirushi))
+    print("  " + "─" * 82)
+    print("  %-2s %-18s %4d %8d %9.0f %11.0f %9.1f"
+          % ("計", "", sum(x["項目"] for x in nob),
+             sum(x["重複を除く"] for x in nob),
+             sum(x["見かけ"] for x in nob), sum(x["実際"] for x in nob),
+             sum(x["期待得点"] for x in nob)))
+    print("\n  「見かけ」は未取得の配点の合計である。択一の枝を二重に数えているため、")
+    print("  これを全部取ることはできない。実際に伸ばせるのは満点%d点との差%.0f点までで、"
+          % (MANTEN * len(mk), nobi_kei))
+    print("  段ごとの内訳が上の「実際に伸ばせる」である（←を付けた段が減る）。")
+    print("  Ａ・Ｂ・Ｃは見かけと実際が一致する。村にお示しする取得目標はこの3段である。")
+    print("  「重複を除く」は、目標Ⅳ（成果指標群）が推進・支援で同一の指標であり")
+    print("  集計表に2度現れることによる。点は両交付金で別に支払われるため足して正しいが、")
+    print("  取り組む対象の数としては1つである。")
+    assert abs(sum(x["実際"] for x in nob) - nobi_kei) < 0.5, "段の計が伸びしろと合わない"
 
     print("\n■ 優先順位　ＡＢＣの項目を期待得点の大きい順に（県内満点率を併記）\n")
     pri = sorted([r for r in rows if r["段"] in ("Ａ", "Ｂ", "Ｃ")
@@ -408,6 +500,7 @@ def main():
         pri2 = sorted(g["Ａ"] + g["Ｂ"] + g["Ｃ"],
                       key=lambda r: (-r["期待得点"], -r["県内満点率"]))
         kubun, ten, nobi, n3 = suii()
+        nob2, nobi_kei2 = nobishiro(rows, mk)
         zenv = sorted((r[335] for r in body if isinstance(r[335], (int, float))),
                       reverse=True)
         kenv = sorted((r[335] for r in ken if isinstance(r[335], (int, float))),
@@ -432,15 +525,21 @@ def main():
                 "県内順位": r["県内順位"], "県内団体数": r["県内団体数"],
             })
         out = {
-            "日付": "令和8年10月20日",
+            "日付": "令和8年10月21日",
             "合計": sui + shi, "推進": sui, "支援": shi, "満点": MANTEN * 8,
             "県平均合計": 456.4, "県内順位": 34, "県内団体数": 59,
             "全国平均合計": 455.1, "全国順位": 1005, "全国団体数": 1741,
             "目標別": tsumi,
-            "段": [{"段": d, "内容": DAN_NA[d], "項目": len(g[d]),
-                    "点": sum(r["未取得"] for r in g[d]),
-                    "期待": round(sum(r["期待得点"] for r in g[d]), 1)}
-                   for d in "ＡＢＣＤＥ"],
+            "段": [{"段": x["段"], "内容": x["内容"], "項目": x["項目"],
+                    "重複を除く": x["重複を除く"],
+                    "点": x["見かけ"], "実際": x["実際"],
+                    "期待": round(x["期待得点"], 1)}
+                   for x in nob2],
+            "伸びしろ": nobi_kei2,
+            "配点の総和": sum(r["配点計"] for r in mk),
+            "超過": [{"交付金": r["交付金"], "目標": r["目標"],
+                      "配点計": r["配点計"], "超過": r["配点計"] - r["満点"]}
+                     for r in mk if r["配点計"] > r["満点"]],
             "優先順位": [{
                 "順": i, "段": r["段"], "交付金": r["交付金"], "目標": r["目標"],
                 "指標": r["指標"], "点": r["未取得"],
@@ -478,10 +577,17 @@ def main():
         print("\n  書き出した： %s" % fp)
 
     if "--csv" in sys.argv:
+        # 見出しは行の辞書の鍵と同じ名でなければならない。
+        # extrasaction="ignore" のため、合っていない見出しは黙って空欄になる。
+        # 現に「未取得の配点」「得点への換算」「取れる得点」の3列が
+        # 299行すべて空で出ていた（行の鍵は「未取得」である）。
         ks = ["交付金", "目標", "目標名", "指標群", "指標", "配点", "本村",
-              "未取得の配点", "得点への換算", "取れる得点", "期待得点",
+              "未取得", "期待得点",
               "県内満点", "県内1点以上", "段", "必要なこと", "素案", "確認事項"]
         with io.open(OUT, "w", encoding="utf-8", newline="") as f:
+            kaketa = [k for k in ks if k not in rows[0]]
+            if kaketa:
+                raise SystemExit("CSVの見出しに行の鍵がない： %s" % "・".join(kaketa))
             w = csv.DictWriter(f, fieldnames=ks, extrasaction="ignore")
             w.writeheader()
             for r in sorted(rows, key=lambda r: (-r["期待得点"], -r["県内満点率"])):
