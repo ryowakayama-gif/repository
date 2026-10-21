@@ -27,6 +27,7 @@
   ・TSUIKA の全項目に根拠があること
 """
 import os
+import re
 import sys
 sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -123,12 +124,16 @@ MAP = {
  ("第4章", "3-3"): (["施策3-3"], ""),
  ("第4章", "4-1"): (["施策4-1", "施策4-2", "施策4-3", "施策4-5"], ""),
  ("第4章", "4-2"): (["施策4-4"], ""),
- ("第4章", "4-3"): (["5-5"], "第9期の任意事業の充実。協議用は5-5（地域支援事業の見込み）に"
-                            "任意事業を置いている。公表用は第4章4-3と第5章2に分ける"),
+ ("第4章", "4-3"): (["5-5(1)"], "第9期の任意事業の充実。協議用5-5（地域支援事業の見込み）は"
+                               "量の見込みと事業費の両方を持つ。令和8年10月21日の村のご判断により、"
+                               "(1) 量の見込みを第4章4-3に、(2) 事業費を第5章2に分けた。"
+                               "第9期が事業費を第5章2（給付費等の今後の見込み）に置いていたことによる"),
  ("第4章", "4-4"): (["施策4-7"], ""),
  ("第5章", "1"): (["5-7", "5-1"], "5-1（推計の考え方）は算定の前提として冒頭に置く"),
- ("第5章", "2"): (["5-6", "5-2", "5-3", "5-4"], "介護保険法第117条第2項第1号の"
-                                                 "サービスの種類ごとの量の見込みを含む"),
+ ("第5章", "2"): (["5-6", "5-2", "5-3", "5-4", "5-5(2)"],
+                   "介護保険法第117条第2項第1号のサービスの種類ごとの量の見込みを含む。"
+                   "5-5(2)（地域支援事業費の見込み）は、第9期が事業費をこの節に置いていたため"
+                   "ここに置く（村のご判断。協議用5-5の(1) 量の見込みは第4章4-3）"),
  ("第5章", "3"): (["5-8", "施策3-5"], "施策3-5（介護給付の適正化）は第9期では第5章3にある"),
  ("第5章", "4"): (["5-9"], ""),
  ("第5章", "5"): (["5-10"], ""),
@@ -191,6 +196,22 @@ def soan_setsu():
     return [s["no"] for ch in SC.CH for s in ch["sections"]]
 
 
+def _eda_aru(no):
+    """その節が持つ「(n) …」の小見出しの番号（枝）を返す"""
+    for ch in SC.CH:
+        for sec in ch["sections"]:
+            if sec["no"] != no:
+                continue
+            out = []
+            for b in sec["blocks"]:
+                if b.get("t") == "h3":
+                    m = re.match(r"^\((\d)\)", str(b.get("v", "")))
+                    if m:
+                        out.append(m.group(1))
+            return out
+    return []
+
+
 def check():
     """埋め残し・振り分け漏れ・根拠なしを見る"""
     bad = []
@@ -209,6 +230,24 @@ def check():
             tsukau.setdefault(s, []).append("TSUIKA %s%s" % (ch, no))
     for s in KYOGI:
         tsukau.setdefault(s, []).append("KYOGI")
+    # 枝を分けて振り分けた節（例 5-5(1) と 5-5(2)）は、
+    # 節としては1度だけ現れたものとして数える。枝が重なっていないこと、
+    # 節の枝をすべて振り分けていることは別に見る。
+    eda = {}
+    for s in list(tsukau):
+        m = re.match(r"^(\d-\d{1,2})\((\d)\)$", s)
+        if m:
+            eda.setdefault(m.group(1), []).append(m.group(2))
+    for moto, ks in eda.items():
+        if len(set(ks)) != len(ks):
+            bad.append("協議用素案の %s の枝(%s)が2か所に現れる"
+                       % (moto, "・".join(sorted(ks))))
+        aru = sorted(_eda_aru(moto))
+        if sorted(set(ks)) != aru:
+            bad.append("協議用素案の %s の枝は(%s)だが、振り分けたのは(%s)"
+                       % (moto, ")(".join(aru), ")(".join(sorted(set(ks)))))
+        tsukau.setdefault(moto, []).append(
+            "MAP 枝分け（%s）" % "・".join("(%s)" % k for k in sorted(set(ks))))
     for s in soan_setsu():
         n = tsukau.get(s, [])
         if not n:
@@ -216,6 +255,8 @@ def check():
         elif len(n) > 1:
             bad.append("協議用素案の %s が2か所に現れる（%s）" % (s, "・".join(n)))
     for s in tsukau:
+        if re.match(r"^\d-\d{1,2}\(\d\)$", s):
+            continue                        # 枝は上で見た
         if s not in soan_setsu():
             bad.append("振り分けにある %s が協議用素案にない" % s)
     # ③ 追加の根拠
@@ -253,6 +294,33 @@ def setsu_h(keikaku=True):
                     hb += 160
                 h += hb
             out[sec["no"]] = h
+    # 節の枝ごとの高さ（例 "5-5(1)" "5-5(2)"）。
+    # 協議用5-5のように、公表用で1つの節を2つに分けるものがあるため、
+    # 枝それぞれの高さを別に持つ。足すと節まるごとの高さになる（節見出しは1つ）。
+    for ch in SC.CH:
+        for sec in ch["sections"]:
+            eda, ima = {}, None
+            for b in sec["blocks"]:
+                if b["t"] == "h3":
+                    m = re.match(r"^\((\d)\)", str(b.get("v", "")))
+                    if m:
+                        ima = m.group(1)
+                        eda.setdefault(ima, [])
+                        continue
+                if ima is not None:
+                    eda[ima].append(b)
+            if len(eda) < 2:
+                continue
+            for k, bs in eda.items():
+                h = 320 + 25 * 20 + 180      # 節見出し（分けても1つ付く）
+                for b in bs:
+                    if keikaku and b["t"] == "note":
+                        continue
+                    hb = EP.block_h(b)
+                    if b["t"] in ("table", "kpi"):
+                        hb += 160
+                    h += hb
+                out["%s(%s)" % (sec["no"], k)] = h
     return out
 
 

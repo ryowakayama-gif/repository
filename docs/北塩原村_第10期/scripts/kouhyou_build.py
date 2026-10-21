@@ -103,7 +103,9 @@ def ref_table():
 
 # ══════════════════════════════════════════════════════════════
 # 相互参照の付け替え
-TOK = re.compile(r"(施策\d+-\d+|資\d+|(?<![0-9０-９\-－第])\d-\d{1,2}(?![0-9]))")
+# 枝（例 5-5(2)）まで拾う。協議用5-5を公表用で2つの節に分けたため、
+# 枝ごとに行き先が違う。枝を拾わないと「5-2(2)」のような存在しない参照になる。
+TOK = re.compile(r"(施策\d+-\d+|資\d+|(?<![0-9０-９\-－第])\d-\d{1,2}(?:\(\d\))?(?![0-9]))")
 # 丸ごと落とせる括弧（中が協議用のみの節だけでできているもの）
 KAKKO = re.compile(r"（((?:5-12|2-8|2-9|2-11|3-5|資[1-4]|資7|資8)(?:・[^（）]{0,8})*)）")
 
@@ -210,13 +212,33 @@ def fix_refs(t, sec):
         # 題を添えた参照は施策を指す
         if not tok.startswith("資") and _is_shisaku_gloss(t, m.end()):
             return SHISAKU.get("施策" + tok, tok)
+        if tok in SETSU:                      # 枝つきはここで当たる
+            return SETSU[tok]
+        me = EDA.match(tok)
+        if me:                                # 枝つきで行き先が無いもの
+            moto = me.group(1)
+            if moto in KYOGI:
+                if moto in KYOGI_REF:
+                    return KYOGI_REF[moto] + "(%s)" % me.group(2)
+                a = max(0, m.start() - 18)
+                NOKORI.append((sec, tok, t[a:m.end() + 16].replace("\n", " ")))
+                return tok
+            # 節まるごとが1つの節に移るなら、枝はそのまま付けて移す
+            return SETSU.get(moto, moto) + "(%s)" % me.group(2)
         if tok in KYOGI:
             if tok in KYOGI_REF:
                 return KYOGI_REF[tok]
             a = max(0, m.start() - 18)
             NOKORI.append((sec, tok, t[a:m.end() + 16].replace("\n", " ")))
             return tok
-        return SETSU.get(tok, tok)
+        if tok not in SETSU:
+            # 行き先を知らない節番号は、素通しすると公表用の別の節を指す。
+            # 協議用5-10が公表用5-5になるため、裸の「5-5」を素通しすると
+            # 第5章5（低所得者への対応）を指してしまう。黙って通さない。
+            a = max(0, m.start() - 18)
+            NOKORI.append((sec, tok, t[a:m.end() + 16].replace("\n", " ")))
+            return tok
+        return SETSU[tok]
     return TOK.sub(_r, t)
 
 
@@ -236,6 +258,58 @@ def walk_fix(o, sec):
 def _sec_index():
     """節の索引。削減案を当てた状態で呼べるよう、その都度数え直す"""
     return {s["no"]: (ch["no"], s) for ch in SC.CH for s in ch["sections"]}
+
+
+# 節の枝を指す書き方（例 "5-5(2)"）。節まるごとではなく小見出しの範囲を取る
+EDA = re.compile(r"^(\d-\d{1,2})\((\d)\)$")
+
+
+def _src(SEC, s0):
+    """s0 が指す中身を (章, 題, ブロック) で返す。
+
+    "5-5" のように節番号だけなら節まるごと。
+    "5-5(2)" のように枝を添えたら、その小見出し「(2) …」から
+    次の「(…)」の小見出しまでを取る。題は小見出しから「(2) 」を外したもの。
+    枝の中に入れ子の小見出し（5-5(1)の「量の見込みの立て方」）があっても、
+    「(…)」で始まらないものは枝の切れ目としない。
+
+    協議用5-5は量の見込みと事業費を1つの節に持つ。第9期は事業費を
+    第5章2（給付費等の今後の見込み）に置いていたため、公表用では
+    (1) を第4章4-3へ、(2) を第5章2へ分ける（村のご判断による）。
+    """
+    m = EDA.match(s0)
+    if not m:
+        ch, sec = SEC[s0]
+        return ch, sec["title"], sec["blocks"]
+    no, eda = m.group(1), m.group(2)
+    if no not in SEC:
+        raise SystemExit("節%sがない（%sを解けない）" % (no, s0))
+    ch, sec = SEC[no]
+    atama = "(%s)" % eda
+    st = None
+    for i, b in enumerate(sec["blocks"]):
+        if b.get("t") != "h3":
+            continue
+        v = str(b.get("v", ""))
+        if st is None:
+            if v.startswith(atama):
+                st = i
+        elif re.match(r"^\(\d\)", v):
+            return ch, v0_title(sec["blocks"][st]), sec["blocks"][st + 1:i]
+    if st is None:
+        raise SystemExit("節%sに小見出し「%s」がない" % (no, atama))
+    return ch, v0_title(sec["blocks"][st]), sec["blocks"][st + 1:]
+
+
+def _eda_moto(s0):
+    """枝つきの書き方から節番号だけを取る（図の対応表の鍵は節番号で持つ）"""
+    m = EDA.match(s0)
+    return m.group(1) if m else s0
+
+
+def v0_title(b):
+    """小見出し「(2) 地域支援事業費の見込み」→「地域支援事業費の見込み」"""
+    return re.sub(r"^\(\d\)\s*", "", str(b.get("v", "")))
 
 # 第1章3「計画の対象」は協議用素案にない。第9期の記述により新設する
 SHINSETSU = {
@@ -290,19 +364,19 @@ def build():
             if (ch, no) in SHINSETSU:
                 blocks = list(SHINSETSU[(ch, no)])
             elif len(ss) == 1:
-                src = SEC[ss[0]][1]
-                blocks = [walk_fix(b, ss[0]) for b in src["blocks"]]
+                sch, _sti, sbl = _src(SEC, ss[0])
+                blocks = [walk_fix(b, ss[0]) for b in sbl]
                 for e in FIGS:
-                    if e[0] == "%s|%s" % (SEC[ss[0]][0], ss[0]):
+                    if e[0] == "%s|%s" % (sch, _eda_moto(ss[0])):
                         figs_new.setdefault("%s|%s" % (ch, no), []).append(e)
             else:
                 for s0 in ss:
-                    src = SEC[s0][1]
-                    ti = src["title"].split("　")[0].split("【")[0]
+                    sch, sti, sbl = _src(SEC, s0)
+                    ti = sti.split("　")[0].split("【")[0]
                     blocks.append({"t": "h3", "v": ti})
-                    blocks += [walk_fix(h3_to_bold(b), s0) for b in src["blocks"]]
+                    blocks += [walk_fix(h3_to_bold(b), s0) for b in sbl]
                     for e in FIGS:
-                        if e[0] == "%s|%s" % (SEC[s0][0], s0):
+                        if e[0] == "%s|%s" % (sch, _eda_moto(s0)):
                             figs_new.setdefault("%s|%s" % (ch, no), []).append(e)
             secs.append({"no": no, "title": inm, "blocks": blocks,
                          "tsuika": tsuika})
