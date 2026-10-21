@@ -71,6 +71,15 @@ def main():
         print('18_計画素案.md がありません。build_soan.py を先に実行してください。')
         return 1
     t = md_text()
+    # 点検83の基準。点検の途中で素案の構造が書き換わると、これと食い違う
+    try:
+        import estimate_sakugen as _ES83
+        import estimate_layout as _EL83
+        _tg83, _yg83, _fg83 = _ES83.an_targets("")
+        BASE83 = _EL83.pages(
+            _ES83.items_without(_tg83, yougo=_yg83, figs=_fg83), _EL83.BODY_H)
+    except Exception:
+        BASE83 = None
 
     # ── 1〜3　人口と認定者数（案Bと素案5-2・5-3の一致）────────────
     cert = load_csv('第10期_要介護度別認定者数推計.csv') or []
@@ -3319,6 +3328,31 @@ def main():
     except Exception as e:
         chk(81, '素案の全文を入れた t が点検の途中で上書きされていないこと',
             False, '照合できない（%s）' % e)
+
+    # ── 83　点検の途中で素案の構造が書き換わっていないこと ────────────
+    #    estimate_sakugen.nuki は、削減案を当てた状態を作って必ず元へ戻す。
+    #    戻す順が適用の逆でなかったため、同じ節が2つの案に当たったとき
+    #    （節2-5が小見出しを落とす案と図を資料編へ移す案Hの両方）に
+    #    中間の中身で上書きされ、素案が1頁短いまま残っていた。
+    #    点検52・57が「実測が古い」と出続けたのはこれが原因で、
+    #    素案も実測も正しかった。点検81が t の上書きを見るのと同じ理由で、
+    #    素案の構造そのものの書き換わりも毎回見る。
+    try:
+        import estimate_sakugen as ES83
+        import estimate_layout as EL83
+        tg83, yg83, fg83 = ES83.an_targets("")
+        ima83 = EL83.pages(ES83.items_without(tg83, yougo=yg83, figs=fg83),
+                           EL83.BODY_H)
+        # 冒頭で測っておいた値と突き合わせる
+        chk(83, '点検の途中で素案の構造が書き換わっていないこと',
+            ima83 == BASE83,
+            '書き換わっている（冒頭の推定%d頁→いま%d頁）。'
+            'nuki を使った点検が戻し忘れている'
+            % (BASE83, ima83) if ima83 != BASE83
+            else '推定%d頁。冒頭に測ったものと最後まで同じ' % ima83)
+    except Exception as e:
+        chk(83, '点検の途中で素案の構造が書き換わっていないこと', False,
+            '照合できない（%s）' % e)
 
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)

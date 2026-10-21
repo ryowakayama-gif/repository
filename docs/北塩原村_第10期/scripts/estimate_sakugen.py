@@ -346,18 +346,26 @@ def nuki(targets, yougo=(), figs=()):
     try:
         yield
     finally:
-        for ch in SC.CH:
+        # **適用した逆の順に戻す。** 同じ節が2つの案に当たると、
+        # あとから当てた案の控えは「前の案を当てたあとの中身」である。
+        # 順に戻すと、その中間の中身で正しい復元を上書きしてしまう。
+        # 現に節2-5が、小見出しを落とす案と図を資料編へ移す案Hの両方に当たり、
+        # 全案をまとめて当てたあと素案が1頁短いまま残っていた。
+        # verify_soan はこのあと点検52・57が推定を測るため、
+        # 「実測が古い（測ったときの推定129頁→いま128頁）」と出続けていた。
+        # 素案も実測も正しく、戻し忘れだけが原因であった。
+        if orig_figs is not None:                 # ④ 図の対応表（案H）
+            _FM.FIGS = orig_figs
+        for sec, bs in orig_fb:                   # ④ 本文の図のブロック（案H）
+            sec["blocks"] = bs
+        for b, rows in orig_rows:                 # ③ 資5の行（案G）
+            b["rows"] = rows
+        for ch, secs in orig_secs:                # ② 節まるごと（案M・N）
+            ch["sections"] = secs
+        for ch in SC.CH:                          # ① 小見出しの範囲
             for sec in ch["sections"]:
                 if sec["no"] in orig:
                     sec["blocks"] = orig[sec["no"]]
-        for b, rows in orig_rows:
-            b["rows"] = rows
-        for sec, bs in orig_fb:
-            sec["blocks"] = bs
-        for ch, secs in orig_secs:
-            ch["sections"] = secs
-        if orig_figs is not None:
-            _FM.FIGS = orig_figs
 
 
 def items_without(targets, yougo=(), figs=()):
