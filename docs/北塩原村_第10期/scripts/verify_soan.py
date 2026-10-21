@@ -2053,16 +2053,18 @@ def main():
         bad59, n59 = [], 0
         for k in _KK59.K:
             for f in (k[1], k[2]):
-                t = str(f)
-                for m in REF59.finditer(t):
+                # 変数名を t にすると、この関数の冒頭で素案の全文を入れた t を
+                # 上書きしてしまう。現に点検80が素案を空の文字列として読んだ。
+                t59 = str(f)
+                for m in REF59.finditer(t59):
                     # 「資料N の …」に続く番号は委員会資料の節であり、素案の節ではない
-                    mae = t[max(0, m.start() - 40):m.start()]
+                    mae = t59[max(0, m.start() - 40):m.start()]
                     if _re59.search(r"資料[0-9０-９]", mae) or _re59.search(r"doc|図|表$", mae[-6:]):
                         continue
                     n59 += 1
                     if m.group(1) not in secs59:
                         bad59.append("「%s」→ 素案に%sがない" % (str(k[1])[:22], m.group(1)))
-                for m in ZU59.finditer(t):
+                for m in ZU59.finditer(t59):
                     n59 += 1
                     if m.group(0) not in zu59:
                         bad59.append("「%s」→ %sがない" % (str(k[1])[:22], m.group(0)))
@@ -3124,8 +3126,11 @@ def main():
                                       mm.group(4)), []).append((kou, _ti))
         pat80 = re.compile(r'(令和|平成|昭和)(\d+)年(?:\d+月\d+日)?'
                            r'(条例|規則|訓令|告示|要綱|要領|規程)第(\d+)号')
+        # 素案は自分で読み直す。冒頭の t は、点検59がループ変数に同じ名を
+        # 使っていたため空の文字列に上書きされていた（点検81が番人）。
+        t80 = md_text()
         hiku, bad80 = set(), []
-        for mm in pat80.finditer(t):
+        for mm in pat80.finditer(t80):
             hiku.add('%s%s年%s第%s号' % (mm.group(1), mm.group(2),
                                         mm.group(3), mm.group(4)))
         for k in sorted(hiku):
@@ -3146,7 +3151,7 @@ def main():
                                           '北塩原村例規集_題名一覧.tsv'),
                                   encoding='utf-8')
                 if ln.strip() and not ln.startswith('#')]
-        if ('全70分野・%d件' % len(ichi)) not in t:
+        if ('全70分野・%d件' % len(ichi)) not in t80:
             bad80.append('素案の注記の件数が題名の一覧（%d件）と合わない' % len(ichi))
         chk(80, '素案が引く例規の番号が例規集と一致すること', not bad80,
             '・'.join(bad80[:3]) if bad80
@@ -3155,6 +3160,24 @@ def main():
     except Exception as e:
         chk(80, '素案が引く例規の番号が例規集と一致すること', False,
             '照合できない（%s）' % e)
+
+    # ── 81　素案の全文を入れた t が点検の途中で上書きされていないこと ──────
+    #    点検59が for 文のループ変数に t を使っており、以降の点検が素案を
+    #    空の文字列として読んでいた。点検80を足して初めて分かった。
+    #    「素案に例規の番号が1つもない」という、ありえない結果で気づけたのは
+    #    運がよかっただけである。t を使う点検は30件を超えるため、
+    #    上書きそのものを毎回見る。
+    try:
+        ima81 = md_text()
+        chk(81, '素案の全文を入れた t が点検の途中で上書きされていないこと',
+            t == ima81,
+            '上書きされている（t は%d字・素案は%d字）。'
+            'ループ変数に t を使っている点検を探すこと'
+            % (len(t), len(ima81)) if t != ima81
+            else '%d字。冒頭に読んだものと最後まで同じ' % len(t))
+    except Exception as e:
+        chk(81, '素案の全文を入れた t が点検の途中で上書きされていないこと',
+            False, '照合できない（%s）' % e)
 
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
