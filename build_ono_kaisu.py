@@ -64,6 +64,7 @@ from openpyxl.styles.borders import Side
 from openpyxl.utils import get_column_letter
 
 import build_ono_tanka as T
+import ono_kikin as KK
 import ono_mieruka_ws as W
 
 ROOT = pathlib.Path(__file__).parent / "小野町_引継ぎ_整理済"
@@ -1065,12 +1066,11 @@ def sheet_zentei(wb, plan):
          "事業別の内訳が年報 様式4 にも国保連月報にもない",
          "1,000千円増で月額＋1.9円", "事業実績の受領（町）"),
         ("介護給付費準備基金の取崩額", "0千円（取り崩さない）",
-         "**年報 様式4 の保有額は令和5・6年度末とも12,000千円だが、"
-         "令和4年度末は120,000千円で、繰入金は全年度ゼロなのに残高が10分の1に"
-         "なっており系列に矛盾がある。**正しい残高が分からないため取崩を見込まない",
-         f"12,000千円で月額{gap(kikin=12000):+.0f}円、"
+         f"**残高は令和5年度末{KK.ZAN_R5:,}千円（町の財務書類）、"
+         f"令和8年度末見込{KK.ZAN_R8:,}千円。**取崩額は町と協議会で決めるため、標準では見込まない",
+         f"{KK.HALF:,}千円で月額{gap(kikin=KK.HALF):+.0f}円、"
          f"35,000千円で月額{gap(kikin=35000):+.0f}円",
-         "基金運用状況調書（町）"),
+         "財産に関する調書（町。令和7年度末）"),
         ("審査支払手数料の単価", "60円／件",
          "年報に計上欄がない。見える化の参考係数では国庫負担金の算定対象となる"
          "単価の上限が95円とされている",
@@ -1609,8 +1609,8 @@ def main():
     pop3 = sum(T.POP_DAI10[y]["1号"] for y in T.PLAN_YEARS)
     print(f"総給付費 3年計 {sum(A['計']):,.0f}千円／"
           f"標準給付費 {std3:,.0f}千円／地域支援事業費 {chi3:,.0f}千円")
-    for kikin, lab in ((0, "取崩なし"), (12000, "12,000千円取崩"),
-                       (35000, "35,000千円取崩")):
+    for kikin, lab in ((0, "取崩なし"), (KK.HALF, f"{KK.HALF:,}千円取崩"),
+                       (KK.ZAN_R8, f"{KK.ZAN_R8:,}千円取崩"), (35000, "35,000千円取崩")):
         print(f"  保険料基準額（月額）{lab:<16}"
               f"{T.premium(std3, chi3, sogo3, pop3, kikin=kikin)['月額']:>8,.0f}円")
     print(f"  保険料基準額（月額）負担割合24％      "

@@ -47,6 +47,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
 import build_ono_tanka as T
+import ono_kikin as KK
 import ono_shizentai as SZ
 from build_ono_kaisu import chiiki_ryo, nintei_juri, teiin_plan
 
@@ -321,7 +322,7 @@ SUSEI_GAI = [
     ("①", "第1号被保険者負担割合", "測れる", "24％で月額＋303円。政令の公布"),
     ("①", "調整交付金の見込交付割合", "測れる", "1ポイント低下で月額＋281円"),
     ("①", "介護給付費準備基金の取崩", "測れる",
-     "12,000千円で月額▲103円、35,000千円で月額▲300円"),
+     f"取崩額に比例し、35,000千円で月額▲300円。残高は令和8年度末見込{KK.ZAN_R8:,}千円"),
     ("①", "令和7年度の地域支援事業費", "測れる", "1％で月額±0.4円"),
     ("①", "施設の整備", "測れる",
      "第10期に新規整備なしと置いた。1床増えるごとの効きは算定できる"),
