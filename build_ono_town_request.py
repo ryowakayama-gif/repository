@@ -20,6 +20,7 @@ import openpyxl
 from openpyxl.styles import Alignment, Border, Font, PatternFill
 from openpyxl.styles.borders import Side
 from openpyxl.utils import get_column_letter
+import ono_kikin as KK
 
 ROOT = pathlib.Path(__file__).parent
 OUT = ROOT / "小野町_引継ぎ_整理済" / "16_町データ依頼"
@@ -113,7 +114,7 @@ REQ_SANTEI = [
      "①各年度末の基金残高 ②積立額・取崩額の実績 "
      "③**第9期が見込んだ取崩3,500万円が実際に行われたか**",
      "平成30年度〜令和7年度", "千円",
-     "保険料算定に必須。**繰越金182.0百万円・基金純増88.1百万円という財政余剰の"
+     f"保険料算定に必須。**繰越金182.0百万円・基金残高{KK.ZAN_R5 / 1000:.1f}百万円（令和5年度末）という財政余剰の"
      "扱いが第10期の保険料水準を左右する**", ""),
     ("S4", "高", "介護保険担当", "所得段階別第1号被保険者数",
      "第1段階〜第13段階の別。年度別",
