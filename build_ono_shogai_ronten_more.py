@@ -49,7 +49,7 @@ TASO = pathlib.Path("/tmp/claude-0/-home-user-repository/"
                     "d7dca1d7-b918-515d-8b6d-9309b5e7ef32/scratchpad/up20/"
                     "soan_other.docx")
 TOUHOU = (OUT / "おのまち障がい者計画_第4期障がい児福祉計画_第8期障がい福祉計画_"
-          "素案_第3版_20261020.docx")
+          "素案_第4版_20261021.docx")
 
 GENTEN = {
     "告示": ("第8期基本指針_告示本文_令和8年3月31日.pdf",
