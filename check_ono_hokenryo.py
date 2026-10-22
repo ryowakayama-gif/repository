@@ -69,6 +69,9 @@ def is_gen(p):
     """当方が生成した成果品か（受領した原本でないか）。"""
     if any(part.startswith(("【受領】", "原本_")) for part in p.parts):
         return False
+    # 【社内】のフォルダは町に出さない資料（旧版・経過資料、社内の作業様式）なので除く
+    if any("【社内】" in part for part in p.parts):
+        return False
     return p.suffix in (".docx", ".xlsx")
 
 
