@@ -84,6 +84,7 @@ from build_kitashiobara_anke_kaitei import AK_EDITS  # noqa: E402
 from build_kitashiobara_ken_iryo import (  # noqa: E402
     KI_EDITS, KI_GYOU,
 )
+from build_kitashiobara_houkoku_hanei import SR_EDITS  # noqa: E402
 from build_kitashiobara_graph import GRAPHS, OUT_DIR as ZU_DIR  # noqa: E402
 from build_kitashiobara_zuhyo_bangou import ZU, HYO  # noqa: E402
 
@@ -1308,6 +1309,7 @@ def main():
     apply_juten(doc, TK_EDITS, label="体系")
     apply_juten(doc, SJ_EDITS, label="障がい児")
     apply_juten(doc, KI_EDITS, label="県医療計画")
+    apply_juten(doc, SR_EDITS, label="報告書レビュー反映版")
     apply_gyou(doc)
     apply_kakikae(doc)
     apply_taikei_kakikae(doc)
