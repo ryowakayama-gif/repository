@@ -44,7 +44,7 @@ STALE = {
 
 # 標準ケースの額を載せているはずの成果品。載っていなければ作り直し漏れ。
 POSITIVE = {
-    "小野町高齢者保健福祉計画_第10期介護保険事業計画_素案_第15版": ("6,053円", "6,100円"),
+    "小野町高齢者保健福祉計画_第10期介護保険事業計画_素案_第16版": ("6,053円", "6,100円"),
     "小野町_第10期_サービス見込量の算定結果": ("6,048円",),
     "小野町_見える化_所得段階別被保険者数の入力": ("6,048円",),
     "小野町高齢者福祉サービス推進協議会資料_第9期計画の評価と令和7年度調査結果_20260929":
@@ -63,6 +63,22 @@ NO_MARKER = (
 # 保険料の算定は町にまだお出ししていない。そのため成果品には、算式を直した
 # 経緯（おわびと訂正）も、訂正前の額も書かない。除外する文書はない。
 ALLOW = ()
+
+# 古い額と同じ数字が、別の算定で正しく出る場合。直前（150字以内）にこの語があれば古い額とみなさない。
+# 令和8年10月22日：認知症対応型共同生活介護1ユニット整備のケースは、標準ケース6,048円に
+# 整備分を足して6,095円になる（ono_seibi.cases）。
+BETSU = {
+    "6,095円": ("認知症対応型共同生活介護を1ユニット",),
+}
+
+
+def stale_in(t, bad):
+    """古い額が、BETSU の文脈以外で出ているか。"""
+    for m in re.finditer(re.escape(bad), t):
+        mae = t[max(0, m.start() - 150):m.start()]
+        if not any(w in mae for w in BETSU.get(bad, ())):
+            return True
+    return False
 
 
 def is_gen(p):
@@ -120,7 +136,7 @@ def main():
             continue
         t = text_of(p) if t is None else t
         for bad, why in STALE.items():
-            if bad in t:
+            if stale_in(t, bad):
                 hits.append((p.relative_to(ROOT), bad, why))
     for key in POSITIVE:
         if key not in seen:

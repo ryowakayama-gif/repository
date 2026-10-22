@@ -52,10 +52,12 @@ def main():
     n_all = len([p for p in pg if p.strip()])
     start = {}
     for i, p in enumerate(pg):
-        head = "\n".join(p.strip().splitlines()[:4]).replace(" ", "")
+        # 柱（1行目）の次の行が章の題そのものである頁を章の先頭とする（目次の行は拾わない）
+        ls = [x for x in p.strip().splitlines() if x.strip()]
+        head = re.sub(r"[\s　]", "", ls[1]) if len(ls) > 1 else ""
         for s in SHO:
-            key = s.replace("　", "").replace(" ", "")
-            if s not in start and key in head.replace("　", ""):
+            key = re.sub(r"[\s　]", "", s)
+            if s not in start and head == key:
                 start[s] = i
     found = [s for s in SHO if s in start]
     if len(found) < 8:
