@@ -1,6 +1,7 @@
 // 策定委員会 資料 Word生成（*_content.py が出力した JSON を読む）
 //   node scripts/build_shiryo_docx.js            第2回（既定）
 //   node scripts/build_shiryo_docx.js 3          第3回
+//   node scripts/build_shiryo_docx.js kofukin    参考資料（交付金の評価と第10期の目標）
 // 回ごとに別の組立てを書くと体裁が食い違うため、同じ組立てを使い回す。
 const fs = require('fs');
 const d = require(require('path').join(__dirname, 'docxlib.js'));
@@ -12,13 +13,19 @@ const path = require('path');
 //   scripts/ → 北塩原村_第10期/ → docs/ → リポジトリの根
 const ROOT = require('path').resolve(__dirname, '..', '..', '..');
 const OUTDIR = require('path').join(ROOT, 'output');
-const KAI = (process.argv[2] === '3') ? 3 : 2;
-const SRC_PY = KAI === 3 ? 'shiryo3_content.py' : 'shiryo_content.py';
-const JSON_PATH = path.join(OUTDIR, '_build',
-  KAI === 3 ? 'shiryo3.json' : 'shiryo.json');
-const OUT_PATH = KAI === 3
-  ? path.join(OUTDIR, '12_北塩原村第10期_第3回策定委員会資料.docx')
-  : path.join(OUTDIR, '08_北塩原村第10期_第2回策定委員会資料.docx');
+// 回ごとの組（どの中身を読み、どこへ書くか）。ここだけを見れば足りるようにする
+const KAISET = {
+  '2':       {py: 'shiryo_content.py',          js: 'shiryo.json',
+              out: '08_北塩原村第10期_第2回策定委員会資料.docx'},
+  '3':       {py: 'shiryo3_content.py',         js: 'shiryo3.json',
+              out: '12_北塩原村第10期_第3回策定委員会資料.docx'},
+  'kofukin': {py: 'kofukin_shiryo_content.py',  js: 'kofukin_shiryo.json',
+              out: '19_北塩原村第10期_策定委員会参考資料_交付金の評価と第10期の目標.docx'},
+};
+const KAI = KAISET[process.argv[2]] ? process.argv[2] : '2';
+const SRC_PY = KAISET[KAI].py;
+const JSON_PATH = path.join(OUTDIR, '_build', KAISET[KAI].js);
+const OUT_PATH = path.join(OUTDIR, KAISET[KAI].out);
 // 入力のJSONが元データより古いときは止める（古い成果品を作らないため）
 (function () {
   // __dirname 基準にする。cwd に依らず走らせるため
