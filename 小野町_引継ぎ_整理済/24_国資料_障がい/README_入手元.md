@@ -27,3 +27,10 @@
 - 改正案（第157回・第21回）は**告示前の案**である。成果品には「改正案」と明記し、
   告示（令和8年10月予定）の後に最終照合する。
 - 当該別の団体の計画・データ・団体名は、本件の成果品に用いない。
+
+## 福島県（令和8年10月22日取得）
+- 福島県_第7期障がい福祉計画・第3期障がい児福祉計画_令和6年3月.pdf
+  - https://www.pref.fukushima.lg.jp/uploaded/attachment/625631.pdf
+  - 206頁。第9 圏域計画に「県中障がい保健福祉圏域計画」（68〜78頁）がある。
+- 福島県_第7期障がい福祉計画の概要.pdf：https://www.pref.fukushima.lg.jp/uploaded/attachment/625509.pdf
+- 福島県_第3期障がい児福祉計画の概要.pdf：https://www.pref.fukushima.lg.jp/uploaded/attachment/625510.pdf
