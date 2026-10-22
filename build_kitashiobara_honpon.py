@@ -86,6 +86,9 @@ from build_kitashiobara_ken_iryo import (  # noqa: E402
 )
 from build_kitashiobara_houkoku_hanei import SR_EDITS  # noqa: E402
 from build_kitashiobara_zenki_redteam import SZ_EDITS  # noqa: E402
+from build_kitashiobara_mura_daicho import (  # noqa: E402
+    DK_HYOU, DK_KAKIKAE, DK_EDITS,
+)
 from build_kitashiobara_graph import GRAPHS, OUT_DIR as ZU_DIR  # noqa: E402
 from build_kitashiobara_zuhyo_bangou import ZU, HYO  # noqa: E402
 
@@ -865,7 +868,7 @@ def apply_kakikae(doc):
     挿入ではなく置換であるため、直す前の文が本文にちょうど1つある
     ことを確かめてから書き換える。書式は先頭のランのものを残す。
     """
-    for rec in list(KAKIKAE) + list(KG_KAKIKAE) + list(KO_KAKIKAE):
+    for rec in list(KAKIKAE) + list(KG_KAKIKAE) + list(KO_KAKIKAE) + list(DK_KAKIKAE):
         atari = [p for p in doc.paragraphs
                  if _norm(rec["mae"]) in _norm(p.text)]
         if len(atari) != 1:
@@ -878,6 +881,37 @@ def apply_kakikae(doc):
             r.text = ""
         para.runs[0].text = rec["ato"]
         changes.append(f"書き換え{rec['no']}：{rec['saki']}")
+
+
+def apply_daicho_hyou(doc):
+    """実績の表のセルを村の資料の値に書き換える（DK_HYOU）。
+
+    実績の表は表頭が同じものが5つあるため、表頭と行の頭
+    （サービス種別・単位）の組で行を1つに絞る。
+    直す前の値が3年度とも一致することを確かめてから書き換える。
+    括弧内（前回計画時の見込量）はそのまま残る。
+    """
+    for rec in DK_HYOU:
+        want = (rec["svc"], rec["tani"]) if rec["tani"] else (rec["svc"],)
+        n = len(want)
+        hits = []
+        for t in doc.tables:
+            hdr = tuple(c.text.strip() for c in t.rows[0].cells)
+            if hdr[:len(rec["atama"])] != rec["atama"]:
+                continue
+            for row in t.rows[1:]:
+                cs = row.cells
+                if tuple(c.text for c in cs[:n]) == want:
+                    hits.append(cs)
+        if len(hits) != 1:
+            raise LookupError(f"実績の表の行が一意でない（{len(hits)}行）: "
+                              f"{rec['no']}")
+        cs = hits[0]
+        if tuple(c.text for c in cs[n:n + 3]) != rec["mae"]:
+            raise LookupError(f"実績の表の直す前の値が違う: {rec['no']}")
+        for c, v in zip(cs[n:n + 3], rec["ato"]):
+            _set_cell_text(c._tc, v)
+        changes.append(f"実績の表{rec['no']}：{rec['saki']}")
 
 
 def apply_gyou(doc):
@@ -1084,7 +1118,7 @@ def verify(doc, src_dims):
                 + list(SS_EDITS) + list(RV_EDITS)
                 + list(HK_EDITS) + list(UR_EDITS)
                 + list(KH_EDITS) + list(TK_EDITS)
-                + list(SJ_EDITS)):
+                + list(SJ_EDITS) + list(DK_EDITS)):
         for blk in rec["nakami"]:
             if blk[0] in ("h2", "h3", "p", "note"):
                 if _norm(blk[1]) not in out:
@@ -1269,7 +1303,8 @@ def verify(doc, src_dims):
           f"体系{len(TK_EDITS)}件・"
           f"障がい児{len(SJ_EDITS)}件・"
           f"表に行を足す{len(AK_EDITS)}件・"
-          f"書き換え{len(KAKIKAE) + len(KG_KAKIKAE) + len(KO_KAKIKAE)}件・"
+          f"書き換え{len(KAKIKAE) + len(KG_KAKIKAE) + len(KO_KAKIKAE) + len(DK_KAKIKAE)}件・"
+          f"実績の表{len(DK_HYOU)}行・"
           f"体系の書き換え{len(TK_KAKIKAE)}件・"
           f"図{len(GRAPHS)}点が実在／"
           f"正本の記述{len(keep)}点が残存／見込量表{n_mikomi}表／"
@@ -1314,6 +1349,8 @@ def main():
     apply_juten(doc, SZ_EDITS, label="前期計画レッドチーム")
     apply_gyou(doc)
     apply_kakikae(doc)
+    apply_daicho_hyou(doc)
+    apply_juten(doc, DK_EDITS, label="村提供台帳")
     apply_taikei_kakikae(doc)
     apply_graphs(doc)
     apply_bangou(doc)

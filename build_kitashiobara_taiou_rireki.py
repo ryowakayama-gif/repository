@@ -188,6 +188,21 @@ KEITOU = [
      "前期計画が挙げたＵＤフォント・配色への配慮とほじょ犬マークが"
      "落ちていたため足した",
      "2026-10-22"),
+    ("DK_HYOU", "mura_daicho", KAKIKAE_K,
+     "村提供の給付の台帳による実績の表の書き換え",
+     "第5章の実績の表が他メンバー版の値のままで、村の協議会資料"
+     "（資料２－３）と食い違っていた。台帳の受領で裏づけが取れた",
+     "2026-10-22"),
+    ("DK_KAKIKAE", "mura_daicho", KAKIKAE_K,
+     "村提供の給付の台帳による評価の文の書き換え",
+     "実績の表を直したことに伴い、「見込量どおり」「利用がなかった」"
+     "とする評価の文が事実と合わなくなった",
+     "2026-10-22"),
+    ("DK_EDITS", "mura_daicho", TSUIKI_K,
+     "村提供の給付の台帳の注記",
+     "実績の出所と、村に確かめている数え方の違い・見込量との離れを"
+     "注記した",
+     "2026-10-22"),
     ("GRAPHS", "graph", ZU_K, "当方が作った図",
      "他メンバー版の図は画像で取り込まれており数値を直せないため、"
      "当方で作り直せる図を別に作った",
@@ -239,6 +254,11 @@ def _mod(g):
 def recs(var, g):
     m = _mod(g)
     return list(getattr(m, var))
+
+
+def _hyouji(v):
+    """表のセルの書き換えは3年度の組で持つため、「／」でつないで示す。"""
+    return "／".join(v) if isinstance(v, tuple) else v
 
 
 def _no(rec):
@@ -610,7 +630,8 @@ def sheet_kakikae(wb):
     r = 6
     for i, (x, rec) in enumerate(kk):
         write_row(ws, r, [rec["no"], rec.get("saki", ""),
-                          rec["mae"], rec["ato"], x["namae"]],
+                          _hyouji(rec["mae"]), _hyouji(rec["ato"]),
+                          x["namae"]],
                   alt=(i % 2 == 1), aligns=["center"] + ["left"] * 4)
         ws.cell(row=r, column=3).fill = PatternFill(
             "solid", fgColor="FCE4E4")
@@ -770,7 +791,17 @@ def verify():
         else:
             d = docx.Document(MEMBER)
             mem = "".join("".join(p.text.split()) for p in d.paragraphs)
+            #   表のセルの書き換え（ＤＫ_HYOU）は mae が3年度の組であり、
+            #   他メンバー版の表の行にある
+            gyou = ["".join("".join(c.text.split()) for c in r.cells)
+                    for t in d.tables for r in t.rows]
             for rec in kk:
+                if isinstance(rec["mae"], tuple):
+                    mae = "".join("".join(v.split()) for v in rec["mae"])
+                    if not any(mae in g for g in gyou):
+                        ng.append(f"書き換えの「直す前」が他メンバー版の"
+                                  f"表に無い: {rec['no']}")
+                    continue
                 mae = "".join(rec["mae"].split())
                 if mae not in mem:
                     ng.append(f"書き換えの「直す前」が他メンバー版に"
