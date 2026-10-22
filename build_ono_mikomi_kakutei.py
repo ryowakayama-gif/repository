@@ -21,6 +21,7 @@ from docx.shared import Pt
 
 import build_ono_tanka as T
 import ono_kikin as KK
+import ono_seibi as _SEIBI
 import ono_shizentai as SZ
 import ono_style as S
 from build_ono_backtest import (COMBOS, YS as BT_YS, load_kaigodo as BT_KD,
@@ -31,8 +32,8 @@ from build_ono_kaisu import (EIGYO, TEIIN, chiiki_plan, chiiki_ryo, check_base,
                              disp, plan_rows, sogo_jisseki, teiin_plan, _svc_of)
 
 OUT = pathlib.Path(__file__).parent / "小野町_引継ぎ_整理済" / "04_算定・見込量"
-ASOF = "20261006"
-ASOF_JP = "令和8年10月6日"
+ASOF = "20261022"
+ASOF_JP = "令和8年10月22日"
 JP_MIN = "游明朝"
 JP_GO = "游ゴシック"
 
@@ -679,7 +680,12 @@ def main():
          f"{hoken(kikin=35000)['月額'] - T.DAI9_KIJUN:+,.0f}円"),
         ("第1号被保険者負担割合が24％となる場合", f"{f0(hoken(futan=0.24)['月額'])}円",
          f"{hoken(futan=0.24)['月額'] - T.DAI9_KIJUN:+,.0f}円"),
+        *[(f"{nm}し、{kai}に開設する場合", f"{f0(pr['月額'])}円", f"{pr['月額'] - T.DAI9_KIJUN:+,.0f}円")
+          for nm, _s, _t, kai, _m, _tk, _z, pr in _SEIBI.cases(STD3, CHI3, SOGO3, POP3)],
     ], right_from=1)
+    note(doc, "※ 施設整備の場合は、入所する方が在宅で介護サービスを利用していた方とし、"
+              "施設の1人当たり給付費（年報 様式2 の令和7年度）から在宅の1人当たり給付費を差し引いて標準給付費の増を置いた"
+              "（仕様書4(2)「新たに介護施設を整備する場合」）。")
     note(doc,
          "※ ①標準給付費＝総給付費＋特定入所者介護サービス費等＋高額介護サービス費等"
          "＋高額医療合算介護サービス費等＋審査支払手数料。"

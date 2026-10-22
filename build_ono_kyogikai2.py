@@ -33,6 +33,7 @@ import re
 import build_ono_kotei2 as K
 import build_ono_tanka as T
 import ono_kikin as KK
+import ono_seibi as _SEIBI
 import ono_style as S
 from build_ono_mikomi_kakutei import (A, BASE, CHI3, POP3, SOGO3, STD3,
                                       TANKA_GAP, TANKA_YR, hoken)
@@ -40,8 +41,8 @@ from build_ono_uchiawase import KETTEI
 from check_ono_taihi import soan_midashi
 
 OUT = pathlib.Path(__file__).parent / "小野町_引継ぎ_整理済" / "08_協議会資料"
-ASOF = "20261006"
-ASOF_JP = "令和8年10月6日"
+ASOF = "20261022"
+ASOF_JP = "令和8年10月22日"
 
 DEC = "【協議会で設定】"
 TBD = "【町データ待ち】"
@@ -166,7 +167,7 @@ def main():
     r = S.Report("小野町高齢者福祉サービス推進協議会資料　第2回")
     r.cover(["小野町高齢者福祉サービス推進協議会（第2回）"],
             ["", "計画の骨子・サービス見込量・保険料・成果指標", "",
-             "令和8年〇月〇日", "小　野　町"])
+             "令和8年12月（予定）", "小　野　町"])
     r.toc_here()
     r.body_here()
 
@@ -321,15 +322,16 @@ def main():
           caption="保険料基準額の2案")
     r.p("**いずれの案でも、第10期中に給付費が見込みを上回った場合は"
         "準備基金で埋めることになります。**"
-        f"準備基金の残高は{TBD}であり、"
-        "**残高が分かってから最終的にお決めいただく事項です（決定2）。**")
+        f"準備基金の残高は、町の財務書類で令和5年度末{KK.ZAN_R5:,}千円、令和8年度末の見込みは{KK.ZAN_R8:,}千円です"
+        f"（令和7年度末の残高は{TBD}）。"
+        "**取崩額は、この残高を踏まえてお決めいただく事項です（決定2）。**")
 
     r.h2("（3）保険料が動きうる要因")
     r.tbl([["要因", "動かす幅", "月額への効き", "確定の見通し"],
            ["**介護報酬改定率**", "**±1〜3％**",
             "**＋1％で月額＋57円、＋3％で＋171円**",
             "**令和8年12月から令和9年1月に示されるのが通例。"
-            "11月の協議会には間に合わない**"],
+            "12月の協議会の時点では示されていない可能性がある**"],
            ["**単価の置き方**",
             f"固定（当方）／実績の趨勢（年率＋{TANKA_YR * 100:.2f}％）",
             f"**趨勢で置くと月額{TANKA_GAP:+,.0f}円**",
@@ -341,8 +343,10 @@ def main():
             f"{KK.HALF:,}千円を取り崩すと月額"
             f"{T.premium(STD3, CHI3, SOGO3, POP3, kikin=KK.HALF)['月額'] - T.premium(STD3, CHI3, SOGO3, POP3)['月額']:+,.0f}円",
             f"**残高は令和8年度末見込{KK.ZAN_R8:,}千円（令和7年度末は{TBD}）**"],
-           ["施設の整備", "整備なし／あり", "整備があれば段差で増える",
-            "**町の方針決定**"]],
+           ["施設の整備", "整備なし／あり",
+            "／".join(f"{nm.split('を')[0]}{t_}人で月額{pr['月額'] - BASE['月額']:+,.0f}円"
+                     for nm, _s, t_, _k, _m, _tk, _z, pr in _SEIBI.cases(STD3, CHI3, SOGO3, POP3)),
+            "**町の方針決定**（令和10年4月開設とした試算）"]],
           widths=[3.2, 3.6, 4.6, 5.8],
           caption="保険料が動きうる要因")
     r.src("※ 月額への効きは、他の条件を変えずにその要因だけを動かした場合の"

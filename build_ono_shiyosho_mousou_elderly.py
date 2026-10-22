@@ -6,7 +6,7 @@
 原典
   仕様書の条文：build_ono_gyomu_shinchoku.SPEC_ELDERLY（01_仕様書・公告から書き起こし）
   WBS：build_ono_gyomu_shinchoku.WBS_ELDERLY（令和8年10月22日更新）
-  素案：小野町高齢者保健福祉計画_第10期介護保険事業計画_素案_第15版_20261021.docx
+  素案：小野町高齢者保健福祉計画_第10期介護保険事業計画_素案_第16版_20261022.docx
 
 出力
   12_進捗管理/小野町_高齢者計画_仕様書の網羅性確認と進められる作業_YYYYMMDD.docx
@@ -23,7 +23,7 @@ import build_ono_gyomu_shinchoku as G
 HERE = pathlib.Path(__file__).parent
 ROOT = HERE / "小野町_引継ぎ_整理済"
 OUT = ROOT / "12_進捗管理"
-SOAN = (ROOT / "03_計画素案" / "小野町高齢者保健福祉計画_第10期介護保険事業計画_素案_第15版_20261021.docx")
+SOAN = (ROOT / "03_計画素案" / "小野町高齢者保健福祉計画_第10期介護保険事業計画_素案_第16版_20261022.docx")
 ASOF = "20261022"
 ASOF_JP = "令和8年10月22日"
 
