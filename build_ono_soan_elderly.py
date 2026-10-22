@@ -429,7 +429,7 @@ _B3 = (OUT.parent / "11_見える化出力依頼" / "原本_見える化出力_2
        / "B3-a_要支援・要介護認定者数（要介護度別）_時系列.xlsx")
 _ws = _ox.load_workbook(_B3, read_only=True, data_only=True)["表形式（時系列）"]
 _rows = list(_ws.iter_rows(values_only=True))
-_ci = [i for i, c in enumerate(_rows[1]) if c and "令和8年3月末" in str(c)][0]
+_ci = [i for i, c in enumerate(_rows[1]) if c and "令和8年3月末" in str(c).replace("\n", "")][0]
 NINTEI_R8 = {r[1]: r[_ci] for r in _rows if r[2] == "合計認定者数"}
 JINZAI_GAP_KEN, JINZAI_JUSOKU_KEN = 2207, 0.938
 JINZAI_HIRITSU = NINTEI_R8["小野町"] / NINTEI_R8["福島県"]
