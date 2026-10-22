@@ -41,7 +41,7 @@ import docx
 import openpyxl
 from docx.oxml.ns import qn
 
-SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.23_県調査反映版.docx"
+SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.24_交付金整理版.docx"
 # 年報（受領した原本。リポジトリの中にある）
 NENPO = {
     "令和6年度": "09_元資料/R8実績データ/R8.9.8受領版/年報データ_2024_川崎町.xlsx",
