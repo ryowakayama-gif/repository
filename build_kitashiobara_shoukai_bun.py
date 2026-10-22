@@ -107,6 +107,9 @@ from build_kitashiobara_houkoku_hanei import (  # noqa: E402
 from build_kitashiobara_houkoku_houshin import (  # noqa: E402
     SHOUKAI as S_HS,
 )
+from build_kitashiobara_zenki_redteam import (  # noqa: E402
+    SHOUKAI as S_ZR,
+)
 from build_kitashiobara_anke_kaishuu import (  # noqa: E402
     SHOUKAI as _S_KS,
 )
@@ -185,7 +188,7 @@ def atsumeru():
     for recs in (S_HP3, S_RT, S_ME, S_SA, S_ZEN, S_KG, S_KO, S_KJ,
                  S_YS, S_KY, S_KN, S_CS, K_IK, S_HT, K_HT,
                  S_SS, S_PR, S_RV, S_HK, S_UR, S_KH, S_TK, S_TH,
-                 S_SJ, S_G2, S_AK, S_KI, S_HR, S_HS, S_KS,
+                 S_SJ, S_G2, S_AK, S_KI, S_HR, S_HS, S_ZR, S_KS,
                  K_ZUHYO, K_BAN, K_ANKE):
         for r in recs:
             out[_zen(r[0])] = dict(no=_zen(r[0]), atesaki=r[1], kenmei=r[2],
@@ -229,7 +232,7 @@ BIN = [
     ),
     dict(
         no=2,
-        midashi="サービスの見込量を確定するために要るもの",
+        midashi="サービスの見込量と計画の記載を確定するために要るもの",
         kigen="令和８年10月31日（金）",
         riyu="見込量は、過去の実績を延ばすのではなく、"
              "お一人ずつの状況を積み上げて定めます。"
@@ -238,10 +241,26 @@ BIN = [
              "いまは「利用の希望がない」ことだけです。"
              "対象となる状態の方がいらっしゃるのに"
              "制度を知らずに申し出ていない場合と、"
-             "本当に必要がない場合とを分けられていません。",
+             "本当に必要がない場合とを分けられていません。"
+             "あわせて、この便にＭ-13からＭ-32までの番号を"
+             "入れております。これらは計画の本文の注記で"
+             "「確認してください」とお願いしている事項ですが、"
+             "番号の振り直しの際に照会文から落ちており、"
+             "これまでお届けできておりませんでした。"
+             "とくにＭ-21（卒業予定の方の一覧）は、"
+             "本村の規模では成人サービスの見込量の"
+             "最も確かな根拠になるものです。"
+             "お手数をおかけしますが、お願いいたします。"
+             "このほか、計画の資料編に載せる委員名簿（Ｍ-133）、"
+             "相談支援事業を担う課の名称（Ｍ-134）及び"
+             "地域福祉計画の有無（Ｍ-135）も、"
+             "計画の記載を確定するために要るものです。",
         nos=["Ｍ-87", "Ｍ-88", "Ｍ-89", "Ｍ-90", "Ｍ-91",
              "Ｍ-92", "Ｍ-93", "Ｍ-94", "Ｍ-97", "Ｍ-109",
-             "Ｍ-115", "Ｍ-118", "Ｍ-130", "Ｍ-132"],
+             "Ｍ-115", "Ｍ-118", "Ｍ-130", "Ｍ-132",
+             "Ｍ-13", "Ｍ-14", "Ｍ-15", "Ｍ-20", "Ｍ-21", "Ｍ-22",
+             "Ｍ-24", "Ｍ-25", "Ｍ-26", "Ｍ-32",
+             "Ｍ-133", "Ｍ-134", "Ｍ-135"],
     ),
     dict(
         no=3,
@@ -304,7 +323,8 @@ BIN = [
              "Ｍ-67", "Ｍ-68", "Ｍ-78", "Ｍ-79", "Ｍ-80",
              "Ｍ-82", "Ｍ-83", "Ｍ-84", "Ｍ-85", "Ｍ-86",
              "Ｍ-103", "Ｍ-105", "Ｍ-106", "Ｍ-108", "Ｍ-111",
-             "Ｍ-114", "Ｍ-121", "Ｍ-122", "Ｍ-127", "Ｍ-131"],
+             "Ｍ-114", "Ｍ-121", "Ｍ-122", "Ｍ-127", "Ｍ-131",
+             "Ｍ-37"],
     ),
     dict(
         no=6,
@@ -618,11 +638,22 @@ def verify(zenbu):
         if no in ireta:
             ng.append(f"村以外あてを村の照会文に入れている: {no}")
 
-    # ④ 番号に抜けがないこと（Ｍ-40からＭ-112まで）
-    ban = sorted(int(k.split("-")[1]) for k in mura)
+    # ④ 番号に抜けがないこと（現行の採番であるＭ-40以上について）
+    #    Ｍ-39以下は第1回から第3回までのレビューの過程で振った旧番号で
+    #    あり、解決・統合したものは番号を再利用していないため欠番が
+    #    ある。旧番号のうち正本の注記が引いているものは台帳に戻して
+    #    便に載せており（令和8年10月22日・前期計画のレッドチーム分析）、
+    #    その整合は build_kitashiobara_zenki_redteam.py の検査④で
+    #    正本の現物に当てて確かめる。
+    ban = sorted(int(k.split("-")[1]) for k in mura if
+                 int(k.split("-")[1]) >= 40)
     nuke = [n for n in range(ban[0], ban[-1] + 1) if n not in ban]
     if nuke:
         ng.append(f"村あての番号に抜けがある: {nuke}")
+    kyuban = sorted(int(k.split("-")[1]) for k in mura if
+                    int(k.split("-")[1]) < 40)
+    if kyuban and max(kyuban) >= 40:
+        ng.append(f"旧番号の仕分けが誤っている: {kyuban}")
 
     # ⑤ 期限が便の順に遅くなっていること
     kigen = [b["kigen"] for b in BIN]
