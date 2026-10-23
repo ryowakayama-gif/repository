@@ -6,7 +6,7 @@
   検査1　既定の段落スタイル（Normal）が定義されているか
   　　　 Title・Heading1〜6 はいずれも basedOn="Normal" を持つため、
   　　　 Normal がないと Word が自前の「標準」（明朝体のことがある）を当てる
-  検査2　すべてのスタイルに游ゴシックが明示されているか
+  検査2　すべてのスタイルに HG丸ｺﾞｼｯｸM-PRO が明示されているか（R8.10.23 游ゴシックから改め）
   検査3　書体の指定がない run がないか
   検査4　用途ごとに文字の大きさが1つに揃っているか
   　　　 章14.0／節13.0／▌小見出し10.5／本文10.0／図9.0／出典8.5
@@ -19,10 +19,11 @@
   検査9　行送りを指定した段落に lineRule があるか
   　　　 （ないと Word は w:line を倍率として読み、書体次第で行送りが変わる）
   検査10 表の列幅が実寸か（5mm未満の列・本文幅と食い違う表がないか）
+  検査11 旧の書体（游ゴシック）の指定が残っていないか
 
 使い方：
   python3 07_ソーススクリプト/check_font_R8.9.30.py \
-      01_第10期_最新版成果品/川崎町_計画書素案_v2.26_版表記整理版.docx
+      01_第10期_最新版成果品/川崎町_計画書素案_v2.27_協議用.docx
 """
 import collections
 import re
@@ -32,7 +33,10 @@ import zipfile
 import docx
 from docx.oxml.ns import qn
 
-GOTHIC = "游ゴシック"
+# 令和8年10月23日　第9期計画に揃えて HG丸ゴシックM-PRO とした（確認事項No.187）。
+# Windows の登録名は半角カナ。全角で書くと Word が見つけられない
+GOTHIC = "HG丸ｺﾞｼｯｸM-PRO"
+KYU_GOTHIC = "游ゴシック"
 RE_SHO = re.compile(r"^第\s*\d+\s*章$")
 RE_SETSU = re.compile(r"^\d+-\d+　")
 RE_CAP = re.compile(r"^図\d+-\d+　")
@@ -67,7 +71,7 @@ def sz(r):
 
 def main():
     path = sys.argv[1] if len(sys.argv) > 1 else (
-        "01_第10期_最新版成果品/川崎町_計画書素案_v2.26_版表記整理版.docx")
+        "01_第10期_最新版成果品/川崎町_計画書素案_v2.27_協議用.docx")
     doc = docx.Document(path)
     body = doc.element.body
     kids = list(body.iterchildren())
@@ -93,7 +97,7 @@ def main():
         if GOTHIC not in m.group(0):
             nofont.append(m.group(1))
     chk("検査2", not nofont,
-        f"游ゴシックの指定がないスタイル {len(nofont)}件"
+        f"{GOTHIC} の指定がないスタイル {len(nofont)}件"
         + ("：" + "／".join(nofont[:6]) if nofont else ""))
 
     # 検査3
@@ -197,6 +201,13 @@ def main():
         if ws and (min(ws) < 283 or abs(sum(ws) - honbun) > honbun * 0.05):
             hen.append(ti)
     chk("検査10", not hen, f"列幅が実寸でない表 {len(hen)}件 {hen[:6]}")
+
+    # 検査11
+    with zipfile.ZipFile(path) as z:
+        xml = "".join(z.read(n).decode("utf-8") for n in z.namelist()
+                      if n.startswith("word/") and n.endswith(".xml"))
+    chk("検査11", KYU_GOTHIC not in xml,
+        f"旧の書体（{KYU_GOTHIC}）の指定 {xml.count(KYU_GOTHIC)}か所")
 
     print(f"書体の点検 {path}")
     for s in ng:
