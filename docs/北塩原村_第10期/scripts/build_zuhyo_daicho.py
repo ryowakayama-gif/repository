@@ -519,7 +519,11 @@ for _nm, _d in Z.items():
     data_sheet(_nm, _d)
 
 # ══════════ 自己点検 ══════════
-imgs = {f for f in os.listdir(FIGDIR) if f.endswith(".png")}
+# 「_単色.png」は計画書の単色版（仕様書5①のモノクロ印刷用）に差し込む同じ図の別の版で、
+# 図としては登録済みのもとの図と1つである（build_soan_docx.js --tanshoku）。もとの図が
+# 登録されていることを確かめたうえで数から外す
+_tan = {f for f in os.listdir(FIGDIR) if f.endswith("_単色.png")}
+imgs = {f for f in os.listdir(FIGDIR) if f.endswith(".png")} - _tan
 reg = {e[1] for e in FM.FIGS}
 dsheets = [s for s in wb.sheetnames if s.startswith("D_")]
 
@@ -528,7 +532,9 @@ chk(1, "図の定義の数と、台帳に載せた図の数が一致すること
 chk(2, "登録した図の画像がすべて実在すること",
     "registered - existing == 空", f"不足{len(reg - imgs)}件", not (reg - imgs))
 chk(3, "画像のうち登録されていないものがないこと",
-    "existing - registered == 空", f"余り{len(imgs - reg)}件", not (imgs - reg))
+    "existing - registered == 空（単色版はもとの図が登録済み）",
+    f"余り{len(imgs - reg)}件・もとの図が無い単色版{len([t for t in _tan if t.replace('_単色', '') not in reg])}件",
+    not (imgs - reg) and all(t.replace("_単色", "") in reg for t in _tan))
 chk(4, "データシートの数が、編集できる図の数と一致すること",
     "len(D_シート) == len(ZU)", f"{len(dsheets)}枚／{len(Z)}件", len(dsheets) == len(Z))
 chk(5, "図表番号に重複がないこと",

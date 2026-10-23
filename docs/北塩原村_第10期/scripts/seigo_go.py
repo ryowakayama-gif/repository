@@ -38,7 +38,7 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 TOUHOU = os.path.join(ROOT, "docs", "北塩原村_第10期", "18_計画素案.md")
 
 # 相手の正本（seigo_han.AITE の版で読む）。内容のハッシュは seigo_han が照合する
-AITE_HAN = "ebe1b301"
+AITE_HAN = "c3c1ad6e"
 AITE_SEIHON = "output/北塩原村_計画素案_正本_移植後.docx"
 
 # ══════════════════════════════════════════════════════════════

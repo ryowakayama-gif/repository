@@ -54,14 +54,17 @@ function figTall(b) {
   const buf = fs.readFileSync(path.join(FIGDIR, b.file));
   const dim = pngSize(buf);
   const hIn = (b.width || 6.3) * dim.h / dim.w;
-  return Math.min(hIn, 9.3) >= ZENMEN_H_IN;
+  return Math.min(hIn, SH_MAX_H_IN) >= ZENMEN_H_IN;
 }
+
+const SH_MAX_H_IN = 8.4;   // estimate_pages.py の SH_MAX_FIG_H と同じ値
 
 function figure(b) {
   const buf = fs.readFileSync(path.join(FIGDIR, b.file));
-  // 本文高さは 14570 twip ＝ 10.12in。表題・出典・前後の空きを除くと図に使えるのは
-  // 9.3in までである。縦長の図は幅を縮めて1頁に収める（Word は画像を縮めない）。
-  const MAX_H_IN = 9.3;
+  // 本文高さは 14570 twip ＝ 10.12in。図の前に来うる見出し（約0.7in）と表題・出典・
+  // 前後の空きを除いた 8.4in を上限とする（もとは9.3in。Word は行内の画像を分割も
+  // 縮小もしないため、見出しと同じ頁で頁の下からはみ出す。計画書の図3-1で起きた）。
+  const MAX_H_IN = SH_MAX_H_IN;
   const dim = pngSize(buf);
   let wIn = b.width || 6.3, hIn = wIn * dim.h / dim.w;
   if (hIn > MAX_H_IN) { hIn = MAX_H_IN; wIn = hIn * dim.w / dim.h; }
@@ -83,13 +86,20 @@ function figure(b) {
 }
 
 const C = JSON.parse(fs.readFileSync(JSON_PATH, 'utf8'));
-// 書式は計画素案と同じ体裁（本文 游ゴシック 10.5pt）に合わせる。図表の色味は現行のまま
-const FONT = '游ゴシック', FONTG = '游ゴシック';
+// 書式は計画素案と同じ体裁（本文 BIZ UDPゴシック 10.5pt）に合わせる。図表の色味は現行のまま
+//   令和8年10月23日、計画書と同じく游ゴシックから BIZ UDPゴシック に改めた（村のご指示。
+//   障がい福祉計画と同じ書体。Windows 10 以降に標準で入っている）。
+const FONT = 'BIZ UDPゴシック', FONTG = 'BIZ UDPゴシック';
 const NAVY = '1F3864', BLUE = '2E75B6', BAND = 'DDEBF7', NOTE = 'FFF3F3', KEYB = 'FFF2CC', GREY = '595959';
 const TBLW = 9360;
 
+// 11ptを超える字（表紙・見出し）は行送りを最小値指定にする。15ptの固定の行送りに
+// 16pt・14ptの字を置くと Word で字の上が切れる（計画書の表紙で見切れの指摘を受けた）。
 const p = (text, o = {}) => new Paragraph({
-  spacing: {after: o.after ?? 120, line: o.line ?? 300, lineRule: LineRuleType.EXACT},
+  spacing: (o.size ?? 21) > 22
+    ? {after: o.after ?? 120, line: Math.max(o.line ?? 300, Math.ceil((o.size ?? 21) * 13.5)),
+       lineRule: LineRuleType.AT_LEAST}
+    : {after: o.after ?? 120, line: o.line ?? 300, lineRule: LineRuleType.EXACT},
   alignment: o.align, indent: o.indent, border: o.border,
   keepNext: o.keep, keepLines: o.keep,   // 見出しを次の要素から切り離さない
   shading: o.shade ? {type: ShadingType.CLEAR, fill: o.shade} : undefined,
@@ -226,8 +236,11 @@ const doc = new Document({
   numbering: {config: [{reference: 'bul', levels: [{level: 0, format: LevelFormat.BULLET, text: '・',
     alignment: AlignmentType.LEFT, style: {paragraph: {indent: {left: 400, hanging: 200}}}}]}]},
   sections: [{
-    properties: {page: {margin: {top: 1134, bottom: 1134, left: 1134, right: 1134}}},
-    footers: {default: new Footer({children: [new Paragraph({
+    // 表紙には頁番号を置かない（計画書と同じ）
+    properties: {titlePage: true,
+                 page: {margin: {top: 1134, bottom: 1134, left: 1134, right: 1134}}},
+    footers: {first: new Footer({children: [new Paragraph('')]}),
+              default: new Footer({children: [new Paragraph({
       alignment: AlignmentType.CENTER,
       children: [new TextRun({children: [PageNumber.CURRENT], font: FONTG, size: 18, color: GREY})],
     })]})},

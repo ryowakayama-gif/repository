@@ -110,7 +110,13 @@ def wrap2(t, w):
     return wrap(t, w)
 
 
-def main():
+def main(tanshoku=False):
+    """tanshoku=True で単色版（計画書の印刷用。仕様書5①はモノクロ）を描く。
+    濃紺の地を濃い灰に、淡青の地を淡い灰に置き換える。施策の区分の塗り分けは
+    もとから灰の濃淡であり、そのまま使う。"""
+    NAVY = "#262626" if tanshoku else "#1F3864"
+    USUAO = "#EDEDED" if tanshoku else "#DDEBF7"
+    out = OUT.replace(".png", "_単色.png") if tanshoku else OUT
     rinen, mokuhyo, sisaku = collect()
     assert len(mokuhyo) == 5, mokuhyo
     assert sum(len(v) for v in sisaku.values()) == 28, {k: len(v) for k, v in sisaku.items()}
@@ -138,7 +144,7 @@ def main():
     # ── 基本理念 ──
     y = Y - 1.0
     box(2, y, 96, 8.6, "【基本理念】\n" + "\n".join(wrap(r, 40) for r in rinen),
-        8.0, "#1F3864", "#1F3864", 1.0, True, "white")
+        8.0, NAVY, NAVY, 1.0, True, "white")
     y -= 8.6
     ax.annotate("", xy=(50, y - 2.2), xytext=(50, y),
                 arrowprops=dict(arrowstyle="-|>", color=NAVY, lw=1.4))
@@ -148,7 +154,7 @@ def main():
     LW, GAP = 20.0, 1.2           # 基本目標欄の幅
     for (no, nm, ss), nline in zip(rows, heights):
         blk = nline * 8.6
-        box(2, y, LW, blk, f"基本目標{no}\n" + wrap(nm, 9), 7.6, "#DDEBF7", NAVY, 1.0, True, NAVY)
+        box(2, y, LW, blk, f"基本目標{no}\n" + wrap(nm, 9), 7.6, USUAO, NAVY, 1.0, True, NAVY)
         x0 = 2 + LW + 2.0
         w = (98 - x0 - (PER - 1) * GAP) / PER
         for i, (sno, snm, kb) in enumerate(ss):
@@ -168,11 +174,12 @@ def main():
         ax.add_patch(FancyBboxPatch((x, y - 2.6), 3.4, 2.0,
                      boxstyle="round,pad=0,rounding_size=0.3", **KUBUN[kb], zorder=2))
         ax.text(x + 4.4, y - 1.6, lab, fontsize=6.8, va="center", color="#262626")
-    fig.savefig(OUT, dpi=300, bbox_inches="tight", pad_inches=0.06, facecolor="white")
+    fig.savefig(out, dpi=300, bbox_inches="tight", pad_inches=0.06, facecolor="white")
     plt.close(fig)
     n = sum(len(v) for v in sisaku.values())
-    print(f"保存: {OUT}（基本目標{len(rows)}・施策{n}）")
+    print(f"保存: {out}（基本目標{len(rows)}・施策{n}）")
 
 
 if __name__ == "__main__":
     main()
+    main(tanshoku=True)

@@ -70,7 +70,7 @@ def png_size(path):
 # 図に使える高さの上限（インチ）。build_soan_docx.js／build_shiryo_docx.js の
 # MAX_H_IN と同じ値でなければ頁数の積算が狂う。
 MAX_FIG_H = 8.0   # build_soan_docx.js の MAX_FIG_H_IN と同じ値
-SH_MAX_FIG_H = 9.3
+SH_MAX_FIG_H = 8.4   # build_shiryo_docx.js の SH_MAX_H_IN と同じ値
 
 def fig_in(path, w_in=6.3, max_h=None):
     """図の寸法（インチ）。縦長の図は幅を縮めて1頁に収める。

@@ -47,7 +47,19 @@ const C = JSON.parse(fs.readFileSync(BUILDJSON, 'utf8'));
 //   游ゴシックは字面の上下の余白が大きく、行送りを固定した段落で字の上が切れていた（表紙）。
 const FONT = 'BIZ UDPゴシック';
 const FONTG = 'BIZ UDPゴシック';
-const NAVY = '1F3864', BLUE = '2E75B6', BAND = 'DDEBF7', NOTE = 'FFF3F3', GREY = '595959';
+// 単色版（--tanshoku）。仕様書5①は計画書をモノクロ（コピー）で作成するとしている。
+//   障がい福祉計画と同じく、カラー版（画面での閲覧・電子媒体）と単色版（印刷・製本）の
+//   2つを同じ素案から組んで管理する（令和8年10月23日の村のご指示）。
+//   単色版は色を灰色の濃淡に置き換えるだけで、紙面の割付は変えない（頁数は同じ）。
+//   濃淡は白黒コピーで潰れないよう、地と字の明度差を大きく取る。
+//   図は「<名前>_単色.png」があればそれを使う（図3-1 施策の体系だけが色を持つ）。
+const TANSHOKU = process.argv.includes('--tanshoku');
+const NAVY = TANSHOKU ? '262626' : '1F3864',
+      BLUE = TANSHOKU ? '595959' : '2E75B6',
+      BAND = TANSHOKU ? 'EDEDED' : 'DDEBF7',
+      NOTE = TANSHOKU ? 'F2F2F2' : 'FFF3F3',
+      ACCENT = TANSHOKU ? '7F7F7F' : 'C00000',   // 編集注記の左の罫
+      GREY = '595959';
 const TBLW = 9360;   // 表の幅（DXA）。本文幅（9638）ではない。
                      // estimate_pages.py の TBLW と同じ値でなければ推定が狂う
 
@@ -147,6 +159,14 @@ function table(head, rows, widths) {
 }
 
 const FIGDIR = path.join(OUTDIR, 'figures');
+// 単色版では「<名前>_単色.png」があればそれを使う
+function figFile(name) {
+  if (TANSHOKU) {
+    const m = name.replace(/\.png$/, '_単色.png');
+    if (fs.existsSync(path.join(FIGDIR, m))) return m;
+  }
+  return name;
+}
 // 本文の高さ（9.72in）のこの割合を超える図は、頁の頭から置く。
 // 途中から置くと入りきらずに丸ごと次頁へ送られ、前の頁に大きな空白が残る。
 // あらかじめ改頁して1頁の図版として扱えば、空白は意図したものになる。
@@ -159,14 +179,14 @@ const ZENMEN_H_IN = 9.72 * 0.60;
 const MAX_FIG_H_IN = 8.0;
 
 function figTall(f) {
-  const buf = fs.readFileSync(path.join(FIGDIR, f.file));
+  const buf = fs.readFileSync(path.join(FIGDIR, figFile(f.file)));
   const dim = pngSize(buf);
   const hIn = 6.3 * dim.h / dim.w;
   return Math.min(hIn, MAX_FIG_H_IN) >= ZENMEN_H_IN;
 }
 
 function figure(f) {
-  const buf = fs.readFileSync(path.join(FIGDIR, f.file));
+  const buf = fs.readFileSync(path.join(FIGDIR, figFile(f.file)));
   // 本文幅 9360 DXA = 6.5in。300dpiのPNGを幅6.3inに収める
   // 本文高さは 14002 twip ＝ 9.72in。表題・出典・前後の空き（約0.8in）を除くと
   // 図に使えるのは MAX_FIG_H_IN（8.0in）までとする。縦長の図は幅を縮めて1頁に収める。
@@ -278,7 +298,7 @@ C.chapters.forEach((ch, ci) => {
           spacing: {before: 100, after: 160, line: 280, lineRule: LineRuleType.EXACT},
           indent: {left: 200, right: 200},
           shading: {type: ShadingType.CLEAR, fill: NOTE},
-          border: {left: {style: BorderStyle.SINGLE, size: 18, color: 'C00000', space: 8}},
+          border: {left: {style: BorderStyle.SINGLE, size: 18, color: ACCENT, space: 8}},
           children: [new TextRun({text: `⚙ 編集注記：${b.v}`, font: FONTG, size: 17, color: GREY})],
         }));
       } else if (b.t === 'fig') {
@@ -297,7 +317,15 @@ C.chapters.forEach((ch, ci) => {
 const doc = new Document({
   creator: 'ビズアップ公共コンサルティング株式会社',
   title: `${C.title}・${C.title2}　${C.draft}`,
-  styles: {default: {document: {run: {font: FONT, size: 21}}}},
+  // 見出し・リンクの既定の色も宣言する。宣言しないと docx の既定（青）が残り、
+  // 単色版に色が混じる（目次のリンクなど）
+  styles: {default: {document: {run: {font: FONT, size: 21}},
+                     heading1: {run: {font: FONTG, size: 30, bold: true, color: 'FFFFFF'}},
+                     heading2: {run: {font: FONTG, size: 25, bold: true, color: NAVY}},
+                     heading3: {run: {font: FONTG, size: 22, bold: true, color: NAVY}},
+                     heading4: {run: {color: NAVY}}, heading5: {run: {color: NAVY}},
+                     heading6: {run: {color: NAVY}}, title: {run: {color: NAVY}},
+                     hyperlink: {run: {color: TANSHOKU ? '262626' : '0563C1'}}}},
   numbering: {config: [{reference: 'bul', levels: [{
     level: 0, format: LevelFormat.BULLET, text: '●', alignment: AlignmentType.LEFT,
     style: {paragraph: {indent: {left: 420, hanging: 210}},
@@ -326,7 +354,7 @@ const doc = new Document({
 Packer.toBuffer(doc).then(buf => {
   const out = KEIKAKU
     ? (ARGOUT || path.join(require('os').tmpdir(), '06_計画書_試作.docx'))
-    : (SOANOUT || path.join(OUTDIR, '06_北塩原村第10期_計画素案.docx'));
+    : (SOANOUT || path.join(OUTDIR, TANSHOKU ? '06_北塩原村第10期_計画素案_単色.docx' : '06_北塩原村第10期_計画素案.docx'));
   fs.writeFileSync(out, buf);
   console.log('保存:', out, (buf.length / 1024).toFixed(0) + ' KB');
 });

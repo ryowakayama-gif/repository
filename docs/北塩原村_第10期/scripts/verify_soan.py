@@ -3365,6 +3365,58 @@ def main():
         chk(83, '点検の途中で素案の構造が書き換わっていないこと', False,
             '照合できない（%s）' % e)
 
+    # ── 84　カラー版と単色版が同じ中身で組まれていること ────────────
+    #    仕様書5①は計画書をモノクロ（コピー）で作成するとしており、村のご指示
+    #    （令和8年10月23日）により、障がい福祉計画と同じくカラー版と単色版の
+    #    2つで素案を管理する。片方だけを組み直すと中身が食い違うため、
+    #    本文の文字が同じであること、単色版に色（文字・塗り・図）が無いことを見る。
+    try:
+        import zipfile as _zf84, io as _io84, re as _re84
+        bad84 = []
+        import paths as _P84
+        OUT84 = _P84.OUT
+        tsui84 = ("06_北塩原村第10期_計画素案", "17_北塩原村第10期_計画素案_公表用",
+                  "18_北塩原村第10期_計画書_公表用")
+        def _txt84(z):
+            x = z.read("word/document.xml").decode("utf-8")
+            return "".join(_re84.findall(r"<w:t[^>]*>([^<]*)</w:t>", x))
+        for nm in tsui84:
+            fc, fm = (os.path.join(OUT84, nm + ".docx"),
+                      os.path.join(OUT84, nm + "_単色.docx"))
+            if not (os.path.exists(fc) and os.path.exists(fm)):
+                bad84.append(f"{nm}の" + "・".join(x for x, f in (("カラー版", fc), ("単色版", fm))
+                                                  if not os.path.exists(f)) + "がない")
+                continue
+            zc, zm = _zf84.ZipFile(fc), _zf84.ZipFile(fm)
+            if _txt84(zc) != _txt84(zm):
+                bad84.append(f"{nm}のカラー版と単色版で本文が違う（片方だけ組み直した）")
+            iro = set()
+            for n in zm.namelist():
+                if n.endswith(".xml"):
+                    for h in _re84.findall(r'(?:w:val|w:fill|w:color)="([0-9A-Fa-f]{6})"',
+                                           zm.read(n).decode("utf-8", "ignore")):
+                        r, g, b = int(h[:2], 16), int(h[2:4], 16), int(h[4:], 16)
+                        if max(r, g, b) - min(r, g, b) > 8:
+                            iro.add(h)
+            if iro:
+                bad84.append(f"{nm}_単色に色がある（{'・'.join(sorted(iro)[:3])}）")
+            try:
+                from PIL import Image as _Im84
+                import numpy as _np84
+                for n in zm.namelist():
+                    if n.startswith("word/media/") and n.lower().endswith(".png"):
+                        a84 = _np84.asarray(_Im84.open(_io84.BytesIO(zm.read(n))).convert("RGB")).astype(int)
+                        if ((a84.max(2) - a84.min(2)) > 20).mean() > 0.001:
+                            bad84.append(f"{nm}_単色の図に色がある（{n}）")
+                            break
+            except ImportError:
+                pass
+        chk(84, "カラー版と単色版が同じ中身で組まれていること", not bad84,
+            "・".join(bad84[:3]) if bad84
+            else "06・17・18の3組とも本文が同じで、単色版に色の文字・塗り・図がない")
+    except Exception as e:
+        chk(84, "カラー版と単色版が同じ中身で組まれていること", False, f"照合できない（{e}）")
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')
