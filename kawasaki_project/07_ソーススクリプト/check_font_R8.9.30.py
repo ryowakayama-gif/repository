@@ -13,11 +13,16 @@
   検査5　表内の文字の大きさが8.5pt（目次の表は10.0pt）に揃っているか
   検査6　本文が太字になっていないか（●要点・▌小見出し・章・節を除く）
   検査7　本文に強調記号（**）が残っていないか
-  検査8　ヘッダーの版表記が本文の版と一致しているか
+  検査8　表紙・ヘッダー・本文に版の表記（Ver.／本版／第N版）が残っていないか
+  　　　 （令和8年10月23日改め。素案は策定委員会に未提出のため版を紙面に出さず、
+  　　　  版の番号はファイル名で管理する。旧の検査8は表紙とヘッダーの版の一致）
+  検査9　行送りを指定した段落に lineRule があるか
+  　　　 （ないと Word は w:line を倍率として読み、書体次第で行送りが変わる）
+  検査10 表の列幅が実寸か（5mm未満の列・本文幅と食い違う表がないか）
 
 使い方：
   python3 07_ソーススクリプト/check_font_R8.9.30.py \
-      01_第10期_最新版成果品/川崎町_計画書素案_v2.25_軽費老人ホーム確認版.docx
+      01_第10期_最新版成果品/川崎町_計画書素案_v2.26_版表記整理版.docx
 """
 import collections
 import re
@@ -62,7 +67,7 @@ def sz(r):
 
 def main():
     path = sys.argv[1] if len(sys.argv) > 1 else (
-        "01_第10期_最新版成果品/川崎町_計画書素案_v2.25_軽費老人ホーム確認版.docx")
+        "01_第10期_最新版成果品/川崎町_計画書素案_v2.26_版表記整理版.docx")
     doc = docx.Document(path)
     body = doc.element.body
     kids = list(body.iterchildren())
@@ -165,12 +170,33 @@ def main():
         f"強調記号（**）が残る段落 {len(ast)}" + ("：" + ast[0] if ast else ""))
 
     # 検査8
-    m = re.search(r"計画書素案\s*(Ver\.[0-9.]+)", "\n".join(
-        p.text for p in doc.paragraphs))
-    mh = re.search(r"計画書素案\s*(Ver\.[0-9.]+)", re.sub(r"<[^>]+>", "", hd))
-    chk("検査8", bool(m) and bool(mh) and m.group(1) == mh.group(1),
-        f"本文の版 {m.group(1) if m else '不明'}／"
-        f"ヘッダーの版 {mh.group(1) if mh else '不明'}")
+    han = re.compile(r"Ver\.\s?\d|本版|版です|第\d+版|範囲明記版")
+    zen = "\n".join([p.text for p in doc.paragraphs]
+                    + [c.text for t in doc.tables for r in t.rows
+                       for c in r.cells]) + "\n" + re.sub(r"<[^>]+>", "", hd)
+    hit = sorted({m.group(0) for m in han.finditer(zen)})
+    chk("検査8", not hit, "版の表記 " + ("／".join(hit) if hit else "0件"))
+
+    # 検査9
+    nashi = 0
+    for p in doc.element.iter(qn("w:p")):
+        pPr = p.find(qn("w:pPr"))
+        sp = pPr.find(qn("w:spacing")) if pPr is not None else None
+        if (sp is not None and sp.get(qn("w:line"))
+                and not sp.get(qn("w:lineRule"))):
+            nashi += 1
+    chk("検査9", nashi == 0, f"lineRule のない行送り {nashi}段落")
+
+    # 検査10
+    sec = doc.sections[0]
+    honbun = int((sec.page_width - sec.left_margin - sec.right_margin) / 635)
+    hen = []
+    for ti, t in enumerate(doc.tables):
+        ws = [int(g.get(qn("w:w")))
+              for g in t._tbl.tblGrid.findall(qn("w:gridCol"))]
+        if ws and (min(ws) < 283 or abs(sum(ws) - honbun) > honbun * 0.05):
+            hen.append(ti)
+    chk("検査10", not hen, f"列幅が実寸でない表 {len(hen)}件 {hen[:6]}")
 
     print(f"書体の点検 {path}")
     for s in ng:
