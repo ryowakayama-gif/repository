@@ -89,6 +89,7 @@ from build_kitashiobara_zenki_redteam import SZ_EDITS  # noqa: E402
 from build_kitashiobara_mura_daicho import (  # noqa: E402
     DK_HYOU, DK_KAKIKAE, DK_EDITS,
 )
+from build_kitashiobara_tasha_review import TR_KAKIKAE  # noqa: E402
 from build_kitashiobara_graph import GRAPHS, OUT_DIR as ZU_DIR  # noqa: E402
 from build_kitashiobara_zuhyo_bangou import ZU, HYO  # noqa: E402
 
@@ -868,7 +869,7 @@ def apply_kakikae(doc):
     挿入ではなく置換であるため、直す前の文が本文にちょうど1つある
     ことを確かめてから書き換える。書式は先頭のランのものを残す。
     """
-    for rec in list(KAKIKAE) + list(KG_KAKIKAE) + list(KO_KAKIKAE) + list(DK_KAKIKAE):
+    for rec in list(KAKIKAE) + list(KG_KAKIKAE) + list(KO_KAKIKAE) + list(DK_KAKIKAE) + list(TR_KAKIKAE):
         atari = [p for p in doc.paragraphs
                  if _norm(rec["mae"]) in _norm(p.text)]
         if len(atari) != 1:
@@ -1303,7 +1304,7 @@ def verify(doc, src_dims):
           f"体系{len(TK_EDITS)}件・"
           f"障がい児{len(SJ_EDITS)}件・"
           f"表に行を足す{len(AK_EDITS)}件・"
-          f"書き換え{len(KAKIKAE) + len(KG_KAKIKAE) + len(KO_KAKIKAE) + len(DK_KAKIKAE)}件・"
+          f"書き換え{len(KAKIKAE) + len(KG_KAKIKAE) + len(KO_KAKIKAE) + len(DK_KAKIKAE) + len(TR_KAKIKAE)}件・"
           f"実績の表{len(DK_HYOU)}行・"
           f"体系の書き換え{len(TK_KAKIKAE)}件・"
           f"図{len(GRAPHS)}点が実在／"
