@@ -6,6 +6,8 @@
   令和８年10月22日、村から電子メールで受領した2つの圧縮ファイル。
     「障害サービス - 名前なし」（自立支援給付の台帳 9ファイル）
     「②地域生活支援事業実績」（地域生活支援事業の台帳 2ファイル）
+  令和８年10月23日、追加で受領した1つの圧縮ファイル（照会Ｍ-137への回答）。
+    「障害児通所実績-名前なし」（障がい児通所支援・障がい児相談支援の台帳 4ファイル）
 
 なぜ原本を格納しないか
   台帳は利用者ごとの記録である（氏名は伏せてあるが、障害支援区分・
@@ -19,7 +21,8 @@
 使い方
   python3 -I build_kitashiobara_daicho_chuushutsu.py \
       <「障害サービス - 名前なし」を展開した場所> \
-      <「②地域生活支援事業実績」を展開した場所>
+      <「②地域生活支援事業実績」を展開した場所> \
+      <「障害児通所実績-名前なし」を展開した場所>
 
   出力: source/村資料_台帳_20261022/台帳の集計.csv
 
@@ -31,6 +34,14 @@
   ・行に「実績」「見込」の札があるシートは「実績」の月だけを数える。
   ・利用者の欄が無いブロックと「合計」「小計」のブロックは数えない。
   ・同じ利用者・同じ値のブロックが二重に置かれている場合は1つに数える。
+
+台帳の読み方（障がい児）
+  ・自立支援給付の台帳と様式が違う。列のブロックの頭は「延日数」の列
+    （障がい児相談支援は「基準額」の列）で、「利用日数」は支給量の欄である。
+  ・利用したかどうかは、通所は延日数が1日以上、相談は給付費が1円以上で決める
+    （加算だけが請求されている月は利用に数えない）。
+  ・シート名に「見込」とあるシートは、全体を見込みとして実績に数えない
+    （放課後等デイサービスの令和８年度は「R8見込」の1枚だけである）。
 """
 
 import csv
@@ -264,6 +275,69 @@ def kasanari(jig_nyusho, jig_seikatsu):
 
 
 # ===========================================================================
+# 障がい児の台帳
+# ===========================================================================
+KODOMO = [
+    ("1_", "放課後等デイサービス"),
+    ("2_", "児童発達支援"),
+    ("3_", "保育所等訪問支援"),
+    ("4_", "障がい児相談支援"),
+]
+
+
+def kodomo_rows(path, jigyo):
+    rows = []
+    for na, data in sheets(path):
+        y = nendo_of(na)
+        mikomi_sheet = "見込" in s(na)
+        hdr = [r for r, row in enumerate(data) if row and s(row[0]) == "実施月"]
+        users, months_all = {}, []
+        for hr in hdr:
+            head = data[hr]
+            soudan = not any(s(v) == "延日数" for v in head)
+            starts = [c for c, v in enumerate(head)
+                      if s(v) == ("基準額" if soudan else "延日数")]
+            lab_r = next((r for r in range(hr - 1, max(-1, hr - 8), -1)
+                          if s(data[r][0]) == "利用者"), None)
+            for c0 in starts:
+                user = s(data[lab_r][c0]) if lab_r is not None and \
+                    c0 < len(data[lab_r]) else ""
+                if not user or "合計" in user:
+                    continue
+                for r in range(hr + 1, len(data)):
+                    row = data[r]
+                    if row and s(row[0]).startswith("合計"):
+                        break
+                    mo = month_of(row[0]) if row else None
+                    if mo is None:
+                        continue
+                    tags = {s(v) for v in row if s(v) in ("実績", "見込")}
+                    if mikomi_sheet or "見込" in tags:
+                        continue
+                    val = num(row[c0 + 2] if soudan else row[c0]) \
+                        if c0 + 2 < len(row) else None
+                    used = (val or 0) > 0
+                    nissu = 0 if soudan else int(val or 0)
+                    kin = num(row[c0 + 2] if soudan else row[c0 + 5]) or 0
+                    users.setdefault(user, {})[mo] = (used, nissu, kin)
+                    if mo not in months_all:
+                        months_all.append(mo)
+        jm = [m for m in ORDER if m in months_all]
+        for m in jm:
+            hito = [u for u, mm in users.items() if mm.get(m, (False,))[0]]
+            rows.append(dict(
+                kind="月", jigyo=jigyo, nendo=y, tsuki=m, ninzu=len(hito),
+                nissu=sum(users[u][m][1] for u in hito),
+                kingaku=round(sum(users[u][m][2] for u in hito)), biko=""))
+        jitsu = [u for u, mm in users.items() if any(v[0] for v in mm.values())]
+        rows.append(dict(kind="年", jigyo=jigyo, nendo=y, tsuki="",
+                         ninzu=len(jitsu), nissu="", kingaku="",
+                         biko=("見込のみ" if mikomi_sheet
+                               else f"実績月{len(jm)}か月")))
+    return rows
+
+
+# ===========================================================================
 # 地域生活支援事業の台帳
 # ===========================================================================
 #   日常生活用具（ストマ）のシートは半年ごと。令和６年度の下半期は
@@ -377,9 +451,9 @@ def chiiki_rows(path):
 
 # ===========================================================================
 def main():
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 4:
         raise SystemExit(__doc__)
-    d_kyufu, d_chiiki = sys.argv[1], sys.argv[2]
+    d_kyufu, d_chiiki, d_kodomo = sys.argv[1], sys.argv[2], sys.argv[3]
     rows, jig = [], {}
     names = sorted(os.listdir(d_kyufu))
     for head, jigyo in KYUFU:
@@ -390,6 +464,12 @@ def main():
         rows += r
         jig[jigyo] = j
     rows += kasanari(jig["施設入所支援"], jig["生活介護"])
+    names = sorted(os.listdir(d_kodomo))
+    for head, jigyo in KODOMO:
+        hit = [f for f in names if f.startswith(head)]
+        if len(hit) != 1:
+            raise SystemExit(f"台帳のファイルが一意でない: {head}{jigyo} {hit}")
+        rows += kodomo_rows(os.path.join(d_kodomo, hit[0]), jigyo)
     for f in sorted(os.listdir(d_chiiki)):
         p = os.path.join(d_chiiki, f)
         if "ストマ" in f:
