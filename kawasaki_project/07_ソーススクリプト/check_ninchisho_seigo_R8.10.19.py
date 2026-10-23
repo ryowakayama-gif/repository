@@ -29,7 +29,7 @@ C = importlib.util.module_from_spec(spec)
 sys.modules["calc_ninchisho"] = C
 spec.loader.exec_module(C)
 
-SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.29_協議用.docx"
+SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.30_協議用.docx"
 XLSX = "05_試算・管理シート/川崎町_認知症の人の数の推計_R8.10.19.xlsx"
 MEMO = "01_第10期_最新版成果品/川崎町_認知症の人の数の推計_R8.10.19.md"
 WBS = "川崎町_業務工程管理表.xlsx"
