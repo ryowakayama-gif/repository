@@ -29,13 +29,18 @@ DATA = os.path.join(BASE, 'data')
 # 生産年齢人口（15〜64歳）。素案2-2・5-11の将来人口による
 SEISAN = {'令和7年': 1192, '令和12年': 1008, '令和17年': 888, '令和22年': 770}
 
-# 認定者数（B案の推計。素案5-3）。(要支援1, 要支援2, 計)
-NINTEI = {
-    '令和7年':  (50, 29, 208),
-    '令和12年': (53, 30, 220),
-    '令和17年': (51, 29, 212),
-    '令和22年': (46, 26, 193),
-}
+# 認定者数（第1号）。国の推計ワークシートの系列（素案5-3・5-11の採用値）。
+# (要支援1, 要支援2, 計)。令和7年＝令和7年度の実績、以降は見込み
+def _nintei():
+    import parse_worksheet as W
+    out = {}
+    for y, nd in (('令和7年', '令和7年度'), ('令和12年', '令和12年度'),
+                  ('令和17年', '令和17年度'), ('令和22年', '令和22年度')):
+        out[y] = tuple(int(W.ws(k)[nd]) for k in ('第1号_要支援1', '第1号_要支援2', '第1号_計'))
+    return out
+
+
+NINTEI = _nintei()
 
 BASE_YEAR = '令和7年'
 
@@ -49,10 +54,14 @@ def run():
         yousien = s1 + s2                      # 要支援1・2の需要
         chuudo = total - yousien               # 要介護1以上の需要
         waku = tot * SEISAN[y] / base_pop      # 供給の枠
-        nokori = waku - chuudo                 # 要支援に回せる量
+        # 要支援に回せる量。枠が要介護1以上の需要にも届かない年は0とし、
+        # 届かない分は fusoku に置く
+        nokori = max(0, waku - chuudo)
+        fusoku = max(0, chuudo - waku)
         rows.append((y, SEISAN[y], total, yousien, chuudo,
                      round(waku), round(nokori),
-                     round(nokori / yousien * 100, 1) if yousien else None))
+                     round(nokori / yousien * 100, 1) if yousien else None,
+                     round(fusoku)))
     return rows
 
 
@@ -64,7 +73,7 @@ def main():
     print()
     print(f'  {"年":<8}{"生産年齢":>{w}}{"認定者数":>{w}}{"要支援":>{w}}'
           f'{"要介護1以上":>{w}}{"供給の枠":>{w}}{"要支援に回る":>{w}}{"充足率":>{w}}')
-    for y, pop, total, yousien, chuudo, waku, nokori, ratio in rows:
+    for y, pop, total, yousien, chuudo, waku, nokori, ratio, _f in rows:
         print(f'  {y:<8}{pop:>{w},}{total:>{w},}{yousien:>{w},}'
               f'{chuudo:>{w},}{waku:>{w},}{nokori:>{w},}'
               + (f'{ratio:>{w-1}.1f}%' if ratio is not None else f'{"―":>{w}}'))
@@ -78,24 +87,23 @@ def main():
 
     # 受給者1人を支える生産年齢人口
     print()
-    print('■ 受給者1人を支える生産年齢人口（参考）')
-    JUKYU = {'令和7年': 168.5, '令和12年': 175.8, '令和17年': 169.4, '令和22年': 154.2}
+    print('■ 認定者1人を支える生産年齢人口（参考）')
     for y in ('令和7年', '令和12年', '令和17年', '令和22年'):
-        print(f'  {y:<8}受給者{JUKYU[y]:>7.1f}人／月　生産年齢{SEISAN[y]:>6,}人　'
-              f'1人あたり {SEISAN[y] / JUKYU[y]:.2f}人')
+        print(f'  {y:<8}認定者{NINTEI[y][2]:>5}人　生産年齢{SEISAN[y]:>6,}人　'
+              f'1人あたり {SEISAN[y] / NINTEI[y][2]:.2f}人')
 
     path = os.path.join(DATA, '第10期_需要に対する供給.csv')
     with open(path, 'w', encoding='utf-8-sig', newline='') as f:
         wr = csv.writer(f)
         wr.writerow(['年', '生産年齢人口', '認定者数', '要支援1・2', '要介護1以上',
-                     '供給の枠', '要支援に回せる量', '要支援の充足率(%)'])
+                     '供給の枠', '要支援に回せる量', '要支援の充足率(%)', '要介護1以上の不足'])
         for r in rows:
             wr.writerow(r)
         wr.writerow([])
         wr.writerow(['基準年', BASE_YEAR])
-        wr.writerow(['受給者1人あたり生産年齢人口'])
+        wr.writerow(['認定者1人あたり生産年齢人口'])
         for y in ('令和7年', '令和12年', '令和17年', '令和22年'):
-            wr.writerow([y, JUKYU[y], SEISAN[y], round(SEISAN[y] / JUKYU[y], 2)])
+            wr.writerow([y, NINTEI[y][2], SEISAN[y], round(SEISAN[y] / NINTEI[y][2], 2)])
     print(f'\n保存: {os.path.relpath(path, BASE)}')
 
 

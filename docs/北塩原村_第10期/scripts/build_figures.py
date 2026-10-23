@@ -756,6 +756,8 @@ def fig_juyo_kyokyu():
     maware = [r[6] for r in rows]       # 要支援に回せる量
     hitsuyo = [r[3] for r in rows]      # 要支援の必要量
     juuritsu = [r[7] for r in rows]     # 充足率
+    fusoku = [r[8] for r in rows]       # 枠が要介護1以上の需要に届かない分
+    juudo = [j - f for j, f in zip(juudo, fusoku)]   # 枠の中で充てられる分
     x = list(range(len(lab)))
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.6, 3.9),
                                    gridspec_kw={"width_ratios": [1, 1], "wspace": 0.32})
@@ -765,8 +767,14 @@ def fig_juyo_kyokyu():
             label="要介護1以上に充てる")
     ax1.bar(x, maware, bottom=juudo, color=K["xl"], edgecolor=K["m"], linewidth=0.8,
             label="要支援に回せる", hatch="///")
-    for xi, j_, m, w in zip(x, juudo, maware, waku):
-        ax1.annotate(f"{w}", (xi, w), xytext=(0, 3), textcoords="offset points",
+    if any(fusoku):
+        _xi = [i for i, f in zip(x, fusoku) if f]
+        ax1.bar(_xi, [fusoku[i] for i in _xi], bottom=[waku[i] for i in _xi],
+                color="white", edgecolor=K["d"],
+                linewidth=0.8, ls="--", label="枠に収まらない要介護1以上")
+    for xi, j_, m, w, f in zip(x, juudo, maware, waku, fusoku):
+        ax1.annotate(f"{w}" + (f"（不足{f}）" if f else ""), (xi, w + f), xytext=(0, 3),
+                     textcoords="offset points",
                      ha="center", fontsize=8.5, fontweight="bold", color=K["d"])
         if m >= 20:
             ax1.annotate(f"{m}", (xi, j_ + m / 2), ha="center", va="center",
@@ -851,7 +859,7 @@ def fig_hokenryo_jorei():
     ax.xaxis.set_major_formatter(FuncFormatter(lambda v, p: f"{int(v):,}"))
     style_ax(ax, xlab="算定上の保険料月額（円）／矢印の右は百円未満を切り捨てた条例上の基準額")
     ax.grid(axis="x", visible=True); ax.grid(axis="y", visible=False)
-    ax.set_title(f"算定上の月額と条例上の基準額　12パターンの幅は{hi-lo:,}円",
+    ax.set_title(f"参考　当方の検算による12パターン　幅は{hi-lo:,}円",
                  loc="left", pad=24)
     save(fig, "fig_保険料と条例基準額.png")
 
