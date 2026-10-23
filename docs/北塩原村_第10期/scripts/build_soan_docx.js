@@ -39,9 +39,14 @@ const {Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBr
        TableOfContents, Header, Footer, PageNumber, TableLayoutType, LineRuleType} = d;
 
 const C = JSON.parse(fs.readFileSync(BUILDJSON, 'utf8'));
-// 書式は協議用素案の体裁（本文 游ゴシック 10.5pt）に合わせる。図表の色味は現行のまま
-const FONT = '游ゴシック';
-const FONTG = '游ゴシック';
+// 書体は BIZ UDPゴシック（令和8年10月23日に游ゴシックから改めた）。
+//   障がい福祉計画（同じ令和9年3月に村が刊行する計画）の本文が BIZ UDPゴシック であり、
+//   見え方をそろえる。Windows 10 以降に標準で入っており、村の端末で置き換わらない。
+//   村は第4次障がい者計画でユニバーサルデザインフォントの周知・啓発を掲げている。
+//   前回（第9期）計画は HG丸ゴシックM-PRO・本文10.5pt であった。本文の大きさは前回に合わせて10.5ptとする。
+//   游ゴシックは字面の上下の余白が大きく、行送りを固定した段落で字の上が切れていた（表紙）。
+const FONT = 'BIZ UDPゴシック';
+const FONTG = 'BIZ UDPゴシック';
 const NAVY = '1F3864', BLUE = '2E75B6', BAND = 'DDEBF7', NOTE = 'FFF3F3', GREY = '595959';
 const TBLW = 9360;   // 表の幅（DXA）。本文幅（9638）ではない。
                      // estimate_pages.py の TBLW と同じ値でなければ推定が狂う
@@ -74,8 +79,15 @@ const ARGOUT = (() => {
 // 作りのため、auto のままでは Word で紙面が膨らみ、110頁の枠に収まるかどうかの
 // 判断そのものが当てにならなくなる。exact にすれば 300 twip＝15pt に固定され、
 // どの環境でも、また estimate_pages.py の推定とも一致する。
+// ただし11ptを超える字（表紙・見出し）は固定にしない。15ptの固定の行送りに
+// 18pt・22ptの字を置くと、Word では行の枠からはみ出した字の上が切れる
+// （令和8年10月23日、表紙の題で見切れの指摘を受けた）。最小値の指定にして、
+// 字の大きさの1.35倍を下限とする。
 const p = (text, o = {}) => new Paragraph({
-  spacing: {after: o.after ?? 120, line: o.line ?? 300, lineRule: LineRuleType.EXACT},
+  spacing: (o.size ?? 21) > 22
+    ? {after: o.after ?? 120, line: Math.max(o.line ?? 300, Math.ceil((o.size ?? 21) * 13.5)),
+       lineRule: LineRuleType.AT_LEAST}
+    : {after: o.after ?? 120, line: o.line ?? 300, lineRule: LineRuleType.EXACT},
   alignment: o.align, indent: o.indent,
   keepNext: o.keep, keepLines: o.keep,   // 見出し・図の表題を次の要素から切り離さない
   border: o.border,
@@ -139,21 +151,27 @@ const FIGDIR = path.join(OUTDIR, 'figures');
 // 途中から置くと入りきらずに丸ごと次頁へ送られ、前の頁に大きな空白が残る。
 // あらかじめ改頁して1頁の図版として扱えば、空白は意図したものになる。
 const ZENMEN_H_IN = 9.72 * 0.60;
+// 図の高さの上限。本文の高さ9.72inから、図の前に来うる節見出し（約0.7in）・
+// 図の前後の空き・表題・出典（約0.8in）を除いた値。
+// 以前は8.9inとしていたが、Word は行内の画像を分割も縮小もしないため、
+// 節見出しの直後に置いた縦長の図（図3-1 施策の体系）が頁の下からはみ出して
+// 切れた（令和8年10月23日の指摘）。
+const MAX_FIG_H_IN = 8.0;
 
 function figTall(f) {
   const buf = fs.readFileSync(path.join(FIGDIR, f.file));
   const dim = pngSize(buf);
   const hIn = 6.3 * dim.h / dim.w;
-  return Math.min(hIn, 8.9) >= ZENMEN_H_IN;
+  return Math.min(hIn, MAX_FIG_H_IN) >= ZENMEN_H_IN;
 }
 
 function figure(f) {
   const buf = fs.readFileSync(path.join(FIGDIR, f.file));
   // 本文幅 9360 DXA = 6.5in。300dpiのPNGを幅6.3inに収める
   // 本文高さは 14002 twip ＝ 9.72in。表題・出典・前後の空き（約0.8in）を除くと
-  // 図に使えるのは 8.9in までである。縦長の図は幅を縮めて1頁に収める。
+  // 図に使えるのは MAX_FIG_H_IN（8.0in）までとする。縦長の図は幅を縮めて1頁に収める。
   // Word は行内の画像を縮めないため、ここで収めないと頁からあふれる。
-  const MAX_H_IN = 8.9;
+  const MAX_H_IN = MAX_FIG_H_IN;
   const dim = pngSize(buf);
   let wIn = 6.3, hIn = wIn * dim.h / dim.w;
   if (hIn > MAX_H_IN) { hIn = MAX_H_IN; wIn = hIn * dim.w / dim.h; }
@@ -286,14 +304,18 @@ const doc = new Document({
             run: {font: FONTG, size: 16, color: BLUE}},
   }]}]},
   sections: [{
-    properties: {page: {margin: {top: 1418, right: 1134, bottom: 1418, left: 1134}}},
-    headers: {default: new Header({children: [new Paragraph({
+    // 表紙にはヘッダー・頁番号を置かない（前回計画・障がい福祉計画と同じ）
+    properties: {titlePage: true,
+                 page: {margin: {top: 1418, right: 1134, bottom: 1418, left: 1134}}},
+    headers: {first: new Header({children: [new Paragraph('')]}),
+              default: new Header({children: [new Paragraph({
       alignment: AlignmentType.RIGHT,
       border: {bottom: {style: BorderStyle.SINGLE, size: 6, color: 'BFBFBF', space: 2}},
       children: [new TextRun({text: `${C.title}・${C.title2}　${C.draft}`,
                               font: FONTG, size: 16, color: GREY})],
     })]})},
-    footers: {default: new Footer({children: [new Paragraph({
+    footers: {first: new Footer({children: [new Paragraph('')]}),
+              default: new Footer({children: [new Paragraph({
       alignment: AlignmentType.CENTER,
       children: [new TextRun({children: [PageNumber.CURRENT], font: FONTG, size: 18, color: GREY})],
     })]})},

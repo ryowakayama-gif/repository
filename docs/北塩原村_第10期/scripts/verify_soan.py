@@ -1191,7 +1191,7 @@ def main():
             with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), js),
                       encoding="utf-8") as f48:
                 src48 = f48.read()
-            m48 = _re48.search(r"MAX_H_IN\s*=\s*([0-9.]+)", src48)
+            m48 = _re48.search(r"MAX(?:_FIG)?_H_IN\s*=\s*([0-9.]+)", src48)
             if not m48:
                 bad48.append(f"{js} に図の高さの上限がない")
             elif abs(float(m48.group(1)) - getattr(EP48, attr)) > 1e-9:
@@ -2583,10 +2583,15 @@ def main():
             for sp in _re68.findall(r"\{[^{}]*\bline: [^{}]*\}", src):
                 if "lineRule" not in sp:
                     bad68.append(f"{js}に lineRule の無い行送りがある（{sp[:46]}）")
+            # 11ptを超える字に固定（exact）の行送りを掛けると、Word で字の上が切れる
+            # （令和8年10月23日、表紙の見切れの指摘）。p() が大きい字を最小値指定に
+            # 切り替えていることを見る
+            if js == "build_soan_docx.js" and "LineRuleType.AT_LEAST" not in src:
+                bad68.append("build_soan_docx.js の p() が大きい字にも固定の行送りを掛けている")
         chk(68, "紙面の前提が build 側と一致すること", not bad68,
             "・".join(bad68[:3]) if bad68
             else f"4つの build で TBLW={EP68.TBLW}・行の下駄{EP68.ROW_GETA} twip。"
-                 f"行送りを指定する箇所はすべて lineRule=exact"
+                 f"行送りを指定する箇所はすべて lineRule を明示（本文は exact、11ptを超える字は atLeast）"
                  f"（実測との対比は scripts/render_check.py）")
     except Exception as e:
         chk(68, "紙面の前提が build 側と一致すること", False, f"照合できない（{e}）")

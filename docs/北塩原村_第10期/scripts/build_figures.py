@@ -38,7 +38,9 @@ def C(name):
     return list(_Z[name]["cats"])
 
 plt.rcParams.update({
-    "font.family": "IPAGothic",
+    # 書体は計画書の本文と同じ BIZ UDPゴシック（scripts/setup_fonts.py で入れる）。
+    # 無い環境と、BIZ UDPゴシックに無い字（Ⅰ〜Ⅳ・α 等）は IPAゴシックで補う
+    "font.family": ["BIZ UDPGothic", "IPAGothic"],
     "font.size": 10,
     "axes.titlesize": 12,
     "axes.labelsize": 10,

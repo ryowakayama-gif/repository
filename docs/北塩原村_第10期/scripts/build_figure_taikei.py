@@ -20,7 +20,7 @@ import soan_content as S
 
 OUT = os.path.join(_P.FIGURES, "fig3-1_施策体系図.png")
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
-plt.rcParams.update({"font.family": "IPAGothic", "figure.facecolor": "white"})
+plt.rcParams.update({"font.family": ["BIZ UDPGothic", "IPAGothic"], "figure.facecolor": "white"})   # 書体は本文と同じ
 
 # 区分ごとの塗りと枠（モノクロ印刷で分離する3段階）
 KUBUN = {
@@ -63,8 +63,51 @@ def collect():
     return rinen, mokuhyo, sisaku
 
 
-def wrap(t, w):
-    return "\n".join(textwrap.wrap(t, w)) or t
+def wrap(t, w, kyosei=True):
+    """語の切れ目で折る。
+
+    文字数で機械的に折ると「支／援」「インセ／ンティブ」のように語の途中で
+    切れて読みにくい（令和8年10月23日の指摘）。助詞・中黒・括弧の前後を
+    折り目の候補とし、各行が w 字以内で、行数が少なく、行の長さがそろう
+    折り方を選ぶ。候補で収まらないときだけ文字数で折る。
+    """
+    if len(t) <= w:
+        return t
+    cand = [i + 1 for i, c in enumerate(t[:-1]) if c in "のとをにへでや・、）"]
+    tsuyoi = set(i + 1 for i, c in enumerate(t[:-1]) if c in "と・、）")   # 句の切れ目
+    cand += [i for i, c in enumerate(t) if c == "（" and i > 0]
+    # ひらがなから漢字・カタカナに移る所（「質の高い｜介護」「自分らしい｜生活」）
+    hira = lambda c: "\u3041" <= c <= "\u309f"
+    cand += [i for i in range(1, len(t)) if hira(t[i - 1]) and not hira(t[i])
+             and t[i] not in "、。・）"]
+    cand = sorted(set(cand))
+    best = None
+    # 1か所または2か所で折る組み合わせを総当たりする（施策名は短い）
+    import itertools
+    for k in (1, 2, 3):
+        for cut in itertools.combinations(cand, k):
+            parts = [t[a:b] for a, b in zip((0,) + cut, cut + (len(t),))]
+            if max(len(x) for x in parts) > w:
+                continue
+            score = (k, -sum(1 for c in cut if c in tsuyoi),
+                     max(len(x) for x in parts) - min(len(x) for x in parts))
+            if best is None or score < best[0]:
+                best = (score, parts)
+        if best:
+            break
+    if best is None:
+        return ("\n".join(textwrap.wrap(t, w)) or t) if kyosei else None
+    return "\n".join(best[1])
+
+
+def wrap2(t, w):
+    """w 字で語の切れ目に折れないときは、幅を2字まで広げて語の切れ目で折る
+    （広げたときは字を小さくして箱に収める）"""
+    for ww in (w, w + 1, w + 2, w + 3):
+        r = wrap(t, ww, kyosei=False)
+        if r is not None:
+            return r
+    return wrap(t, w)
 
 
 def main():
@@ -76,7 +119,9 @@ def main():
     rows = [(no, nm, sisaku[no]) for no, nm in mokuhyo]
     # 各基本目標の高さ（施策の段数で決まる）
     heights = [max(1, -(-len(s) // PER)) for _, _, s in rows]
-    H = 1.50 + sum(h * 0.86 + 0.20 for h in heights)
+    # 末尾の0.35は凡例の行のぶん。足さないと凡例の枠が図の下端で切れていた
+    # （令和8年10月23日の指摘。図3-1の見切れ）
+    H = 1.50 + sum(h * 0.86 + 0.20 for h in heights) + 0.35
     fig = plt.figure(figsize=(6.3, H))
     ax = fig.add_axes([0, 0, 1, 1]); ax.set_xlim(0, 100); ax.set_ylim(0, H * 10)
     ax.axis("off")
@@ -110,7 +155,8 @@ def main():
             r, c = divmod(i, PER)
             st = KUBUN[kb]
             box(x0 + c * (w + GAP), y - r * 8.6, w, 7.6,
-                f"{sno}\n" + wrap(snm, 11) + f"\n〔{kb}〕", 5.9, **st)
+                f"{sno}\n" + wrap2(snm, 11) + f"\n〔{kb}〕",
+                min(5.9, 5.9 * 11.5 / max(len(x) for x in wrap2(snm, 11).split("\n"))), **st)
         y -= blk + 2.0
 
     # ── 凡例 ──
