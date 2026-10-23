@@ -38,7 +38,7 @@ import docx
 import openpyxl
 from docx.oxml.ns import qn
 
-SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.27_協議用.docx"
+SOAN = "01_第10期_最新版成果品/川崎町_計画書素案_v2.28_協議用.docx"
 WB = "05_試算・管理シート/川崎町_第10期_計画見込量_R8.9.15.xlsx"
 
 # ワークブックのシートと、素案での扱い
