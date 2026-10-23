@@ -40,7 +40,7 @@ import openpyxl
 from docx.oxml.ns import qn
 from openpyxl.styles import Alignment, Font
 
-KYOGI = "01_第10期_最新版成果品/川崎町_計画書素案_v2.28_協議用.docx"
+KYOGI = "01_第10期_最新版成果品/川崎町_計画書素案_v2.29_協議用.docx"
 BAN = re.search(r"_v(\d+\.\d+)_", KYOGI).group(1)
 SAKI = f"01_第10期_最新版成果品/川崎町_計画書案_公表用_v{BAN}.docx"
 KIROKU = f"05_試算・管理シート/川崎町_公表用で落とした文_v{BAN}.xlsx"
