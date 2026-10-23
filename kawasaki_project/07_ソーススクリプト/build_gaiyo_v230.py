@@ -43,7 +43,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from fix_soan_v111 import clone_table, set_el            # noqa: E402
 
-BAN = "2.30"
+BAN = "2.31"
 SOAN = f"01_第10期_最新版成果品/川崎町_計画書素案_v{BAN}_協議用.docx"
 HINAGATA = f"01_第10期_最新版成果品/川崎町_計画書案_公表用_v{BAN}.docx"
 OUT = f"01_第10期_最新版成果品/川崎町_計画書案_概要版_v{BAN}.docx"
