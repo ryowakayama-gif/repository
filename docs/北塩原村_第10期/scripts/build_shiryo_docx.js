@@ -22,10 +22,15 @@ const KAISET = {
   'kofukin': {py: 'kofukin_shiryo_content.py',  js: 'kofukin_shiryo.json',
               out: '19_北塩原村第10期_策定委員会参考資料_交付金の評価と第10期の目標.docx'},
 };
-const KAI = KAISET[process.argv[2]] ? process.argv[2] : '2';
+const KAI = process.argv.slice(2).find(a => KAISET[a]) || '2';   // --tanshoku と順不同
 const SRC_PY = KAISET[KAI].py;
 const JSON_PATH = path.join(OUTDIR, '_build', KAISET[KAI].js);
-const OUT_PATH = path.join(OUTDIR, KAISET[KAI].out);
+// 単色版（--tanshoku）。計画書と同じく、委員会資料もカラー版と単色版の2つで管理する
+//   （令和8年10月23日の村のご指示）。単色版は色を灰の濃淡に置き換えるだけで割付は
+//   変えない。保存先は末尾に「_単色」を付けた名前。
+const TANSHOKU = process.argv.includes('--tanshoku');
+const OUT_PATH = path.join(OUTDIR, TANSHOKU
+  ? KAISET[KAI].out.replace(/\.docx$/, '_単色.docx') : KAISET[KAI].out);
 // 入力のJSONが元データより古いときは止める（古い成果品を作らないため）
 (function () {
   // __dirname 基準にする。cwd に依らず走らせるため
@@ -43,6 +48,14 @@ const OUT_PATH = path.join(OUTDIR, KAISET[KAI].out);
 
 
 const FIGDIR = path.join(OUTDIR, 'figures');
+// 単色版では「<名前>_単色.png」があればそれを使う（計画書と同じ）
+function figFile(name) {
+  if (TANSHOKU) {
+    const m = name.replace(/\.png$/, '_単色.png');
+    if (fs.existsSync(path.join(FIGDIR, m))) return m;
+  }
+  return name;
+}
 function pngSize(buf) {              // PNG IHDR: 幅=16..19 / 高さ=20..23（ビッグエンディアン）
   return {w: buf.readUInt32BE(16), h: buf.readUInt32BE(20)};
 }
@@ -51,7 +64,7 @@ function pngSize(buf) {              // PNG IHDR: 幅=16..19 / 高さ=20..23（�
 const ZENMEN_H_IN = 10.12 * 0.60;
 
 function figTall(b) {
-  const buf = fs.readFileSync(path.join(FIGDIR, b.file));
+  const buf = fs.readFileSync(path.join(FIGDIR, figFile(b.file)));
   const dim = pngSize(buf);
   const hIn = (b.width || 6.3) * dim.h / dim.w;
   return Math.min(hIn, SH_MAX_H_IN) >= ZENMEN_H_IN;
@@ -60,7 +73,7 @@ function figTall(b) {
 const SH_MAX_H_IN = 8.4;   // estimate_pages.py の SH_MAX_FIG_H と同じ値
 
 function figure(b) {
-  const buf = fs.readFileSync(path.join(FIGDIR, b.file));
+  const buf = fs.readFileSync(path.join(FIGDIR, figFile(b.file)));
   // 本文高さは 14570 twip ＝ 10.12in。図の前に来うる見出し（約0.7in）と表題・出典・
   // 前後の空きを除いた 8.4in を上限とする（もとは9.3in。Word は行内の画像を分割も
   // 縮小もしないため、見出しと同じ頁で頁の下からはみ出す。計画書の図3-1で起きた）。
@@ -90,7 +103,14 @@ const C = JSON.parse(fs.readFileSync(JSON_PATH, 'utf8'));
 //   令和8年10月23日、計画書と同じく游ゴシックから BIZ UDPゴシック に改めた（村のご指示。
 //   障がい福祉計画と同じ書体。Windows 10 以降に標準で入っている）。
 const FONT = 'BIZ UDPゴシック', FONTG = 'BIZ UDPゴシック';
-const NAVY = '1F3864', BLUE = '2E75B6', BAND = 'DDEBF7', NOTE = 'FFF3F3', KEYB = 'FFF2CC', GREY = '595959';
+const NAVY = TANSHOKU ? '262626' : '1F3864',
+      BLUE = TANSHOKU ? '595959' : '2E75B6',
+      BAND = TANSHOKU ? 'EDEDED' : 'DDEBF7',
+      NOTE = TANSHOKU ? 'F2F2F2' : 'FFF3F3',
+      KEYB = TANSHOKU ? 'F2F2F2' : 'FFF2CC',      // 要点の囲みの地
+      KEYL = TANSHOKU ? '404040' : 'BF8F00',      // 要点の囲みの罫
+      NOTEL = TANSHOKU ? '7F7F7F' : 'C00000',     // 注記の罫
+      GREY = '595959';
 const TBLW = 9360;
 
 // 11ptを超える字（表紙・見出し）は行送りを最小値指定にする。15ptの固定の行送りに
@@ -206,14 +226,14 @@ C.chapters.forEach((ch, ci) => {
         kids.push(new Paragraph({
           spacing: {before: 140, after: 200, line: 300, lineRule: LineRuleType.EXACT}, indent: {left: 200, right: 200},
           shading: {type: ShadingType.CLEAR, fill: KEYB},
-          border: {left: {style: BorderStyle.SINGLE, size: 18, color: 'BF8F00', space: 8}},
+          border: {left: {style: BorderStyle.SINGLE, size: 18, color: KEYL, space: 8}},
           children: runs,
         }));
       }
       else if (b.t === 'note') kids.push(new Paragraph({
         spacing: {before: 120, after: 180, line: 280, lineRule: LineRuleType.EXACT}, indent: {left: 200, right: 200},
         shading: {type: ShadingType.CLEAR, fill: NOTE},
-        border: {left: {style: BorderStyle.SINGLE, size: 18, color: 'C00000', space: 8}},
+        border: {left: {style: BorderStyle.SINGLE, size: 18, color: NOTEL, space: 8}},
         children: [new TextRun({text: '※ ' + b.v, font: FONTG, size: 17, color: GREY})],
       }));
       else if (b.t === 'table') { kids.push(table(b.head, b.rows, b.widths)); kids.push(p('', {after: 160})); }
@@ -232,6 +252,10 @@ const doc = new Document({
     document: {run: {font: FONT, size: 21}},
     heading1: {run: {font: FONTG, size: 30, bold: true, color: 'FFFFFF'}},
     heading2: {run: {font: FONTG, size: 25, bold: true, color: NAVY}},
+    // 宣言しないと docx の既定の色（青）が単色版の目次のリンク等に残る
+    heading3: {run: {color: NAVY}}, heading4: {run: {color: NAVY}}, heading5: {run: {color: NAVY}},
+    heading6: {run: {color: NAVY}}, title: {run: {color: NAVY}},
+    hyperlink: {run: {color: TANSHOKU ? '262626' : '0563C1'}},
   }},
   numbering: {config: [{reference: 'bul', levels: [{level: 0, format: LevelFormat.BULLET, text: '・',
     alignment: AlignmentType.LEFT, style: {paragraph: {indent: {left: 400, hanging: 200}}}}]}]},
