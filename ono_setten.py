@@ -225,7 +225,7 @@ TAISHO = [
      "素案_第16版_20261022.docx"),
     ("障がい計画 素案",
      "03_計画素案/おのまち障がい者計画_第4期障がい児福祉計画_"
-     "第8期障がい福祉計画_素案_第4版_20261021.docx"),
+     "第8期障がい福祉計画_素案_第5版_20261023.docx"),
 ]
 
 
@@ -238,6 +238,7 @@ def check():
     import re
     import warnings
     import zipfile
+    import ono_shogai_hyoki as HY
     warnings.filterwarnings("ignore")
 
     root = pathlib.Path(__file__).parent / "小野町_引継ぎ_整理済"
@@ -249,10 +250,12 @@ def check():
             return 1
         with zipfile.ZipFile(p) as z:
             raw = z.read("word/document.xml").decode("utf-8", "ignore")
-        text[nm] = re.sub(r"\s+", "", re.sub(r"<[^>]+>", "", raw))
+        # 「障害」「障がい」の書き分けは各計画の規則による（障がい計画は前回計画の書き方）。
+        # 書き分けの違いを除いて同じ文言であることを確かめる。
+        text[nm] = HY.kyotsu(re.sub(r"\s+", "", re.sub(r"<[^>]+>", "", raw)))
 
     def plain(s):
-        return re.sub(r"\s+", "", s.replace("**", ""))
+        return HY.kyotsu(re.sub(r"\s+", "", s.replace("**", "")))
 
     ng = []
     # 1 9つの場面が両方にあること（制度の内容・本町での扱いとも）
@@ -279,7 +282,7 @@ def check():
           "地域包括支援センター", "40歳", "65歳", "障害支援区分",
           "支援会議", "支援協議会", "第115条の48", "第89条の3")
     for g in GO:
-        miss = [nm for nm in text if g not in text[nm]]
+        miss = [nm for nm in text if HY.kyotsu(g) not in text[nm]]
         if miss:
             ng.append("語「%s」が %s にない" % (g, "・".join(miss)))
 

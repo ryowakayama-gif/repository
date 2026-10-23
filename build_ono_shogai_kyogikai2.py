@@ -38,7 +38,7 @@ HERE = pathlib.Path(__file__).parent
 ROOT = HERE / "小野町_引継ぎ_整理済"
 OUT = ROOT / "08_協議会資料"
 SOAN = (ROOT / "03_計画素案" / "おのまち障がい者計画_第4期障がい児福祉計画_"
-        "第8期障がい福祉計画_素案_第4版_20261021.docx")
+        "第8期障がい福祉計画_素案_第5版_20261023.docx")
 ASOF = "20261021"
 ASOF_JP = "令和8年10月21日"
 TBD, TGT, DEC = G.TBD, G.TGT, G.DEC
