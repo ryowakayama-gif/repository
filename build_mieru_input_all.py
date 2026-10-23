@@ -87,6 +87,7 @@ from openpyxl.utils import get_column_letter
 import data_mieru_danryoku as GD
 import data_mieru_jinko as J
 import data_mieru_kekka2 as K2
+import data_mieru_kekka3 as K3
 import data_mieru_suikei as MS
 import data_mieru_yoshiki as YS
 import mieru_anc as AN
@@ -159,6 +160,10 @@ NIN_NOBI, HIHO_NOBI = _M["NIN_NOBI"], _M["HIHO_NOBI"]
 DANKAI, JORITSU = _M["DANKAI"], _M["JORITSU"]
 DANKAI_NAME, NDAN = _M["DANKAI_NAME"], _M["NDAN"]
 KIJUN_SHOTOKU = _M["KIJUN_SHOTOKU"]
+_SD = _load("build_shotoku_dankai.py")   # 所得段階別の配分の正本
+# 地域支援事業費を入れることの効き（当方の算定の基礎から求める。固定値を書かない）
+_G0 = _S["gaku3"](_S["KYUFU3"], _S["HIHO3"], chiiki3=0, sogo3=0)
+_CH_KIKI = _S["G_DO"]["月額"] - _G0["月額"]
 G_DO = _M["G_DO"]
 GETSU, KIJUN_GAKU = _M["GETSU"], _M["KIJUN_GAKU"]
 SHIEN_ARI = _M["SHIEN_ARI"]
@@ -410,7 +415,7 @@ ICHIRAN = [
     ("手順7", "地域支援事業費", "事業費",
      "総合事業費と包括的支援事業・任意事業費の計を入れる", "10",
      "現況は全年度0。事業別の内訳は未受領のため計のみ",
-     "月額 約＋332円"),
+     "月額 約＋%d円" % round(_CH_KIKI)),
     ("手順8", "保険料額の算定", "所得段階の設定",
      "「弾力化」を選び16段階で入れる", "11",
      "当連合の条例は16段階。標準13段階では9段階で割合が違う",
@@ -1181,10 +1186,38 @@ for _i2, (_nm2, _v2, _bk2) in enumerate(_CHI, start=1):
              fmt={j: "#,##0" for j in range(4, 7)},
              align={j: "right" for j in range(4, 7)},
              height=26, bold=(_i2 == 3))
+
+# 令和12年度以降（別画面）。算定は build_mikomiryo_santei の CHIIKI_HI_LONG。
+_CHL = _S["CHIIKI_HI_LONG"]
+_YL5 = _S["YLONG"]
+_YL5L = _S["YLONGL"]
+r += 1
+r = lead(ws, r, "参考2　令和12年度以降（別画面。自然体推計値の確認と"
+         "施策反映値の入力）", span=3 + len(_CY6))
+r = header(ws, r, ["", "事業区分", "区分"] + _YL5L + [""] * (len(_CY6) - 5))
+for _i3, (_nm3, _vs3) in enumerate(_CHL.items(), start=1):
+    r = body(ws, r, [_i3, _nm3, "事業費（円）"]
+             + [round(_vs3[y]) for y in _YL5] + [""] * (len(_CY6) - 5),
+             fills={j: IN_Y for j in range(4, 9)},
+             fmt={j: "#,##0" for j in range(4, 9)},
+             align={j: "right" for j in range(4, 9)},
+             height=26, bold=(_i3 == len(_CHL)))
+r = note(ws, r,
+         "中長期は量の見込みと同じ伸びで延ばしています"
+         "（介護予防・日常生活支援総合事業費は認定者数、"
+         "そのほかは第1号被保険者数）。\n"
+         "**群ごとに分けて入れてください。**"
+         "調整交付金相当額及び調整交付金見込額の算定基礎には"
+         "「介護予防・日常生活支援総合事業費」のみが入るため、"
+         "計をまとめて1つの事業に置くと調整交付金の額が変わります。",
+         span=3 + len(_CY6), height=64)
 r = note(ws, r,
          "注1）" + ZANTEI + "\n"
          "注2）令和6年度決算の水準を3年据え置いたものです。"
-         "この額を入れると算定上の月額が約＋332円上がります。\n"
+         "この額を入れると算定上の月額が約＋%d円上がります"
+         "（当方の算定の基礎による。見える化の補正後被保険者数で"
+         "計算するとこれと異なります）。\n" % round(_CH_KIKI)
+         + 
          "注3）**保険者機能強化推進事業費及び保険者努力支援事業費は"
          "この額から除いています**（令和6年度決算の款4の全体183,384,259円から"
          "2事業を除いた額が%s円）。"
@@ -1245,12 +1278,70 @@ r = note(ws, r,
          "画面も当該欄を受け付けません。\n"
          "注4）**計は「実績及び推計方法の設定」の第1号被保険者数と"
          "一致させます**（02シートの値）。一致していないと登録できません。\n"
-         "注5）第17段階から第30段階は空欄のままとします。\n"
+         "注5）**第17段階から第40段階は空欄のままとします。**"
+         "弾力化の段階は令和8年9月30日に30段階から40段階へ拡張されました。\n"
          "注6）第10期の段階数・割合・基準所得金額は政令改正により"
          "変わり得ます（確認事項No.33）。"
          "保険料段階の基準額を80.9万円から82.65万円に改める政令改正が"
          "済んでおり、条例改正の手続を要します。",
          span=4 + len(YALL), height=112)
+
+# 人口の設定を改めない場合（画面が表示する第1号被保険者数に合わせる）。
+# 画面は「各段階の第1号被保険者数の合計が『実績及び推計方法の設定』で
+# 登録した第1号被保険者数の合計と一致する」ことを求めるため
+# （利用マニュアル【システム操作編② 将来推計】W2-123 の CHECK）、
+# 人口を案Cに改めないまま1の表を入れると登録できない。
+_GAMEN_KEI = [K3.HIHO["第1号"][K3.nendo_i(l)] for l in YALLL]
+_DANKAI_G = {y: _SD["dankai_n"](n) for y, n in zip(YALL, _GAMEN_KEI)}
+r += 1
+r = lead(ws, r, "1-2　人口の設定を改めない場合の所得段階別第1号被保険者数",
+         span=4 + len(YALL))
+r = note(ws, r,
+         "直近の推計（推計名%s）は人口の設定が社人研推計のままであり、"
+         "画面が表示する第1号被保険者数は1の表の計と%s人から%s人の幅で"
+         "異なります。"
+         "**人口の設定を案Cに改めないまま1の表の人数を入れると、"
+         "計が一致せず登録できません。**"
+         "人口の設定を先に改めることをお勧めしますが、"
+         "改めない場合は本表の人数を入れてください。"
+         % (K3.SUIKEI_MEI,
+            "{:,}".format(min(abs(a - b) for a, b
+                              in zip(_GAMEN_KEI,
+                                     [sum(DANKAI[y]) for y in YALL]))),
+            "{:,}".format(max(abs(a - b) for a, b
+                              in zip(_GAMEN_KEI,
+                                     [sum(DANKAI[y]) for y in YALL])))),
+         span=4 + len(YALL), height=76)
+r = header(ws, r, ["段階", "対象者要件", "割合", "基準所得金額（円）"] + YALLL)
+for _i in range(NDAN):
+    _kin = KIJUN_SHOTOKU[_i]
+    r = body(ws, r, [_i + 1, DANKAI_NAME[_i], JORITSU[_i],
+                     _kin if _kin else "―"]
+             + [_DANKAI_G[y][_i] for y in YALL],
+             fills={3: IN_Y, 4: (IN_Y if _kin else GRAY),
+                    **{j: IN_Y for j in range(5, 5 + len(YALL))}},
+             fmt={3: "0.000", 4: "#,##0",
+                  **{j: "#,##0" for j in range(5, 5 + len(YALL))}},
+             align=_AL11, height=26)
+r = body(ws, r, ["", "計（画面が表示する第1号被保険者数）", "―", "―"]
+         + [sum(_DANKAI_G[y]) for y in YALL],
+         fills={j: MID_B for j in range(1, 5 + len(YALL))}, bold=True,
+         fmt={j: "#,##0" for j in range(5, 5 + len(YALL))},
+         align=_AL11, height=22)
+r = body(ws, r, ["", "補正後被保険者数（自動計算）", "―", "―"]
+         + [round(sum(a * b for a, b in zip(_DANKAI_G[y], JORITSU)), 1)
+            for y in YALL],
+         fills={j: GRAY for j in range(1, 5 + len(YALL))},
+         fmt={j: "#,##0.0" for j in range(5, 5 + len(YALL))},
+         align=_AL11, height=22)
+r = note(ws, r,
+         "注1）割合及び基準所得金額は1の表と同じです。人数だけが違います。\n"
+         "注2）構成比は令和6年度の実績によるもので1の表と同じです。"
+         "総数に構成比を乗じ、合計を保ったまま整数にしています。\n"
+         "注3）**この表で算定すると補正後被保険者数が小さくなるため、"
+         "保険料基準額は1の表による場合より高く出ます。**"
+         "人口の設定を案Cに改めることをお勧めする理由の一つです。",
+         span=4 + len(YALL), height=64)
 
 r += 1
 r = lead(ws, r, "2　そのほかの欄", span=4 + len(YALL))
@@ -1659,6 +1750,29 @@ chk(23, "令和7年度の1人1月あたりが画面の表示値と一致する�
     "画面の写し（訪問介護・訪問看護）と当方の年報の要介護度別明細による算定",
     "%d区分・%d欄／合わない %s"
     % (len(YS.KAISU_GAMEN_R7), _kgn, _kg or "なし"), not _kg and _kgn >= 10)
+
+_g_kei = [sum(_DANKAI_G[y]) for y in YALL]
+chk(24, "人口の設定を改めない場合の計が画面の第1号被保険者数と"
+        "一致すること",
+    "推計%s の第1号被保険者数" % K3.SUIKEI_MEI,
+    "／".join(str(x) for x in _g_kei), _g_kei == _GAMEN_KEI)
+_g_do = all(len(_DANKAI_G[y]) == NDAN for y in YALL)
+chk(25, "人口の設定を改めない場合も16段階であること",
+    "段階数", "%d段階" % NDAN, _g_do)
+_chl_ok = all(
+    abs(_CHL["地域支援事業費（計）"][y]
+        - sum(v[y] for k, v in _CHL.items() if k != "地域支援事業費（計）"))
+    < 1 for y in _YL5)
+chk(26, "地域支援事業費の群別の和が計と一致すること（中長期）",
+    "介護予防・日常生活支援総合事業費＋そのほか＝計",
+    "%d年度で一致" % len(_YL5), _chl_ok)
+chk(27, "地域支援事業費の中長期が5年次そろっていること",
+    "令和12・17・22・27・32年度", "%d年次" % len(_YL5), len(_YL5) == 5)
+chk(28, "第10期の地域支援事業費が令和6年度の水準の据え置きであること",
+    "CHIIKI_R6×3",
+    "{:,}円".format(CHIIKI_R6 * 3),
+    abs(sum(_CHL["地域支援事業費（計）"][y] for y in Y3)
+        - CHIIKI_R6 * 3) < 1)
 
 r = header(ws, 4, ["No.", "点検した内容", "式・条件", "結果", "判定"])
 for c in CHECKS:
