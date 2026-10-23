@@ -92,8 +92,8 @@ python3 07_ソーススクリプト/check_repo_kenzensei_R8.10.4.py
 版を上げたら、次をいずれも最上層（`kawasaki_project/`）から実行する。
 
 ```bash
-S=01_第10期_最新版成果品/川崎町_計画書素案_v2.31_協議用.docx    # 最新の協議用素案に読み替える
-P=01_第10期_最新版成果品/川崎町_計画書案_公表用_v2.31.docx      # 同じ版の公表用
+S=01_第10期_最新版成果品/川崎町_計画書素案_v2.32_協議用.docx    # 最新の協議用素案に読み替える
+P=01_第10期_最新版成果品/川崎町_計画書案_公表用_v2.32.docx      # 同じ版の公表用
 python3 07_ソーススクリプト/check_soan_selfcheck_R8.9.28.py "$S"
 python3 07_ソーススクリプト/check_hokenryo_R8.9.30.py       "$S"
 python3 07_ソーススクリプト/check_font_R8.9.30.py           "$S"
@@ -104,6 +104,7 @@ python3 07_ソーススクリプト/build_kouhyou_soan.py           # 協議用�
 python3 07_ソーススクリプト/fill_toc_pages_v200.py          "$P"
 python3 07_ソーススクリプト/check_font_R8.9.30.py           "$P"   # 公表用にも同じ点検を当てる
 python3 07_ソーススクリプト/build_gaiyo_v230.py             # 概要版（BAN を最新に。数値は素案から読む）
+python3 07_ソーススクリプト/check_sansho_R8.10.24.py "$S"     # 章節の参照が実在するか（令和8年10月24日 Red Team A12）
 python3 07_ソーススクリプト/check_repo_kenzensei_R8.10.4.py
 ```
 

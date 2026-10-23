@@ -95,7 +95,11 @@ def main():
         ttl = row.cells[1].text.strip()
         is_aisatsu = ttl.startswith("ご挨拶")
         frm = 0 if is_aisatsu else max(floor, body_from)
-        no, idx = page_of(norm(ttl), frm)
+        # ⚠ ご挨拶の頁の見出しは「ご　挨　拶」であり、目次の行の「ご挨拶（川崎町長）」の語は
+        #   目次の頁にしか現れない。そのため目次の頁（3頁）を拾っていた（令和8年10月24日の
+        #   レビュー A09）。ご挨拶は見出しの語「ご挨拶」で、目次より前の頁から探す。
+        key = norm("ご挨拶") if is_aisatsu else norm(ttl)
+        no, idx = page_of(key, frm)
         found[n] = no
         if idx is not None and not is_aisatsu:
             floor = max(idx, body_from)

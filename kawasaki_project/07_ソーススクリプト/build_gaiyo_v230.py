@@ -43,7 +43,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from fix_soan_v111 import clone_table, set_el            # noqa: E402
 
-BAN = "2.31"
+BAN = "2.32"
 SOAN = f"01_第10期_最新版成果品/川崎町_計画書素案_v{BAN}_協議用.docx"
 HINAGATA = f"01_第10期_最新版成果品/川崎町_計画書案_公表用_v{BAN}.docx"
 OUT = f"01_第10期_最新版成果品/川崎町_計画書案_概要版_v{BAN}.docx"
@@ -115,7 +115,10 @@ def yomu(S):
     V["tanki"] = [r for r in t if r[0].startswith("短期入所")][0]
     V["kaigo"] = [r for r in t if r[0].startswith("施設・居住系の介護職員")][0]
     V["aki"] = S.hiku(r"増やした定員のうち約(\d+)人分が埋まっていない")
-    V["jigyosho_su"] = S.hiku(r"これらを含む(\d+)の事業所が町内にあります")
+    V["jigyosho_su"] = S.hiku(r"これらを含む(\d+)事業所が町内にあります")
+    # 3-4 の重点課題（5本）（令和8年10月24日のレビュー A07：11の課題との橋渡しを概要版にも）
+    t = [t for t in S.T if t[0][:2] == ["重点課題", "根拠となる事実"]][0]
+    V["juten_kadai"] = [[r[0], r[1]] for r in t[1:]]
     # 4-1 基本理念
     i = S.P.index("　▌ 基本理念（案）")
     V["rinen"] = S.P[i + 1].strip()
@@ -318,21 +321,24 @@ def honbun(V):
                  f"（{V['tassei']}％）。全体ではほぼ計画どおりですが、自宅で受けるサービスが"
                  f"計画を{V['kyotaku']}％下回る一方、施設のサービスは{V['shisetsu_u']}％"
                  "上回りました。"),
-        ("本文", f"町内の{V['jigyosho_su']}の事業所の5年間の動きをみると、"
+        ("本文", f"町内{V['jigyosho_su']}事業所の5年間の動きをみると、"
                  f"短期入所（ショートステイ）の利用はひと月{tn[1]}から{tn[3]}へほぼ半分になり、"
-                 f"施設などで働く介護職員は{kg[1]}から{kg[3]}に減っています。令和5年に定員を"
+                 f"施設・居住系の介護職員数（常勤換算）は{kg[1]}から{kg[3]}に減っています。令和5年に定員を"
                  f"増やした地域密着型の特別養護老人ホームは、増やした定員のうち約{V['aki']}人分が"
                  "あいています。いま受けられているサービスを3年後も受けられるようにすることが、"
                  "この計画の大きな課題です。"),
-        ("本文", f"第10期に向けた課題は、次の{len(V['kadai'])}つです。"),
+        ("本文", f"第10期に向けて、{len(V['kadai'])}の課題を整理しました。これらを"
+                 f"{len(V['juten_kadai'])}つの重点課題に集約して取り組みます。"),
         ("T", [["", "第10期に向けた課題"]]
          + [["①②③④⑤⑥⑦⑧⑨⑩⑪⑫"[i], k] for i, k in enumerate(V["kadai"])], [10, 90]),
+        ("T", [["重点課題", "根拠となる事実"]] + V["juten_kadai"], [32, 68]),
         ("見出し", "第10期で大切にすること"),
         ("本文", f"基本理念「{V['rinen']}」を第9期から引き継ぎ、第10期では"
                  f"「{V['sub'].strip('〜 ')}」を副題に加えます。"),
         ("図", "g8_hashira.png"),
         ("本文", f"{V['kosei'][0]}つの柱に沿って{V['kosei'][3]}の事業を進め、"
-                 f"{len(V['juten'])}つのことを重点として取り組みます。"),
+                 f"{len(V['juten_kadai'])}つの重点課題のうち、とくに力を入れる{len(V['juten'])}つの"
+                 "ことを重点として取り組みます。"),
         ("T", hashira_hyo, [56, 18, 26]),
         ("見出し", "第9期から変わること"),
         ("本文", f"第10期では、新しく始める事業が{len(V['shinki_mei'])}件あります。"
@@ -542,7 +548,7 @@ def main():
     for item in P:
         kind, v = item[0], item[1]
         if kind == "図":
-            doc.add_picture(os.path.join(FIGDIR, v), width=Emu(int(5.2 * EMU_IN)))
+            doc.add_picture(os.path.join(FIGDIR, v), width=Emu(int(4.8 * EMU_IN)))  # 重点課題の表を加えた（R8.10.24）ため 5.2→4.8 で8頁に収める
             p = doc.paragraphs[-1]._p
             p.getparent().remove(p)
             pPr = tpl["図"].find(qn("w:pPr"))
@@ -597,6 +603,11 @@ def main():
                           "**", "大雪", "北塩原", "金ヶ崎", "金ケ崎", "川崎市", "Ver.", "協議用"):
         chk(w not in zen + hdr, f"「{w}」0件")
     chk(not re.search(r"v\d+\.\d+", zen + hdr), "版の番号（v2.xx）0件")
+    # 令和8年10月24日のレビュー A10・A11 の再発防止
+    chk(not re.search(r"[1-9]\d+つ", zen), "「11つ」のような2桁の数＋「つ」0件")
+    chk(not re.search(r"\d+の事業所", zen), "「8の事業所」の形 0件")
+    chk("（常勤換算）" in zen, "介護職員数に（常勤換算）を明記")
+    chk(all(k[0] in zen for k in V["juten_kadai"]), f"重点課題{len(V['juten_kadai'])}本の表（素案 3-4 と同じ名称）")
     print("  ── 検査3　数値はすべて素案にある")
     sujı = set(re.findall(r"\d[\d,]*(?:\.\d+)?(?=[％%人円件億千])", zen))
     zu = " ".join(str(x) for d in G4.ZU for r in d["rows"] for x in r)
