@@ -113,8 +113,19 @@ RE_YURUSU = {
 }
 
 
+# K15 だけを外すもの（台帳による書き換えの「直す前」の列を持つ）
+RE_YURUSU_K15 = {
+    "村提供台帳の確認": "台帳による書き換え（ＤＫ書換）の「直す前」の列に他メンバー版の文を示す",
+}
+
 # 作業の成果物のうち、古い記述を「直す前」として引くため K3・K15 から外すもの
-RE_YURUSU_SAGYOU = {}
+RE_YURUSU_SAGYOU = {
+    "北塩原村_申し送り_他メンバー版への移植_20261009.docx":
+        "令和8年10月9日時点の申し送りの記録。他メンバー版の文を引用している",
+    "北塩原村_計画素案.docx":
+        "他メンバー版への移植前の当方の素案（令和8年10月9日まで）。"
+        "以後の修正は正本で行い、この版は記録として残す",
+}
 
 # ===========================================================================
 # 1. 成果物を読む
@@ -490,6 +501,15 @@ def k15_jisseki0(text):
             if re.search(re.escape(svc) + r"(?:（[^）]*）)?\s*(?:\|\s*)?"
                          r"(?:の|は|が|で)?\s*" + jis0, bun):
                 ng.append(f"{svc}を実績0としている: {bun[:70]}")
+            #   「理解促進研修・啓発事業、…など、これまでの実績がない事業」
+            if re.search(re.escape(svc) + r"[^。|]{0,40}?(?:これまでの実績がない|"
+                         r"実績がありません|実績はありません)", bun):
+                ng.append(f"{svc}を実績がないとしている: {bun[:70]}")
+    #   短期入所の旧い表し方（年間の請求件数を、単位を示さずに実績としたもの）
+    for m in re.finditer(r"令和6年度2件・令和7年度3件", _nfkc(text)):
+        if "請求" not in _nfkc(text)[max(0, m.start() - 12):m.start()]:
+            ng.append(f"短期入所の実績を請求件数のまま書いている: "
+                      f"{_nfkc(text)[max(0, m.start() - 20):m.end() + 10]}")
     return ng
 
 
@@ -596,7 +616,7 @@ def jikkou(texts=None, gyou=None, sagyou=None):
                 kekka.append(("K13", name, x))
             for x in k14_zuhyou_ref(line, caps):
                 kekka.append(("K14", name, x))
-            if name not in RE_YURUSU:
+            if name not in RE_YURUSU and name not in RE_YURUSU_K15:
                 for x in k15_jisseki0(line):
                     kekka.append(("K15", name, x))
     for name, lines in (sagyou or {}).items():
@@ -634,6 +654,8 @@ def hitei_shiken():
             "意思疎通支援事業 | 実績0人",                                 # K15
             "理解促進研修・啓発事業は実績・見込とも0",                     # K15
             "必須 | 意思疎通支援事業 | 法第77条第1項第6号 | 人 | 0 | 未実施",  # K15
+            "理解促進研修・啓発事業、自発的活動支援事業など、これまでの実績がない事業",
+            "短期入所は令和６年度２件・令和７年度３件の実績",            # K15
         ],
     }
     #   K4・K5 は対象の成果物の名前で効くため、名前を借りて入れる
@@ -702,7 +724,17 @@ def main():
     for i, (k, p) in enumerate(SEIKA.items()):
         h = hashlib.sha256(open(p, "rb").read()).hexdigest()[:16]
         r = write_row(ws, r, [k, os.path.relpath(p, REPO_ROOT), h,
-                              RE_YURUSU.get(k, "")], alt=(i % 2 == 1))
+                              RE_YURUSU.get(k, "") or RE_YURUSU_K15.get(k, "")],
+                      alt=(i % 2 == 1))
+    ws = add_sheet(wb, "03_作業の成果物", f"作業の成果物 {len(SAGYOU)}点",
+                   "K1・K3・K12・K15 を当てたもの。点検した時点のハッシュ"
+                   "（SHA-256の先頭16字）。", [60, 20, 40])
+    style_header_row(ws, 5, ["ファイル", "ハッシュ", "例外"])
+    r = 6
+    for i, (k, p) in enumerate(SAGYOU.items()):
+        h = hashlib.sha256(open(p, "rb").read()).hexdigest()[:16]
+        r = write_row(ws, r, [os.path.relpath(p, REPO_ROOT), h,
+                              RE_YURUSU_SAGYOU.get(k, "")], alt=(i % 2 == 1))
     km = koukai_mae({k: yomu(SEIKA[k]) for k in TAIGAI})
     ws = add_sheet(wb, "04_委員会に出す前の確認",
                    "委員会・住民に出す資料に残る照会番号・確認中の注記",
@@ -713,15 +745,6 @@ def main():
     r = 6
     for i, x in enumerate(km):
         r = write_row(ws, r, list(x), alt=(i % 2 == 1))
-    ws = add_sheet(wb, "03_作業の成果物", f"作業の成果物 {len(SAGYOU)}点",
-                   "K1・K3・K12・K15 を当てたもの。点検した時点のハッシュ"
-                   "（SHA-256の先頭16字）。", [60, 20, 40])
-    style_header_row(ws, 5, ["ファイル", "ハッシュ", "例外"])
-    r = 6
-    for i, (k, p) in enumerate(SAGYOU.items()):
-        h = hashlib.sha256(open(p, "rb").read()).hexdigest()[:16]
-        r = write_row(ws, r, [os.path.relpath(p, REPO_ROOT), h,
-                              RE_YURUSU_SAGYOU.get(k, "")], alt=(i % 2 == 1))
     wb.save(OUT_FILE)
     print(f"作成: {OUT_FILE}")
     if kekka:

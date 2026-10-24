@@ -97,7 +97,8 @@ from build_kitashiobara_yokodan import YD_KAKIKAE, YD_HYOU  # noqa: E402
 # 食い違っていた（令和8年10月24日 横断レビュー）。
 _RIKAI_R7 = next(
     re.match(r"^([0-9]+)", r["ato"][1]).group(1) for r in DK_HYOU
-    if r.get("svc") == "理解促進研修・啓発事業")
+    if r.get("svc") == "理解促進研修・啓発事業"
+).translate(str.maketrans("0123456789", "０１２３４５６７８９"))
 from kitashiobara_anke import pc as _anke_pc  # noqa: E402
 from build_kitashiobara_graph import GRAPHS, OUT_DIR as ZU_DIR  # noqa: E402
 from build_kitashiobara_zuhyo_bangou import ZU, HYO  # noqa: E402
@@ -1423,6 +1424,11 @@ def main():
     apply_bangou(doc)
     apply_zuhyo_mokuji(doc)
     verify(doc, src_dims)
+    #   Ｗｏｒｄで開いたときに目次（TOC）の更新を求める設定。目次は他メンバー版の
+    #   キャッシュのままで、第３章の章題と移植で足した節が載っていない
+    #   （令和8年10月24日 レッドチームの点検。頁数の確定はＳ-33で依頼）
+    from build_kitashiobara_mokuji import set_update_fields
+    set_update_fields(doc)
     doc.save(OUT_FILE)
 
     print(f"作成: {OUT_FILE}")

@@ -65,7 +65,7 @@ from kitashiobara_gaiyou_taisai import (
     TAISAI,
 )
 from build_kitashiobara_zenkai_hyouka import (
-    KANGAE, KPI4, KPI7, KUBUN, MIKOMI, SHISAKU, SHISAKU_KUBUN, _shu_bun,
+    KANGAE, KPI4, KPI7, KUBUN, LIFESTAGE, MIKOMI, SHISAKU, SHISAKU_KUBUN, _shu_bun,
     mikomi_kubun,
 )
 from kitashiobara_common import OUT_DIR
@@ -469,17 +469,16 @@ def hy_kpi4(doc):
          "⑦外出の目的は今回の調査に設問がなく測定できないため、"
          "村の生涯学習・スポーツ・文化の事業への参加の実績による"
          "確認に置き換えます。"
-         "⑥個別避難計画は現状値１件に対し令和８年８月の村の確認が"
-         "０件で食い違っており、どちらを現状値とするかを確認中です。")
+         "⑥個別避難計画は、基準値（令和５年度）は１件で決まっていますが、"
+         "令和７年度の現在の件数が村の資料どうしで１件と実質０件に分かれており、"
+         "確認中です。")
 
 def hy_hanei(doc):
     band(doc, "６", "第８期計画への反映")
     box(doc, [
         "以上を踏まえ、第８期計画では次の三つを行います",
         "第一に、見込量をお一人ずつの状況から積み上げます。"
-        "18歳・学校卒業、22歳到達、65歳到達又は特定疾病による"
-        "介護保険への移行、精神科病院からの退院、親亡き後といった"
-        "ライフステージの変化を個別に把握します"
+        f"{LIFESTAGE}といったライフステージの変化を個別に把握します"
         "（40歳に達したことのみをもって減らすことはしません）。",
         "第二に、必要な量と確保できる量を分けて示します。"
         "事業所の受入れの余力、送迎、冬季の交通、人材の不足を確かめ、"

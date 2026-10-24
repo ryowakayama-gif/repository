@@ -423,6 +423,11 @@ def dai4ji():
     out = []
     for i, r in enumerate(SHIHYOU, 1):
         bunya, na, kijun, mokuhyo, _shu, demoto, _toi, hantei, biko = r
+        #   今回のアンケートで測れない指標（⑦外出の目的）は、データの出所を
+        #   置き換え後の村の記録にする（令和8年10月24日 レッドチームの点検。
+        #   「今回のアンケート（障がい者版）」のままでは正本 第３章３と食い違う）
+        if hantei.startswith("測れない"):
+            demoto = "村の記録（生涯学習・スポーツ・文化の事業への参加の実績。Ｍ-111）"
         out.append(K(
             f"Ｋ-{len(KPI) + i:02d}", "第４次計画", na, f"第３章 {bunya}",
             DAI4JI_KUBUN[na],

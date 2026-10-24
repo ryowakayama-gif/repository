@@ -306,7 +306,11 @@ def koutei_rows():
                  f"パブリックコメント（{PABU_NISSU}日間）"))
     for hi in KOUTEI_NOSERU[3:]:
         rows.append((taigai(hi), kou[hi]))
-    rows.append(("令和９年３月", "計画の確定・公表"))
+    #   最後の行は工程の一か所（kitashiobara_koutei.GAIYOU_HYO）から読む。
+    #   「計画の確定・公表」と書いていたが、計画の決定は２月の庁議である
+    #   （令和8年10月24日 レッドチームの点検）
+    from kitashiobara_koutei import GAIYOU_HYO
+    rows.append(tuple(GAIYOU_HYO[-1]))
     return rows
 
 
