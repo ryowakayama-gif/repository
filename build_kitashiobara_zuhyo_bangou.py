@@ -45,6 +45,7 @@ import docx
 from openpyxl import Workbook
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from kitashiobara_anke import n as _anke_n  # noqa: E402  回収40件（AN40-T19）
 from kitashiobara_common import (  # noqa: E402
     add_sheet, ensure_out_dir, style_header_row, write_row,
 )
@@ -207,7 +208,7 @@ HYO = [
     dict(sho=2, midashi="アンケート調査結果の概要",
          atama=_h("分野", "主な調査結果"), moto=A_ANKE),
     dict(sho=2, midashi="主な項目の障がい別の状況",
-         atama=_h("項目", "全体\n（n=38）"), moto=A_ANKE),
+         atama=_h("項目", f"全体\n（n={_anke_n()}）"), moto=A_ANKE),
     dict(sho=2, midashi="調査結果からみた課題と本計画での対応",
          atama=_h("主な課題", "主な調査結果"), moto=""),
     dict(sho=2, midashi="アンケート調査の用い方",
@@ -456,7 +457,9 @@ KAKUNIN = [
      "図２-８（現在利用しているサービスと今後３年間で利用したいサービス）は、"
      "画像内の表題が右端で切れており、括弧の中が読み取れない。"
      "また「回答者数：38人（複数回答）」の注記が表題に重なっている。"
-     "原データでの表題の確認と、画像の作り直しをお願いしたい",
+     "原データでの表題の確認と、画像の作り直しをお願いしたい"
+     "（作り直しの際は、令和8年10月21日版の集計表により"
+     "回答者数を40人とし、割合も回収40件の値にしていただきたい）",
      "令和8年10月16日"),
     ("Ｓ-23", "他メンバー", "計画の位置づけ図の重複",
      "図１-１（計画の位置づけ。第1章2）と"

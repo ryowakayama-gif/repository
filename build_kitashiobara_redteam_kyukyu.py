@@ -42,6 +42,7 @@ import docx
 from openpyxl import Workbook
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from kitashiobara_anke import pc as _pc  # noqa: E402  割合の一か所（回収40件）
 from kitashiobara_common import (  # noqa: E402
     add_sheet, ensure_out_dir, style_header_row, write_row,
 )
@@ -75,7 +76,8 @@ PAGES = [
     ("防災",
      "Web版ハザードマップ・防災マップ、防災行政無線、緊急速報メール等、"
      "災害時協力協定、公衆無線LAN",
-     "正本は個別避難計画を「知らない」68.4％等を課題として挙げているが、"
+     "正本は個別避難計画を「知らない」"
+     f"{_pc('個別避難計画_知らない')}等を課題として挙げているが、"
      "「計画を作る」と「災害情報が本人に届く」は別である。"
      "情報伝達手段の有無、対象者への到達、障がい特性別の情報保障、"
      "個別避難計画との接続を分けて評価する必要がある",

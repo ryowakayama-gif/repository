@@ -59,6 +59,7 @@ import docx
 from openpyxl import Workbook, load_workbook
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from kitashiobara_anke import pc as _pc  # noqa: E402  割合の一か所（回収40件）
 from kitashiobara_common import (  # noqa: E402
     add_sheet, ensure_out_dir, style_header_row, style_note, write_row,
 )
@@ -92,7 +93,7 @@ SHIHYOU = [
      "ありますか",
      "測れる（参考値）",
      "―（調査の方法と集計が前回と異なるため参考値とする。"
-     "正本に23.7％を記載済み）"),
+     f"正本に{_pc('差別を感じた')}を記載済み）"),
     ("②保健・医療", "特定健康診査の受診率",
      "51.3％", "60％",
      "市町村国保の実施状況",
@@ -107,8 +108,8 @@ SHIHYOU = [
      "今回のアンケート（障がい者版）",
      "問30　今利用している福祉サービスに満足していますか",
      "測れる（参考値）",
-     "―（分母の定義により39.4％とも61.9％とも読める。"
-     "分母を決めてから評価する）"),
+     f"―（正本の参考値は前回と同じく利用者を分母とした{_pc('満足（利用者）')}。"
+     f"無回答を除く回答者全員を分母とすると{_pc('満足（無回答を除く全員）')}）"),
     ("④教育・育成", "医療的ケア児の受入れ体制の整備",
      "無", "有",
      "村の体制の実績",
@@ -290,7 +291,7 @@ SHOUKAI = [
      "把握の仕組みを設けることから始める形で計画に書きます。"
      "把握していないこと自体が、"
      "次の３年間で取り組む根拠になります。",
-     "令和８年11月28日（金）"),
+     "令和８年11月27日（金）"),
 ]
 
 
@@ -404,7 +405,10 @@ def verify(setsu):
 
     # ⑥ 追記の挿入位置が正本にちょうど1つあること
     for rec in SS_EDITS:
-        n = hon.count(_norm(rec["ichi"]))
+        #   引用はアンケートの段落にあるため、回収40件への差し替え
+        #   （AN40）の後の文で照らす
+        from build_kitashiobara_anke40 import shin_ichi
+        n = hon.count(_norm(shin_ichi(rec["ichi"])))
         if n != 1:
             ng.append(f"{rec['no']}の挿入位置が正本に{n}件: "
                       f"{rec['ichi'][:30]}")

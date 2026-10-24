@@ -90,6 +90,15 @@ from build_kitashiobara_mura_daicho import (  # noqa: E402
     DK_HYOU, DK_KAKIKAE, DK_EDITS,
 )
 from build_kitashiobara_tasha_review import TR_KAKIKAE  # noqa: E402
+from build_kitashiobara_anke40 import AN40_KAKIKAE, AN40_HYOU  # noqa: E402
+from build_kitashiobara_yokodan import YD_KAKIKAE, YD_HYOU  # noqa: E402
+# 理解促進研修・啓発事業の令和７年度の実績（表５-29。ＤＫ-27）。
+# 以前は「これまで実績がありません」と書いており、台帳で直した表と
+# 食い違っていた（令和8年10月24日 横断レビュー）。
+_RIKAI_R7 = next(
+    re.match(r"^([0-9]+)", r["ato"][1]).group(1) for r in DK_HYOU
+    if r.get("svc") == "理解促進研修・啓発事業")
+from kitashiobara_anke import pc as _anke_pc  # noqa: E402
 from build_kitashiobara_graph import GRAPHS, OUT_DIR as ZU_DIR  # noqa: E402
 from build_kitashiobara_zuhyo_bangou import ZU, HYO  # noqa: E402
 
@@ -345,7 +354,8 @@ MEMO_EDITS = [
      "健康21プランの母子保健事業（妊婦全戸訪問、産後ケア事業等）と、"
      "本計画の医療的ケア児支援体制の整備を、保健師を通じて連携して進めます。"),
     ("R-21", "第５章３　障害者週間に合わせた啓発",
-     "理解促進研修・啓発事業は、これまで実績がありません。"
+     f"理解促進研修・啓発事業は、令和７年度に{_RIKAI_R7}件を実施しました"
+     "（表５-29）。"
      "実施の方法としては、毎年12月３日から９日までの障害者週間"
      "（障害者基本法第９条）に合わせて、"
      "村の施設における展示、広報誌の特集、"
@@ -869,9 +879,22 @@ def apply_kakikae(doc):
     挿入ではなく置換であるため、直す前の文が本文にちょうど1つある
     ことを確かめてから書き換える。書式は先頭のランのものを残す。
     """
-    for rec in list(KAKIKAE) + list(KG_KAKIKAE) + list(KO_KAKIKAE) + list(DK_KAKIKAE) + list(TR_KAKIKAE):
+    #   表の中の段落（≪国の基本指針≫の囲み等）も対象にする（ＹＤ-2）。
+    #   結合セルは同じ段落が何度も現れるため、要素で重複を除く。
+    naka = []
+    mita = set()
+    for t in doc.tables:
+        for row in t.rows:
+            for c in row.cells:
+                for p in c.paragraphs:
+                    if id(p._p) not in mita:
+                        mita.add(id(p._p))
+                        naka.append(p)
+    for rec in list(KAKIKAE) + list(KG_KAKIKAE) + list(KO_KAKIKAE) + list(DK_KAKIKAE) + list(TR_KAKIKAE) + list(AN40_KAKIKAE) + list(YD_KAKIKAE):
         atari = [p for p in doc.paragraphs
                  if _norm(rec["mae"]) in _norm(p.text)]
+        if not atari:
+            atari = [p for p in naka if _norm(rec["mae"]) in _norm(p.text)]
         if len(atari) != 1:
             raise LookupError(f"書き換え先が一意でない（{len(atari)}件）: "
                               f"{rec['no']}")
@@ -913,6 +936,43 @@ def apply_daicho_hyou(doc):
         for c, v in zip(cs[n:n + 3], rec["ato"]):
             _set_cell_text(c._tc, v)
         changes.append(f"実績の表{rec['no']}：{rec['saki']}")
+
+
+def apply_anke40_hyou(doc, recs=None, label="アンケート40件"):
+    """表のセルを1つずつ書き換える（AN40_HYOU・YD_HYOU）。
+
+    アンケートの表のセルを40件の集計の値に差し替える（AN40_HYOU）ほか、
+    表８-２ 計画の策定経過の工程を案Ａに合わせる（YD_HYOU）。
+
+    表頭の1列目（「項目|全体」は2列目が「全体」で始まる表）と行の1列目で
+    行を一つに絞る。「相談@2」は同じ見出しの2つ目の行。
+    直す前の文字がセルにちょうどあることを確かめてから書き換える。
+    """
+    for rec in (AN40_HYOU if recs is None else recs):
+        a1, a2 = (rec["atama"].split("|") + [""])[:2]
+        key, nth = ((rec["row_key"].split("@") + ["1"])[:2]
+                    if rec["row_key"] else (None, "1"))
+        hits = []
+        for t in doc.tables:
+            hdr = [c.text.strip() for c in t.rows[0].cells]
+            if hdr[0] != a1 or (a2 and not (len(hdr) > 1
+                                            and hdr[1].startswith(a2))):
+                continue
+            if key is None:
+                hits.append(t.rows[0].cells)
+                continue
+            rs = [r.cells for r in t.rows[1:] if r.cells[0].text == key]
+            if len(rs) >= int(nth):
+                hits.append(rs[int(nth) - 1])
+        if len(hits) != 1:
+            raise LookupError(f"アンケートの表の行が一意でない（{len(hits)}）: "
+                              f"{rec['no']}")
+        c = hits[0][rec["col"]]
+        if c.text != rec["mae"][0]:
+            raise LookupError(f"アンケートの表の直す前の値が違う: {rec['no']} "
+                              f"{c.text!r}")
+        _set_cell_text(c._tc, rec["ato"][0])
+        changes.append(f"{label}{rec['no']}：{rec['saki']}")
 
 
 def apply_gyou(doc):
@@ -1149,7 +1209,9 @@ def verify(doc, src_dims):
         "障がいのあるなしに関わらず、お互いの人格や個性を尊重し",
         "令和８年４月１日現在2,316人",
         "身体障害者手帳が127人",
-        "有効回答率", "22.1", "23.0",
+        #   有効回答率は回収40件の値（令和8年10月24日 AN40 で差し替え）
+        "有効回答率", _anke_pc("有効回答率_障がい者", kigou=False),
+        _anke_pc("有効回答率_合計", kigou=False),
         "会津北部地域生活支援拠点",
         "のぞまないセルフプラン",
         "居宅介護", "生活介護", "就労継続支援Ｂ型", "共同生活援助",
@@ -1304,7 +1366,9 @@ def verify(doc, src_dims):
           f"体系{len(TK_EDITS)}件・"
           f"障がい児{len(SJ_EDITS)}件・"
           f"表に行を足す{len(AK_EDITS)}件・"
-          f"書き換え{len(KAKIKAE) + len(KG_KAKIKAE) + len(KO_KAKIKAE) + len(DK_KAKIKAE) + len(TR_KAKIKAE)}件・"
+          f"書き換え{len(KAKIKAE) + len(KG_KAKIKAE) + len(KO_KAKIKAE) + len(DK_KAKIKAE) + len(TR_KAKIKAE) + len(AN40_KAKIKAE) + len(YD_KAKIKAE)}件・"
+          f"策定経過の表{len(YD_HYOU)}セル・"
+          f"アンケートの表{len(AN40_HYOU)}セル・"
           f"実績の表{len(DK_HYOU)}行・"
           f"体系の書き換え{len(TK_KAKIKAE)}件・"
           f"図{len(GRAPHS)}点が実在／"
@@ -1351,6 +1415,8 @@ def main():
     apply_gyou(doc)
     apply_kakikae(doc)
     apply_daicho_hyou(doc)
+    apply_anke40_hyou(doc)
+    apply_anke40_hyou(doc, YD_HYOU, label="横断レビュー")
     apply_juten(doc, DK_EDITS, label="村提供台帳")
     apply_taikei_kakikae(doc)
     apply_graphs(doc)

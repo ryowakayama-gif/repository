@@ -1477,7 +1477,10 @@ def verify(honpon):
     for rec in JUTEN_EDITS:
         if rec["kata"] == "注記後":
             continue
-        if _re.sub(r"[\s　]+", "", rec["ichi"]) not in norm:
+        #   引用が他メンバー版のアンケートの段落にあるときは、
+        #   回収40件への差し替え（AN40）の後の文で照らす
+        from build_kitashiobara_anke40 import shin_ichi
+        if _re.sub(r"[\s　]+", "", shin_ichi(rec["ichi"])) not in norm:
             ng.append(f"挿入位置の引用が正本にない: {rec['no']}")
 
     # ⑤d 入れる文章が表記の作法に合っていること

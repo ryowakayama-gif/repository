@@ -36,6 +36,7 @@
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
+from kitashiobara_anke import pc as _pc  # 割合の一か所（回収40件）
 from kitashiobara_common import (
     COLORS, FONT, OUT_DIR, add_sheet, ensure_out_dir,
     style_header_row, style_note, style_title, write_row,
@@ -356,7 +357,8 @@ SAIKYOGI_ITEMS = [
      "案2：協議会・相談支援事業所へのヒアリングで補う"
      "（マニュアルP.14はヒアリング調査をアンケートを補完するものと位置づけている）",
      "案1を基本とし、余力があれば案2を併用する。"
-     "行政データは悉皆であり、有効回答率22.1％のアンケートより精度が高い。"
+     f"行政データは悉皆であり、有効回答率{_pc('有効回答率_障がい者')}の"
+     "アンケートより精度が高い。"
      "ヒアリングは仕様書に明示がないため、実施する場合は範囲を協議する"),
 
     ("Ｓ-3", "クロス集計の秘匿基準と公表方法",
@@ -568,7 +570,8 @@ def sheet_admin(wb):
         "アンケートで把握できない項目を行政データで補う",
         "無記名調査のため個人単位の突合は行わない。"
         "集計値どうしを突き合わせ、アンケートの傾向が実態と整合するかを確認する。"
-        "行政データは悉皆であり、有効回答率22.1％のアンケートより精度が高い。",
+        f"行政データは悉皆であり、有効回答率{_pc('有効回答率_障がい者')}の"
+        "アンケートより精度が高い。",
         [7, 34, 50, 52, 40])
     style_header_row(ws, 5, ["No", "確認する事項", "突合するデータ", "目的", "依頼状況"])
     r = 6
