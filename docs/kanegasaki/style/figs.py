@@ -255,17 +255,26 @@ def f_nintei():
 
 # ── 図7　要介護1の重度化率の推移 ────────────────────────────
 def f_judoka():
-    yr = ['令和2年度', '令和4年度', '令和6年度', '令和7年度']
-    v = [24.1, 41.5, 45.2, 57.0]
-    fig, ax = plt.subplots(figsize=(6.4, 3.2))
-    ax.bar(yr, v, width=0.52, color=[PALE, BLUE, BLUE, RED])
-    for i, y in enumerate(v):
-        ax.text(i, y + 1.2, '%.1f％' % y, color=RED if i == 3 else NAVY,
-                ha='center', fontsize=10, fontweight='bold')
-    ax.axhline(50, color=ORANGE, ls='--', lw=1.6)
-    ax.text(3.45, 51, '更新の半数', color=ORANGE, ha='right', fontsize=9)
-    ax.set_ylim(0, 66)
-    ax.set_ylabel('要介護1の更新時に重度化した割合（％）')
+    """要介護1の更新時の転帰。区分を確認中の件数は別の色で積み、確定値と分ける。"""
+    yr = ['令和2年度\n（79件）', '令和4年度\n（106件）', '令和6年度\n（124件）', '令和7年度\n（86件）']
+    n = [79, 106, 124, 86]
+    k2 = [10, 36, 44, 40]
+    k3 = [5, 4, 9, 6]
+    ot = [4, 4, 3, 3]
+    p2 = [a / b * 100 for a, b in zip(k2, n)]
+    p3 = [a / b * 100 for a, b in zip(k3, n)]
+    po = [a / b * 100 for a, b in zip(ot, n)]
+    fig, ax = plt.subplots(figsize=(6.4, 3.4))
+    ax.bar(yr, p2, width=0.52, color=BLUE, label='要介護2へ')
+    ax.bar(yr, p3, width=0.52, bottom=p2, color=PALE, label='要介護3へ')
+    b2 = [a + b for a, b in zip(p2, p3)]
+    ax.bar(yr, po, width=0.52, bottom=b2, color=GREY, label='その他（区分確認中）')
+    for i in range(4):
+        ax.text(i, b2[i] + po[i] + 1.2, '%.1f％（〜%.1f％）' % (b2[i], b2[i] + po[i]),
+                color=NAVY, ha='center', fontsize=9, fontweight='bold')
+    ax.set_ylim(0, 70)
+    ax.set_ylabel('更新件数に対する割合（％）')
+    LEG(ax, ncol=3)
     return _save(fig, 'f7_judoka')
 
 

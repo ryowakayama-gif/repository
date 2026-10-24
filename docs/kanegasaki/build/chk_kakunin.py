@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""金ケ崎町　確認事項70件が3つの成果品で食い違っていないかを突き合わせる。
+"""金ケ崎町　確認事項が3つの成果品で食い違っていないかを突き合わせる。
 
-  ① 計画素案の附《要回答》（ch_soan.py）  … 正本。70件
+  ① 計画素案の附《要回答》（ch_soan.py）  … 正本。件数は見出し「確認事項（N件）」から読む
   ② 確認事項照会_第10期（ch_shokai.py）   … 第2＝《要確定》／第3＝Ｃ・Ｄ／第4＝Ａ・Ｂ
   ③ 確認事項の区分（ch_shiryo.py）        … 第2 Ａ／第3 Ｂ／第4 Ｃ／第5 Ｄ
 
@@ -43,8 +43,10 @@ def nos_in(txt):
 
 
 # ── ① 素案の附 ──
+NH = re.search(r"H2\('《要回答》　確認事項（(\d+)件）'\)", soan)
+NN = int(NH.group(1))
 FU = [int(m) for m in re.findall(
-    r"\['\*\*(\d+)\*\*', ", seg(soan, "H2('《要回答》　確認事項（70件）')", '], widths='))]
+    r"\['\*\*(\d+)\*\*', ", seg(soan, NH.group(0), '], widths='))]
 
 # ── ② 照会文書 ──
 KN = re.compile(r"'\*\*([Ａ-Ｄ])\*\*\\n\*\*(\d+)\*\*'")
@@ -65,13 +67,13 @@ def chk(na, ok, msg):
         bad.append(na)
 
 
-ZEN = list(range(1, 71))
+ZEN = list(range(1, NN + 1))
 kaketa = lambda ns: sorted(set(ZEN) - set(ns)) or 'なし'
 kasanaru = lambda ns: sorted({n for n in ns if ns.count(n) > 1}) or 'なし'
 
 print('■ 金ケ崎町　確認事項の突合せ\n')
 
-chk('①素案の附が1〜70で欠番・重複なし', sorted(FU) == ZEN,
+chk('①素案の附が1〜%dで欠番・重複なし' % NN, sorted(FU) == ZEN,
     '%d件／欠番 %s／重複 %s' % (len(FU), kaketa(FU), kasanaru(FU)))
 
 chk('②素案の附が番号の順に並んでいる', FU == sorted(FU),
@@ -79,12 +81,12 @@ chk('②素案の附が番号の順に並んでいる', FU == sorted(FU),
         '%dの次に%d' % (a, b) for a, b in zip(FU, FU[1:]) if b < a))
 
 SA = [n for _k, n in SH3 + SH4]
-chk('③照会文書の第3＋第4が70件で欠番・重複なし', sorted(SA) == ZEN,
+chk('③照会文書の第3＋第4が%d件で欠番・重複なし' % NN, sorted(SA) == ZEN,
     '第3 %d件＋第4 %d件＝%d件／欠番 %s／重複 %s'
     % (len(SH3), len(SH4), len(SA), kaketa(SA), kasanaru(SA)))
 
 RA = sum(SR.values(), [])
-chk('④区分文書のＡ〜Ｄが70件で欠番・重複なし', sorted(RA) == ZEN,
+chk('④区分文書のＡ〜Ｄが%d件で欠番・重複なし' % NN, sorted(RA) == ZEN,
     '・'.join('%s%d' % (k, len(v)) for k, v in SR.items())
     + '＝%d件／欠番 %s／重複 %s' % (len(RA), kaketa(RA), kasanaru(RA)))
 
@@ -169,7 +171,7 @@ chk('⑫照会文書 第2が素案の《要確定》と同じ番号の組であ�
     else '第2 %d件（見出し%d件）／《要確定》%d件／第2にない№ %s／附にない№ %s' % (
         len(DK), DN, YN, sorted(set(YK) - set(DK)) or 'なし', sorted(set(DK) - set(YK)) or 'なし'))
 
-print('\n%s：確認事項70件（Ａ%d・Ｂ%d・Ｃ%d・Ｄ%d）／《要確定》%d件'
-      % ('適合' if not bad else '不適合 %d件' % len(bad),
+print('\n%s：確認事項%d件（Ａ%d・Ｂ%d・Ｃ%d・Ｄ%d）／《要確定》%d件'
+      % ('適合' if not bad else '不適合 %d件' % len(bad), NN,
          len(SR['Ａ']), len(SR['Ｂ']), len(SR['Ｃ']), len(SR['Ｄ']), YN))
 sys.exit(1 if bad else 0)
