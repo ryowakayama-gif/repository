@@ -40,7 +40,7 @@ import openpyxl
 from docx.oxml.ns import qn
 from openpyxl.styles import Alignment, Font
 
-KYOGI = "01_第10期_最新版成果品/川崎町_計画書素案_v2.33_協議用.docx"
+KYOGI = "01_第10期_最新版成果品/川崎町_計画書素案_v2.34_協議用.docx"
 BAN = re.search(r"_v(\d+\.\d+)_", KYOGI).group(1)
 SAKI = f"01_第10期_最新版成果品/川崎町_計画書案_公表用_v{BAN}.docx"
 KIROKU = f"05_試算・管理シート/川崎町_公表用で落とした文_v{BAN}.xlsx"
@@ -279,13 +279,40 @@ def main():
                 for mm in re.finditer(re.escape(mk), t):
                     ryuho.append((sec, "表" if el.tag == qn("w:tbl") else "本文", mk,
                                   t[max(0, mm.start() - 80):mm.end() + 10]))
+    # 令和8年10月24日 Red Team 再レビュー第3回 R3-03：扱いの列が空欄のままでは台帳にならない。
+    # 確認先・期限・既定の扱い（回答・決定がない場合）を印の種類で置き、協議用素案の同じ段落にある
+    # 確認事項No を引く。処理結果・決裁日は町が記入する（当方で決めない）。
+    k_paras = ["".join(n.text or "" for n in q.iter(qn("w:t"))) for q in k.element.body.iter(qn("w:p"))]
+    KITEI = {
+        "［要確認］": ("町（保健福祉課）", "計画書（案）の確定前（パブリックコメントの開始前）",
+                     "回答により確定値に置き換える。回答がない場合は「確認中」の注記とし、数値は推測で置かない。"
+                     "注記で足りない文は取り下げる"),
+        "［要協議］": ("策定委員会（第3回）・町", "第3回策定委員会（令和9年2月上旬〜中旬）",
+                     "第3回の協議・答申で定めた内容に置き換える。定まらない場合は記載を取り下げるか、"
+                     "第10期中に定める旨の注記とする"),
+        "［要内訳］": ("町（保健福祉課）", "計画書（案）の確定前",
+                     "内訳を受領して置き換える。受領できない場合は合計のみとし内訳の文を取り下げる"),
+    }
+
+    def no_hiku(mae_bun):
+        kagi = re.sub(r"[［］【】⚠※\s]", "", mae_bun)[-24:]
+        for q in k_paras:
+            if kagi and kagi in re.sub(r"[［］【】⚠※\s]", "", q):
+                return "・".join(sorted(set(re.findall(r"No\.(\d+)", q)), key=int))
+        return ""
+
     wr = openpyxl.Workbook()
     wsr = wr.active
     wsr.title = "留保の一覧"
-    wsr.append(["No", "節", "本文／表", "印", "前後の文", "公表の前の扱い（確定・注記・取下げ）"])
+    wsr.append(["No", "節", "本文／表", "印", "前後の文", "確認先", "処理の期限", "既定の扱い（回答・決定がない場合）",
+                "台帳の確認事項No（協議用素案の同じ段落）", "処理結果（確定・注記・取下げ）［町が記入］", "決裁日［町が記入］"])
+    n_no = 0
     for n_, r_ in enumerate(ryuho, 1):
-        wsr.append([n_, *r_, ""])
-    for col, w in zip("ABCDEF", (6, 8, 8, 10, 90, 30)):
+        mae_bun = r_[3].split(r_[2])[0]
+        no_ = no_hiku(mae_bun)
+        n_no += bool(no_)
+        wsr.append([n_, *r_, *KITEI[r_[2]], no_, "未決定", ""])
+    for col, w in zip("ABCDEFGHIJK", (6, 8, 8, 10, 70, 18, 22, 40, 16, 22, 12)):
         wsr.column_dimensions[col].width = w
     for row in wsr.iter_rows():
         for c_ in row:
@@ -302,6 +329,8 @@ def main():
     wr.save(RYUHO)
     judge(len(ryuho) == sum(ato.count(m_) for m_ in ("［要確認］", "［要協議］", "［要内訳］")),
           f"留保の一覧 {len(ryuho)}件 → {RYUHO}")
+    judge(True, f"留保の一覧の扱いの列：確認先・期限・既定の扱いを{len(ryuho)}件すべてに置いた"
+                f"（確認事項No を引けたもの {n_no}件。処理結果は町が記入）")
     print("  ── 検査1　協議の印・語が残っていない")
     for go in ("⚠", "確認事項No", "【町確認】", "【委員会協議】", "本素案", "この素案", "協議用",
                "受託者", "当社", "ビズアップ", "スクリプト", ".xlsx", "別添『"):

@@ -21,7 +21,7 @@ import sys
 import docx
 from docx.oxml.ns import qn
 
-SOAN = sys.argv[1] if len(sys.argv) > 1 else "01_第10期_最新版成果品/川崎町_計画書素案_v2.33_協議用.docx"
+SOAN = sys.argv[1] if len(sys.argv) > 1 else "01_第10期_最新版成果品/川崎町_計画書素案_v2.34_協議用.docx"
 ZEN = str.maketrans("０１２３４５６７８９", "0123456789")
 
 
