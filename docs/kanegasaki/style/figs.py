@@ -276,13 +276,11 @@ def f_chiiki():
     fig, ax = plt.subplots(figsize=(6.6, 3.2))
     ax.bar(yr, v, width=0.5, color=[GREY, PALE, BLUE, BLUE])
     for i, y in enumerate(v):
-        ax.text(i, y + 90, '{:,}'.format(y), color=NAVY if i else GREY,
+        ax.text(i, y + 800, '{:,}'.format(y), color=NAVY if i else GREY,
                 ha='center', fontsize=10, fontweight='bold')
-    ax.annotate('', xy=(3, 46967), xytext=(0, 45104),
-                arrowprops=dict(arrowstyle='->', color=RED, lw=1.6))
-    ax.text(1.5, 46700, '3年間で＋1,863千円（＋4.13％）', color=RED,
+    ax.text(1.5, 56000, '第9期から令和11年度までの3年間で＋1,863千円（＋4.13％）', color=RED,
             ha='center', fontsize=9, fontweight='bold')
-    ax.set_ylim(44400, 47600)
+    ax.set_ylim(0, 60000)
     ax.set_ylabel('介護予防・日常生活支援総合事業費（千円）')
     return _save(fig, 'f8_chiiki')
 
