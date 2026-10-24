@@ -48,6 +48,15 @@ from lxml import etree
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 
+from build_kitashiobara_mura_daicho import DK_HYOU  # noqa: E402
+
+# 意思疎通支援事業の実績は、台帳を反映した実績の表（ＤＫ）から読む
+# （令和8年10月24日、「実績0」のまま残っていたため）
+_ISHI = "、".join(
+    f"令和{n}年度{'（年度途中）' if n == '８' else ''}{v.split('（')[0]}件"
+    for n, v in zip(("６", "７", "８"),
+                    next(r for r in DK_HYOU if r["svc"].startswith("意思疎通支援事業"))["ato"]))
+
 from kitashiobara_common import (
     COLORS, FONT, OUT_DIR, SRC_DIR, add_sheet, ensure_out_dir,
     style_header_row, style_note, style_title, write_row,
@@ -283,7 +292,8 @@ SESAKU = [
      "課題5の方向性に移動支援が挙がっていない（R-18）"),
     ("課題6 権利擁護・合理的配慮", "第6章（成年後見制度の利用促進）・第5章9",
      "―（成果目標に該当なし）",
-     "意思疎通支援事業（法第77条第1項第6号）は実績0。手話通訳の自由記述と併せて整理"),
+     "意思疎通支援事業（法第77条第1項第6号）は令和７年度から利用がある"
+     f"（{_ISHI}。正本 表５-29）。手話通訳の自由記述と併せて整理"),
     ("課題7 日中活動・就労・社会参加", "第5章4（日中活動系）",
      "第4章（３）福祉施設から一般就労への移行等",
      "就労選択支援の周知は第4章（３）の方策に位置づける"),

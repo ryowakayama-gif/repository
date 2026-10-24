@@ -28,6 +28,17 @@
   K11 令和11年度の高齢化率が正本の値であること（村の推計を併記する場合は
       照会番号を添える）
   K12 他団体の名前・機微な語（利用先の事業所の種類が分かる語）が無いこと
+  K13 「第５章２（６）」等の章節の参照が正本の見出しにあること
+  K14 「表５-25」等の図表番号の参照が正本の図表にあること
+  K15 台帳の反映前に実績０で、反映後に利用があるサービスを「実績０」と
+      書いていないこと（短期入所・意思疎通支援事業・理解促進研修等）
+
+点検の範囲（令和8年10月24日に広げた）
+  上の23点（SEIKA）に加えて、output の他の成果物（作業の成果物）にも
+  K1・K3・K12・K15 を当てる。作業の成果物にも村・他メンバーに渡したものが
+  あり、曜日の誤り・他団体の名前・古い実績が残ると同じ誤りが広がるため。
+  K13・K14 は正本を指す参照が多い23点に限る（作業の成果物は、移植前の
+  当方の素案（北塩原村_計画素案.docx）の章立てを指すものが多いため）。
 
 許す例外（RE_YURUSU）
   古い値を「直す前」として示す成果物（対応履歴・差し替えの新旧・
@@ -36,6 +47,7 @@
 
 否定試験（74）
   各点検に、誤りをわざと入れた文を与え、止まることを確かめる。
+  K13〜K15 を足した後も、すべての点検について行う。
 
 出力: output/北塩原村_成果物の横断整合検査.xlsx
 """
@@ -101,6 +113,9 @@ RE_YURUSU = {
 }
 
 
+# 作業の成果物のうち、古い記述を「直す前」として引くため K3・K15 から外すもの
+RE_YURUSU_SAGYOU = {}
+
 # ===========================================================================
 # 1. 成果物を読む
 # ===========================================================================
@@ -120,6 +135,40 @@ def yomu(path):
         for r in ws.iter_rows(values_only=True):
             out += [str(x) for x in r if x not in (None, "")]
     wb.close()
+    return out
+
+
+def yomu_gyou(path):
+    """成果物の文を、段落・表の行・シートの行ごとに返す（行のセルは「 | 」で
+    つなぐ）。サービス名と値が別のセルにある表を、行として読むために使う。"""
+    if path.endswith(".docx"):
+        d = docx.Document(path)
+        out = [p.text for p in d.paragraphs]
+        for t in d.tables:
+            for r in t.rows:
+                out.append(" | ".join(c.text for c in r.cells))
+        return out
+    wb = load_workbook(path, read_only=True, data_only=True)
+    out = []
+    for ws in wb.worksheets:
+        for r in ws.iter_rows(values_only=True):
+            v = [str(x) for x in r if x not in (None, "")]
+            if v:
+                out.append(" | ".join(v))
+    wb.close()
+    return out
+
+
+def sagyou_seika():
+    """SEIKA の外にある output の成果物（作業の成果物）。本書の出力は除く。"""
+    import glob
+    seika = {os.path.abspath(p) for p in SEIKA.values()}
+    out = {}
+    for p in sorted(glob.glob(f"{O}/*.docx") + glob.glob(f"{O}/*.xlsx")
+                    + glob.glob(f"{O}/会議資料/*.docx")):
+        if os.path.abspath(p) in seika or os.path.abspath(p) == OUT_FILE:
+            continue
+        out[os.path.relpath(p, O)] = p
     return out
 
 
@@ -219,7 +268,8 @@ def k8_pabu(text):
 
 def k12_kibi(text):
     ng = []
-    for g in ("ダルク", "小野町", "金ヶ崎", "金ケ崎", "阿蘇", "札幌", "川崎町"):
+    for g in ("ダルク", "小野町", "金ヶ崎", "金ケ崎", "阿蘇", "札幌", "川崎町",
+              "大雪"):
         if g in text:
             ng.append(f"出してはならない語: {g}")
     return ng
@@ -318,6 +368,7 @@ def k11_koureika(zen):
     """村の推計（48.1％）を書く成果物は、照会（Ｍ-142）を示していること。
     以前は工程の照会（Ｍ-123）を誤って示していた。"""
     ng = []
+    zen = zen.replace("48.1%", "48.1％")
     if "48.1％" in zen and "Ｍ-142" not in zen:
         ng.append("村の推計（48.1％）を書きながら照会（Ｍ-142）を示していない")
     if "48.1％" in zen and "Ｍ-123" in zen and "Ｍ-123は工程" not in zen:
@@ -328,13 +379,157 @@ def k11_koureika(zen):
     return ng
 
 
+# ---------------------------------------------------------------------------
+# 参照の照合（章節・図表番号）と、台帳の反映前の実績
+# ---------------------------------------------------------------------------
+def _nfkc(s):
+    import unicodedata
+    return unicodedata.normalize("NFKC", s)
+
+
+def honpon_mokuji():
+    """正本の見出しから {(章, 節, 項)} と図表番号の集合を作る。
+
+    章は「第５章」（Heading 1）、節は「２　」（Heading 2）、項は「（６）」
+    （Heading 3、又は節の中で「（６）」で始まる段落）。"""
+    d = docx.Document(SEIKA["正本"])
+    secs, caps = set(), set()
+    sho = setsu = None
+    for p in d.paragraphs:
+        t = _nfkc(p.text.strip())
+        st = p.style.name if p.style is not None else ""
+        m = re.match(r"(表|図)(\d+)-(\d+)\s", t)
+        if m:
+            caps.add(f"{m.group(1)}{m.group(2)}-{m.group(3)}")
+        if st == "Heading 1":
+            m = re.match(r"第(\d+)章", t)
+            if m:
+                sho, setsu = m.group(1), None
+                secs.add((sho, None, None))
+            continue
+        if st == "Heading 2" and sho:
+            m = re.match(r"(\d+)\s", t)
+            if m:
+                setsu = m.group(1)
+                secs.add((sho, setsu, None))
+            continue
+        m = re.match(r"\((\d+)\)", t)
+        if m and sho and setsu:
+            secs.add((sho, setsu, m.group(1)))
+    return secs, caps
+
+
+#   正本ではない文書（前回計画・県の計画・報告書・国の告示等）の章節・図表を
+#   指す文は、参照の直前にその文書の名がある。その場合は照合しない。
+HOKA_BUNSHO = re.compile(
+    r"(前回|現行計画|県|第7期|報告書|骨子|第4次|介護保険|高齢者|国の|基本指針|"
+    r"旧|他メンバー版|移植前|医療計画|本編|当方の素案|レビュー|指針|告示|法|"
+    r"集計表|調査票|資料\d|図表)")
+
+
+def k13_shousetsu(text, secs):
+    ng = []
+    t = _nfkc(text)
+    for m in re.finditer(r"第(\d+)章(\d+)?(?:\((\d+)\))?", t):
+        if m.groups() in secs:
+            continue
+        if HOKA_BUNSHO.search(t[max(0, m.start() - 20):m.start()]):
+            continue
+        if "医療計画" in t[max(0, m.start() - 80):m.start()]:
+            continue
+        ng.append(f"正本に無い章節 {m.group(0)}: …{t[max(0, m.start() - 24):m.end() + 12]}")
+    return ng
+
+
+def k14_zuhyou_ref(text, caps):
+    ng = []
+    t = _nfkc(text)
+    for m in re.finditer(r"(?<![図0-9A-Za-z])(表|図)(\d+)-(\d+)(?!-\d)", t):
+        key = f"{m.group(1)}{m.group(2)}-{m.group(3)}"
+        if key in caps:
+            continue
+        if HOKA_BUNSHO.search(t[max(0, m.start() - 30):m.start()]):
+            continue
+        ng.append(f"正本に無い図表番号 {key}: …{t[max(0, m.start() - 24):m.end() + 12]}")
+    return ng
+
+
+def zero_kara_riyou():
+    """台帳の反映前は3年度とも0で、反映後に利用があるサービスの名（括弧の前）。"""
+    from build_kitashiobara_mura_daicho import DK_HYOU
+    out = set()
+    for r in DK_HYOU:
+        if all(v.startswith("0（") for v in r["mae"]) and \
+                any(not v.startswith(("0（", "―")) for v in r["ato"]):
+            #   日常生活用具は種目ごと（「日常生活用具：居宅生活動作補助用具」）
+            out.add(r["svc"].replace("\n", "").split("（")[0].split("：")[-1])
+    return sorted(out)
+
+
+ZERO_RIYOU = zero_kara_riyou()
+
+
+def k15_jisseki0(text):
+    """「短期入所の実績は0」等、台帳の反映前の値を書いた文。前回計画の期間
+    （令和３〜５年度）の実績を述べる文は除く。"""
+    ng = []
+    jis0 = r"実績(?:は|が|・見込とも|・見込量とも)?0(?![.0-9])"
+    #   表の行で、利用のあるサービスを「未実施」としているもの
+    for svc in ZERO_RIYOU:
+        for cell_gyou in [_nfkc(text)]:
+            sel = [c.strip() for c in cell_gyou.split("|")]
+            if any(c.startswith(svc) or c.endswith(svc) for c in sel) and "未実施" in sel:
+                ng.append(f"{svc}を未実施としている: {cell_gyou[:70]}")
+    for bun in re.split(r"[。\n]", _nfkc(text)):
+        if re.search(r"令和[3-5](?:年度|〜)", bun):
+            continue
+        for svc in ZERO_RIYOU:
+            #   サービス名のすぐ後に「実績0」があるもの（「短期入所の実績は0」
+            #   「意思疎通支援事業 | 実績0人」）。「短期入所には利用があり、
+            #   実績が0であった移動支援」のように別の事柄を述べる文は除く
+            if re.search(re.escape(svc) + r"(?:（[^）]*）)?\s*(?:\|\s*)?"
+                         r"(?:の|は|が|で)?\s*" + jis0, bun):
+                ng.append(f"{svc}を実績0としている: {bun[:70]}")
+    return ng
+
+
+# ---------------------------------------------------------------------------
+# 委員会・住民に出す前の確認（不合格にはしない。ご判断のための数え上げ）
+#   他ＡＩの横断レビュー（第5節 Step 3）が、残っている「要確認」「M-***」等の
+#   対外公開の可否を確かめるよう求めたもの。照会番号や確認中の注記を
+#   委員会資料に残すかどうかは、村とご相談のうえで決める事項であるため、
+#   数と例を示すにとどめる。
+# ---------------------------------------------------------------------------
+KOUKAI_GO = [
+    ("照会番号（Ｍ-）", r"(?<![Ａ-Ｚ])Ｍ-\d+"),
+    ("照会番号（Ｓ-）", r"(?<![Ａ-Ｚ])Ｓ-\d+"),
+    ("【村へ確認】等の注記", r"【(?:村|県|他メンバー)へ確認"),
+    ("【確認中】【要確認】", r"【(?:確認中|要確認)】"),
+    ("「確認中」「確認しています」", r"確認中|確認しています"),
+]
+
+
+def koukai_mae(texts):
+    out = []
+    for name in TAIGAI:
+        zen = "\n".join(texts.get(name, []))
+        for label, pat in KOUKAI_GO:
+            hits = re.findall(pat, zen)
+            if hits:
+                m = re.search(pat, zen)
+                rei = zen[max(0, m.start() - 20):m.end() + 20].replace("\n", " ")
+                out.append((name, label, len(hits), rei))
+    return out
+
+
 # ===========================================================================
 # 3. 全体の実行
 # ===========================================================================
 KENSA = [
-    ("K1", "日付と曜日が合う", "すべて"),
+    ("K1", "日付と曜日が合う", "すべて（作業の成果物を含む）"),
     ("K2", "アンケートは有効回答40件の値", "すべて（直す前を示すものを除く）"),
-    ("K3", "第4次計画を「改定対象外」と書かない", "すべて（直す前を示すものを除く）"),
+    ("K3", "第4次計画を「改定対象外」と書かない",
+     "すべて（作業の成果物を含む。直す前を示すものを除く）"),
     ("K4", "第7期の評価を「最終評価」と書かない",
      "協議会資料3・前回計画の評価_概要版・前回計画の評価整理"),
     ("K5", "社内の呼び名（正本）を出さない", "委員会・住民に出す資料"),
@@ -344,17 +539,30 @@ KENSA = [
     ("K9", "照会番号が確認事項の台帳に実在", "すべて"),
     ("K10", "図表の点数が図表番号一覧と同じ", "すべて"),
     ("K11", "高齢化率の村の推計には照会番号を添える", "すべて"),
-    ("K12", "他団体の名前・機微な語を出さない", "すべて"),
+    ("K12", "他団体の名前・機微な語を出さない", "すべて（作業の成果物を含む）"),
+    ("K13", "章節の参照が正本の見出しにある", "23点"),
+    ("K14", "図表番号の参照が正本の図表にある", "23点"),
+    ("K15", "台帳の反映前の「実績0」を書かない", "すべて（作業の成果物を含む）"),
 ]
 
 
-def jikkou(texts=None):
-    """texts を与えると、成果物の代わりにその文で点検する（否定試験用）。"""
+def jikkou(texts=None, gyou=None, sagyou=None):
+    """texts を与えると、成果物の代わりにその文で点検する（否定試験用）。
+
+    texts  : 23点の文（段落・セルごと）
+    gyou   : 23点の文（段落・表の行ごと）。K13〜K15 に使う
+    sagyou : 作業の成果物の文（行ごと）。K1・K3・K12・K15 を当てる
+    """
     from build_kitashiobara_kakunin_kubun import KUBUN as KK
     from build_kitashiobara_zuhyo_bangou import HYO, ZU
     aru = {r[0] for r in KK}
+    secs, caps = honpon_mokuji()
     if texts is None:
         texts = {k: yomu(p) for k, p in SEIKA.items()}
+        gyou = {k: yomu_gyou(p) for k, p in SEIKA.items()}
+        sagyou = {k: yomu_gyou(p) for k, p in sagyou_seika().items()}
+    if gyou is None:
+        gyou = texts
     kekka = []          # (点検, 成果物, 内容)
     for name, lines in texts.items():
         zen = "\n".join(lines)
@@ -382,6 +590,26 @@ def jikkou(texts=None):
                     kekka.append(("K5", name, x))
         for x in k11_koureika(zen):
             kekka.append(("K11", name, x))
+    for name, lines in gyou.items():
+        for line in lines:
+            for x in k13_shousetsu(line, secs):
+                kekka.append(("K13", name, x))
+            for x in k14_zuhyou_ref(line, caps):
+                kekka.append(("K14", name, x))
+            if name not in RE_YURUSU:
+                for x in k15_jisseki0(line):
+                    kekka.append(("K15", name, x))
+    for name, lines in (sagyou or {}).items():
+        for line in lines:
+            for x in k1_youbi(line):
+                kekka.append(("K1", name, x))
+            for x in k12_kibi(line):
+                kekka.append(("K12", name, x))
+            if name not in RE_YURUSU_SAGYOU:
+                for x in k3_dai4ji(line):
+                    kekka.append(("K3", name, x))
+                for x in k15_jisseki0(line):
+                    kekka.append(("K15", name, x))
     return kekka
 
 
@@ -398,6 +626,14 @@ def hitei_shiken():
             "図表番号は図26点・表95点です",                               # K10
             "高齢化率は48.1％",                                           # K11
             "利用先はダルク",                                             # K12
+            "大雪地区で用いた手順",                                       # K12
+            "当方は第５章13に書いています",                               # K13
+            "第４章２（９）の目標",                                       # K13
+            "表５-99のとおり",                                            # K14
+            "短期入所の実績は0だが利用希望が10.0％",                      # K15
+            "意思疎通支援事業 | 実績0人",                                 # K15
+            "理解促進研修・啓発事業は実績・見込とも0",                     # K15
+            "必須 | 意思疎通支援事業 | 法第77条第1項第6号 | 人 | 0 | 未実施",  # K15
         ],
     }
     #   K4・K5 は対象の成果物の名前で効くため、名前を借りて入れる
@@ -405,16 +641,32 @@ def hitei_shiken():
     warui["概要版"] = ["正本 第５章"]
     kekka = jikkou(warui)
     deta = {k for k, _n, _x in kekka}
-    hoshii = {"K1", "K2", "K3", "K4", "K5", "K8", "K9", "K10", "K11", "K12"}
-    return sorted(hoshii - deta), kekka
+    hoshii = {"K1", "K2", "K3", "K4", "K5", "K8", "K9", "K10", "K11", "K12",
+              "K13", "K14", "K15"}
+    #   作業の成果物の側（K1・K3・K12・K15）も止まること
+    kekka2 = jikkou({}, {}, {"否定試験（作業）": [
+        "期限 令和８年10月31日（金）", "第４次計画は改定対象外",
+        "川崎町で用いた手順", "短期入所の実績は0"]})
+    deta2 = {k for k, _n, _x in kekka2}
+    nuke = sorted(hoshii - deta) + [f"作業の成果物の{k}" for k in
+                                    sorted({"K1", "K3", "K12", "K15"} - deta2)]
+    #   正しい文では止まらないこと（誤検出の試験）
+    yoi = jikkou({"否定試験（正）": [
+        "第５章２（６）サービスの質の向上と人材の確保", "表５-25のとおり",
+        "第８次福島県医療計画の第10章", "短期入所は令和３〜５年度とも実績0だった",
+        "前回計画の第３章５",
+        "第7期計画で見込んでいなかった短期入所には毎年度利用があり、"
+        "利用の実績が0であった移動支援等"]}, None, {})
+    nuke += [f"誤検出: {x}" for x in yoi]
+    return nuke, kekka
 
 
 def main():
     nuke, _ = hitei_shiken()
     if nuke:
         raise SystemExit(f"否定試験74：止まらない点検がある: {nuke}")
-    texts = {k: yomu(p) for k, p in SEIKA.items()}
-    kekka = jikkou(texts)
+    kekka = jikkou()
+    SAGYOU = sagyou_seika()
     ng6, n6 = k6_gaiyou()
     ng7, n7 = k7_hyouka()
     kekka += [("K6", "概要版", x) for x in ng6]
@@ -424,7 +676,8 @@ def main():
     wb = Workbook()
     wb.remove(wb.active)
     ws = add_sheet(wb, "00_結論", "成果物の横断整合検査",
-                   f"対象{len(SEIKA)}点・点検{len(KENSA)}種。"
+                   f"対象{len(SEIKA)}点（ほかに作業の成果物{len(SAGYOU)}点）・"
+                   f"点検{len(KENSA)}種。"
                    f"不合格{len(kekka)}件。否定試験74は全点検で止まることを確認。",
                    [8, 44, 46, 12])
     style_header_row(ws, 5, ["点検", "内容", "対象", "不合格"])
@@ -450,6 +703,25 @@ def main():
         h = hashlib.sha256(open(p, "rb").read()).hexdigest()[:16]
         r = write_row(ws, r, [k, os.path.relpath(p, REPO_ROOT), h,
                               RE_YURUSU.get(k, "")], alt=(i % 2 == 1))
+    km = koukai_mae({k: yomu(SEIKA[k]) for k in TAIGAI})
+    ws = add_sheet(wb, "04_委員会に出す前の確認",
+                   "委員会・住民に出す資料に残る照会番号・確認中の注記",
+                   "不合格にはしない。照会番号や確認中の注記を残すかどうかは、"
+                   "村とご相談のうえで決める事項（他ＡＩの横断レビュー 第5節 Step 3）。",
+                   [26, 26, 8, 70])
+    style_header_row(ws, 5, ["資料", "語", "数", "例"])
+    r = 6
+    for i, x in enumerate(km):
+        r = write_row(ws, r, list(x), alt=(i % 2 == 1))
+    ws = add_sheet(wb, "03_作業の成果物", f"作業の成果物 {len(SAGYOU)}点",
+                   "K1・K3・K12・K15 を当てたもの。点検した時点のハッシュ"
+                   "（SHA-256の先頭16字）。", [60, 20, 40])
+    style_header_row(ws, 5, ["ファイル", "ハッシュ", "例外"])
+    r = 6
+    for i, (k, p) in enumerate(SAGYOU.items()):
+        h = hashlib.sha256(open(p, "rb").read()).hexdigest()[:16]
+        r = write_row(ws, r, [os.path.relpath(p, REPO_ROOT), h,
+                              RE_YURUSU_SAGYOU.get(k, "")], alt=(i % 2 == 1))
     wb.save(OUT_FILE)
     print(f"作成: {OUT_FILE}")
     if kekka:
@@ -457,7 +729,8 @@ def main():
         for x in kekka[:200]:
             print("   -", x)
         raise SystemExit(1)
-    print(f"  自己点検: 対象{len(SEIKA)}点・点検{len(KENSA)}種すべて合格"
+    print(f"  自己点検: 対象{len(SEIKA)}点＋作業の成果物{len(SAGYOU)}点・"
+          f"点検{len(KENSA)}種すべて合格"
           f"（見込量{n6}件・実績{n7}件を正本の表と照合）／否定試験74")
 
 

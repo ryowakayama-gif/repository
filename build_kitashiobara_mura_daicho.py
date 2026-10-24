@@ -415,7 +415,10 @@ def _build_hyou():
             mae=mae, ato=ato,
             ryo="表の1行（3年度のセル）の置換",
             konkyo=("資料２－３" if r6 or r7 else "")
-            + ("・台帳" if r8 and r8[0] == "台" else "")))
+            + ("・台帳" if r8 and r8[0] == "台" else ""),
+            #   令和８年度の値の数え方（月平均・実人数・申請件数等）。
+            #   前回計画の評価が一律に「月平均」と書かないよう持たせる
+            r8kazoe=(r8[2] if r8 and r8[0] == "台" else None)))
     return out
 
 

@@ -232,11 +232,27 @@ def _gyou_text(rec):
                      if a is not None else
                      f"{nen} 実績なし（見込量{_fmt(p)}{tani}）")
     a8, p8, _t = vs[2]
-    r8 = (f"令和８年度は年度途中までの平均で{_fmt(a8)}{tani}"
+    #   令和８年度の値は、サービスにより数え方が違う（正本 第５章の注記）。
+    #   令和8年10月24日、計画相談支援（実人数）まで「平均」と書いていたため、
+    #   実績の表の差し替え（ＤＫ）が持つ数え方から書く。
+    kazoe = rec.get("r8kazoe") or ""
+    if kazoe.startswith("実人数"):
+        mae8 = "令和８年度は年度途中までの実人数で"
+    elif kazoe.startswith("申請件数"):
+        mae8 = "令和８年度は年度途中までの申請件数で"
+    elif kazoe.startswith("給付の決定の月数"):
+        mae8 = "令和８年度は年度を通した給付の決定の月数で"
+    elif kazoe.startswith("利用者数（令和８年４月から９月まで）"):
+        mae8 = "令和８年度は４月から９月までの利用者数で"
+    else:
+        mae8 = "令和８年度は年度途中までの平均で"
+    r8 = (f"{mae8}{_fmt(a8)}{tani}"
           f"（見込量{_fmt(p8)}{tani}。暫定）"
           if a8 is not None else
           f"令和８年度は確認中（見込量{_fmt(p8)}{tani}。Ｍ-137）")
     tan = f"［{rec['tani']}］" if rec.get("tani") else ""
+    if kazoe.startswith("実人数"):
+        tan += "（いずれも年度の中で利用した方の実人数。数え方はＭ-136で確認中）"
     return f"{tan}{'、'.join(parts)}。{r8}", vs
 
 

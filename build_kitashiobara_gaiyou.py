@@ -700,10 +700,10 @@ def _honpon_doc():
 
 
 def _suuji(v):
-    """「5人分」「0.3（1）人分」→ 先頭の数（「―」は None）。"""
+    """「5人分」「0.3（1）人分」→ 先頭の数（「―」「－」は None）。"""
     import re
-    m = re.match(r"^([0-9.]+|―)", v)
-    if not m or m.group(1) == "―":
+    m = re.match(r"^([0-9.]+|[―－-])", v)
+    if not m or not m.group(1)[0].isdigit():
         return None
     x = float(m.group(1))
     return int(x) if x == int(x) else x
@@ -724,7 +724,8 @@ def honpon_hyou(nendo):
         if rows[0][:2] != ["サービス種別", "単位"] or rows[0][2:5] != head:
             continue
         for r in rows[1:]:
-            if r[1] != "人／月" or not r[2].endswith("分"):
+            # 令和６年度が「－」（制度が無かった年度）の行も拾う（就労選択支援）
+            if r[1] != "人／月" or not any(v.endswith("分") for v in r[2:5]):
                 continue
             out.setdefault(r[0].replace("\n", ""), [_suuji(v) for v in r[2:5]])
     return out
@@ -988,13 +989,16 @@ def blk_mikomi(doc):
     ], size=SMALL_PT)
     para(doc, "＜主なサービスの利用者数（令和７年度の実績→令和11年度の見込量）＞",
          size=SMALL_PT, bold=True)
-    table(doc, mikomi_rows(), [3053, 2050, 3053, 2050], size=8,
+    rows = mikomi_rows()
+    table(doc, rows, [3053, 2050, 3053, 2050], size=8,
           aligns=[None, "center", None, "center"])
+    nashi = any(c.startswith("―") for r in rows[1:] for c in r[1::2])
     note(doc, "【確認中】人数は１か月当たりです。令和７年度の実績は村の資料による"
               "もので、令和９〜11年度の見込量は実績との離れを村に確認しています"
               "（見込量を置き直すかは村が判断します）。"
-              "「―」は令和７年度に実績のないサービスです"
-              "（就労選択支援は令和７年10月に始まった制度です）。")
+              + ("「―」は令和７年度の実績の表に値のないサービスです。" if nashi else "")
+              + "就労選択支援は令和７年10月に始まった制度で、前回計画には"
+              "見込量がありません。")
 
 
 def blk_housaku(doc):

@@ -19,6 +19,17 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
 
+from build_kitashiobara_mura_daicho import DK_HYOU  # noqa: E402
+
+
+def _dk(svc, i):
+    """台帳を反映した実績の表（ＤＫ）の値（i=0:令和6年度 1:令和7年度 2:令和8年度）。
+    令和8年10月24日、意思疎通支援事業と理解促進研修を「実績0」のまま
+    書いていたため、実績は文字で持たずにここから読む。"""
+    r = next(r for r in DK_HYOU if r["svc"].startswith(svc))
+    return r["ato"][i].split("（")[0]
+
+
 from kitashiobara_common import (
     BENEFIT_YEARS, COLORS, FONT, FUNDING_RULES, JIDO_KYUFU, JIDO_TOTAL,
     KAIGO_KYUFU, KAIGO_TOTAL, OUT_DIR,
@@ -397,13 +408,16 @@ def sheet_chiiki(wb):
     jigyo = [
         ("障がい者相談支援事業", "村住民課・地域生活支援センターいなわしろの2か所。基本相談部分を委託"),
         ("成年後見制度利用支援事業", "現行計画見込5人に対し令和5年度実績1人。乖離要因を確認"),
-        ("意思疎通支援事業", "実績0人。手話通訳者派遣の需要の有無を確認"),
+        ("意思疎通支援事業", f"令和7年度から利用あり（令和7年度{_dk('意思疎通支援事業', 1)}件、"
+                             f"令和8年度は年度途中で{_dk('意思疎通支援事業', 2)}件）。"
+                             "手話通訳者派遣の需要と提供体制を確認"),
         ("日常生活用具給付等事業", "令和5年度実績69件。排泄管理支援用具が大半"),
         ("移動支援事業", "令和3〜8年度の全期間で見込量0人・実績0人。制度未周知／代替手段／ニーズ不在の切り分けが必要"),
         ("日中一時支援事業", "令和5年度実績2人（増加傾向）。家族レスパイト・障がい児と接続"),
         ("地域活動支援センター機能強化事業", "令和5年度実績3人が見込量2人を上回っている。次期見込量に実績を反映"),
         ("訪問入浴サービス事業", "実績0人"),
-        ("理解促進研修・啓発事業", "実績0件。実施方法と財源を確認"),
+        ("理解促進研修・啓発事業", f"令和7年度に{_dk('理解促進研修・啓発事業', 1)}件を実施。"
+                                   "実施方法と財源を確認"),
         ("自発的活動支援事業", "実績0件。障がい者団体・家族会の活動支援と接続"),
     ]
     assert len(jigyo) == CHIIKI_ITEMS, "06_地域生活支援事業の事業数が定数と一致しません"
