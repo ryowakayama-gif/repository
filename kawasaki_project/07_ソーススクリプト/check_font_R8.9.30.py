@@ -23,7 +23,7 @@
 
 使い方：
   python3 07_ソーススクリプト/check_font_R8.9.30.py \
-      01_第10期_最新版成果品/川崎町_計画書素案_v2.35_協議用.docx
+      01_第10期_最新版成果品/川崎町_計画書素案_v2.36_協議用.docx
 """
 import collections
 import re
@@ -71,7 +71,7 @@ def sz(r):
 
 def main():
     path = sys.argv[1] if len(sys.argv) > 1 else (
-        "01_第10期_最新版成果品/川崎町_計画書素案_v2.35_協議用.docx")
+        "01_第10期_最新版成果品/川崎町_計画書素案_v2.36_協議用.docx")
     doc = docx.Document(path)
     body = doc.element.body
     kids = list(body.iterchildren())

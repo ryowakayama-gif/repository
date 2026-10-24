@@ -297,7 +297,11 @@ def main():
         (T_PC_START, "パブリックコメントの開始", "町",
          "⚠ **12月29日に当たります。** 年末年始を挟むため、"
          "令和9年1月4日（月）開始とする案を併記します"
-         "（その場合の納品は3月15日ちょうどになります）"),
+         # 令和8年10月24日 Red Team 第4回 F4-03：「3月15日ちょうど」は誤り（6日の後ろ倒しは案Ⅰの余裕5日を超える）
+         f"（その場合、後続の工程が6日ずつ遅れ、案Ⅰの納品は"
+         f"{ymd(KAISAI2 + dt.timedelta(days=nissu(3, PC_DAYS, INSATSU) + 6))}となり納期を"
+         f"{(KAISAI2 + dt.timedelta(days=nissu(3, PC_DAYS, INSATSU) + 6) - NOUKI).days}日超えます。"
+         f"案Ⅱ（印刷2週間）なら{ymd(KAISAI2 + dt.timedelta(days=nissu(3, PC_DAYS, 14) + 6))}）"),
         (T_PC_START + PC_DAYS, "パブリックコメントの終了", "町", ""),
         (T_PC_START + PC_DAYS + T_3,
          "第3回策定委員会（保険料の決定・意見の反映・答申）", "町・受託者",

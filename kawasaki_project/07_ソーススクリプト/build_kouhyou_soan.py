@@ -40,7 +40,7 @@ import openpyxl
 from docx.oxml.ns import qn
 from openpyxl.styles import Alignment, Font
 
-KYOGI = "01_第10期_最新版成果品/川崎町_計画書素案_v2.35_協議用.docx"
+KYOGI = "01_第10期_最新版成果品/川崎町_計画書素案_v2.36_協議用.docx"
 BAN = re.search(r"_v(\d+\.\d+)_", KYOGI).group(1)
 SAKI = f"01_第10期_最新版成果品/川崎町_計画書案_公表用_v{BAN}.docx"
 KIROKU = f"05_試算・管理シート/川崎町_公表用で落とした文_v{BAN}.xlsx"
@@ -304,15 +304,26 @@ def main():
     wr = openpyxl.Workbook()
     wsr = wr.active
     wsr.title = "留保の一覧"
-    wsr.append(["No", "節", "本文／表", "印", "前後の文", "確認先", "処理の期限", "既定の扱い（回答・決定がない場合）",
-                "台帳の確認事項No（協議用素案の同じ段落）", "処理結果（確定・注記・取下げ）［町が記入］", "決裁日［町が記入］"])
+    # 令和8年10月24日 Red Team 第4回 F4-04：保険料・見込量・KPI・認知症の本人参画の留保を先に処理する
+    def yusen(sec_):
+        if sec_ in ("9-1", "9-2", "9-3"):
+            return "1 先行（保険料・見込量）"
+        if sec_ == "10-4":
+            return "1 先行（KPI）"
+        if sec_.startswith("6-"):
+            return "1 先行（認知症施策・本人参画）"
+        return "2 通常"
+
+    wsr.append(["No", "節", "本文／表", "印", "前後の文", "処理の優先", "確認先", "処理の期限",
+                "既定の扱い（回答・決定がない場合）", "台帳の確認事項No（協議用素案の同じ段落）",
+                "処理結果（確定・注記・取下げ）［町が記入］", "決裁日［町が記入］"])
     n_no = 0
     for n_, r_ in enumerate(ryuho, 1):
         mae_bun = r_[3].split(r_[2])[0]
         no_ = no_hiku(mae_bun)
         n_no += bool(no_)
-        wsr.append([n_, *r_, *KITEI[r_[2]], no_, "未決定", ""])
-    for col, w in zip("ABCDEFGHIJK", (6, 8, 8, 10, 70, 18, 22, 40, 16, 22, 12)):
+        wsr.append([n_, *r_, yusen(r_[0]), *KITEI[r_[2]], no_, "未決定", ""])
+    for col, w in zip("ABCDEFGHIJKL", (6, 8, 8, 10, 70, 20, 18, 22, 40, 16, 22, 12)):
         wsr.column_dimensions[col].width = w
     for row in wsr.iter_rows():
         for c_ in row:
