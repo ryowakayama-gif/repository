@@ -386,6 +386,72 @@ def seibi_teiin(mei):
     raise KeyError("県シートの定員に %s（鍵 %s）がない" % (mei, key))
 
 
+def svc(mei, bu="介護"):
+    """サービス別給付費シートの1サービスを返す。{"給付費"|"人数"|"回数"|"日数": {年度: 値}}
+
+       bu は "介護"（２．介護サービス見込量）か "予防"（１．介護予防サービス見込量）。
+       年度は令和6〜11年度（令和6・7年度は実績、令和8年度は実績見込、令和9年度以降は推計）。
+       委員会資料5-3が当方の系列を持っていたため（外部レビュー R02）、国の推計ワークシートの
+       サービス別の値を引けるようにした。
+    """
+    wb = _ws()
+    rows = [[c.value for c in r] for r in wb["2_サービス別給付費"].iter_rows()]
+    lo, hi = None, len(rows)
+    for i, r in enumerate(rows):
+        h = str(r[0] or "")
+        if h.startswith("１．介護予防サービス見込量") and bu == "予防":
+            lo = i
+        elif h.startswith("２．介護サービス見込量"):
+            if bu == "予防":
+                hi = i
+                break
+            lo = i
+        elif h.startswith("３．総給付費") and bu == "介護":
+            hi = i
+            break
+    if lo is None:
+        raise KeyError(bu)
+    out = {}
+    for i in range(lo, hi):
+        if rows[i][1] is not None and str(rows[i][1]).strip() == mei:
+            j = i
+            while j < hi and (j == i or rows[j][1] is None):
+                lab = str(rows[j][2] or "")
+                for k in ("給付費", "人数", "回数", "日数"):
+                    if lab.startswith(k):
+                        out[k] = dict(zip(NENDO[:6], [float(x or 0) for x in rows[j][3:9]]))
+                j += 1
+            return out
+    raise KeyError("%s（%s）がサービス別給付費シートにない" % (mei, bu))
+
+
+def kubun_kyufu():
+    """区分別の給付費（千円）。{"介護_在宅"|"介護_居住系"|"介護_施設"|"予防"|"総給付費": {年度: 値}}"""
+    wb = _ws()
+    rows = [[c.value for c in r] for r in wb["1_推計値サマリ"].iter_rows()]
+    out = {}
+    sec = None
+    for r in rows:
+        h = str(r[0] or "")
+        if h.startswith("３．介護予防サービス見込量"):
+            sec = "予防"
+        elif h.startswith("４．介護サービス見込量"):
+            sec = "介護"
+        elif h.startswith("５．総給付費"):
+            sec = "総"
+        if sec == "予防" and h == "合計":
+            out["予防"] = dict(zip(NENDO[:6], r[3:9]))
+        elif sec == "介護" and h.startswith("（"):
+            for k in ("在宅", "居住系", "施設"):
+                if k in h:
+                    out["介護_" + k] = dict(zip(NENDO[:6], r[3:9]))
+        elif sec == "介護" and h == "合計":
+            out["介護"] = dict(zip(NENDO[:6], r[3:9]))
+        elif sec == "総" and h == "総給付費" and "総給付費" not in out:
+            out["総給付費"] = dict(zip(NENDO[:6], r[3:9]))   # 後ろの月額の内訳にも同じ見出しがある
+    return out
+
+
 def zero_koumoku():
     """ゼロで入っている項目を数え上げる（村の申し送りによる暫定の箇所）"""
     wb = _ws()

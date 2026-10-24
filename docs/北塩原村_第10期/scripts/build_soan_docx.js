@@ -232,11 +232,11 @@ kids.push(new Paragraph({children: [new PageBreak()]}));
 // ── 凡例 ──
 kids.push(p('本書の見方', {size: 28, bold: true, font: FONTG, color: NAVY, after: 240}));
 kids.push(p('本書は素案です。計画の確定にあたり、次の表記は解消または削除します。', {after: 240}));
+// 計画書（--keikaku）は編集注記を落として組むため、凡例にも⚙を置かない（外部レビュー R08）
 kids.push(table(['表記', '意味'], [
   ['【要確認】', '北塩原村との協議により確定する事項です。'],
   ['【要設定】', '目標値等を今後設定する箇所です。'],
-  ['⚙ 編集注記', '素案段階の申し送りです。計画確定時に削除します。'],
-], [22, 78]));
+].concat(KEIKAKU ? [] : [['⚙ 編集注記', '素案段階の申し送りです。計画確定時に削除します。']]), [22, 78]));
 kids.push(p('', {after: 240}));
 kids.push(new Paragraph({children: [new PageBreak()]}));
 

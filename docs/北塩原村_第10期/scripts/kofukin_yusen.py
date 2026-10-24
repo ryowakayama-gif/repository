@@ -629,6 +629,21 @@ def main():
                       "推移": "%.0f→%.0f→%.0f" % yy, "増減": d2}
                      for d2, k2, h, yy in nobi if d2 < 0],
         }
+        # 素案6-3・参考資料19・第2回資料7-3c の4区分（0点かつ全国該当率45%以上の32項目）との対照。
+        #   本書の段は未取得の全項目を分けたもので、母集団が違う。段Ｂ9点＝本業務4点＋認知症施策推進計画5点、
+        #   段Ｃ39点＝条件付き33点＋32項目の外の6点、のように説明できるよう内訳を持つ（外部レビュー R14）。
+        import analyze_kofukin as AK
+        _ar, _ak = AK.load()
+        yk = {(x["交付金"], x["指標"]): x for x in AK.yokaizen(_ar, _ak)}
+        taisho = []
+        for d in "ＡＢＣ":
+            uchi = [r for r in g[d] if (r["交付金"], r["指標"]) in yk]
+            soto = [r for r in g[d] if (r["交付金"], r["指標"]) not in yk]
+            taisho.append({"段": d, "項目": len(g[d]), "点": sum(r["未取得"] for r in g[d]),
+                           "32項目内_項目": len(uchi), "32項目内_点": sum(r["未取得"] for r in uchi),
+                           "32項目外": [{"交付金": r["交付金"], "指標": r["指標"], "点": r["未取得"]}
+                                        for r in soto]})
+        out["対照"] = taisho
         fp = P.build("kofukin.json")
         with io.open(fp, "w", encoding="utf-8") as f:
             json.dump(out, f, ensure_ascii=False, indent=1)

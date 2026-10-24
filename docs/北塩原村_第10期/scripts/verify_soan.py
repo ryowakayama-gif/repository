@@ -3384,6 +3384,37 @@ def main():
     except Exception as e:
         chk(84, "カラー版と単色版が同じ中身で組まれていること", False, f"照合できない（{e}）")
 
+    # ── 85　公表用（17・18）に受託者の作業の語・重複した参照・⚙の凡例が無いこと ──
+    #    外部レビュー R08・R09（令和8年10月24日）で、計画書に「当方」25回・「本業務」2回・
+    #    ⚙の凡例、「施策3-1から施策3-1に」のような参照が残っていた。
+    #    組んだ docx の本文と、公表用の中間JSONの両方を数える（0件を基準とする）。
+    try:
+        import docx as _dx85
+        import kouhyou_build as KB85
+        bad85 = []
+        ng_go = ("当方", "本業務", "提供待ち", "依頼中", "⚙")
+        pat85 = re.compile(r"(施策\d+-\d+|(?<![0-9])\d-\d{1,2})(?:から|・|、)\1(?![0-9(（])")
+        for nm in ("17_北塩原村第10期_計画素案_公表用", "18_北塩原村第10期_計画書_公表用"):
+            fp = _P.out(nm + ".docx")
+            d = _dx85.Document(fp)
+            tx = "\n".join("".join(x.text or "" for x in el.iter() if x.tag.endswith("}t"))
+                           for el in d.element.body.iter() if el.tag.endswith("}p"))
+            for g in ng_go:
+                if nm.startswith("17") and g == "⚙":
+                    continue        # 17は編集注記を含む素案であるため⚙を持つ
+                n = tx.count(g)
+                if n:
+                    bad85.append(f"{nm[:2]}に「{g}」{n}件")
+            dup = pat85.findall(tx)
+            if dup:
+                bad85.append(f"{nm[:2]}に重複した参照{len(dup)}件（{dup[0]}）")
+        chk(85, "公表用に受託者の作業の語・重複した参照・⚙の凡例が無いこと", not bad85,
+            "・".join(bad85[:3]) if bad85
+            else "17・18とも「当方」「本業務」「提供待ち」「依頼中」0件、重複した参照0件、18に⚙0件"
+                 f"（言い換え{len(KB85.KOUHYOU_GO)}語）")
+    except Exception as e:
+        chk(85, "公表用に受託者の作業の語・重複した参照・⚙の凡例が無いこと", False, f"照合できない（{e}）")
+
     # ── 出力 ─────────────────────────────
     w = max(len(n) for _, n, _, _ in RESULTS)
     print('■ 計画素案の自己点検')

@@ -161,15 +161,16 @@ SHISAKU_SOTO = {"施策5-1": "6-2", "施策5-2": "6-2", "施策5-3": "6-2", "施
 #   計画書は4通りとも1頁減り、素案（注記を含む）は1頁増えた。
 #   節をまたいで中身を動かすと、注記のある形と落とした形で逆に振れることがある。
 JISSOKU_KOUHYOU = {
-    "":            132,   # 素案（注記を含む）は本文132頁＝136頁
+    "":            133,   # 素案（注記を含む）は本文133頁＝137頁
 }
 # 令和8年10月24日、令和5・6年度の決算を反映して測り直した（doc118）。
-# 同日、他団体の外部レビューの型による修正（doc119）のあとも測り直し、4通りとも動かなかった
+# 同日、他団体の外部レビューの型による修正（doc119）のあとも測り直し、4通りとも動かなかった。
+# さらに外部レビュー（Red Team）の指摘を反映して測り直し、4通りとも2〜3頁増えた（doc120）
 JISSOKU_KEIKAKU = {
-    "":            119,   # 案を当てない計画書　＝123頁（許容115頁を8頁超える）
-    "ABCDE":       111,   # ＝115頁（許容と同じ）
-    "ABCDEHJ":     108,   # ＝112頁
-    "ABCDEGHJKL":  106,   # ＝110頁（目安100頁に対し+10頁・許容に5頁の余裕）
+    "":            122,   # 案を当てない計画書　＝126頁（許容115頁を11頁超える）
+    "ABCDE":       114,   # ＝118頁（許容を3頁超える）
+    "ABCDEHJ":     110,   # ＝114頁（許容に1頁の余裕）
+    "ABCDEGHJKL":  108,   # ＝112頁（目安100頁に対し+12頁・許容に3頁の余裕）
 }
 MAE_PG = 4
 
@@ -245,7 +246,52 @@ def fix_refs(t, sec):
             NOKORI.append((sec, tok, t[a:m.end() + 16].replace("\n", " ")))
             return tok
         return SETSU[tok]
-    return TOK.sub(_r, t)
+    return dedupe_refs(TOK.sub(_r, t))
+
+
+# 付け替えで同じ番号が並ぶもの（協議用の複数の施策が公表用の1つに入るため）。
+#   「施策3-1から施策3-1に」「施策4-1・施策4-1・施策4-5」「5-3・5-3」が残っていた
+#   （外部レビュー R09、令和8年10月24日）。付け替えの後で1つに畳む。
+_REF = r"(?:施策\d+-\d+|資料編\d+|(?<![0-9])\d-\d{1,2}(?:\(\d\))?)"
+_DUP_KARA = re.compile(r"(" + _REF + r")から\1(?![0-9(（])")
+_DUP_NARABI = re.compile(r"(" + _REF + r")((?:[・、]\1(?![0-9(（]))+)")
+
+
+def dedupe_refs(t):
+    if not t:
+        return t
+    t = _DUP_KARA.sub(r"\1", t)
+    return _DUP_NARABI.sub(r"\1", t)
+
+
+# 公表する文書に残してはならない受託者の作業の語（外部レビュー R08）。
+#   協議用素案（06）は策定の過程を示すため残す。公表用（17・18）でだけ言い換える。
+KOUHYOU_GO = [
+    ("参考　当方の検算", "参考　独自の検算"),
+    ("参考　当方の算定", "参考　独自の算定"),
+    ("当方の検算", "独自の検算"), ("当方の算定", "独自の算定"),
+    ("当方の系列", "独自の系列"), ("当方の認定者数", "独自の認定者数"),
+    ("当方の式", "独自の式"), ("当方の推計", "独自の推計"),
+    ("当方が第9期から復元した", "第9期計画から復元した"),
+    ("当方がワークシートの提供を受ける前に", "国の推計ワークシートの提供を受ける前に"),
+    ("当方は、", "策定の過程では、"), ("当方は", "策定の過程では"),
+    ("当方が", "策定の過程で"), ("当方の", "策定の過程での"), ("当方", "策定の過程"),
+    ("本業務の実施で取得をめざせる", "計画策定に伴う調査・分析の実施で取得をめざせる"),
+    ("本業務の実施", "計画策定に伴う調査・分析の実施"), ("本業務", "計画の策定"),
+    ("提供待ち", "確認中"), ("依頼中", "確認中"),
+]
+
+
+def kouhyou_go(o):
+    if isinstance(o, str):
+        for a, b in KOUHYOU_GO:
+            o = o.replace(a, b)
+        return o
+    if isinstance(o, dict):
+        return {k: kouhyou_go(v) for k, v in o.items()}
+    if isinstance(o, list):
+        return [kouhyou_go(v) for v in o]
+    return o
 
 
 def walk_fix(o, sec):
@@ -413,7 +459,8 @@ def to_json(out_path=None, an=""):
             figs_inline.setdefault(fn, {"file": fn, "caption": cap, "source": src})
     out = {"title": SC.TITLE, "title2": SC.TITLE2, "subtitle": SC.SUBTITLE,
            "draft": "素　案（公表用）", "issuer": SC.ISSUER, "date": SC.DATE,
-           "chapters": chapters, "figures": figs, "figures_inline": figs_inline}
+           "chapters": kouhyou_go(chapters), "figures": kouhyou_go(figs),
+           "figures_inline": kouhyou_go(figs_inline)}
     fp = out_path or P.build("kouhyou_soan%s.json" % ("_" + an if an else ""))
     with open(fp, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=1)
