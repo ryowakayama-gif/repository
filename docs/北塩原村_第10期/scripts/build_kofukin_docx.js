@@ -13,7 +13,8 @@ const {Document, Packer, Paragraph, TextRun, AlignmentType, PageBreak,
        LineRuleType, HeadingLevel} = d;
 
 const C = JSON.parse(fs.readFileSync(path.join(OUTDIR, '_build', 'kofukin.json'), 'utf8'));
-const FONT = '游明朝', FONTG = '游ゴシック';
+// 書体は計画書・委員会資料と同じ BIZ UDPゴシック（令和8年10月24日に游明朝・游ゴシックから改めた）
+const FONT = 'BIZ UDPゴシック', FONTG = 'BIZ UDPゴシック';
 const NAVY = '1F3864', BLUE = '2E75B6', GREY = '595959';
 const KEYB = 'FFF2CC', WARN = 'FDE9E9', OK = 'E8F2E8';
 const TBLW = 9360;
@@ -22,14 +23,17 @@ const TBLW = 9360;
 const lbl = (r) => r['交付金'] + r['目標'].slice(2);
 
 const p = (text, o = {}) => new Paragraph({
-  spacing: {after: o.after ?? 120, line: o.line ?? 300, lineRule: LineRuleType.EXACT},
+  // 11ptを超える字は行送りを最小値指定にする（固定だと Word で字の上が切れる。doc114）
+  spacing: (o.size ?? 21) > 22
+    ? {after: o.after ?? 120, line: Math.max(o.line ?? 300, Math.ceil((o.size ?? 21) * 13.5)), lineRule: LineRuleType.AT_LEAST}
+    : {after: o.after ?? 120, line: o.line ?? 300, lineRule: LineRuleType.EXACT},
   alignment: o.align, indent: o.indent,
   children: [new TextRun({text, font: o.font ?? FONT, size: o.size ?? 21,
                           bold: o.bold, color: o.color})],
 });
 const h1 = (t) => new Paragraph({
   keepNext: true,
-  spacing: {before: 300, after: 160, line: 320, lineRule: LineRuleType.EXACT},
+  spacing: {before: 300, after: 160, line: 360, lineRule: LineRuleType.AT_LEAST},
   children: [new TextRun({text: t, font: FONTG, size: 26, bold: true, color: NAVY})],
 });
 const h2 = (t) => new Paragraph({
