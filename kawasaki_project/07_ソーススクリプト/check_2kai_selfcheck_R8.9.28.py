@@ -14,8 +14,8 @@
 
 使い方：
   python3 07_ソーススクリプト/check_2kai_selfcheck_R8.9.28.py \
-      03_委員会・説明資料/川崎町_第2回策定委員会資料_R8.11_v17.docx \
-      01_第10期_最新版成果品/川崎町_計画書素案_v2.32_協議用.docx
+      03_委員会・説明資料/川崎町_第2回策定委員会資料_R8.11_v18.docx \
+      01_第10期_最新版成果品/川崎町_計画書素案_v2.33_協議用.docx
 """
 import json
 import re
@@ -65,7 +65,7 @@ def main(shiryo, soan):
     want = [("令和8年度の得点", f"{kawa[335]}点"),
             ("全国順位", f"{rank(kawa[335], tot)}位"),
             ("全国平均", f"{sum(tot) / len(tot):.1f}点"),
-            ("保険者数", f"{len(rows):,}保険者")]
+            ("市町村数", f"{len(rows):,}市町村")]  # 再レビュー N08
     for name, key in (("体制・取組指標群", "TAI"), ("活動指標群", "KATSU"),
                       ("成果指標群", "SEI")):
         vals = [gs(r, key) for r in rows]
@@ -177,7 +177,7 @@ def main(shiryo, soan):
 
 if __name__ == "__main__":
     a = sys.argv[1] if len(sys.argv) > 1 else \
-        "03_委員会・説明資料/川崎町_第2回策定委員会資料_R8.11_v17.docx"
+        "03_委員会・説明資料/川崎町_第2回策定委員会資料_R8.11_v18.docx"
     b = sys.argv[2] if len(sys.argv) > 2 else \
-        "01_第10期_最新版成果品/川崎町_計画書素案_v2.32_協議用.docx"
+        "01_第10期_最新版成果品/川崎町_計画書素案_v2.33_協議用.docx"
     sys.exit(main(a, b))

@@ -43,7 +43,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from fix_soan_v111 import clone_table, set_el            # noqa: E402
 
-BAN = "2.32"
+BAN = "2.33"
 SOAN = f"01_第10期_最新版成果品/川崎町_計画書素案_v{BAN}_協議用.docx"
 HINAGATA = f"01_第10期_最新版成果品/川崎町_計画書案_公表用_v{BAN}.docx"
 OUT = f"01_第10期_最新版成果品/川崎町_計画書案_概要版_v{BAN}.docx"
@@ -340,6 +340,9 @@ def honbun(V):
                  f"{len(V['juten_kadai'])}つの重点課題のうち、とくに力を入れる{len(V['juten'])}つの"
                  "ことを重点として取り組みます。"),
         ("T", hashira_hyo, [56, 18, 26]),
+        # 令和8年10月24日 再レビュー B12：柱の立て方（計画の章の組み立て）は委員会のご承認の前
+        ("囲み", f"{V['kosei'][0]}つの柱の立て方（計画の章の組み立て）は、策定委員会でご審議いただく案であり、"
+                 "まだ確定していません。"),
         ("見出し", "第9期から変わること"),
         ("本文", f"第10期では、新しく始める事業が{len(V['shinki_mei'])}件あります。"
                  "おもなものをお示しします。"),
@@ -635,6 +638,8 @@ def main():
     chk(mi == list("１２３４５６７８９")[:len(mi)], f"見出し {len(mi)}件")
     print("  ── 検査8　保険料が確定前である旨")
     chk("まだ確定していません" in zen, "確定前である旨の断り")
+    chk("柱の立て方（計画の章の組み立て）は、策定委員会でご審議いただく案" in zen,
+        "柱の立て方が委員会のご承認の前である旨（再レビュー B12）")
     n_char = len(text.replace("\n", "")) + len(tbl.replace("\n", ""))
     print(f"  {OUT}　段落 {len(d2.paragraphs)}／図 {n_fig}／表 {len(d2.tables)}／字数 {n_char:,}字")
     if ng:

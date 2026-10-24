@@ -40,10 +40,11 @@ import openpyxl
 from docx.oxml.ns import qn
 from openpyxl.styles import Alignment, Font
 
-KYOGI = "01_第10期_最新版成果品/川崎町_計画書素案_v2.32_協議用.docx"
+KYOGI = "01_第10期_最新版成果品/川崎町_計画書素案_v2.33_協議用.docx"
 BAN = re.search(r"_v(\d+\.\d+)_", KYOGI).group(1)
 SAKI = f"01_第10期_最新版成果品/川崎町_計画書案_公表用_v{BAN}.docx"
 KIROKU = f"05_試算・管理シート/川崎町_公表用で落とした文_v{BAN}.xlsx"
+RYUHO = f"05_試算・管理シート/川崎町_公表用の留保一覧_v{BAN}.xlsx"
 
 HYOSHI_KYOGI = re.compile(r"^協議用素案（.+時点）$")
 HEADER = "川崎町高齢者保健福祉計画・第10期介護保険事業計画"
@@ -217,11 +218,12 @@ def main():
     n_mk = 0
     for p in list(d.paragraphs) + [p for t in d.tables for r in t.rows
                                    for c in r.cells for p in c.paragraphs]:
-        if "【町確認】" in p.text or "本素案" in p.text:
-            n_mk += p.text.count("【町確認】")
-            kakikae(p, p.text.replace("【町確認】", "［要確認］")
+        if "【町確認】" in p.text or "本素案" in p.text or "【委員会協議】" in p.text:
+            n_mk += p.text.count("【町確認】") + p.text.count("【委員会協議】")
+            # 【委員会協議】は作業用の印。公表用では［要協議］に揃える（令和8年10月24日 再レビュー N05）
+            kakikae(p, p.text.replace("【町確認】", "［要確認］").replace("【委員会協議】", "［要協議］")
                     .replace("本素案", "本計画"))
-    judge(True, f"【町確認】→［要確認］ {n_mk}")
+    judge(True, f"【町確認】→［要確認］・【委員会協議】→［要協議］ {n_mk}")
 
     print("  ── ④ 表紙・ヘッダー")
     zan = sum(zenbun(d).count(m) for m in MIKAKUTEI)
@@ -257,8 +259,51 @@ def main():
     d2 = docx.Document(SAKI)
     ato = zenbun(d2)
     k = docx.Document(KYOGI)
+
+    # 公表用に残る留保の一覧（令和8年10月24日 再レビュー N05：公表の前に確定・注記・取下げを判断する台帳）
+    ryuho = []
+    sec = "表紙・前文"
+    for el in d2.element.body.iterchildren():
+        if el.tag == qn("w:p"):
+            t = "".join(n.text or "" for n in el.iter(qn("w:t")))
+            m = re.match(r"^(\d+-\d+)　", t.strip())
+            if m:
+                sec = m.group(1)
+            paras = [t]
+        elif el.tag == qn("w:tbl"):
+            paras = ["".join(n.text or "" for n in q.iter(qn("w:t"))) for q in el.iter(qn("w:p"))]
+        else:
+            continue
+        for t in paras:
+            for mk in ("［要確認］", "［要協議］", "［要内訳］"):
+                for mm in re.finditer(re.escape(mk), t):
+                    ryuho.append((sec, "表" if el.tag == qn("w:tbl") else "本文", mk,
+                                  t[max(0, mm.start() - 80):mm.end() + 10]))
+    wr = openpyxl.Workbook()
+    wsr = wr.active
+    wsr.title = "留保の一覧"
+    wsr.append(["No", "節", "本文／表", "印", "前後の文", "公表の前の扱い（確定・注記・取下げ）"])
+    for n_, r_ in enumerate(ryuho, 1):
+        wsr.append([n_, *r_, ""])
+    for col, w in zip("ABCDEF", (6, 8, 8, 10, 90, 30)):
+        wsr.column_dimensions[col].width = w
+    for row in wsr.iter_rows():
+        for c_ in row:
+            c_.font = Font(name="游ゴシック", size=9, bold=c_.row == 1)
+            c_.alignment = Alignment(wrap_text=True, vertical="top")
+    ws2 = wr.create_sheet("節別の件数")
+    ws2.append(["節", "［要確認］", "［要協議］", "［要内訳］", "計"])
+    import collections as _c
+    cnt = _c.OrderedDict()
+    for sec_, _, mk, _ in ryuho:
+        cnt.setdefault(sec_, _c.Counter())[mk] += 1
+    for sec_, c_ in cnt.items():
+        ws2.append([sec_, c_["［要確認］"], c_["［要協議］"], c_["［要内訳］"], sum(c_.values())])
+    wr.save(RYUHO)
+    judge(len(ryuho) == sum(ato.count(m_) for m_ in ("［要確認］", "［要協議］", "［要内訳］")),
+          f"留保の一覧 {len(ryuho)}件 → {RYUHO}")
     print("  ── 検査1　協議の印・語が残っていない")
-    for go in ("⚠", "確認事項No", "【町確認】", "本素案", "この素案", "協議用",
+    for go in ("⚠", "確認事項No", "【町確認】", "【委員会協議】", "本素案", "この素案", "協議用",
                "受託者", "当社", "ビズアップ", "スクリプト", ".xlsx", "別添『"):
         judge(go not in ato, f"「{go}」0件", str(ato.count(go)))
     print("  ── 検査2　⚠ 未確定を隠していない")
@@ -272,9 +317,9 @@ def main():
           f"［要確認］{ato.count('［要確認］')}＝協議用の［要確認］"
           f"{mae.count('［要確認］')}＋【町確認】{mae.count('【町確認】')}"
           f"−印の説明の文 {len(ot_mk)}＋確認事項Noから {HENKAN['要確認']}")
-    judge(ato.count("［要協議］") == mae.count("［要協議］") + HENKAN["要協議"],
+    judge(ato.count("［要協議］") == mae.count("［要協議］") + HENKAN["要協議"] + mae.count("【委員会協議】"),
           f"［要協議］{ato.count('［要協議］')}＝協議用{mae.count('［要協議］')}"
-          f"＋［要協議・確認事項No］から {HENKAN['要協議']}")
+          f"＋［要協議・確認事項No］から {HENKAN['要協議']}＋【委員会協議】{mae.count('【委員会協議】')}")
     judge(ato.count("［要内訳］") == mae.count("［要内訳］"), "［要内訳］同数")
     judge("［要協議・" not in ato and "［要確認・" not in ato, "印に確認事項Noが残っていない")
     judge(("体裁確認用" in ato) == (zan > 0), "未確定が残る間は表紙に（体裁確認用）")

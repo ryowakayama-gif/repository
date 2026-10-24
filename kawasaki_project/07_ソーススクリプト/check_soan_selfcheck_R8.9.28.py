@@ -13,7 +13,7 @@
 
 使い方：
   python3 07_ソーススクリプト/check_soan_selfcheck_R8.9.28.py \
-      01_第10期_最新版成果品/川崎町_計画書素案_v2.32_協議用.docx
+      01_第10期_最新版成果品/川崎町_計画書素案_v2.33_協議用.docx
 """
 import json
 import re
@@ -115,7 +115,7 @@ def main(path):
     tot = [r[335] for r in rows]
     want.append(("総合計の全国順位", f"{rank(kawa[335], tot)}位"))
     want.append(("全国平均", f"{sum(tot) / len(tot):.1f}点"))
-    want.append(("保険者数", f"{len(rows):,}保険者"))
+    want.append(("市町村数", f"{len(rows):,}市町村"))  # 交付金の評価の単位は市町村（令和8年10月24日 再レビュー N08）
     for name, key, man in (("体制・取組指標群", "TAI", 380),
                            ("活動指標群", "KATSU", 220),
                            ("成果指標群", "SEI", 200)):
@@ -285,4 +285,4 @@ def main(path):
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1] if len(sys.argv) > 1 else
                   "01_第10期_最新版成果品/"
-                  "川崎町_計画書素案_v2.32_協議用.docx"))
+                  "川崎町_計画書素案_v2.33_協議用.docx"))
