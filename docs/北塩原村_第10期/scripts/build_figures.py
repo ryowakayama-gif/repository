@@ -430,7 +430,11 @@ def fig_2_13():
 
 # ══════════ 図2-15 給付費・地域支援事業費・保険料収入（指数）══════════
 def fig_2_15():
-    lab = ["H26", "H27", "H28", "H29", "H30", "R元", "R2", "R3", "R4", "R5"]
+    # 年度の並びは図表データ（data_zuhyo）から取る。令和6年度の決算を足したとき
+    # （令和8年10月24日）にじか書きの年度と数が合わなくなったため
+    import data_zuhyo as _DZ15
+    lab = [c.replace("年度", "") for c in
+           next(z for z in _DZ15.ZU if z["name"] == "fig2-15_財政指数")["cats"]]
     x = list(range(len(lab)))
     kyufu = V("fig2-15_財政指数", "保険給付費")
     chiiki = V("fig2-15_財政指数", "地域支援事業費")
@@ -441,11 +445,11 @@ def fig_2_15():
     ax.plot(x, idx(chiiki), label="地域支援事業費", color=K["d"], ls="-", marker="o", ms=6, lw=2.2)
     ax.plot(x, idx(hoken),  label="保険料収入",     color=K["m"], ls="--", marker="s", ms=5.5, lw=1.8)
     ax.plot(x, idx(kyufu),  label="保険給付費",     color=K["l"], ls=":", marker="^", ms=6, lw=2.0)
-    label_last(ax, x, idx(chiiki), "256")
-    label_last(ax, x, idx(hoken),  "142", color=K["m"])
-    label_last(ax, x, idx(kyufu),  "100", color="#808080")
+    label_last(ax, x, idx(chiiki), "%d" % round(idx(chiiki)[-1]))
+    label_last(ax, x, idx(hoken),  "%d" % round(idx(hoken)[-1]), color=K["m"])
+    label_last(ax, x, idx(kyufu),  "%d" % round(idx(kyufu)[-1]), color="#808080")
     ax.set_xticks(x); ax.set_xticklabels([f"{l}\n年度" for l in lab], fontsize=8.5)
-    ax.set_xlim(-0.35, 9.9); ax.set_ylim(80, 280)
+    ax.set_xlim(-0.35, len(lab) - 0.1); ax.set_ylim(80, 280)
     style_ax(ax, ylab="平成26年度＝100")
     ax.legend(loc="upper left", fontsize=9)
     ax.set_title("保険給付費・地域支援事業費・保険料収入の推移（平成26年度＝100）",
