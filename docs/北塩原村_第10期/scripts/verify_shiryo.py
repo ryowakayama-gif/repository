@@ -778,6 +778,32 @@ except Exception as e:
     chk(26, "委員会資料のカラー版と単色版が同じ中身で組まれていること", False,
         "照合できない（%s）" % e)
 
+# ── 27　資料7-3c の本文の点・順位が交付金の算定（参考資料19・素案6-3）と合うこと ──
+#    表は点検3で見ていたが、本文は書き写しのままで、素案6-3を62点・67点に改めたあとも
+#    61点・56点・525位・18位が残っていた（他団体の外部レビューで同種の指摘が多かったため点検して判明）。
+try:
+    import json
+    import kofukin_shiryo_content as KF27
+    s7 = None
+    for c in SH.CH:
+        for s in c["sections"]:
+            if s["no"] == "7-3c":
+                s7 = s
+    tx = json.dumps(s7, ensure_ascii=False)
+    a27 = KF27.IMA + KF27.MOKUHYO
+    need = ["%d点" % KF27.MOKUHYO, "%d点" % KF27.P_KISAI, "%s位" % "{:,}".format(KF27._rk(a27, KF27._ZEN)),
+            "%d位" % KF27._rk(a27, KF27._KENV), "%d点" % a27, "%.1f点上回り" % (a27 - 455.1)]
+    stale = [w27 for w27 in ("61点", "56点", "525位", "501位", "52.9点", "39点")
+             if w27 in tx and w27 not in need]
+    miss27 = [n27 for n27 in need if n27 not in tx]
+    chk(27, "資料7-3c の本文の点・順位が交付金の算定と合うこと", not stale and not miss27,
+        ("古い数 " + "・".join(stale) if stale else "") + ("／ない " + "・".join(miss27) if miss27 else "")
+        if (stale or miss27) else "取得目標%d点（記載%d点＋認知症%d点）・%d点・全国%s位・県内%d位が算定と一致"
+        % (KF27.MOKUHYO, KF27.P_KISAI, KF27.NINCHI, a27, "{:,}".format(KF27._rk(a27, KF27._ZEN)),
+           KF27._rk(a27, KF27._KENV)))
+except Exception as e:
+    chk(27, "資料7-3c の本文の点・順位が交付金の算定と合うこと", False, "照合できない（%s）" % e)
+
 w = max(len(n) for _, n, _, _ in R)
 print("■ 策定委員会 資料の自己点検（第2回＋第3回の骨子）")
 ng = 0
