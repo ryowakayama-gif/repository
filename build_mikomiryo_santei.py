@@ -107,6 +107,7 @@ import data_nenpo_meisai as NM
 import data_shien_tool as T
 import data_chiiki_shien as CS
 import data_gaisan1 as G1
+import data_juki as _DJ
 import data_sogo_r6 as SG
 import repo_paths as RP
 
@@ -431,8 +432,22 @@ def kyufu(lab, y):
     return sogaku(lab, y) * 12 * p if p else 0.0
 
 
+def kyufu_kei(lab, y):
+    """**要介護度計**の単価（総括表詳細（４）の延べ1人あたり）による給付費。
+
+    令和8年10月1日に `kyufu()` が要介護度別の単価によることとしたため、
+    要介護度の構成が重度側へ動くことによる単価の上昇（単価ミックス効果）を
+    測るには、採用前の置き方を別に持つ必要がある。
+    07シートの対照の左列はこの関数による（`kyufu()` と比べると差が0になる）。
+    """
+    p = tanka(lab)
+    return sogaku(lab, y) * 12 * p if p else 0.0
+
+
 KYUFU_Y = {y: sum(kyufu(l, y) for l in SVC) for y in Y3 + YLONG}
 KYUFU3 = [KYUFU_Y[y] for y in Y3]
+# 要介護度計の単価による給付費（単価ミックス効果の対照。採用値ではない）
+KYUFU_KEI_Y = {y: sum(kyufu_kei(l, y) for l in SVC) for y in Y3 + YLONG}
 
 # 比較用　一律の伸び（build_mikomiryo.py の採用パターンP3と同じ置き方）
 R7_TSUMI = sum(sum(JISSEKI[l]) * 12 * (tanka(l) or 0) for l in SVC)
@@ -499,6 +514,115 @@ HIHO3 = sum(HIHO[y] for y in Y3)
 G_DO = gaku3(KYUFU3, HIHO3)                     # 要介護度別（本表の採用）
 G_ITTEI = gaku3(KYUFU3_ITTEI, HIHO3)            # 一律（従前のP3）
 G_GENKO = _P["BASE"]                            # 現行（P1・見える化の自然体推計）
+
+
+# ============================ 認定率の置き方（シナリオ）による差
+# 認定率のシナリオは①現状固定・②トレンド継続（採用）・③令和元年水準の3つで、
+# 置き方を変えると認定者数・見込量・給付費・保険料がいずれも動く。
+# 見込量は「年報の月平均×要介護度別の伸び」であり、
+# 伸びは認定者数に比例するため、シナリオを差し替えて算定し直せる。
+SC_LAB = {1: "① 現状固定", 2: "② トレンド継続", 3: "③ 令和元年水準"}
+
+
+def nintei_do_sc(y, sc):
+    """要介護度別の認定者数（人）。認定率のシナリオを指定する。"""
+    out = [0.0] * 7
+    for c in CL:
+        n = pop_juki(c, y) * rate(c, y, sc) / 100
+        s = sum(COMP[c])
+        for i in range(7):
+            out[i] += n * COMP[c][i] / s
+    return out
+
+
+def kyufu_sc(y, sc):
+    """サービス種別の給付費の計（円）。認定率のシナリオを指定する。"""
+    n = nintei_do_sc(y, sc)
+    f = [n[i] / NIN_R7[i] for i in range(7)]
+    s = 0.0
+    for lab in SVC:
+        b = nenpo_do(lab)
+        v = [b[i] / 12 * f[i] for i in range(7)]
+        td = TANKA_DO.get(lab)
+        if td:
+            unit = td[0]
+            s += sum(v[i] * (unit[i] or 0.0) for i in range(7)) * 12
+        else:
+            p = tanka(lab)
+            s += sum(v) * 12 * p if p else 0.0
+    return s
+
+
+def gaku_sc(sc):
+    """認定率のシナリオによる保険料（第10期3か年）。"""
+    return gaku3([kyufu_sc(y, sc) for y in Y3], HIHO3)
+
+
+G_SC = {sc: gaku_sc(sc) for sc in (1, 2, 3)}
+NIN_SC = {sc: {y: nintei_do_sc(y, sc) for y in [BASE_Y] + Y3 + YLONG}
+          for sc in (1, 2, 3)}
+
+
+# ================== 住民基本台帳の趨勢の期間による差（感応度）
+# 案Cの伸び率は住民基本台帳の平成31年から令和7年まで（6年）の
+# 年平均変化率による。期間を変えると階級別の内訳が動くため、
+# 認定者数・給付費・保険料まで通して算定し直せる形にしておく。
+TREND_Y0 = 2019                 # 採用している趨勢の起点（6年）
+TREND_CASES = [(2019, "6年（平成31年→令和7年）"),
+               (2020, "5年（令和2年→令和7年）"),
+               (2022, "3年（令和4年→令和7年）")]
+
+
+def pop_juki_y0(c, y, y0):
+    """趨勢の起点を y0 に変えた場合の階級別人口（案Cの作り方のまま）。"""
+    g = _DJ.g(c, y0=y0)
+    d = int(y) - int(BASE_Y)
+    te = _G["TREND_END"]
+    base = _G["BP"][c]
+    if d <= te:
+        return base * (1 + g) ** max(d, 0)
+    return (base * (1 + g) ** te
+            * _G["apop"](c, y) / _G["apop"](c, _G["TREND_LAST_Y"]))
+
+
+def santei_y0(y0):
+    """趨勢の起点を y0 に変えた場合の階級別人口・認定者数・給付費・保険料。"""
+    pop = {c: {y: pop_juki_y0(c, y, y0) for y in [BASE_Y] + Y3} for c in CL}
+    hiho = {y: sum(pop[c][y] for c in CL) for y in [BASE_Y] + Y3}
+
+    def nin(y):
+        out = [0.0] * 7
+        for c in CL:
+            n = pop[c][y] * rate(c, y, SC_NO) / 100
+            s = sum(COMP[c])
+            for i in range(7):
+                out[i] += n * COMP[c][i] / s
+        return out
+
+    nin_r7 = nin(BASE_Y)
+    ky = []
+    for y in Y3:
+        n = nin(y)
+        f = [n[i] / nin_r7[i] for i in range(7)]
+        s = 0.0
+        for lab in SVC:
+            b = nenpo_do(lab)
+            v = [b[i] / 12 * f[i] for i in range(7)]
+            td = TANKA_DO.get(lab)
+            if td:
+                unit = td[0]
+                s += sum(v[i] * (unit[i] or 0.0) for i in range(7)) * 12
+            else:
+                p = tanka(lab)
+                s += sum(v) * 12 * p if p else 0.0
+        ky.append(s)
+    g = gaku3(ky, sum(hiho[y] for y in Y3))
+    return {"階級": {c: pop[c]["2029"] for c in CL}, "第1号": hiho["2029"],
+            "認定者": sum(nin("2029")), "給付費3": sum(ky),
+            "月額": g["月額"], "基準額": int(round(g["月額"], -2))}
+
+
+TREND_KEKKA = {y0: santei_y0(y0) for y0, _lb in TREND_CASES}
 
 
 # ==================================== 在宅と施設の連鎖（08シート）
@@ -1090,6 +1214,45 @@ r = note(ws, r,
             max(NOBI_DO["2029"]),
             DO[NOBI_DO["2029"].index(min(NOBI_DO["2029"]))],
             min(NOBI_DO["2029"])), span=9, height=76)
+r += 1
+
+r = lead(ws, r, "4　認定率の置き方（シナリオ）による差", span=9)
+r = header(ws, r, ["置き方", "内容", "令和9年度", "令和10年度", "令和11年度",
+                   "3年計", "総給付費\n（3か年）", "算定上の\n月額基準額",
+                   "保険料基準額"])
+_SC_NAIYO = {
+    1: "令和8年3月末の認定率をそのまま固定する",
+    2: "令和元年から令和8年の変化を令和11年度まで延長する",
+    3: "令和11年度にかけて令和元年の水準へ戻る",
+}
+for sc in (1, 2, 3):
+    g = G_SC[sc]
+    ky3 = sum(kyufu_sc(y, sc) for y in Y3)
+    f = {i: OK_G for i in range(1, 10)} if sc == SC_NO else None
+    r = body(ws, r,
+             [SC_LAB[sc] + ("（採用）" if sc == SC_NO else ""), _SC_NAIYO[sc]]
+             + [round(sum(NIN_SC[sc][y]), 1) for y in Y3]
+             + [round(sum(sum(NIN_SC[sc][y]) for y in Y3), 1),
+                yen(ky3), round(g["月額"], 2),
+                "{:,}円".format(int(round(g["月額"], -2)))],
+             fills=f, height=22,
+             fmt={3: "0.0", 4: "0.0", 5: "0.0", 6: "0.0", 8: "0.00"})
+r = note(ws, r,
+         "注1）本表は②によっています。"
+         "いずれの置き方でも認定者数は増えますが、"
+         "保険料基準額は①%s円・②%s円・③%s円に分かれます。"
+         "②は3つのうち最も低く出る置き方であり、"
+         "単価を令和7年度で固定していることなどと併せ、"
+         "算定上の月額基準額は低い側の水準にあります。［要協議］\n"
+         "注2）認定者数以外の前提（利用率・単価・地域支援事業費・"
+         "第1号被保険者負担割合・予定収納率・基金の取崩し）は3つとも同じです。"
+         "補正後被保険者数（%.2f人）も同じであり、"
+         "差は給付費のみによります。\n"
+         "注3）シナリオの別は年齢階級別の認定率の置き方であり、"
+         "年齢階級ごとの要介護度の構成（令和7年度末で固定）は3つとも同じです。"
+         % tuple(["{:,}".format(int(round(G_SC[sc]["月額"], -2)))
+                  for sc in (1, 2, 3)] + [G_DO["③"]]),
+         span=9, height=76)
 
 # ============================================================ 03
 ws = sheet("03_サービス見込量", "サービス見込量（利用者数・人／月）",
@@ -1346,7 +1509,8 @@ r = body(ws, r, ["", "計"] + [yen(x) for x in _kd_tot] + [yen(sum(_kd_tot))],
 r += 1
 
 r = lead(ws, r, "3　単価の構成の変化による差（単価ミックス効果）", span=10)
-r = header(ws, r, ["", "年度", "単価固定（06シート）", "要介護度別の単価",
+r = header(ws, r, ["", "年度", "要介護度計の単価による場合",
+                   "要介護度別の単価（本表の採用）",
                    "差", "差の率", "", "", "", "備考"])
 
 
@@ -1360,28 +1524,30 @@ def _tot_do(y):
 
 for i, (y, lb) in enumerate(list(zip(Y3, Y3L)) + list(zip(YLONG, YLONGL)),
                             start=1):
-    a, b2 = sum(kyufu(l, y) for l in SVC), _tot_do(y)
+    a, b2 = KYUFU_KEI_Y[y], _tot_do(y)
     f = {i2: IN_Y for i2 in range(1, 11)} if y in YLONG else None
     r = body(ws, r, [i, lb, yen(a), yen(b2), yen(b2 - a),
                      "%+.3f％" % ((b2 / a - 1) * 100), "", "", "",
                      "要介護度の重い方の割合が増えるため単価の平均が上がる"],
              fills=f, height=22)
-_g_do_tanka = gaku3([_tot_do(y) for y in Y3], HIHO3)
+_g_kei_tanka = gaku3([KYUFU_KEI_Y[y] for y in Y3], HIHO3)
 r = note(ws, r,
-         "注1）06シートは種別ごとの単価（延べ1人あたり）を令和7年度で固定しています。"
-         "要介護度別の単価を用いると、"
+         "注1）左の列は、総括表詳細（４）の種別ごとの単価（要介護度計の"
+         "延べ1人あたり）を令和7年度で固定した場合の給付費です。"
+         "右の列は要介護度別の単価によるもので、"
          "要介護度の構成が重度側へ動く分だけ平均の単価が上がります。\n"
          "注2）効きは第10期では小さく（令和11年度で%+.3f％）、"
-         "算定上の月額基準額で%+.1f円です。"
+         "算定上の月額基準額で%+.2f円です。"
          "令和22年度では%+.3f％に開きます。\n"
-         "注3）本表の採用値は06シート（単価固定）のままとしています。"
-         "ツールの要介護度別の値は3町合計であり、"
-         "要介護度間の比が保険者単位でも同じであることを確かめられていないためです。"
-         "［要確認］"
-         % ((_tot_do("2029") / sum(kyufu(l, "2029") for l in SVC) - 1) * 100,
-            _g_do_tanka["月額"] - G_DO["月額"],
-            (_tot_do("2040") / sum(kyufu(l, "2040") for l in SVC) - 1) * 100),
-         span=10, height=68)
+         "注3）本表の採用値は右の列（要介護度別の単価）です。"
+         "要介護度間の比は給付費データ（保険者単位）によるものであり、"
+         "年報の利用者数で加重した平均が総括表詳細（４）の単価と一致するよう"
+         "比例調整しているため、基準年度では総括表の給付費を円単位で再現します"
+         "（点検16）。左の列は対照のために掲げるものです。"
+         % ((_tot_do("2029") / KYUFU_KEI_Y["2029"] - 1) * 100,
+            G_DO["月額"] - _g_kei_tanka["月額"],
+            (_tot_do("2040") / KYUFU_KEI_Y["2040"] - 1) * 100),
+         span=10, height=84)
 
 # ============================================================ 08
 ws = sheet("08_在宅と施設の連鎖", "在宅と施設の連鎖（見える化システムの構造との対照）",
@@ -2254,6 +2420,44 @@ r = note(ws, r,
          + "（8年平均94.93％）であり、計画が実績を上回る側に偏っています。"
          + "本表は補正を行っていないため、同じ偏りを持ち得ます"
          + "（確認事項No.106）。", span=7, height=76)
+r += 1
+
+r = lead(ws, r, "住民基本台帳の趨勢の期間による差（人口の伸び率の感応度）",
+         span=7)
+r = header(ws, r, ["", "趨勢の期間", "65〜74歳", "75〜84歳", "85歳以上",
+                   "第1号計", "算定上の月額／保険料基準額"])
+for i, (y0, lb) in enumerate(TREND_CASES, start=1):
+    k = TREND_KEKKA[y0]
+    f = {j: OK_G for j in range(1, 8)} if y0 == TREND_Y0 else None
+    r = body(ws, r,
+             [i, lb + ("（採用）" if y0 == TREND_Y0 else ""),
+              round(k["階級"]["65-74"]), round(k["階級"]["75-84"]),
+              round(k["階級"]["85+"]), round(k["第1号"]),
+              "%.2f円／%s円" % (k["月額"], "{:,}".format(k["基準額"]))],
+             fills=f, height=22, fmt={j: "#,##0" for j in range(3, 7)})
+r = note(ws, r,
+         "注1）いずれも令和11年度の値です。"
+         "案Cの作り方（実績の水準×階級別の年平均変化率、"
+         "令和12年度以降は社人研推計の伸び率で接続）は変えず、"
+         "住民基本台帳の変化率を求める期間だけを変えたものです。\n"
+         "注2）第1号被保険者数の計は%s人から%s人までの幅に収まりますが、"
+         "85歳以上は%s人から%s人まで開きます。"
+         "認定率が最も高い階級であるため、"
+         "人口の計だけでは人口の置き方の妥当性を確かめられません。\n"
+         "注3）算定上の月額は%.2f円から%.2f円であり、"
+         "保険料基準額（百円未満四捨五入）はいずれも%s円です。"
+         % ("{:,.0f}".format(min(TREND_KEKKA[y]["第1号"]
+                                 for y, _l in TREND_CASES)),
+            "{:,.0f}".format(max(TREND_KEKKA[y]["第1号"]
+                                 for y, _l in TREND_CASES)),
+            "{:,.0f}".format(min(TREND_KEKKA[y]["階級"]["85+"]
+                                 for y, _l in TREND_CASES)),
+            "{:,.0f}".format(max(TREND_KEKKA[y]["階級"]["85+"]
+                                 for y, _l in TREND_CASES)),
+            min(TREND_KEKKA[y]["月額"] for y, _l in TREND_CASES),
+            max(TREND_KEKKA[y]["月額"] for y, _l in TREND_CASES),
+            "{:,}".format(TREND_KEKKA[TREND_Y0]["基準額"])),
+         span=7, height=76)
 
 # ============================================================ 12 自己点検
 # 点検1　年報の要介護度別の和＝総括表詳細（１）の令和7年度実績
@@ -2396,6 +2600,32 @@ chk(22, "総括表とツールの対応表を `build_mikomiryo.py` から読め�
     "TOOLMAP %d行" % len(TOOLMAP),
     "固定値を書き写していない", len(TOOLMAP) >= 20)
 
+# 点検23　認定率シナリオ②による算定が採用値と一致すること
+# シナリオを差し替えて算定し直す処理が、採用している経路と同じ値を返すことを
+# 確かめる。一致しなければ、シナリオ別の比較の値を用いることができない。
+_e23 = abs(sum(kyufu_sc(y, SC_NO) for y in Y3) - sum(KYUFU3))
+chk(23, "認定率シナリオ%dによる給付費が採用値と一致すること" % SC_NO,
+    "差 %.6f円" % _e23, "円未満で一致", _e23 < 1.0)
+
+# 点検24　単価ミックス効果が0でないこと
+# 令和8年10月1日に要介護度別の単価を採用したため、
+# 対照の左列を要介護度計の単価による額としなければ差が恒等的に0になる。
+_e24 = G_DO["月額"] - _g_kei_tanka["月額"]
+chk(24, "要介護度別の単価による差（単価ミックス効果）が0でないこと",
+    "月額 %+.2f円" % _e24, "重度化により単価の平均が上がる", _e24 > 0.5)
+
+# 点検25　採用する認定率シナリオの宣言が将来推計の側と一致すること
+# シナリオは本表（SC_NO）と将来推計 第3段階の双方で宣言しているため、
+# 一方だけを改めると給付費と保険料が別の置き方による値になる。
+chk(25, "採用する認定率シナリオが将来推計 第3段階と一致すること",
+    "本表 %d／第3段階 %d" % (SC_NO, _P["_SC"]),
+    "同じシナリオによる", SC_NO == _P["_SC"])
+
+# 点検26　趨勢の期間を変えて算定し直す処理が、採用値（6年）を再現すること
+_e26 = abs(TREND_KEKKA[TREND_Y0]["月額"] - G_DO["月額"])
+chk(26, "趨勢の期間の感応度が採用値（6年）を再現すること",
+    "差 %.6f円" % _e26, "円未満で一致", _e26 < 0.01)
+
 NG_WORDS = ["に由来する", "と整合する", "1件も", "有意差がないため", "全国トップ級"]
 
 ws = sheet("16_自己点検", "自己点検（エラーチェック）",
@@ -2507,15 +2737,27 @@ KAKUNIN = [
     ("ご判断",
      "給付費を要介護度別の単価で算定してよいか",
      "総括表詳細（４）は要介護度別の内訳を持たないため、"
-     "計画作成支援ツールの要介護度別の1人1月あたり給付費から"
+     "給付費データ（保険者単位）の要介護度別の1人1月あたり給付費から"
      "要介護度間の比（形）だけを採り、"
      "水準は総括表（保険者単位）に合わせて比例調整しました。"
      "基準年度では総括表の給付費を円単位で再現します。"
      "要介護度の構成が重度側へ動く分だけ平均の単価が上がり、"
-     "令和11年度＋0.047％（月額＋2円）・令和22年度＋0.280％です。"
-     "ツールは3町合計であり、要介護度間の比が保険者単位でも"
-     "同じであることを確かめられていません。"
-     "本表の採用値は単価固定（06シート）のままとしています。",
+     "令和11年度%+.3f％（月額%+.2f円）・令和22年度%+.3f％です。"
+     "本表の採用値は要介護度別の単価（07シート）です。"
+     % ((_tot_do("2029") / KYUFU_KEI_Y["2029"] - 1) * 100,
+        G_DO["月額"] - _g_kei_tanka["月額"],
+        (_tot_do("2040") / KYUFU_KEI_Y["2040"] - 1) * 100),
+     "令和8年10月30日まで"),
+    ("ご判断",
+     "認定率の置き方（①現状固定・②トレンド継続・③令和元年水準）",
+     "本表は②トレンド継続によっています。"
+     "置き方により算定上の月額基準額が①%s円・②%s円・③%s円となり、"
+     "百円未満を四捨五入した保険料基準額は"
+     "①%s円・②%s円・③%s円に分かれます。"
+     "②は3つのうち最も低く出る置き方です。"
+     % tuple(["{:,.0f}".format(G_SC[sc]["月額"]) for sc in (1, 2, 3)]
+             + ["{:,}".format(int(round(G_SC[sc]["月額"], -2)))
+                for sc in (1, 2, 3)]),
      "令和8年10月30日まで"),
     ("ご協議",
      "地域密着型介護老人福祉施設入所者生活介護が"
